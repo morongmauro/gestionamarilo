@@ -2,7 +2,6 @@
   "name": "gestiontareasamarilo",
   "version": "2.0.0",
   "description": "Sistema de Gestión Mauro - Notion + Claude AI",
-  "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js"
