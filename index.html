@@ -565,6 +565,207 @@
   }
   .live-badge.dark { background: rgba(255, 208, 0, 0.15); color: var(--amarillo); }
 
+  /* REPORTE EJECUTIVO LIGHT (invertido) */
+  .report-box-light {
+    background: var(--blanco); border: 1px solid var(--borde);
+    border-radius: 16px; padding: 24px; color: var(--negro);
+    box-shadow: var(--sombra-sm);
+    border-left: 4px solid var(--amarillo);
+  }
+  .report-box-light .report-header {
+    padding-bottom: 16px; margin-bottom: 18px;
+    border-bottom: 1px solid var(--borde);
+  }
+  .report-box-light .report-title { color: var(--negro); font-size: 14px; font-weight: 700; }
+  .report-box-light .report-meta { color: var(--gris-500); font-size: 11px; margin-top: 4px; }
+  .report-box-light .report-section-label { color: var(--gris-700); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+  .report-box-light .report-section-text { color: var(--negro); font-size: 13px; line-height: 1.6; }
+  .report-box-light .report-section { margin-bottom: 16px; }
+  .report-box-light .report-actions {
+    display: flex; gap: 8px; margin-top: 18px;
+    padding-top: 18px; border-top: 1px solid var(--borde);
+  }
+  .report-box-light .btn-report-primary {
+    background: var(--negro); color: var(--blanco); border: none;
+    padding: 8px 16px; border-radius: 8px; font-weight: 700;
+    font-size: 12px; cursor: pointer; font-family: inherit;
+  }
+  .report-box-light .btn-report-primary:hover { background: var(--gris-900); }
+  .report-box-light .btn-report-ghost {
+    background: transparent; color: var(--gris-700);
+    border: 1px solid var(--borde-fuerte); padding: 8px 16px;
+    border-radius: 8px; font-weight: 600; font-size: 12px;
+    cursor: pointer; font-family: inherit;
+  }
+  .report-box-light .btn-report-ghost:hover { background: var(--gris-100); color: var(--negro); }
+
+  /* KPI CLICKABLE */
+  .card.clickable { cursor: pointer; transition: all 0.18s; }
+  .card.clickable:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--sombra-md);
+    border-color: var(--borde-fuerte);
+  }
+  .card.clickable::after {
+    content: 'Ver lista →';
+    display: block; margin-top: 8px;
+    font-size: 10px; font-weight: 700;
+    color: var(--gris-500); letter-spacing: 0.04em;
+  }
+  .card.clickable:hover::after { color: var(--negro); }
+
+  /* CHARTS 2x2 */
+  .grid-charts-4 {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 14px; margin-bottom: 8px;
+  }
+
+  /* DUE 14 DAYS BAR CHART */
+  .due14-chart { display: flex; align-items: flex-end; gap: 4px; height: 120px; padding: 6px 0; }
+  .due14-bar-wrap {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    gap: 4px; height: 100%; cursor: pointer;
+  }
+  .due14-bar {
+    width: 100%; max-width: 26px; min-height: 4px;
+    background: var(--amarillo); border-radius: 4px 4px 0 0;
+    transition: all 0.2s;
+  }
+  .due14-bar.today { background: var(--negro); }
+  .due14-bar.zero { background: var(--gris-100); min-height: 4px; }
+  .due14-bar-wrap:hover .due14-bar { opacity: 0.75; }
+  .due14-label {
+    font-size: 9px; color: var(--gris-500); font-weight: 600;
+    text-align: center; line-height: 1.2;
+  }
+  .due14-count {
+    font-size: 10px; font-weight: 800; color: var(--negro);
+    margin-top: -2px;
+  }
+
+  /* PROJECT HEALTH */
+  .ph-list { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; padding: 4px 0; }
+  .ph-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    background: var(--gris-50); border: 1px solid var(--borde);
+    border-radius: 10px;
+    transition: all 0.15s;
+  }
+  .ph-row:hover { background: var(--blanco); border-color: var(--borde-fuerte); }
+  .ph-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .ph-dot.red { background: var(--rojo); box-shadow: 0 0 0 3px rgba(239,68,68,0.15); }
+  .ph-dot.yellow { background: var(--amarillo); box-shadow: 0 0 0 3px rgba(255,208,0,0.18); }
+  .ph-dot.green { background: var(--verde); box-shadow: 0 0 0 3px rgba(16,185,129,0.15); }
+  .ph-name {
+    flex: 1; font-size: 12px; font-weight: 600; color: var(--negro);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .ph-metrics { display: flex; gap: 6px; align-items: center; }
+  .ph-chip {
+    padding: 3px 8px; border-radius: 100px;
+    font-size: 10px; font-weight: 700;
+    background: var(--gris-100); color: var(--gris-700);
+  }
+  .ph-chip.bad { background: #FEE2E2; color: var(--rojo); }
+  .ph-chip.warn { background: #FEF3C7; color: #92400E; }
+
+  /* PROJECT VIEW */
+  .project-view-wrap {
+    background: var(--blanco); border: 1px solid var(--borde);
+    border-radius: 16px; padding: 22px;
+    box-shadow: var(--sombra-sm);
+  }
+  .project-selector {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-bottom: 18px; padding-bottom: 18px;
+    border-bottom: 1px solid var(--borde);
+  }
+  .project-chip {
+    padding: 8px 14px; border-radius: 100px;
+    font-size: 12px; font-weight: 600;
+    background: var(--gris-100); color: var(--gris-700);
+    border: 1px solid transparent; cursor: pointer;
+    font-family: inherit; transition: all 0.15s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .project-chip:hover { background: var(--gris-300); color: var(--negro); }
+  .project-chip.active { background: var(--negro); color: var(--amarillo); }
+  .project-chip-count {
+    background: rgba(255,255,255,0.15); padding: 1px 7px;
+    border-radius: 100px; font-size: 10px; font-weight: 800;
+  }
+  .project-chip:not(.active) .project-chip-count { background: var(--blanco); color: var(--gris-700); }
+
+  .project-detail-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 18px; gap: 14px; flex-wrap: wrap;
+  }
+  .project-detail-title { font-size: 18px; font-weight: 800; color: var(--negro); letter-spacing: -0.02em; }
+  .project-detail-meta { font-size: 11px; color: var(--gris-500); margin-top: 4px; }
+  .project-mini-kpis {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 10px; margin-bottom: 18px;
+  }
+  .project-mini-kpi {
+    background: var(--gris-50); border: 1px solid var(--borde);
+    border-radius: 10px; padding: 12px;
+  }
+  .project-mini-kpi-value {
+    font-size: 22px; font-weight: 800; color: var(--negro);
+    letter-spacing: -0.02em; line-height: 1;
+  }
+  .project-mini-kpi-label {
+    font-size: 10px; font-weight: 700; color: var(--gris-500);
+    text-transform: uppercase; letter-spacing: 0.06em; margin-top: 4px;
+  }
+  .project-task-list { display: flex; flex-direction: column; gap: 8px; }
+  .project-empty {
+    text-align: center; padding: 32px 12px; color: var(--gris-500);
+    font-size: 13px; font-style: italic;
+  }
+
+  /* DRAWER (KPI click → lista de tareas) */
+  .drawer-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    z-index: 250;
+  }
+  .drawer-backdrop.show { opacity: 1; pointer-events: auto; }
+  .drawer {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: 560px; max-width: 100vw;
+    background: var(--blanco);
+    box-shadow: -12px 0 40px rgba(0,0,0,0.15);
+    transform: translateX(100%); transition: transform 0.3s ease;
+    z-index: 260; display: flex; flex-direction: column;
+  }
+  .drawer.open { transform: translateX(0); }
+  .drawer-header {
+    padding: 18px 22px;
+    background: var(--negro); color: var(--blanco);
+    display: flex; justify-content: space-between; align-items: center;
+    flex-shrink: 0;
+  }
+  .drawer-title { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+  .drawer-sub { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+  .drawer-close {
+    background: rgba(255,255,255,0.1); color: var(--blanco);
+    border: none; width: 32px; height: 32px; border-radius: 8px;
+    cursor: pointer; font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .drawer-close:hover { background: rgba(255,255,255,0.2); }
+  .drawer-body {
+    flex: 1; overflow-y: auto; padding: 18px 22px;
+    background: var(--gris-50);
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .drawer-empty {
+    text-align: center; padding: 40px 16px; color: var(--gris-500);
+    font-size: 13px; font-style: italic;
+  }
+
   /* RELOAD INDICATOR */
   .reload-indicator {
     position: fixed; bottom: 20px; right: 20px;
@@ -736,44 +937,99 @@
   <!-- TAB 2: DASHBOARD -->
   <div id="tab-dashboard" class="tab-content">
 
-    <div class="section-title">KPIs de la semana</div>
+    <div class="section-title">Indicadores de hoy <span style="font-size:10px;font-weight:600;color:var(--gris-500);text-transform:none;letter-spacing:0;">(click para ver las tareas)</span></div>
 
     <div class="grid-kpis">
-      <div class="card">
-        <div class="kpi-icon">✓</div>
-        <div class="kpi-value" id="dash-done">--</div>
-        <div class="kpi-label">Cerradas (7 días)</div>
-        <div class="kpi-sub" id="dash-done-sub">momentum reciente</div>
-      </div>
-      <div class="card">
-        <div class="kpi-icon soft">🎯</div>
-        <div class="kpi-value" id="dash-rate">--</div>
-        <div class="kpi-label">Tasa cumplimiento</div>
-        <div class="kpi-sub">completadas / total</div>
-      </div>
-      <div class="card">
+      <div class="card clickable" onclick="openDrawer('activas')">
         <div class="kpi-icon soft">⏱</div>
         <div class="kpi-value" id="dash-active">--</div>
-        <div class="kpi-label">Tareas activas</div>
+        <div class="kpi-label">Activas</div>
         <div class="kpi-sub" id="dash-active-sub">pendientes</div>
       </div>
-      <div class="card">
-        <div class="kpi-icon dark">⚡</div>
-        <div class="kpi-value" id="dash-health">--</div>
-        <div class="kpi-label">Health Score</div>
-        <div class="kpi-sub" id="dash-health-sub">calculando</div>
+      <div class="card clickable" onclick="openDrawer('vencidas')">
+        <div class="kpi-icon" style="background:#FEE2E2;color:var(--rojo);">!</div>
+        <div class="kpi-value" id="dash-overdue" style="color:var(--rojo);">--</div>
+        <div class="kpi-label">Vencidas</div>
+        <div class="kpi-sub">requieren acción</div>
+      </div>
+      <div class="card clickable" onclick="openDrawer('estancadas')">
+        <div class="kpi-icon" style="background:#FED7AA;color:var(--naranja);">⏸</div>
+        <div class="kpi-value" id="dash-stagnant" style="color:var(--naranja);">--</div>
+        <div class="kpi-label">Estancadas</div>
+        <div class="kpi-sub">+5 días con terceros</div>
+      </div>
+      <div class="card clickable" onclick="openDrawer('cerradas')">
+        <div class="kpi-icon" style="background:#D1FAE5;color:var(--verde);">✓</div>
+        <div class="kpi-value" id="dash-done" style="color:var(--verde);">--</div>
+        <div class="kpi-label">Cerradas (7 días)</div>
+        <div class="kpi-sub" id="dash-done-sub">momentum</div>
       </div>
     </div>
 
-    <div class="section-title">Reporte ejecutivo auto-generado</div>
+    <div class="section-title">Gráficas</div>
 
-    <div class="report-box">
-      <div class="report-header">
+    <div class="grid-charts-4">
+      <div class="card">
+        <div class="card-title">Carga por proyecto</div>
+        <div style="display: flex; align-items: center; gap: 18px; padding: 6px 0;">
+          <svg id="topic-svg" viewBox="0 0 200 200" width="140" height="140">
+            <circle cx="100" cy="100" r="70" fill="none" stroke="#F5F5F5" stroke-width="24"/>
+          </svg>
+          <div id="topic-legend" style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+            <div style="font-size:12px;color:var(--gris-500)">Cargando...</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          Tipo de gestión
+          <span style="font-size:10px;font-weight:500;color:var(--gris-500);text-transform:none;letter-spacing:0;margin-left:4px;" title="Quién ejecuta cada tarea. Propia = tú; Tercero = esperando a otro; Compartida = decisión con alguien.">ⓘ</span>
+        </div>
+        <div id="tipo-bars" style="display: flex; flex-direction: column; gap: 12px; padding: 6px 0;">
+          <div style="font-size:12px;color:var(--gris-500)">Cargando...</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Vencimientos próximos 14 días</div>
+        <div id="due14-chart" class="due14-chart"></div>
+        <div style="font-size:10px;color:var(--gris-500);text-align:center;margin-top:8px;">Tareas que vencen cada día (hoy en negro)</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Salud por proyecto</div>
+        <div id="project-health-list" class="ph-list">
+          <div style="font-size:12px;color:var(--gris-500)">Cargando...</div>
+        </div>
+        <div style="font-size:10px;color:var(--gris-500);margin-top:8px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+          <span style="display:flex;align-items:center;gap:5px;"><span class="ph-dot green"></span>OK</span>
+          <span style="display:flex;align-items:center;gap:5px;"><span class="ph-dot yellow"></span>Atención</span>
+          <span style="display:flex;align-items:center;gap:5px;"><span class="ph-dot red"></span>Riesgo</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">Vista por proyecto</div>
+
+    <div class="project-view-wrap">
+      <div class="project-selector" id="project-selector">
+        <div style="font-size:12px;color:var(--gris-500)">Cargando proyectos...</div>
+      </div>
+      <div id="project-detail">
+        <div class="project-empty">Selecciona un proyecto arriba para ver su detalle</div>
+      </div>
+    </div>
+
+    <div class="section-title">Resumen ejecutivo de la semana</div>
+
+    <div class="report-box-light">
+      <div class="report-header" style="display:flex;justify-content:space-between;align-items:center;">
         <div>
           <div class="report-title">Resumen semanal</div>
           <div class="report-meta" id="report-meta">Generado automáticamente</div>
         </div>
-        <div class="live-badge dark"><span class="live-dot"></span> Live</div>
+        <div class="live-badge"><span class="live-dot"></span> Live</div>
       </div>
 
       <div class="report-section">
@@ -797,34 +1053,24 @@
       </div>
 
       <div class="report-actions">
-        <button class="btn-foco-yellow" onclick="copyReport()">📋 Copiar reporte</button>
-        <button class="btn-foco-ghost" onclick="loadData()">↻ Regenerar</button>
+        <button class="btn-report-primary" onclick="copyReport()">📋 Copiar reporte</button>
+        <button class="btn-report-ghost" onclick="loadData()">↻ Regenerar</button>
       </div>
     </div>
 
-    <div class="section-title">Distribución por frente</div>
+  </div>
 
-    <div class="grid-charts">
-      <div class="card">
-        <div class="card-title">Carga actual por topic</div>
-        <div style="display: flex; align-items: center; gap: 18px; padding: 6px 0;">
-          <svg id="topic-svg" viewBox="0 0 200 200" width="160" height="160">
-            <circle cx="100" cy="100" r="70" fill="none" stroke="#F5F5F5" stroke-width="24"/>
-          </svg>
-          <div id="topic-legend" style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
-            <div style="font-size:12px;color:var(--gris-500)">Cargando...</div>
-          </div>
-        </div>
+  <!-- DRAWER (lista filtrada de tareas) -->
+  <div class="drawer-backdrop" id="drawer-backdrop" onclick="closeDrawer()"></div>
+  <div class="drawer" id="drawer">
+    <div class="drawer-header">
+      <div>
+        <div class="drawer-title" id="drawer-title">Tareas</div>
+        <div class="drawer-sub" id="drawer-sub"></div>
       </div>
-
-      <div class="card">
-        <div class="card-title">Distribución por tipo de gestión</div>
-        <div id="tipo-bars" style="display: flex; flex-direction: column; gap: 14px; padding: 6px 0;">
-          <div style="font-size:12px;color:var(--gris-500)">Cargando...</div>
-        </div>
-      </div>
+      <button class="drawer-close" onclick="closeDrawer()">×</button>
     </div>
-
+    <div class="drawer-body" id="drawer-body"></div>
   </div>
 
 </div>
@@ -1029,11 +1275,10 @@
   // ============================================================
   function renderDashboard(data) {
     setText('dash-done', data.kpis.doneThisWeek);
-    setText('dash-rate', data.kpis.completionPct + '%');
     setText('dash-active', data.kpis.active);
     setText('dash-active-sub', `${data.kpis.highPriority} alta prioridad`);
-    setText('dash-health', data.kpis.healthScore);
-    setText('dash-health-sub', data.kpis.healthScore >= 75 ? 'sostenible' : data.kpis.healthScore >= 55 ? 'atención' : 'riesgo');
+    setText('dash-overdue', data.kpis.overdueCount);
+    setText('dash-stagnant', data.kpis.stagnantCount);
 
     // Report
     const today = new Date();
@@ -1044,7 +1289,10 @@
     setText('report-foco', data.report.foco);
 
     renderTopicChart(data.byTopic);
-    renderTipoBars(data);
+    renderTipoBars(data.tipoGestionStats);
+    renderDue14Chart(data.dueIn14Days);
+    renderProjectHealth(data.projectHealth);
+    renderProjectSelector(data.projectHealth);
   }
 
   function renderTopicChart(topics) {
@@ -1078,27 +1326,202 @@
     `).join('');
   }
 
-  function renderTipoBars(data) {
-    const all = data.bandejas;
-    const counts = {
-      'Depende Tercero': all.activaTerceros.length + 0, // already filtered
-      'Propia': all.ejecutaTu.length,
-      'Compartida': all.coordina.length,
-      'Quick wins (Small)': all.quickWins.length,
+  function renderTipoBars(stats) {
+    if (!stats || !stats.length) {
+      $('tipo-bars').innerHTML = '<div style="font-size:12px;color:var(--gris-500)">Sin datos</div>';
+      return;
+    }
+    const labels = {
+      'Depende Tercero': 'Esperando a terceros',
+      'Propia': 'Tú las ejecutas',
+      'Compartida': 'Decisión compartida',
+      'Sin asignar': 'Sin tipo asignado',
     };
-    const max = Math.max(1, ...Object.values(counts));
-    const colors = { 'Depende Tercero': '#EF4444', 'Propia': '#F59E0B', 'Compartida': '#FFD000', 'Quick wins (Small)': '#10B981' };
-    $('tipo-bars').innerHTML = Object.entries(counts).map(([k, v]) => `
-      <div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:6px;">
-          <span style="color:var(--gris-700);">${k}</span>
-          <strong>${v}</strong>
+    const colors = { 'Depende Tercero': '#EF4444', 'Propia': '#F59E0B', 'Compartida': '#FFD000', 'Sin asignar': '#737373' };
+    const total = stats.reduce((s, x) => s + x.count, 0);
+    $('tipo-bars').innerHTML = stats.map(({ tipo, count }) => {
+      const pct = total ? Math.round((count / total) * 100) : 0;
+      return `
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:6px;">
+            <span style="color:var(--gris-700);">${labels[tipo] || escapeHtml(tipo)}</span>
+            <strong>${count} <span style="color:var(--gris-500);font-weight:500;">· ${pct}%</span></strong>
+          </div>
+          <div style="height:8px;background:var(--gris-100);border-radius:100px;overflow:hidden;">
+            <div style="height:100%;width:${pct}%;background:${colors[tipo] || '#737373'};border-radius:100px;transition:width 0.5s;"></div>
+          </div>
         </div>
-        <div style="height:8px;background:var(--gris-100);border-radius:100px;overflow:hidden;">
-          <div style="height:100%;width:${(v/max)*100}%;background:${colors[k]};border-radius:100px;transition:width 0.5s;"></div>
+      `;
+    }).join('');
+  }
+
+  function renderDue14Chart(buckets) {
+    if (!buckets || !buckets.length) return;
+    const max = Math.max(1, ...buckets.map(b => b.count));
+    $('due14-chart').innerHTML = buckets.map((b, i) => {
+      const h = b.count ? Math.max(8, Math.round((b.count / max) * 100)) : 4;
+      const cls = i === 0 ? 'today' : b.count === 0 ? 'zero' : '';
+      return `
+        <div class="due14-bar-wrap" title="${b.count} tarea${b.count===1?'':'s'} el ${b.label}">
+          <div class="due14-count">${b.count || ''}</div>
+          <div class="due14-bar ${cls}" style="height:${h}px;"></div>
+          <div class="due14-label">${b.label.replace(/\.$/, '')}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderProjectHealth(projects) {
+    if (!projects || !projects.length) {
+      $('project-health-list').innerHTML = '<div style="font-size:12px;color:var(--gris-500)">Sin proyectos activos</div>';
+      return;
+    }
+    $('project-health-list').innerHTML = projects.slice(0, 12).map(p => {
+      const chips = [];
+      if (p.overdue) chips.push(`<span class="ph-chip bad">${p.overdue} venc.</span>`);
+      if (p.stagnant) chips.push(`<span class="ph-chip warn">${p.stagnant} estanc.</span>`);
+      chips.push(`<span class="ph-chip">${p.active} activas</span>`);
+      return `
+        <div class="ph-row" onclick="selectProject('${escapeHtml(p.topic)}')" style="cursor:pointer;">
+          <div class="ph-dot ${p.status}"></div>
+          <div class="ph-name" title="${escapeHtml(p.topic)}">${escapeHtml(p.topic)}</div>
+          <div class="ph-metrics">${chips.join('')}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ============================================================
+  // VISTA POR PROYECTO
+  // ============================================================
+  let selectedProject = null;
+
+  function renderProjectSelector(projects) {
+    if (!projects || !projects.length) {
+      $('project-selector').innerHTML = '<div style="font-size:12px;color:var(--gris-500)">Sin proyectos</div>';
+      return;
+    }
+    $('project-selector').innerHTML = projects.map(p => {
+      const isActive = p.topic === selectedProject;
+      return `
+        <button class="project-chip ${isActive ? 'active' : ''}" onclick="selectProject('${escapeHtml(p.topic)}')">
+          <span class="ph-dot ${p.status}" style="width:6px;height:6px;box-shadow:none;"></span>
+          ${escapeHtml(p.topic.length > 30 ? p.topic.substring(0,28)+'…' : p.topic)}
+          <span class="project-chip-count">${p.active}</span>
+        </button>
+      `;
+    }).join('');
+    if (selectedProject) renderProjectDetail();
+  }
+
+  function selectProject(topic) {
+    selectedProject = topic;
+    document.querySelectorAll('.project-chip').forEach(c => c.classList.remove('active'));
+    const chip = Array.from(document.querySelectorAll('.project-chip')).find(c => c.textContent.includes(topic.substring(0,28)));
+    if (chip) chip.classList.add('active');
+    renderProjectDetail();
+    // Scroll suave a la vista por proyecto
+    document.querySelector('.project-view-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function renderProjectDetail() {
+    if (!currentData || !selectedProject) return;
+    const tasks = currentData.allTasks.filter(t => (t.topic || 'Sin proyecto') === selectedProject);
+    const ph = currentData.projectHealth.find(p => p.topic === selectedProject);
+    if (!ph) {
+      $('project-detail').innerHTML = '<div class="project-empty">Proyecto no encontrado</div>';
+      return;
+    }
+    const sortedTasks = [...tasks].sort((a, b) => b.score - a.score);
+    const statusLabel = ph.status === 'red' ? '🔴 En riesgo' : ph.status === 'yellow' ? '🟡 Requiere atención' : '🟢 OK';
+    $('project-detail').innerHTML = `
+      <div class="project-detail-header">
+        <div>
+          <div class="project-detail-title">${escapeHtml(selectedProject)}</div>
+          <div class="project-detail-meta">${statusLabel} · Score promedio ${ph.avgScore}${ph.ice ? ' · ICE máx '+Math.round(ph.ice) : ''}</div>
+        </div>
+        <button class="btn-ghost" onclick="window.open('https://www.notion.so/19d9903b4799837f8d9b81cad68f7a1d','_blank')">Ver en Notion</button>
+      </div>
+      <div class="project-mini-kpis">
+        <div class="project-mini-kpi">
+          <div class="project-mini-kpi-value">${ph.active}</div>
+          <div class="project-mini-kpi-label">Activas</div>
+        </div>
+        <div class="project-mini-kpi">
+          <div class="project-mini-kpi-value" style="color:var(--rojo);">${ph.overdue}</div>
+          <div class="project-mini-kpi-label">Vencidas</div>
+        </div>
+        <div class="project-mini-kpi">
+          <div class="project-mini-kpi-value" style="color:var(--naranja);">${ph.stagnant}</div>
+          <div class="project-mini-kpi-label">Estancadas</div>
+        </div>
+        <div class="project-mini-kpi">
+          <div class="project-mini-kpi-value">${ph.highPrio}</div>
+          <div class="project-mini-kpi-label">Alta prioridad</div>
         </div>
       </div>
-    `).join('');
+      <div class="project-task-list">
+        ${sortedTasks.length ? sortedTasks.map(t => taskRowHtml(t)).join('') : '<div class="project-empty">Sin tareas activas en este proyecto</div>'}
+      </div>
+    `;
+  }
+
+  // ============================================================
+  // DRAWER (lista filtrada al hacer click en KPI)
+  // ============================================================
+  function openDrawer(kind) {
+    if (!currentData) return;
+    let tasks = [];
+    let title = '';
+    let sub = '';
+    if (kind === 'activas') {
+      tasks = [...currentData.allTasks].sort((a, b) => b.score - a.score);
+      title = 'Tareas activas';
+      sub = `${tasks.length} pendientes · ordenadas por score`;
+    } else if (kind === 'vencidas') {
+      tasks = currentData.allTasks.filter(t => t.isOverdue).sort((a, b) => b.score - a.score);
+      title = 'Tareas vencidas';
+      sub = `${tasks.length} requieren acción inmediata`;
+    } else if (kind === 'estancadas') {
+      tasks = currentData.allTasks.filter(t => t.stagDays >= 5).sort((a, b) => b.stagDays - a.stagDays);
+      title = 'Tareas estancadas';
+      sub = `${tasks.length} con terceros sin movimiento 5+ días`;
+    } else if (kind === 'cerradas') {
+      tasks = currentData.doneRecent || [];
+      title = 'Tareas cerradas';
+      sub = `${tasks.length} cerradas en los últimos 7 días`;
+    }
+    setText('drawer-title', title);
+    setText('drawer-sub', sub);
+    $('drawer-body').innerHTML = tasks.length
+      ? tasks.map(t => kind === 'cerradas' ? doneTaskRowHtml(t) : taskRowHtml(t)).join('')
+      : '<div class="drawer-empty">Sin tareas en esta categoría</div>';
+    $('drawer').classList.add('open');
+    $('drawer-backdrop').classList.add('show');
+  }
+
+  function closeDrawer() {
+    $('drawer').classList.remove('open');
+    $('drawer-backdrop').classList.remove('show');
+  }
+
+  function doneTaskRowHtml(t) {
+    const closed = t.lastEdited ? new Date(t.lastEdited).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }) : '';
+    const meta = [];
+    if (t.topic) meta.push(escapeHtml(t.topic));
+    if (closed) meta.push(`Cerrada ${closed}`);
+    return `
+      <div class="task-row" style="opacity:0.85;">
+        <div class="task-score" style="background:#D1FAE5;color:var(--verde);border-color:#D1FAE5;">✓</div>
+        <div class="task-body">
+          <div class="task-title" title="${escapeHtml(t.title)}">${escapeHtml(t.title)}</div>
+          <div class="task-meta">${meta.map((m,i)=>i===0?`<span class="task-meta-item">${m}</span>`:`<span class="task-meta-dot"></span><span class="task-meta-item">${m}</span>`).join('')}</div>
+          <div class="task-actions">
+            <button class="btn-ghost" onclick="window.open('${t.url}','_blank')">Abrir en Notion</button>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   // ============================================================
