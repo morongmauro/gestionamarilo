@@ -1,4 +1,6 @@
 {
+  "buildCommand": "echo skip-build",
+  "outputDirectory": ".",
   "rewrites": [
     { "source": "/((?!api).*)", "destination": "/index.html" }
   ]
