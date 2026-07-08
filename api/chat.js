@@ -1,5 +1,5 @@
 const { chat } = require('../lib/chat');
-const { getDashboard } = require('../lib/notion');
+const { getDashboard } = require('../lib/db');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -11,7 +11,7 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'messages array requerido' });
     }
 
-    // Cargar contexto actual de Notion para que Claude tenga datos reales
+    // Cargar contexto actual de Supabase para que Claude tenga datos reales
     let dashboardData = null;
     try {
       dashboardData = await getDashboard();

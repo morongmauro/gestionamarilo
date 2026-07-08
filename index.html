@@ -778,6 +778,302 @@
     transition: all 0.3s; pointer-events: none;
   }
   .reload-indicator.show { opacity: 1; transform: translateY(0); }
+
+  /* ============================================
+     CAPTURA RÁPIDA
+     ============================================ */
+  .capture-card {
+    background: var(--blanco); border: 1px solid var(--borde);
+    border-left: 4px solid var(--amarillo);
+    border-radius: 18px; padding: 20px 22px; color: var(--negro);
+    box-shadow: var(--sombra-md); position: relative;
+  }
+  .capture-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.12em; color: var(--gris-500); margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .capture-label::before { content: '⚡'; font-size: 13px; }
+  .capture-input {
+    width: 100%; background: var(--blanco);
+    border: 1px solid var(--borde-fuerte); border-radius: 12px;
+    color: var(--negro); padding: 13px 14px; font-family: inherit;
+    font-size: 14px; line-height: 1.5; resize: none; outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .capture-input:focus { border-color: var(--amarillo); box-shadow: 0 0 0 3px var(--amarillo-glow); }
+  .capture-input::placeholder { color: var(--gris-500); opacity: 0.7; }
+  .capture-foot {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 12px; margin-top: 10px; flex-wrap: wrap;
+  }
+  .capture-hints { font-size: 11px; color: var(--gris-500); font-weight: 500; }
+  .capture-result { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .cap-chip {
+    background: var(--gris-100); color: var(--gris-700);
+    padding: 4px 10px; border-radius: 100px; font-size: 11px; font-weight: 600;
+  }
+  .cap-chip.ok { background: var(--amarillo); color: var(--negro); font-weight: 700; }
+  .cap-chip.bad { background: #FEE2E2; color: var(--rojo); }
+  .cap-edit {
+    background: transparent; border: 1px solid var(--borde-fuerte);
+    color: var(--gris-700); padding: 4px 10px; border-radius: 100px;
+    font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit;
+    transition: all 0.15s;
+  }
+  .cap-edit:hover { background: var(--negro); color: var(--blanco); border-color: var(--negro); }
+
+  /* ============================================
+     KANBAN
+     ============================================ */
+  .kanban { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; align-items: start; }
+  .kanban-col {
+    background: var(--blanco); border: 1px solid var(--borde);
+    border-radius: 16px; padding: 14px; min-height: 240px;
+    box-shadow: var(--sombra-sm); transition: outline 0.1s;
+  }
+  .kanban-col.dragover { outline: 2px dashed var(--amarillo); outline-offset: -4px; background: var(--amarillo-soft); }
+  .kanban-col-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px; padding: 0 4px;
+  }
+  .kanban-col-title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 700; color: var(--negro);
+  }
+  .kanban-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .kanban-list { display: flex; flex-direction: column; gap: 8px; min-height: 60px; }
+  .kanban-card {
+    background: var(--gris-50); border: 1px solid var(--borde);
+    border-radius: 12px; padding: 12px; cursor: grab;
+    transition: all 0.15s;
+  }
+  .kanban-card:hover { background: var(--blanco); border-color: var(--borde-fuerte); box-shadow: var(--sombra-sm); transform: translateY(-1px); }
+  .kanban-card:active { cursor: grabbing; }
+  .kanban-card-title { font-size: 13px; font-weight: 600; color: var(--negro); line-height: 1.4; }
+  .kanban-card.done .kanban-card-title { text-decoration: line-through; color: var(--gris-500); }
+  .kanban-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+  .kchip {
+    font-size: 10px; padding: 2px 8px; border-radius: 100px;
+    background: var(--gris-100); color: var(--gris-700); font-weight: 600;
+  }
+  .kchip.proj { background: var(--negro); color: var(--amarillo); }
+  .kchip.prio-high { background: #FEE2E2; color: var(--rojo); }
+  .kchip.prio-low { background: var(--gris-100); color: var(--gris-500); }
+  .kchip.due-over { background: #FEE2E2; color: var(--rojo); font-weight: 700; }
+  .kchip.due-soon { background: var(--amarillo-soft); color: #92400E; font-weight: 700; }
+  .kchip.link { background: #EDE9FE; color: #6D28D9; }
+
+  /* ============================================
+     MODALES
+     ============================================ */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    z-index: 300; display: none; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-backdrop.show { display: flex; animation: fadeIn 0.15s; }
+  .modal {
+    background: var(--blanco); border-radius: 18px;
+    width: 540px; max-width: 100%; max-height: 92vh;
+    overflow-y: auto; box-shadow: var(--sombra-lg);
+    display: flex; flex-direction: column;
+  }
+  .modal-header {
+    padding: 16px 20px; background: var(--negro); color: var(--blanco);
+    display: flex; justify-content: space-between; align-items: center;
+    border-radius: 18px 18px 0 0; position: sticky; top: 0; z-index: 2;
+  }
+  .modal-header h3 { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; }
+  .modal-close {
+    background: rgba(255,255,255,0.1); color: var(--blanco); border: none;
+    width: 30px; height: 30px; border-radius: 8px; cursor: pointer;
+    font-size: 17px; display: flex; align-items: center; justify-content: center;
+  }
+  .modal-close:hover { background: rgba(255,255,255,0.2); }
+  .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-field label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--gris-500);
+    display: block; margin-bottom: 6px;
+  }
+  .form-field input, .form-field select, .form-field textarea {
+    width: 100%; border: 1px solid var(--borde-fuerte); border-radius: 10px;
+    padding: 9px 12px; font-family: inherit; font-size: 13px;
+    color: var(--negro); background: var(--blanco); outline: none;
+    transition: border-color 0.15s;
+  }
+  .form-field input:focus, .form-field select:focus, .form-field textarea:focus { border-color: var(--negro); }
+  .form-field textarea { resize: vertical; min-height: 60px; }
+  .form-field input[type="range"] { padding: 0; accent-color: var(--amarillo); }
+  .modal-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 20px 20px; gap: 8px;
+  }
+  .btn-danger {
+    background: transparent; border: 1px solid #FECACA; color: var(--rojo);
+    padding: 8px 14px; border-radius: 8px; font-weight: 600; font-size: 12px;
+    cursor: pointer; font-family: inherit; transition: all 0.15s;
+  }
+  .btn-danger:hover { background: #FEE2E2; }
+
+  /* ============================================
+     PROYECTOS + GANTT
+     ============================================ */
+  .proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; }
+  .proj-card {
+    background: var(--blanco); border: 1px solid var(--borde);
+    border-radius: 16px; padding: 18px; box-shadow: var(--sombra-sm);
+    cursor: pointer; transition: all 0.18s;
+  }
+  .proj-card:hover { transform: translateY(-2px); box-shadow: var(--sombra-md); border-color: var(--borde-fuerte); }
+  .proj-card.selected { border-color: var(--negro); box-shadow: var(--sombra-md); }
+  .proj-card-head { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 10px; }
+  .proj-card-name { flex: 1; font-size: 14px; font-weight: 700; color: var(--negro); letter-spacing: -0.01em; line-height: 1.3; }
+  .proj-card-meta { font-size: 11px; color: var(--gris-500); font-weight: 500; margin-bottom: 12px; }
+  .proj-avance-track { height: 8px; background: var(--gris-100); border-radius: 100px; overflow: hidden; margin-bottom: 6px; }
+  .proj-avance-fill { height: 100%; background: var(--amarillo); border-radius: 100px; transition: width 0.4s; }
+  .proj-avance-label { font-size: 10px; color: var(--gris-500); font-weight: 600; margin-bottom: 12px; }
+  .proj-card-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+
+  .alert-banner {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    background: var(--amarillo-soft); border: 1px solid #FDE68A;
+    border-radius: 12px; padding: 12px 16px; margin-bottom: 16px;
+    font-size: 12px; font-weight: 600; color: #92400E;
+  }
+  .alert-banner.red { background: #FEE2E2; border-color: #FECACA; color: var(--rojo); }
+
+  .proj-panel {
+    background: var(--blanco); border: 1px solid var(--borde);
+    border-radius: 16px; padding: 22px; box-shadow: var(--sombra-sm);
+  }
+  .proj-status-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: 100px;
+    font-size: 11px; font-weight: 700;
+  }
+  .proj-status-badge.green { background: #D1FAE5; color: #065F46; }
+  .proj-status-badge.yellow { background: var(--amarillo-soft); color: #92400E; }
+  .proj-status-badge.red { background: #FEE2E2; color: var(--rojo); }
+
+  .crit-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 10px; border-radius: 8px; font-size: 11px; font-weight: 600;
+    background: var(--gris-50); border: 1px solid var(--borde);
+    color: var(--gris-700); cursor: pointer;
+  }
+  .crit-chip:hover { border-color: var(--borde-fuerte); background: var(--blanco); }
+  .crit-chip.retraso { border-color: #FECACA; background: #FEF2F2; color: var(--rojo); }
+  .crit-chip.proximidad { border-color: #FDE68A; background: #FFFBEB; color: #92400E; }
+
+  /* GANTT */
+  .gantt-scroll { overflow-x: auto; border: 1px solid var(--borde); border-radius: 12px; background: var(--blanco); }
+  .gantt { min-width: 920px; }
+  .gantt-grid-row { display: grid; grid-template-columns: 280px 1fr; }
+  .gantt-left {
+    padding: 9px 14px; border-right: 1px solid var(--borde);
+    display: flex; flex-direction: column; justify-content: center; gap: 2px;
+    min-width: 0;
+  }
+  .gantt-timeline { position: relative; min-height: 40px; }
+  .gantt-head { border-bottom: 1px solid var(--borde); background: var(--gris-50); border-radius: 12px 12px 0 0; }
+  .gantt-head .gantt-timeline { min-height: 32px; }
+  .gantt-head-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--gris-500);
+  }
+  .gantt-tick {
+    position: absolute; top: 0; bottom: 0;
+    border-left: 1px solid var(--borde);
+    pointer-events: none;
+  }
+  .gantt-tick-label {
+    position: absolute; top: 8px; font-size: 9px; font-weight: 600;
+    color: var(--gris-500); padding-left: 5px; white-space: nowrap;
+  }
+  .gantt-today-line {
+    position: absolute; top: 0; bottom: 0; width: 2px;
+    background: var(--negro); opacity: 0.55; z-index: 3; pointer-events: none;
+  }
+  .gantt-today-flag {
+    position: absolute; top: 2px; font-size: 8px; font-weight: 800;
+    background: var(--negro); color: var(--amarillo);
+    padding: 1px 5px; border-radius: 4px; z-index: 4; transform: translateX(-50%);
+  }
+  .gantt-section-row { background: var(--gris-100); border-top: 1px solid var(--borde); }
+  .gantt-section-row .gantt-left { flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; }
+  .gantt-section-name { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gris-700); }
+  .gantt-section-meta { font-size: 10px; color: var(--gris-500); font-weight: 600; }
+  .gantt-act-row { border-top: 1px solid var(--borde); }
+  .gantt-act-row:hover { background: var(--gris-50); }
+  .gantt-act-name {
+    font-size: 12px; font-weight: 600; color: var(--negro); cursor: pointer;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .gantt-act-name:hover { text-decoration: underline; }
+  .gantt-act-meta { font-size: 10px; color: var(--gris-500); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gantt-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .gantt-bar {
+    position: absolute; top: 50%; transform: translateY(-50%); height: 20px;
+    border-radius: 6px; cursor: pointer; z-index: 2;
+    transition: filter 0.15s; overflow: hidden;
+  }
+  .gantt-bar:hover { filter: brightness(0.92); }
+  .gantt-bar.warn-ring { box-shadow: 0 0 0 2px var(--naranja); }
+  .gantt-bar-fill { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(0,0,0,0.22); }
+  .gantt-bar-label {
+    position: absolute; left: 8px; top: 50%; transform: translateY(-50%);
+    font-size: 9px; font-weight: 800; color: rgba(0,0,0,0.55); white-space: nowrap;
+  }
+  .gantt-milestone {
+    position: absolute; top: 50%; width: 14px; height: 14px;
+    transform: translateY(-50%) rotate(45deg); border-radius: 3px;
+    cursor: pointer; z-index: 2;
+  }
+  .gantt-milestone:hover { filter: brightness(0.92); }
+  .gantt-milestone.warn-ring { box-shadow: 0 0 0 2px var(--naranja); }
+  .gantt-nodates {
+    position: absolute; top: 50%; transform: translateY(-50%); left: 8px;
+    background: transparent; border: 1px dashed var(--gris-300);
+    color: var(--gris-500); font-size: 10px; font-weight: 600;
+    padding: 3px 10px; border-radius: 100px; cursor: pointer; font-family: inherit;
+  }
+  .gantt-nodates:hover { border-color: var(--negro); color: var(--negro); }
+  .gantt-add-row { border-top: 1px solid var(--borde); }
+  .gantt-add-row .gantt-left { padding: 6px 14px; }
+  .gantt-add-input {
+    width: 100%; border: none; background: transparent;
+    font-family: inherit; font-size: 12px; color: var(--negro);
+    outline: none; padding: 4px 0;
+  }
+  .gantt-add-input::placeholder { color: var(--gris-500); font-weight: 500; }
+  .gantt-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-size: 10px; color: var(--gris-500); font-weight: 600; align-items: center; }
+  .gantt-legend span { display: flex; align-items: center; gap: 5px; }
+  .legend-sw { width: 14px; height: 8px; border-radius: 3px; display: inline-block; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translate(-50%, 16px);
+    background: var(--negro); color: var(--blanco);
+    padding: 12px 18px; border-radius: 12px;
+    font-size: 13px; font-weight: 600;
+    box-shadow: var(--sombra-lg); z-index: 500;
+    opacity: 0; pointer-events: none; transition: all 0.25s;
+    max-width: 90vw;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast.err { background: var(--rojo); }
+
+  @media (max-width: 900px) {
+    .kanban { grid-template-columns: 1fr; }
+    .console-grid { grid-template-columns: 1fr; }
+    .grid-kpis, .grid-charts-4 { grid-template-columns: 1fr; }
+  }
+
   .spinner {
     width: 12px; height: 12px;
     border: 2px solid rgba(255, 208, 0, 0.3);
@@ -797,7 +1093,7 @@
       <div class="logo-mark">M</div>
       <div class="header-title">
         <h1>Sistema de Gestión Mauro</h1>
-        <div class="subtitle" id="header-subtitle"><span class="live-dot"></span> Conectando a Notion...</div>
+        <div class="subtitle" id="header-subtitle"><span class="live-dot"></span> Conectando...</div>
       </div>
     </div>
     <div class="header-right">
@@ -809,6 +1105,8 @@
   <!-- TABS -->
   <div class="tabs">
     <button class="tab active" onclick="showTab(event, 'consola')">Consola Diaria</button>
+    <button class="tab" onclick="showTab(event, 'tareas')">Tareas</button>
+    <button class="tab" onclick="showTab(event, 'proyectos')">Proyectos</button>
     <button class="tab" onclick="showTab(event, 'dashboard')">Dashboard Semanal</button>
   </div>
 
@@ -923,15 +1221,75 @@
 
         <div class="side-card">
           <div class="side-card-title">Acciones rápidas</div>
-          <button class="quick-action-btn primary" onclick="loadData()"><span class="qa-icon">↻</span> Sincronizar Notion</button>
+          <button class="quick-action-btn primary" onclick="openTab('tareas')"><span class="qa-icon">+</span> Nueva tarea (captura rápida)</button>
+          <button class="quick-action-btn" onclick="openTab('proyectos')"><span class="qa-icon">📅</span> Proyectos y Gantt</button>
           <button class="quick-action-btn" onclick="openTab('dashboard')"><span class="qa-icon">📊</span> Ver dashboard</button>
-          <button class="quick-action-btn" onclick="window.open('https://www.notion.so/19d9903b4799837f8d9b81cad68f7a1d','_blank')"><span class="qa-icon">+</span> Nueva tarea en Notion</button>
+          <button class="quick-action-btn" onclick="loadData()"><span class="qa-icon">↻</span> Sincronizar</button>
           <button class="quick-action-btn primary" onclick="toggleChat()"><span class="qa-icon">💬</span> Preguntar a Claude</button>
         </div>
 
       </div>
 
     </div>
+  </div>
+
+  <!-- TAB: TAREAS (captura rápida + kanban) -->
+  <div id="tab-tareas" class="tab-content">
+
+    <div class="capture-card">
+      <div class="capture-label">Captura rápida</div>
+      <textarea id="capture-input" class="capture-input" rows="2"
+        placeholder="Escribe tu tarea y presiona Enter · ej: &quot;Enviar informe del piloto a Andrés, proyecto Facturación, urgente, para el viernes&quot;"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitCapture();}"></textarea>
+      <div class="capture-foot">
+        <div class="capture-hints">Solo la descripción es obligatoria. Si mencionas proyecto, prioridad, esfuerzo, tipo de gestión o fecha límite, los reconozco solos.</div>
+        <button class="btn-yellow" id="capture-btn" onclick="submitCapture()">＋ Registrar</button>
+      </div>
+      <div class="capture-result" id="capture-result"></div>
+    </div>
+
+    <div class="kanban" style="margin-top:16px;">
+      <div class="kanban-col" ondragover="kbAllowDrop(event)" ondragleave="kbLeave(event)" ondrop="kbDrop(event,'todo')">
+        <div class="kanban-col-header">
+          <div class="kanban-col-title"><span class="kanban-dot" style="background:var(--gris-300);"></span> Por hacer</div>
+          <div class="bandeja-count" id="kb-count-todo">0</div>
+        </div>
+        <div class="kanban-list" id="kb-list-todo"></div>
+      </div>
+      <div class="kanban-col" ondragover="kbAllowDrop(event)" ondragleave="kbLeave(event)" ondrop="kbDrop(event,'doing')">
+        <div class="kanban-col-header">
+          <div class="kanban-col-title"><span class="kanban-dot" style="background:var(--amarillo);"></span> En curso</div>
+          <div class="bandeja-count" id="kb-count-doing">0</div>
+        </div>
+        <div class="kanban-list" id="kb-list-doing"></div>
+      </div>
+      <div class="kanban-col" ondragover="kbAllowDrop(event)" ondragleave="kbLeave(event)" ondrop="kbDrop(event,'done')">
+        <div class="kanban-col-header">
+          <div class="kanban-col-title"><span class="kanban-dot" style="background:var(--verde);"></span> Hechas <span style="font-weight:500;color:var(--gris-500);">(últimos 7 días)</span></div>
+          <div class="bandeja-count" id="kb-count-done">0</div>
+        </div>
+        <div class="kanban-list" id="kb-list-done"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TAB: PROYECTOS (portafolio + gantt) -->
+  <div id="tab-proyectos" class="tab-content">
+
+    <div id="proj-alerts"></div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;flex-wrap:wrap;">
+      <div class="section-title" style="margin:0;">Portafolio de proyectos</div>
+      <button class="btn-dark" onclick="openProjectModal()">＋ Nuevo proyecto</button>
+    </div>
+
+    <div class="proj-grid" id="proj-grid">
+      <div class="project-empty">Cargando proyectos...</div>
+    </div>
+
+    <div id="proj-detail" style="margin-top:20px;"></div>
+
   </div>
 
   <!-- TAB 2: DASHBOARD -->
@@ -1075,9 +1433,186 @@
 
 </div>
 
+<!-- MODAL: TAREA -->
+<div class="modal-backdrop" id="task-modal" onclick="if(event.target===this)closeModal('task-modal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="tm-title">Editar tarea</h3>
+      <button class="modal-close" onclick="closeModal('task-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label>Descripción *</label>
+        <textarea id="tm-desc" rows="2" placeholder="Qué hay que hacer"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Proyecto</label>
+          <select id="tm-project" onchange="onTaskProjectChange()"></select>
+        </div>
+        <div class="form-field">
+          <label>Actividad del Gantt (opcional)</label>
+          <select id="tm-activity"><option value="">— Sin vincular —</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Prioridad</label>
+          <select id="tm-priority">
+            <option value="">— Sin definir —</option>
+            <option value="High">Alta</option>
+            <option value="Medium">Media</option>
+            <option value="Low">Baja</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Esfuerzo</label>
+          <select id="tm-effort">
+            <option value="">— Sin definir —</option>
+            <option value="Small">Pequeño (quick win)</option>
+            <option value="Medium">Medio</option>
+            <option value="Large">Grande</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Tipo de gestión</label>
+          <select id="tm-tipo">
+            <option value="Propia">Propia (yo ejecuto)</option>
+            <option value="Compartida">Compartida</option>
+            <option value="Depende Tercero">Depende de tercero</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Fecha límite (opcional)</label>
+          <input type="date" id="tm-due">
+        </div>
+      </div>
+      <div class="form-field">
+        <label>Estado</label>
+        <select id="tm-status">
+          <option value="todo">Por hacer</option>
+          <option value="doing">En curso</option>
+          <option value="done">Hecha</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-danger" id="tm-delete" onclick="deleteTaskFromModal()">Eliminar</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-ghost" onclick="closeModal('task-modal')">Cancelar</button>
+        <button class="btn-yellow" style="padding:8px 18px;font-size:12px;" onclick="saveTask()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ACTIVIDAD DEL GANTT -->
+<div class="modal-backdrop" id="activity-modal" onclick="if(event.target===this)closeModal('activity-modal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="am-title">Editar actividad</h3>
+      <button class="modal-close" onclick="closeModal('activity-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label>Nombre de la actividad *</label>
+        <input type="text" id="am-name" placeholder="Ej: Levantar requerimientos con el área">
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Fase / sección</label>
+          <select id="am-section"></select>
+        </div>
+        <div class="form-field">
+          <label>Responsable</label>
+          <input type="text" id="am-responsable" placeholder="Nombre (opcional)">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Fecha inicio (opcional)</label>
+          <input type="date" id="am-start">
+        </div>
+        <div class="form-field">
+          <label>Deadline (opcional)</label>
+          <input type="date" id="am-deadline">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Estado</label>
+          <select id="am-status">
+            <option value="pendiente">Pendiente</option>
+            <option value="en_curso">En curso</option>
+            <option value="completada">Completada</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>% de cumplimiento: <strong id="am-pct-label" style="color:var(--negro);">0%</strong></label>
+          <input type="range" id="am-pct" min="0" max="100" step="5" value="0"
+            oninput="document.getElementById('am-pct-label').textContent=this.value+'%'">
+        </div>
+      </div>
+      <div class="form-field">
+        <label>Depende de (opcional, no restrictivo)</label>
+        <select id="am-depends"><option value="">— Ninguna —</option></select>
+      </div>
+      <div class="form-field">
+        <label>Notas</label>
+        <textarea id="am-notes" rows="2" placeholder="Contexto, acuerdos, próximos pasos..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-danger" id="am-delete" onclick="deleteActivityFromModal()">Eliminar</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-ghost" onclick="closeModal('activity-modal')">Cancelar</button>
+        <button class="btn-yellow" style="padding:8px 18px;font-size:12px;" onclick="saveActivity()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PROYECTO -->
+<div class="modal-backdrop" id="project-modal" onclick="if(event.target===this)closeModal('project-modal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="pm-title">Nuevo proyecto</h3>
+      <button class="modal-close" onclick="closeModal('project-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label>Nombre del proyecto *</label>
+        <input type="text" id="pm-name" placeholder="Ej: Automatización de facturación">
+      </div>
+      <div class="form-field">
+        <label>Responsable</label>
+        <input type="text" id="pm-responsable" placeholder="Nombre (opcional)">
+      </div>
+      <div class="form-field">
+        <label>Descripción</label>
+        <textarea id="pm-desc" rows="2" placeholder="De qué se trata (opcional)"></textarea>
+      </div>
+      <div style="font-size:11px;color:var(--gris-500);background:var(--gris-50);border:1px solid var(--borde);border-radius:10px;padding:10px 12px;" id="pm-hint">
+        Al crearlo se generan automáticamente las 4 fases del Gantt: <strong>Planeación · Ejecución piloto · Seguimiento · Implementación al negocio</strong>. Luego solo escribes actividades dentro de cada fase.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-danger" id="pm-delete" onclick="deleteProjectFromModal()" style="display:none;">Eliminar proyecto</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-ghost" onclick="closeModal('project-modal')">Cancelar</button>
+        <button class="btn-yellow" style="padding:8px 18px;font-size:12px;" onclick="saveProject()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <div class="reload-indicator" id="reload-indicator">
   <div class="spinner"></div>
-  <span>Sincronizando con Notion...</span>
+  <span>Sincronizando...</span>
 </div>
 
 <!-- CHAT FLOTANTE -->
@@ -1103,7 +1638,7 @@
   <div class="chat-messages" id="chat-messages">
     <div class="chat-msg bot">
       <div class="chat-msg-avatar">⚡</div>
-      <div class="chat-msg-bubble">Hola Mauro. Tengo acceso a tu Notion en vivo. Pregúntame qué hacer hoy, pídeme que redacte un mensaje, o pide guía estratégica sobre tus proyectos.</div>
+      <div class="chat-msg-bubble">Hola Mauro. Tengo acceso a tus tareas y proyectos en vivo. Pregúntame qué hacer hoy, pídeme que redacte un mensaje, o pide guía estratégica sobre tus proyectos.</div>
     </div>
   </div>
 
@@ -1138,6 +1673,8 @@
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     if (ev) ev.target.classList.add('active');
     $('tab-' + tabName).classList.add('active');
+    if (tabName === 'proyectos') loadProjects();
+    if (tabName === 'tareas') setTimeout(() => $('capture-input').focus(), 100);
   }
   function openTab(tabName) {
     document.querySelectorAll('.tab').forEach((t, i) => {
@@ -1159,8 +1696,9 @@
       currentData = data;
       renderConsola(data);
       renderDashboard(data);
+      renderKanban(data);
       updateHeaderDateTime();
-      $('header-subtitle').innerHTML = '<span class="live-dot"></span> Conectado a Notion · ' + new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'});
+      $('header-subtitle').innerHTML = '<span class="live-dot"></span> Conectado a Supabase · ' + new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'});
     } catch (err) {
       console.error(err);
       $('header-subtitle').innerHTML = '<span class="live-dot" style="background:#EF4444;box-shadow:0 0 0 3px rgba(239,68,68,0.2)"></span> Error: ' + err.message;
@@ -1204,7 +1742,7 @@
     $('foco-meta').innerHTML = chips.join('');
     $('foco-actions').innerHTML = `
       <button class="btn-foco-yellow" onclick="markDone('${foco.id}', this)">✓ Marcar done</button>
-      <button class="btn-foco-ghost" onclick="window.open('${foco.url}','_blank')">Abrir en Notion</button>
+      <button class="btn-foco-ghost" onclick="openTaskModal('${foco.id}')">✎ Editar</button>
     `;
   }
 
@@ -1246,7 +1784,7 @@
           <div class="task-meta">${meta}</div>
           <div class="task-actions">
             <button class="btn-yellow" onclick="markDone('${t.id}', this)">✓ Done</button>
-            <button class="btn-ghost" onclick="window.open('${t.url}','_blank')">Notion</button>
+            <button class="btn-ghost" onclick="openTaskModal('${t.id}')">✎ Editar</button>
           </div>
         </div>
       </div>
@@ -1440,7 +1978,7 @@
           <div class="project-detail-title">${escapeHtml(selectedProject)}</div>
           <div class="project-detail-meta">${statusLabel} · Score promedio ${ph.avgScore}${ph.ice ? ' · ICE máx '+Math.round(ph.ice) : ''}</div>
         </div>
-        <button class="btn-ghost" onclick="window.open('https://www.notion.so/19d9903b4799837f8d9b81cad68f7a1d','_blank')">Ver en Notion</button>
+        <button class="btn-ghost" onclick="openTab('proyectos')">Abrir módulo de proyectos</button>
       </div>
       <div class="project-mini-kpis">
         <div class="project-mini-kpi">
@@ -1517,7 +2055,7 @@
           <div class="task-title" title="${escapeHtml(t.title)}">${escapeHtml(t.title)}</div>
           <div class="task-meta">${meta.map((m,i)=>i===0?`<span class="task-meta-item">${m}</span>`:`<span class="task-meta-dot"></span><span class="task-meta-item">${m}</span>`).join('')}</div>
           <div class="task-actions">
-            <button class="btn-ghost" onclick="window.open('${t.url}','_blank')">Abrir en Notion</button>
+            <button class="btn-ghost" onclick="openTaskModal('${t.id}')">✎ Editar / reabrir</button>
           </div>
         </div>
       </div>
@@ -1639,6 +2177,773 @@
     } finally {
       $('chat-send').disabled = false;
       $('chat-input').focus();
+    }
+  }
+
+  // ============================================================
+  // HELPERS API / FECHAS / TOAST
+  // ============================================================
+  const DAYMS = 86400000;
+
+  async function api(path, method = 'GET', body) {
+    const res = await fetch(path, {
+      method,
+      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.error) throw new Error(data.error || 'Error de conexión');
+    return data;
+  }
+
+  let toastTimer = null;
+  function toast(msg, ok = true) {
+    const el = $('toast');
+    el.textContent = msg;
+    el.classList.toggle('err', !ok);
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+  }
+
+  function todayISO() {
+    return new Date().toLocaleDateString('en-CA');
+  }
+  function addDays(iso, n) {
+    const d = new Date(iso + 'T12:00:00Z');
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+  }
+  function dayDiff(a, b) {
+    return Math.round((new Date(b + 'T12:00:00Z') - new Date(a + 'T12:00:00Z')) / DAYMS);
+  }
+  function fmtDate(iso) {
+    if (!iso) return '—';
+    return new Date(iso + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+  }
+  function fmtDateLong(iso) {
+    if (!iso) return 'Sin definir';
+    return new Date(iso + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+  function dueLabel(iso) {
+    const days = dayDiff(todayISO(), iso);
+    if (days < 0) return `Venció hace ${Math.abs(days)}d`;
+    if (days === 0) return 'Vence HOY';
+    if (days === 1) return 'Vence mañana';
+    return `Vence en ${days}d`;
+  }
+
+  // ============================================================
+  // CAPTURA RÁPIDA
+  // ============================================================
+  const PRIO_LABEL = { High: 'Alta', Medium: 'Media', Low: 'Baja' };
+  const EFFORT_LABEL = { Small: 'Pequeño', Medium: 'Medio', Large: 'Grande' };
+
+  async function submitCapture() {
+    const input = $('capture-input');
+    const text = input.value.trim();
+    if (!text) return;
+    const btn = $('capture-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Registrando...';
+    $('capture-result').innerHTML = '<span class="cap-chip">Interpretando tu tarea...</span>';
+    try {
+      const data = await api('/api/capture', 'POST', { text });
+      input.value = '';
+      tasksIndex[data.task.id] = data.task;
+      const p = data.parsed;
+      const chips = ['<span class="cap-chip ok">✓ Tarea registrada</span>'];
+      if (p.project) chips.push(`<span class="cap-chip">📁 ${escapeHtml(p.project)}${data.projectCreated ? ' (proyecto nuevo)' : ''}</span>`);
+      if (p.priority) chips.push(`<span class="cap-chip">Prioridad ${PRIO_LABEL[p.priority] || p.priority}</span>`);
+      if (p.effort) chips.push(`<span class="cap-chip">Esfuerzo ${EFFORT_LABEL[p.effort] || p.effort}</span>`);
+      if (p.tipo_gestion) chips.push(`<span class="cap-chip">${escapeHtml(p.tipo_gestion)}</span>`);
+      if (p.due_date) chips.push(`<span class="cap-chip">📅 ${fmtDate(p.due_date)}</span>`);
+      chips.push(`<button class="cap-edit" onclick="openTaskModal('${data.task.id}')">✎ Editar</button>`);
+      $('capture-result').innerHTML = chips.join('');
+      if (data.projectCreated) projectsCache = null;
+      loadData();
+    } catch (e) {
+      $('capture-result').innerHTML = `<span class="cap-chip bad">⚠ ${escapeHtml(e.message)}</span>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '＋ Registrar';
+      input.focus();
+    }
+  }
+
+  // ============================================================
+  // KANBAN
+  // ============================================================
+  let tasksIndex = {};
+
+  function kanbanChip(t) {
+    const chips = [];
+    if (t.topic) chips.push(`<span class="kchip proj">${escapeHtml(t.topic)}</span>`);
+    if (t.priority === 'High') chips.push('<span class="kchip prio-high">Alta</span>');
+    else if (t.priority === 'Low') chips.push('<span class="kchip prio-low">Baja</span>');
+    if (t.dueDate) {
+      const days = dayDiff(todayISO(), t.dueDate);
+      const cls = t.kanbanStatus !== 'done' && days < 0 ? 'due-over' : t.kanbanStatus !== 'done' && days <= 3 ? 'due-soon' : '';
+      chips.push(`<span class="kchip ${cls}">📅 ${fmtDate(t.dueDate)}</span>`);
+    }
+    if (t.effortLevel === 'Small') chips.push('<span class="kchip">⚡ Quick win</span>');
+    if (t.tipoGestion && t.tipoGestion !== 'Propia') chips.push(`<span class="kchip">${escapeHtml(t.tipoGestion)}</span>`);
+    if (t.activityName) chips.push(`<span class="kchip link">⛓ ${escapeHtml(t.activityName)}</span>`);
+    return chips.join('');
+  }
+
+  function kanbanCardHtml(t) {
+    return `
+      <div class="kanban-card ${t.kanbanStatus === 'done' ? 'done' : ''}" draggable="true"
+           ondragstart="kbDragStart(event,'${t.id}')" onclick="openTaskModal('${t.id}')">
+        <div class="kanban-card-title">${escapeHtml(t.title)}</div>
+        <div class="kanban-chips">${kanbanChip(t)}</div>
+      </div>
+    `;
+  }
+
+  function renderKanban(data) {
+    tasksIndex = {};
+    const active = data.allTasks || [];
+    const done = data.doneRecent || [];
+    [...active, ...done].forEach(t => { tasksIndex[t.id] = t; });
+    const cols = {
+      todo: active.filter(t => t.kanbanStatus === 'todo').sort((a, b) => b.score - a.score),
+      doing: active.filter(t => t.kanbanStatus === 'doing').sort((a, b) => b.score - a.score),
+      done,
+    };
+    for (const k of ['todo', 'doing', 'done']) {
+      $('kb-count-' + k).textContent = cols[k].length;
+      $('kb-list-' + k).innerHTML = cols[k].length
+        ? cols[k].map(kanbanCardHtml).join('')
+        : '<div class="bandeja-empty">Arrastra tareas aquí</div>';
+    }
+  }
+
+  function kbDragStart(ev, id) {
+    ev.dataTransfer.setData('text/plain', id);
+    ev.dataTransfer.effectAllowed = 'move';
+  }
+  function kbAllowDrop(ev) {
+    ev.preventDefault();
+    ev.currentTarget.classList.add('dragover');
+  }
+  function kbLeave(ev) {
+    ev.currentTarget.classList.remove('dragover');
+  }
+  async function kbDrop(ev, status) {
+    ev.preventDefault();
+    ev.currentTarget.classList.remove('dragover');
+    const id = ev.dataTransfer.getData('text/plain');
+    const t = tasksIndex[id];
+    if (!id || !t || t.kanbanStatus === status) return;
+    try {
+      await api('/api/tasks/' + id, 'PATCH', { status });
+      toast(status === 'done' ? '✓ Tarea completada' : '✓ Tarea movida');
+      loadData();
+    } catch (e) {
+      toast('⚠ ' + e.message, false);
+    }
+  }
+
+  // ============================================================
+  // MODAL DE TAREA
+  // ============================================================
+  let projectsCache = null;
+  let editingTaskId = null;
+
+  function openModal(id) { $(id).classList.add('show'); }
+  function closeModal(id) { $(id).classList.remove('show'); }
+
+  async function ensureProjects(force) {
+    if (!projectsCache || force) {
+      const d = await api('/api/projects');
+      projectsCache = d.projects;
+    }
+    return projectsCache;
+  }
+
+  function findTask(id) {
+    if (tasksIndex[id]) return tasksIndex[id];
+    if (currentProjectDetail) return (currentProjectDetail.tasks || []).find(t => t.id === id) || null;
+    return null;
+  }
+
+  async function openTaskModal(id) {
+    if (typeof event !== 'undefined' && event && event.stopPropagation) event.stopPropagation();
+    const t = id ? findTask(id) : null;
+    if (id && !t) { toast('⚠ No encontré la tarea, sincronizando...', false); loadData(); return; }
+    editingTaskId = id || null;
+    $('tm-title').textContent = id ? 'Editar tarea' : 'Nueva tarea';
+    $('tm-desc').value = t ? (t.title || '') : '';
+    $('tm-priority').value = t && t.priority ? t.priority : '';
+    $('tm-effort').value = t && t.effortLevel ? t.effortLevel : '';
+    $('tm-tipo').value = t && t.tipoGestion ? t.tipoGestion : 'Propia';
+    $('tm-due').value = t && t.dueDate ? t.dueDate : '';
+    $('tm-status').value = t ? t.kanbanStatus : 'todo';
+    $('tm-delete').style.display = id ? '' : 'none';
+    try { await ensureProjects(); } catch { projectsCache = projectsCache || []; }
+    fillTaskProjectSelect(t ? t.projectId : null);
+    openModal('task-modal');
+    fillActivityOptions(t ? t.projectId : null, t ? t.activityId : null);
+    setTimeout(() => $('tm-desc').focus(), 100);
+  }
+
+  function fillTaskProjectSelect(selectedId) {
+    const sel = $('tm-project');
+    const opts = ['<option value="">— Sin proyecto —</option>'];
+    (projectsCache || []).forEach(p => {
+      opts.push(`<option value="${p.id}">${escapeHtml(p.name)}</option>`);
+    });
+    opts.push('<option value="__new__">＋ Crear proyecto nuevo…</option>');
+    sel.innerHTML = opts.join('');
+    sel.value = selectedId || '';
+    if (sel.value !== (selectedId || '')) sel.value = '';
+  }
+
+  async function onTaskProjectChange() {
+    const sel = $('tm-project');
+    if (sel.value === '__new__') {
+      const name = prompt('Nombre del proyecto nuevo:');
+      if (!name || !name.trim()) { sel.value = ''; return; }
+      try {
+        const d = await api('/api/projects', 'POST', { name: name.trim() });
+        projectsCache = null;
+        await ensureProjects();
+        fillTaskProjectSelect(d.project.id);
+        toast('✓ Proyecto creado con sus 4 fases');
+      } catch (e) {
+        toast('⚠ ' + e.message, false);
+        sel.value = '';
+      }
+    }
+    fillActivityOptions(sel.value && sel.value !== '__new__' ? sel.value : null, null);
+  }
+
+  async function fillActivityOptions(projectId, selected) {
+    const sel = $('tm-activity');
+    sel.innerHTML = '<option value="">— Sin vincular —</option>';
+    if (!projectId) { sel.disabled = true; return; }
+    sel.disabled = false;
+    try {
+      const d = await api('/api/projects/' + projectId);
+      sel.innerHTML = '<option value="">— Sin vincular —</option>' +
+        d.project.activities.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
+      if (selected) sel.value = selected;
+    } catch { /* sin actividades disponibles */ }
+  }
+
+  async function saveTask() {
+    const projVal = $('tm-project').value;
+    const body = {
+      description: $('tm-desc').value.trim(),
+      projectId: projVal && projVal !== '__new__' ? projVal : null,
+      activityId: $('tm-activity').value || null,
+      priority: $('tm-priority').value || null,
+      effortLevel: $('tm-effort').value || null,
+      tipoGestion: $('tm-tipo').value || 'Propia',
+      dueDate: $('tm-due').value || null,
+      status: $('tm-status').value,
+    };
+    if (!body.description) { toast('⚠ La descripción es obligatoria', false); return; }
+    try {
+      if (editingTaskId) await api('/api/tasks/' + editingTaskId, 'PATCH', body);
+      else await api('/api/tasks', 'POST', body);
+      closeModal('task-modal');
+      toast('✓ Tarea guardada');
+      loadData();
+      if (currentProjectDetail) refreshProjectDetail();
+    } catch (e) {
+      toast('⚠ ' + e.message, false);
+    }
+  }
+
+  async function deleteTaskFromModal() {
+    if (!editingTaskId) return;
+    if (!confirm('¿Eliminar esta tarea definitivamente?')) return;
+    try {
+      await api('/api/tasks/' + editingTaskId, 'DELETE');
+      closeModal('task-modal');
+      toast('Tarea eliminada');
+      loadData();
+      if (currentProjectDetail) refreshProjectDetail();
+    } catch (e) {
+      toast('⚠ ' + e.message, false);
+    }
+  }
+
+  // ============================================================
+  // PROYECTOS · PORTAFOLIO
+  // ============================================================
+  let currentProjectDetail = null;
+
+  async function loadProjects(force) {
+    try {
+      if (!projectsCache || force) {
+        const d = await api('/api/projects');
+        projectsCache = d.projects;
+      }
+      renderProjects();
+    } catch (e) {
+      $('proj-grid').innerHTML = `<div class="project-empty">⚠ ${escapeHtml(e.message)}</div>`;
+    }
+  }
+
+  function renderProjects() {
+    const ps = projectsCache || [];
+    const retrasos = ps.reduce((s, p) => s + (p.summary ? p.summary.retrasos : 0), 0);
+    const proximas = ps.reduce((s, p) => s + (p.summary ? p.summary.proximas : 0), 0);
+    if (retrasos || proximas) {
+      const parts = [];
+      if (retrasos) parts.push(`<strong>${retrasos} actividad${retrasos === 1 ? '' : 'es'} retrasada${retrasos === 1 ? '' : 's'}</strong>`);
+      if (proximas) parts.push(`${proximas} próxima${proximas === 1 ? '' : 's'} a vencer (≤7 días)`);
+      $('proj-alerts').innerHTML = `<div class="alert-banner ${retrasos ? 'red' : ''}">⚠ ${parts.join(' · ')} en tu portafolio</div>`;
+    } else {
+      $('proj-alerts').innerHTML = '';
+    }
+    $('proj-grid').innerHTML = ps.length
+      ? ps.map(projCardHtml).join('')
+      : '<div class="project-empty">Aún no tienes proyectos. Crea el primero con "＋ Nuevo proyecto" o corre la migración desde Notion.</div>';
+  }
+
+  function projCardHtml(p) {
+    const s = p.summary || {};
+    const selected = currentProjectDetail && currentProjectDetail.id === p.id;
+    const chips = [];
+    if (s.retrasos) chips.push(`<span class="kchip due-over">${s.retrasos} retrasada${s.retrasos === 1 ? '' : 's'}</span>`);
+    if (s.proximas) chips.push(`<span class="kchip due-soon">${s.proximas} próxima${s.proximas === 1 ? '' : 's'}</span>`);
+    chips.push(`<span class="kchip">${s.totalActividades || 0} actividades</span>`);
+    if (s.tareasActivas) chips.push(`<span class="kchip">${s.tareasActivas} tareas activas</span>`);
+    return `
+      <div class="proj-card ${selected ? 'selected' : ''}" onclick="openProject('${p.id}')">
+        <div class="proj-card-head">
+          <span class="ph-dot ${s.status || 'green'}" style="margin-top:4px;"></span>
+          <div class="proj-card-name">${escapeHtml(p.name)}</div>
+        </div>
+        <div class="proj-card-meta">${p.responsable ? '👤 ' + escapeHtml(p.responsable) + ' · ' : ''}Fin: ${fmtDate(s.fechaFinal)}</div>
+        <div class="proj-avance-track"><div class="proj-avance-fill" style="width:${s.avance || 0}%;"></div></div>
+        <div class="proj-avance-label">${s.avance || 0}% de cumplimiento · ${s.completadas || 0}/${s.totalActividades || 0} completadas</div>
+        <div class="proj-card-chips">${chips.join('')}</div>
+      </div>
+    `;
+  }
+
+  async function openProject(id) {
+    $('proj-detail').innerHTML = '<div class="proj-panel"><div class="project-empty">Cargando proyecto...</div></div>';
+    try {
+      const d = await api('/api/projects/' + id);
+      currentProjectDetail = d.project;
+      renderProjects();
+      renderProjectPanel();
+      $('proj-detail').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (e) {
+      $('proj-detail').innerHTML = `<div class="proj-panel"><div class="project-empty">⚠ ${escapeHtml(e.message)}</div></div>`;
+    }
+  }
+
+  async function refreshProjectDetail() {
+    if (!currentProjectDetail) return;
+    try {
+      const d = await api('/api/projects/' + currentProjectDetail.id);
+      currentProjectDetail = d.project;
+      renderProjectPanel();
+      ensureProjects(true).then(renderProjects).catch(() => {});
+    } catch (e) {
+      toast('⚠ ' + e.message, false);
+    }
+  }
+
+  // ============================================================
+  // PROYECTOS · PANEL DE DETALLE + GANTT
+  // ============================================================
+  const GANTT_COLORS = { completada: '#10B981', retrasada: '#EF4444', en_curso: '#FFD000', pendiente: '#D4D4D4' };
+  const ACT_STATUS_LABEL = { pendiente: 'Pendiente', en_curso: 'En curso', completada: 'Completada', retrasada: 'Retrasada' };
+
+  function renderProjectPanel() {
+    const det = currentProjectDetail;
+    if (!det) return;
+    const s = det.summary;
+    const badge = s.status === 'red' ? '<span class="proj-status-badge red">🔴 Con retrasos</span>'
+      : s.status === 'yellow' ? '<span class="proj-status-badge yellow">🟡 Deadlines cerca</span>'
+      : '<span class="proj-status-badge green">🟢 Al día</span>';
+
+    const criticas = s.fechasCriticas.length
+      ? `<div style="margin-top:14px;">
+           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--gris-500);margin-bottom:8px;">Fechas críticas</div>
+           <div style="display:flex;flex-wrap:wrap;gap:6px;">
+             ${s.fechasCriticas.map(c => `
+               <span class="crit-chip ${c.alerta}" onclick="openActivityModal('${c.id}')">
+                 ${c.alerta === 'retraso' ? '⏰' : '⚠'} ${escapeHtml(c.name)} · ${fmtDate(c.deadline)}
+                 ${c.alerta === 'retraso' ? `(hace ${Math.abs(c.diasRestantes)}d)` : `(en ${c.diasRestantes}d)`}
+               </span>`).join('')}
+           </div>
+         </div>`
+      : '';
+
+    const activeTasks = (det.tasks || []).filter(t => t.kanbanStatus !== 'done').sort((a, b) => b.score - a.score);
+
+    $('proj-detail').innerHTML = `
+      <div class="proj-panel">
+        <div class="project-detail-header">
+          <div>
+            <div class="project-detail-title">${escapeHtml(det.name)} ${badge}</div>
+            <div class="project-detail-meta">
+              👤 Responsable: ${det.responsable ? escapeHtml(det.responsable) : 'sin asignar'}
+              <button class="btn-ghost" style="padding:2px 8px;font-size:10px;margin-left:6px;" onclick="editResponsable()">✎</button>
+              ${det.descripcion ? ' · ' + escapeHtml(det.descripcion) : ''}
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn-ghost" onclick="openProjectModal('${det.id}')">✎ Editar proyecto</button>
+          </div>
+        </div>
+
+        <div class="project-mini-kpis" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));">
+          <div class="project-mini-kpi">
+            <div class="project-mini-kpi-value">${s.avance}%</div>
+            <div class="project-mini-kpi-label">Cumplimiento</div>
+          </div>
+          <div class="project-mini-kpi">
+            <div class="project-mini-kpi-value" style="font-size:16px;padding-top:4px;">${fmtDate(s.fechaFinal)}</div>
+            <div class="project-mini-kpi-label">Fecha final</div>
+          </div>
+          <div class="project-mini-kpi">
+            <div class="project-mini-kpi-value">${s.completadas}/${s.totalActividades}</div>
+            <div class="project-mini-kpi-label">Actividades</div>
+          </div>
+          <div class="project-mini-kpi">
+            <div class="project-mini-kpi-value" style="color:${s.retrasos ? 'var(--rojo)' : 'var(--verde)'};">${s.retrasos}</div>
+            <div class="project-mini-kpi-label">Retrasadas</div>
+          </div>
+          <div class="project-mini-kpi">
+            <div class="project-mini-kpi-value" style="color:${s.proximas ? 'var(--naranja)' : 'var(--negro)'};">${s.proximas}</div>
+            <div class="project-mini-kpi-label">Próximas 7d</div>
+          </div>
+          <div class="project-mini-kpi">
+            <div class="project-mini-kpi-value">${s.tareasActivas}</div>
+            <div class="project-mini-kpi-label">Tareas día a día</div>
+          </div>
+        </div>
+
+        ${criticas}
+
+        <div style="margin-top:20px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--gris-500);">Cronograma (Gantt)</div>
+            <div style="font-size:10px;color:var(--gris-500);font-weight:500;">Escribe la actividad en su fase y Enter. Las fechas son opcionales — agrégalas cuando quieras haciendo click.</div>
+          </div>
+          ${ganttHtml(det)}
+          <div class="gantt-legend">
+            <span><span class="legend-sw" style="background:#D4D4D4;"></span>Pendiente</span>
+            <span><span class="legend-sw" style="background:#FFD000;"></span>En curso</span>
+            <span><span class="legend-sw" style="background:#10B981;"></span>Completada</span>
+            <span><span class="legend-sw" style="background:#EF4444;"></span>Retrasada</span>
+            <span><span class="legend-sw" style="background:#FFD000;box-shadow:0 0 0 2px var(--naranja);"></span>Vence ≤7 días</span>
+            <span>◆ Solo deadline (hito)</span>
+          </div>
+        </div>
+
+        <div style="margin-top:22px;">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--gris-500);margin-bottom:10px;">
+            Tareas del día a día vinculadas (${activeTasks.length} activas)
+          </div>
+          <div class="project-task-list">
+            ${activeTasks.length ? activeTasks.map(t => taskRowHtml(t)).join('') : '<div class="project-empty">Sin tareas activas. Regístralas desde la pestaña Tareas mencionando este proyecto.</div>'}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function ganttHtml(det) {
+    const acts = det.activities || [];
+    const today = det.summary.today || todayISO();
+
+    // Rango del gráfico: incluye hoy y todas las fechas, con margen. Nada es obligatorio.
+    const allDates = [today];
+    acts.forEach(a => { if (a.startDate) allDates.push(a.startDate); if (a.deadline) allDates.push(a.deadline); });
+    allDates.sort();
+    let min = addDays(allDates[0], -4);
+    let max = addDays(allDates[allDates.length - 1], 10);
+    if (dayDiff(min, max) < 42) max = addDays(min, 42);
+    const total = dayDiff(min, max);
+    const pct = d => Math.max(0, Math.min(100, (dayDiff(min, d) / total) * 100));
+
+    // Ticks semanales
+    let ticks = '';
+    for (let i = 0; i <= total; i += 7) {
+      const d = addDays(min, i);
+      ticks += `<div class="gantt-tick" style="left:${(i / total) * 100}%;"></div>`;
+    }
+    let tickLabels = '';
+    for (let i = 0; i <= total - 4; i += 7) {
+      const d = addDays(min, i);
+      tickLabels += `<div class="gantt-tick-label" style="left:${(i / total) * 100}%;">${fmtDate(d)}</div>`;
+    }
+    const todayLine = `<div class="gantt-today-line" style="left:${pct(today)}%;"></div>`;
+    const todayFlag = `<div class="gantt-today-flag" style="left:${pct(today)}%;">HOY</div>`;
+
+    // Secciones (fases) + actividades sin fase al final
+    const sections = [...(det.sections || [])].sort((a, b) => a.position - b.position);
+    const orphans = acts.filter(a => !a.sectionId || !sections.some(s => s.id === a.sectionId));
+    const groups = sections.map(s => ({ id: s.id, name: s.name, acts: acts.filter(a => a.sectionId === s.id) }));
+    if (orphans.length) groups.push({ id: null, name: 'Otras actividades', acts: orphans });
+
+    const rows = groups.map(g => {
+      const avg = g.acts.length ? Math.round(g.acts.reduce((s, a) => s + a.pctComplete, 0) / g.acts.length) : 0;
+      const secRow = `
+        <div class="gantt-grid-row gantt-section-row">
+          <div class="gantt-left">
+            <span class="gantt-section-name">${escapeHtml(g.name)}</span>
+            <span class="gantt-section-meta">${g.acts.length ? g.acts.length + ' act. · ' + avg + '%' : ''}</span>
+          </div>
+          <div class="gantt-timeline" style="min-height:30px;">${ticks}${todayLine}</div>
+        </div>`;
+      const actRows = g.acts.map(a => ganttActRow(a, pct, total)).join('');
+      const addRow = `
+        <div class="gantt-grid-row gantt-add-row">
+          <div class="gantt-left">
+            <input class="gantt-add-input" placeholder="＋ Nueva actividad en ${escapeHtml(g.name)} (Enter)"
+              onkeydown="if(event.key==='Enter')addActivityInline('${g.id || ''}',this)">
+          </div>
+          <div class="gantt-timeline" style="min-height:30px;">${ticks}${todayLine}</div>
+        </div>`;
+      return secRow + actRows + addRow;
+    }).join('');
+
+    return `
+      <div class="gantt-scroll">
+        <div class="gantt">
+          <div class="gantt-grid-row gantt-head">
+            <div class="gantt-left"><span class="gantt-head-label">Actividad</span></div>
+            <div class="gantt-timeline">${ticks}${tickLabels}${todayLine}${todayFlag}</div>
+          </div>
+          ${rows}
+        </div>
+      </div>
+    `;
+  }
+
+  function ganttActRow(a, pct, total) {
+    const color = GANTT_COLORS[a.estadoEfectivo] || GANTT_COLORS.pendiente;
+    const warn = a.alerta === 'proximidad' ? 'warn-ring' : '';
+    const meta = [];
+    if (a.responsable) meta.push('👤 ' + escapeHtml(a.responsable));
+    if (a.deadline) meta.push(dueLabel(a.deadline));
+    meta.push(a.pctComplete + '%');
+    meta.push(ACT_STATUS_LABEL[a.estadoEfectivo] || a.status);
+
+    let bar;
+    const tip = `${a.name}${a.deadline ? ' · deadline ' + fmtDate(a.deadline) : ''} · ${a.pctComplete}%`;
+    if (a.startDate && a.deadline && a.deadline >= a.startDate) {
+      const left = pct(a.startDate);
+      const width = Math.max(1.4, pct(addDays(a.deadline, 1)) - left);
+      bar = `<div class="gantt-bar ${warn}" style="left:${left}%;width:${width}%;background:${color};"
+               onclick="openActivityModal('${a.id}')" title="${escapeHtml(tip)}">
+               <div class="gantt-bar-fill" style="width:${a.pctComplete}%;"></div>
+             </div>`;
+    } else if (a.startDate || a.deadline) {
+      const d = a.deadline || a.startDate;
+      bar = `<div class="gantt-milestone ${warn}" style="left:calc(${pct(d)}% - 7px);background:${color};"
+               onclick="openActivityModal('${a.id}')" title="${escapeHtml(tip)}"></div>`;
+    } else {
+      bar = `<button class="gantt-nodates" onclick="openActivityModal('${a.id}')">＋ agregar fechas (opcional)</button>`;
+    }
+
+    return `
+      <div class="gantt-grid-row gantt-act-row">
+        <div class="gantt-left">
+          <div class="gantt-act-name" onclick="openActivityModal('${a.id}')" title="${escapeHtml(a.name)}">
+            <span class="gantt-status-dot" style="background:${color};"></span>${escapeHtml(a.name)}
+          </div>
+          <div class="gantt-act-meta">${meta.join(' · ')}</div>
+        </div>
+        <div class="gantt-timeline">
+          ${ganttRowTicks(total)}
+          <div class="gantt-today-line" style="left:${pct(currentProjectDetail.summary.today || todayISO())}%;"></div>
+          ${bar}
+        </div>
+      </div>
+    `;
+  }
+
+  function ganttRowTicks(total) {
+    let t = '';
+    for (let i = 0; i <= total; i += 7) {
+      t += `<div class="gantt-tick" style="left:${(i / total) * 100}%;opacity:0.6;"></div>`;
+    }
+    return t;
+  }
+
+  async function addActivityInline(sectionId, inputEl) {
+    const name = inputEl.value.trim();
+    if (!name || !currentProjectDetail) return;
+    inputEl.disabled = true;
+    try {
+      await api('/api/activities', 'POST', {
+        projectId: currentProjectDetail.id,
+        sectionId: sectionId || null,
+        name,
+      });
+      toast('✓ Actividad agregada');
+      await refreshProjectDetail();
+    } catch (e) {
+      toast('⚠ ' + e.message, false);
+      inputEl.disabled = false;
+    }
+  }
+
+  async function editResponsable() {
+    if (!currentProjectDetail) return;
+    const name = prompt('Responsable del proyecto:', currentProjectDetail.responsable || '');
+    if (name === null) return;
+    try {
+      await api('/api/projects/' + currentProjectDetail.id, 'PATCH', { responsable: name.trim() || null });
+      await refreshProjectDetail();
+      toast('✓ Responsable actualizado');
+    } catch (e) {
+      toast('⚠ ' + e.message, false);
+    }
+  }
+
+  // ============================================================
+  // MODAL DE ACTIVIDAD
+  // ============================================================
+  let editingActivityId = null;
+
+  function openActivityModal(id) {
+    if (typeof event !== 'undefined' && event && event.stopPropagation) event.stopPropagation();
+    const det = currentProjectDetail;
+    if (!det) return;
+    editingActivityId = id || null;
+    const a = id ? det.activities.find(x => x.id === id) : null;
+    $('am-title').textContent = a ? 'Editar actividad' : 'Nueva actividad';
+    $('am-name').value = a ? a.name : '';
+    $('am-responsable').value = a && a.responsable ? a.responsable : '';
+    $('am-start').value = a && a.startDate ? a.startDate : '';
+    $('am-deadline').value = a && a.deadline ? a.deadline : '';
+    $('am-status').value = a ? a.status : 'pendiente';
+    $('am-pct').value = a ? a.pctComplete : 0;
+    $('am-pct-label').textContent = ($('am-pct').value) + '%';
+    $('am-notes').value = a && a.notes ? a.notes : '';
+    $('am-delete').style.display = a ? '' : 'none';
+
+    const secs = [...det.sections].sort((x, y) => x.position - y.position);
+    $('am-section').innerHTML = '<option value="">— Sin fase —</option>' +
+      secs.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+    $('am-section').value = a && a.sectionId ? a.sectionId : '';
+
+    $('am-depends').innerHTML = '<option value="">— Ninguna —</option>' +
+      det.activities.filter(x => !a || x.id !== a.id)
+        .map(x => `<option value="${x.id}">${escapeHtml(x.name)}</option>`).join('');
+    $('am-depends').value = a && a.dependsOn ? a.dependsOn : '';
+
+    openModal('activity-modal');
+    setTimeout(() => $('am-name').focus(), 100);
+  }
+
+  async function saveActivity() {
+    if (!currentProjectDetail) return;
+    const body = {
+      name: $('am-name').value.trim(),
+      sectionId: $('am-section').value || null,
+      responsable: $('am-responsable').value.trim() || null,
+      startDate: $('am-start').value || null,
+      deadline: $('am-deadline').value || null,
+      status: $('am-status').value,
+      pctComplete: Number($('am-pct').value),
+      dependsOn: $('am-depends').value || null,
+      notes: $('am-notes').value.trim() || null,
+    };
+    if (!body.name) { toast('⚠ El nombre de la actividad es obligatorio', false); return; }
+    try {
+      if (editingActivityId) {
+        await api('/api/activities/' + editingActivityId, 'PATCH', body);
+      } else {
+        await api('/api/activities', 'POST', { ...body, projectId: currentProjectDetail.id });
+      }
+      closeModal('activity-modal');
+      toast('✓ Actividad guardada');
+      await refreshProjectDetail();
+    } catch (e) {
+      toast('⚠ ' + e.message, false);
+    }
+  }
+
+  async function deleteActivityFromModal() {
+    if (!editingActivityId) return;
+    if (!confirm('¿Eliminar esta actividad del cronograma?')) return;
+    try {
+      await api('/api/activities/' + editingActivityId, 'DELETE');
+      closeModal('activity-modal');
+      toast('Actividad eliminada');
+      await refreshProjectDetail();
+    } catch (e) {
+      toast('⚠ ' + e.message, false);
+    }
+  }
+
+  // ============================================================
+  // MODAL DE PROYECTO
+  // ============================================================
+  let editingProjectId = null;
+
+  function openProjectModal(id) {
+    editingProjectId = id || null;
+    let p = null;
+    if (id) {
+      p = currentProjectDetail && currentProjectDetail.id === id
+        ? currentProjectDetail
+        : (projectsCache || []).find(x => x.id === id);
+    }
+    $('pm-title').textContent = p ? 'Editar proyecto' : 'Nuevo proyecto';
+    $('pm-name').value = p ? p.name : '';
+    $('pm-responsable').value = p && p.responsable ? p.responsable : '';
+    $('pm-desc').value = p && p.descripcion ? p.descripcion : '';
+    $('pm-hint').style.display = p ? 'none' : '';
+    $('pm-delete').style.display = p ? '' : 'none';
+    openModal('project-modal');
+    setTimeout(() => $('pm-name').focus(), 100);
+  }
+
+  async function saveProject() {
+    const body = {
+      name: $('pm-name').value.trim(),
+      responsable: $('pm-responsable').value.trim() || null,
+      descripcion: $('pm-desc').value.trim() || null,
+    };
+    if (!body.name) { toast('⚠ El nombre es obligatorio', false); return; }
+    try {
+      if (editingProjectId) {
+        await api('/api/projects/' + editingProjectId, 'PATCH', body);
+        if (currentProjectDetail && currentProjectDetail.id === editingProjectId) await refreshProjectDetail();
+      } else {
+        const d = await api('/api/projects', 'POST', body);
+        openProject(d.project.id);
+      }
+      closeModal('project-modal');
+      toast('✓ Proyecto guardado');
+      loadProjects(true);
+    } catch (e) {
+      toast('⚠ ' + e.message, false);
+    }
+  }
+
+  async function deleteProjectFromModal() {
+    if (!editingProjectId) return;
+    if (!confirm('¿Eliminar este proyecto? Se borran sus fases y actividades del Gantt. Las tareas del día a día quedan sin proyecto (no se borran).')) return;
+    try {
+      await api('/api/projects/' + editingProjectId, 'DELETE');
+      closeModal('project-modal');
+      if (currentProjectDetail && currentProjectDetail.id === editingProjectId) {
+        currentProjectDetail = null;
+        $('proj-detail').innerHTML = '';
+      }
+      toast('Proyecto eliminado');
+      loadProjects(true);
+      loadData();
+    } catch (e) {
+      toast('⚠ ' + e.message, false);
     }
   }
 

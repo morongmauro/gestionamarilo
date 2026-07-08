@@ -1,4 +1,4 @@
-const { getDashboard } = require('../lib/notion');
+const { getDashboard } = require('../lib/db');
 
 module.exports = async (req, res) => {
   try {
