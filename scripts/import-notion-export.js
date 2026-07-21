@@ -48,18 +48,28 @@ const MONTHS = {
   enero: 1, febrero: 2, marzo: 3, abril: 4, mayo: 5, junio: 6, julio: 7, agosto: 8, septiembre: 9, octubre: 10, noviembre: 11, diciembre: 12,
 };
 
-function parseDate(raw) {
+// dateOrder: 'mdy' (americano, default de Notion) o 'dmy'. Si un número es >12
+// se detecta solo; si ambos son ≤12 se usa este orden.
+function parseDate(raw, dateOrder = 'mdy') {
   const s = String(raw || '').trim();
   if (!s) return null;
   // Rango de Notion "julio 1, 2026 → julio 15, 2026": usamos el fin
   const range = s.split('→');
   const v = range[range.length - 1].trim();
 
-  let m = v.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);          // 2026-07-08 · 2026/07/08
+  let m = v.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);          // 2026-07-08 · 2026/07/08 (ISO)
   if (m) return iso(+m[1], +m[2], +m[3]);
 
-  m = v.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);             // 08/07/2026 (día/mes/año)
-  if (m) return iso(+m[3], +m[2], +m[1]);
+  m = v.match(/\b(\d{1,2})[-/](\d{1,2})[-/](\d{4})\b/);          // 07/31/2026 o 31/07/2026
+  if (m) {
+    const a = +m[1], b = +m[2], y = +m[3];
+    let mo, d;
+    if (a > 12) { d = a; mo = b; }        // 1er número no puede ser mes → DD/MM
+    else if (b > 12) { mo = a; d = b; }   // 2do número no puede ser mes → MM/DD
+    else if (dateOrder === 'dmy') { d = a; mo = b; }
+    else { mo = a; d = b; }               // ambiguo → americano MM/DD
+    return iso(y, mo, d);
+  }
 
   m = v.match(/([a-záéíóúA-ZÁÉÍÓÚ]+)\s+(\d{1,2}),?\s+(\d{4})/);  // July 8, 2026
   if (m) { const mo = MONTHS[normalizeKey(m[1])]; if (mo) return iso(+m[3], mo, +m[2]); }
@@ -70,6 +80,20 @@ function parseDate(raw) {
   const d = new Date(v);
   if (!isNaN(d)) return d.toISOString().slice(0, 10);
   return null;
+}
+
+// Detecta el orden de fecha dominante mirando todos los valores: si algún
+// valor tiene el 1er número >12 es DD/MM; si alguno tiene el 2do >12 es MM/DD.
+function detectDateOrder(values) {
+  let dmy = 0, mdy = 0;
+  for (const raw of values) {
+    const m = String(raw || '').match(/\b(\d{1,2})[-/](\d{1,2})[-/]\d{4}\b/);
+    if (!m) continue;
+    if (+m[1] > 12) dmy++;
+    else if (+m[2] > 12) mdy++;
+  }
+  if (dmy && !mdy) return 'dmy';
+  return 'mdy'; // default e igualdad → americano (formato de Notion)
 }
 
 function iso(y, mo, d) {
@@ -88,7 +112,7 @@ function mapPriority(raw) {
   const s = normalizeKey(raw);
   if (/high|alta/.test(s)) return 'High';
   if (/low|baja/.test(s)) return 'Low';
-  if (/med/.test(s)) return 'Medium';
+  if (/med|regular|normal/.test(s)) return 'Medium';
   return null;
 }
 
@@ -210,6 +234,13 @@ function rowsToTasks(headers, rows, getHref) {
   });
   if (idx.description === undefined) return null; // no es la tabla de tareas
 
+  // Detecta el orden de fecha una vez por tabla
+  const rawDates = [];
+  if (idx.dueDate !== undefined) {
+    rows.forEach(r => { const c = Array.isArray(r) ? r : r.cells; rawDates.push(c[idx.dueDate]); });
+  }
+  const dateOrder = detectDateOrder(rawDates);
+
   const tasks = [];
   rows.forEach((r, n) => {
     const cells = Array.isArray(r) ? r : r.cells;
@@ -229,10 +260,10 @@ function rowsToTasks(headers, rows, getHref) {
       priority: mapPriority(val('priority')),
       effort: mapEffort(val('effort')),
       tipoGestion: mapTipo(val('tipoGestion')) || 'Propia',
-      dueDate: parseDate(val('dueDate')),
+      dueDate: parseDate(val('dueDate'), dateOrder),
       ice,
-      createdTime: parseDate(val('createdTime')),
-      lastEdited: parseDate(val('lastEdited')),
+      createdTime: parseDate(val('createdTime'), dateOrder),
+      lastEdited: parseDate(val('lastEdited'), dateOrder),
       _row: n + 1,
     });
   });
@@ -286,15 +317,27 @@ function buildSql(tasks) {
     lines.push('');
   });
 
+  // Historial: las tareas "Done" del export no traen fecha real de cierre.
+  // Para no inflar la vista semanal (que sí lo hubieras cerrado hoy), se
+  // "estacionan" en el pasado. Si tienen due_date pasada, se usa esa como
+  // proxy de cierre; si no, un baseline claramente antiguo.
+  const BASELINE = '2025-12-31T12:00:00Z';
+  const today = new Date().toISOString().slice(0, 10);
+
   lines.push('-- 2. Tareas');
   tasks.forEach(t => {
     const projectSel = t.topic ? `(select id from projects where name = ${q(t.topic)} limit 1)` : 'null';
-    const completed = t.status === 'done' ? (t.lastEdited ? q(t.lastEdited + 'T12:00:00Z') : 'now()') : 'null';
-    const created = t.createdTime ? q(t.createdTime + 'T12:00:00Z') : 'now()';
+    let created, updated, completed;
+    if (t.status === 'done') {
+      const proxy = (t.dueDate && t.dueDate <= today) ? `${t.dueDate}T12:00:00Z` : BASELINE;
+      completed = q(proxy); created = q(proxy); updated = q(proxy);
+    } else {
+      created = 'now()'; updated = 'now()'; completed = 'null';
+    }
     lines.push(
-      `insert into tasks (notion_id, description, project_id, priority, effort_level, tipo_gestion, due_date, status, ice, created_at, completed_at)\n` +
-      `values (${q(t.notionId)}, ${q(t.description)}, ${projectSel}, ${q(t.priority)}, ${q(t.effort)}, ${q(t.tipoGestion)}, ${q(t.dueDate)}, ${q(t.status)}, ${t.ice ?? 'null'}, ${created}, ${completed})\n` +
-      `on conflict (notion_id) do update set description = excluded.description, project_id = excluded.project_id, priority = excluded.priority, effort_level = excluded.effort_level, tipo_gestion = excluded.tipo_gestion, due_date = excluded.due_date, status = excluded.status, ice = excluded.ice, completed_at = excluded.completed_at;`
+      `insert into tasks (import_key, description, project_id, priority, effort_level, tipo_gestion, due_date, status, ice, created_at, updated_at, completed_at)\n` +
+      `values (${q(t.notionId)}, ${q(t.description)}, ${projectSel}, ${q(t.priority)}, ${q(t.effort)}, ${q(t.tipoGestion)}, ${q(t.dueDate)}, ${q(t.status)}, ${t.ice ?? 'null'}, ${created}, ${updated}, ${completed})\n` +
+      `on conflict (import_key) do update set description = excluded.description, project_id = excluded.project_id, priority = excluded.priority, effort_level = excluded.effort_level, tipo_gestion = excluded.tipo_gestion, due_date = excluded.due_date, status = excluded.status, ice = excluded.ice, completed_at = excluded.completed_at;`
     );
   });
   lines.push('');
@@ -318,10 +361,12 @@ function main() {
     process.exit(1);
   }
 
-  const byId = new Map();      // dedup por id de página de Notion
-  const byContent = new Map(); // dedup por contenido (misma tarea en CSV y HTML)
-  const contentKey = t => crypto.createHash('md5')
-    .update([t.description, t.topic || '', t.dueDate || ''].join('|').toLowerCase()).digest('hex');
+  // Cada fila de Notion tiene un id de página único → esa es la llave real.
+  // Solo las filas sin href (CSV) usan un hash de contenido como id.
+  const isRealId = id => /^[0-9a-f]{32}$/.test(id);
+  const contentKey = t => [normalizeKey(t.description), normalizeKey(t.topic || ''), t.dueDate || ''].join('|');
+
+  const byId = new Map();          // dedup exacto por id (filas idénticas del mismo export)
   const sources = [];
   for (const f of files) {
     const text = fs.readFileSync(f, 'utf8');
@@ -337,26 +382,16 @@ function main() {
     }
     if (tasks && tasks.length) {
       sources.push(`  · ${path.basename(f)}: ${tasks.length} tareas`);
-      tasks.forEach(t => {
-        const ck = contentKey(t);
-        const prev = byContent.get(ck);
-        if (prev) {
-          // misma tarea vista en otro archivo: conserva la que tenga id real de Notion
-          const prevHasRealId = /^[0-9a-f]{32}$/.test(prev.notionId) && prev.notionId !== ck;
-          if (!prevHasRealId && /^[0-9a-f]{32}$/.test(t.notionId)) {
-            byId.delete(prev.notionId);
-            byContent.set(ck, t);
-            byId.set(t.notionId, t);
-          }
-          return;
-        }
-        byContent.set(ck, t);
-        byId.set(t.notionId, t);
-      });
+      tasks.forEach(t => { if (!byId.has(t.notionId)) byId.set(t.notionId, t); });
     }
   }
 
-  const all = [...byId.values()];
+  // Solo si la MISMA tarea aparece con id real (HTML) y con hash (CSV),
+  // se descarta la copia con hash. NUNCA se colapsan dos filas con id real,
+  // aunque tengan la misma descripción (tareas recurrentes).
+  const realContent = new Set();
+  for (const t of byId.values()) if (isRealId(t.notionId)) realContent.add(contentKey(t));
+  const all = [...byId.values()].filter(t => isRealId(t.notionId) || !realContent.has(contentKey(t)));
   if (!all.length) {
     console.error('Leí los archivos pero no encontré ninguna tabla con la columna Description/Nombre.');
     console.error('Verifica que exportaste la base de datos de tareas (no una página suelta).');

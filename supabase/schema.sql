@@ -73,7 +73,7 @@ create table if not exists tasks (
   due_date     date,
   status       text not null default 'todo' check (status in ('todo','doing','done')),
   ice          numeric,
-  notion_id    text unique,
+  import_key   text unique,   -- llave estable para importar sin duplicar (id de la página de origen)
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now(),
   completed_at timestamptz

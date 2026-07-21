@@ -22,38 +22,27 @@ En Vercel → tu proyecto → **Settings → Environment Variables**, agrega:
 
 Después de agregarlas, haz **Redeploy**.
 
-## 3. (Opcional) Migrar lo que tienes en Notion
+## 3. Cargar tus datos (una sola vez)
 
-Hay dos formas — usa la que prefieras:
+Tus tareas ya migraron con el archivo `supabase/seed-notion.sql` (generado desde tu export de Notion). Para cargarlo:
 
-### Opción A: desde un export de Notion (sin tokens ni claves) ⭐ recomendada
+1. Supabase → **SQL Editor → New query**.
+2. Pega **todo** el contenido de `supabase/seed-notion.sql` → **Run**.
 
-1. En Notion, abre la página de tu base de datos de tareas → menú `•••` (arriba a la derecha) → **Export**.
-2. Formato: **Markdown & CSV** (o HTML, ambos sirven) · "Include subpages": no hace falta.
-3. Descarga el `.zip`, descomprímelo, y corre:
+Eso crea tus proyectos (desde los Topics, cada uno con sus 4 fases de Gantt) y todas tus tareas con su prioridad, esfuerzo, tipo de gestión, deadline, ICE y estado. Es idempotente: correrlo dos veces no duplica.
 
-```bash
-npm install
-node scripts/import-notion-export.js <carpeta-descomprimida>
-```
+> ¿Necesitas volver a importar en el futuro desde otro export de Notion? El script offline sigue disponible (no se conecta a Notion, solo lee el archivo exportado):
+> ```bash
+> npm install
+> npm run import -- <archivo.csv-o-.html-o-carpeta>
+> ```
+> Genera un nuevo `supabase/seed-notion.sql` que pegas en el SQL Editor.
 
-Eso genera `supabase/seed-notion.sql` con todos tus proyectos (desde los Topics, con sus 4 fases de Gantt) y todas tus tareas. Pégalo completo en **Supabase → SQL Editor → Run**. Es idempotente: correrlo dos veces no duplica.
+## Desconexión de Notion ✅
 
-### Opción B: directo desde el API de Notion
-
-```bash
-npm install
-NOTION_TOKEN=secret_xxx SUPABASE_URL=https://xxx.supabase.co SUPABASE_SERVICE_ROLE_KEY=eyJ... npm run migrate
-```
-
-(También puedes poner esas variables en un archivo `.env` y correr solo `npm run migrate`.)
-
-Ambas opciones:
-- Crean un proyecto por cada **Topic** de Notion (con sus 4 fases de Gantt por defecto).
-- Copian todas las tareas con su prioridad, esfuerzo, tipo de gestión, deadline, ICE y estado.
-- Son idempotentes: puedes correrlas varias veces sin duplicar nada.
-
-Cuando termine, ya puedes olvidarte de Notion. 🎉
+La app ya no depende de Notion en absoluto: no hay cliente de Notion, ni token, ni llamadas a su API. Puedes:
+- Quitar `NOTION_TOKEN` de las variables de entorno de Vercel (ya no se usa).
+- Revocar la integración en [notion.so/profile/integrations](https://www.notion.so/profile/integrations) cuando confirmes que todo se ve bien en la app.
 
 ## Qué hay de nuevo en la app
 
