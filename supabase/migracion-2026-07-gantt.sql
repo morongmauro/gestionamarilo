@@ -4,6 +4,9 @@
 -- (Es seguro correrlo más de una vez.)
 -- ============================================================
 
+-- 0. Extensión para generar UUIDs (normalmente ya está activa)
+create extension if not exists pgcrypto;
+
 -- 1. Fases activables/desactivables por proyecto
 alter table project_sections add column if not exists enabled boolean not null default true;
 

@@ -504,7 +504,7 @@
 
         <div class="capture">
           <div class="lab">Anota — yo la organizo</div>
-          <textarea id="cap" rows="2" placeholder="Escríbelo como se te ocurra… yo lo entiendo, lo vuelvo tarea y lo priorizo. Ej: «coordinar con Diana el piloto de facturación para el viernes»"
+          <textarea id="cap" rows="2" placeholder="Escríbelo como se te ocurra… yo lo entiendo, lo vuelvo tarea y lo priorizo. Ej: «coordinar con Diana el piloto de facturación para el viernes». ¿Varias a la vez? Usa viñetas (Shift+Enter para bajar de línea): escribe el contexto arriba y luego «- tarea 1» «- tarea 2»…"
             onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitCapture()}"></textarea>
           <div class="foot">
             <button class="cap-toggle" onclick="toggleCapAttrs()" id="cap-toggle">⚙ Ajustar a mano</button>
@@ -1101,15 +1101,31 @@
     };
     try{
       const data=await api('/api/capture','POST',{text,overrides});
-      inp.value='';resetCaptureAttrs();tasksIndex[data.task.id]=data.task;
-      const p=data.applied||data.parsed,ch=['<span class="rchip ok">✓ La organicé</span>'];
-      if(p.project)ch.push(`<span class="rchip">📁 ${esc(p.project)}${data.projectCreated?' (nuevo)':''}</span>`);
-      if(p.priority)ch.push(`<span class="rchip">Prioridad ${PRIO[p.priority]||p.priority}</span>`);
-      if(p.effort)ch.push(`<span class="rchip">Esfuerzo ${EFF[p.effort]||p.effort}</span>`);
-      if(p.tipo_gestion&&p.tipo_gestion!=='Propia')ch.push(`<span class="rchip">${esc(p.tipo_gestion)}</span>`);
-      if(p.due_date)ch.push(`<span class="rchip">📅 ${fmtDate(p.due_date)}</span>`);
-      ch.push(`<button class="rchip" style="cursor:pointer" onclick="openTaskModal('${data.task.id}')">✎ Completar detalle</button>`);
-      $('cap-res').innerHTML=ch.join('');
+      inp.value='';resetCaptureAttrs();
+      if(data.multi){
+        // Varias viñetas → varias tareas creadas de una vez
+        (data.tasks||[]).forEach(t=>{tasksIndex[t.id]=t;});
+        const ch=[`<span class="rchip ok">✓ Creé ${data.tasks.length} tareas</span>`];
+        (data.applied||[]).forEach((p,i)=>{
+          const bits=[esc(p.description.length>42?p.description.slice(0,40)+'…':p.description)];
+          if(p.project)bits.push('📁 '+esc(p.project));
+          if(p.due_date)bits.push('📅 '+fmtDate(p.due_date));
+          const t=data.tasks[i];
+          ch.push(`<button class="rchip" style="cursor:pointer" title="Ver/editar" ${t?`onclick="openTaskModal('${t.id}')"`:''}>${i+1}. ${bits.join(' · ')}</button>`);
+        });
+        if(data.projectsCreated&&data.projectsCreated.length)ch.push(`<span class="rchip">＋ Proyecto nuevo: ${esc(data.projectsCreated.join(', '))}</span>`);
+        $('cap-res').innerHTML=ch.join('');
+      }else{
+        tasksIndex[data.task.id]=data.task;
+        const p=data.applied||data.parsed,ch=['<span class="rchip ok">✓ La organicé</span>'];
+        if(p.project)ch.push(`<span class="rchip">📁 ${esc(p.project)}${data.projectCreated?' (nuevo)':''}</span>`);
+        if(p.priority)ch.push(`<span class="rchip">Prioridad ${PRIO[p.priority]||p.priority}</span>`);
+        if(p.effort)ch.push(`<span class="rchip">Esfuerzo ${EFF[p.effort]||p.effort}</span>`);
+        if(p.tipo_gestion&&p.tipo_gestion!=='Propia')ch.push(`<span class="rchip">${esc(p.tipo_gestion)}</span>`);
+        if(p.due_date)ch.push(`<span class="rchip">📅 ${fmtDate(p.due_date)}</span>`);
+        ch.push(`<button class="rchip" style="cursor:pointer" onclick="openTaskModal('${data.task.id}')">✎ Completar detalle</button>`);
+        $('cap-res').innerHTML=ch.join('');
+      }
       if(data.projectCreated){projectsCache=null;ensureProjects(true).then(fillCaptureProjects).catch(()=>{});}
       loadData();
     }catch(e){$('cap-res').innerHTML=`<span class="rchip bad">⚠ ${esc(e.message)}</span>`;}
@@ -1365,17 +1381,17 @@
   async function renameSection(id){
     const sec=(currentProjectDetail&&currentProjectDetail.sections||[]).find(s=>s.id===id);if(!sec)return;
     const n=prompt('Nombre de la fase:',sec.name);if(n===null||!n.trim()||n.trim()===sec.name)return;
-    try{await api('/api/sections/'+id,'PATCH',{name:n.trim()});toast('✓ Fase renombrada');await refreshProjectDetail();}catch(e){toast('⚠ '+e.message,false);}
+    try{await api('/api/sections?id='+id,'PATCH',{name:n.trim()});toast('✓ Fase renombrada');await refreshProjectDetail();}catch(e){toast('⚠ '+e.message,false);}
   }
   async function toggleSection(id,on){
     if(!currentProjectDetail)return;
     const acts=(currentProjectDetail.activities||[]).filter(a=>a.sectionId===id);
     if(!on&&acts.length&&!confirm(`Esta fase tiene ${acts.length} actividad(es). Al desactivarla se ocultan del Gantt (no se borran). ¿Continuar?`))return;
-    try{await api('/api/sections/'+id,'PATCH',{enabled:on});toast(on?'✓ Fase activada':'Fase marcada como «no aplica»');await refreshProjectDetail();}catch(e){toast('⚠ '+e.message,false);}
+    try{await api('/api/sections?id='+id,'PATCH',{enabled:on});toast(on?'✓ Fase activada':'Fase marcada como «no aplica»');await refreshProjectDetail();}catch(e){toast('⚠ '+e.message,false);}
   }
   async function removeSection(id){
     if(!confirm('¿Eliminar esta fase vacía?'))return;
-    try{await api('/api/sections/'+id,'DELETE');toast('Fase eliminada');await refreshProjectDetail();}catch(e){toast('⚠ '+e.message,false);}
+    try{await api('/api/sections?id='+id,'DELETE');toast('Fase eliminada');await refreshProjectDetail();}catch(e){toast('⚠ '+e.message,false);}
   }
 
   // ---------- COMPARTIR GANTT ----------
@@ -1388,7 +1404,7 @@
   async function loadShares(){
     $('sh-list').innerHTML='<span class="rchip">Cargando…</span>';
     try{
-      const d=await api('/api/projects/'+currentProjectDetail.id+'/shares');
+      const d=await api('/api/projects/'+currentProjectDetail.id+'?res=shares');
       $('sh-list').innerHTML=d.shares.length?d.shares.map(s=>{
         const url=location.origin+'/share/'+s.token;
         return `<div style="display:flex;align-items:center;gap:8px;background:var(--sunk);border-radius:10px;padding:8px 10px">
@@ -1405,7 +1421,7 @@
   async function createShare(){
     if(!currentProjectDetail)return;
     try{
-      const d=await api('/api/projects/'+currentProjectDetail.id+'/shares','POST',{label:$('sh-label').value.trim()||null,role:$('sh-role').value});
+      const d=await api('/api/projects/'+currentProjectDetail.id+'?res=shares','POST',{label:$('sh-label').value.trim()||null,role:$('sh-role').value});
       $('sh-label').value='';
       copyShare(location.origin+'/share/'+d.share.token,'✓ Enlace creado y copiado');
       loadShares();
@@ -1414,7 +1430,7 @@
   function copyShare(url,msg){navigator.clipboard.writeText(url).then(()=>toast(msg||'✓ Enlace copiado')).catch(()=>toast(url,true));}
   async function revokeShare(id){
     if(!confirm('¿Revocar este enlace? La persona perderá el acceso.'))return;
-    try{await api('/api/projects/'+currentProjectDetail.id+'/shares?shareId='+id,'DELETE');toast('Enlace revocado');loadShares();}catch(e){toast('⚠ '+e.message,false);}
+    try{await api('/api/projects/'+currentProjectDetail.id+'?res=shares&shareId='+id,'DELETE');toast('Enlace revocado');loadShares();}catch(e){toast('⚠ '+e.message,false);}
   }
   async function editResponsable(){if(!currentProjectDetail)return;const n=prompt('Responsable:',currentProjectDetail.responsable||'');if(n===null)return;try{await api('/api/projects/'+currentProjectDetail.id,'PATCH',{responsable:n.trim()||null});await refreshProjectDetail();toast('✓ Actualizado');}catch(e){toast('⚠ '+e.message,false);}}
 
