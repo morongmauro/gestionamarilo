@@ -2,6 +2,8 @@
 
 La app ya no usa Notion para nada. Todo (tareas, proyectos, fases y actividades del Gantt) vive en tu Supabase. Sigue estos pasos una sola vez:
 
+> **¿Ya tenías la base creada?** Para las funciones nuevas (Gantt compartido por enlace y fases activables) ejecuta una sola vez [`supabase/migracion-2026-07-gantt.sql`](supabase/migracion-2026-07-gantt.sql) en **SQL Editor → New query → Run**. Es seguro correrlo más de una vez.
+
 ## 1. Crear el proyecto en Supabase
 
 1. Entra a [supabase.com](https://supabase.com) → **New project** (el plan gratis alcanza de sobra).

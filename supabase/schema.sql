@@ -29,6 +29,7 @@ create table if not exists project_sections (
   project_id uuid not null references projects(id) on delete cascade,
   name       text not null,
   position   int not null default 0,
+  enabled    boolean not null default true,
   created_at timestamptz not null default now()
 );
 
@@ -83,6 +84,22 @@ create index if not exists idx_tasks_project on tasks(project_id);
 create index if not exists idx_tasks_status on tasks(status);
 
 -- ------------------------------------------------------------
+-- ENLACES DE GANTT COMPARTIDO
+-- Cada enlace da acceso SOLO al Gantt (fases + actividades) de un
+-- proyecto, nunca a las tareas. role: 'view' (solo ver) | 'edit'.
+-- ------------------------------------------------------------
+create table if not exists project_shares (
+  id         uuid primary key default gen_random_uuid(),
+  project_id uuid not null references projects(id) on delete cascade,
+  token      text not null unique,
+  label      text,
+  role       text not null default 'view' check (role in ('view','edit')),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_shares_project on project_shares(project_id);
+
+-- ------------------------------------------------------------
 -- updated_at automático
 -- ------------------------------------------------------------
 create or replace function set_updated_at() returns trigger as $$
@@ -112,3 +129,4 @@ alter table projects enable row level security;
 alter table project_sections enable row level security;
 alter table activities enable row level security;
 alter table tasks enable row level security;
+alter table project_shares enable row level security;
