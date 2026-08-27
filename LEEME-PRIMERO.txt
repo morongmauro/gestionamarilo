@@ -1,0 +1,57 @@
+GANTT v7 · qué hacer con este zip
+=================================
+
+PASO 1 · Supabase (hazlo ANTES de subir los archivos)
+-----------------------------------------------------
+Supabase -> SQL Editor -> New query -> pega TODO el contenido de
+   supabase/migracion-2026-08-gantt-plus.sql
+y dale Run. Debe decir "Success. No rows returned".
+
+Es seguro correrlo más de una vez. Tus datos no se tocan: los
+responsables y dependencias que ya tenías se copian solos a las
+columnas nuevas.
+
+Si subes los archivos sin correr esto, guardar actividades falla
+(con un aviso que te recuerda esta migración).
+
+
+PASO 2 · Sube los archivos al repo, respetando las carpetas
+------------------------------------------------------------
+Estos 3 son los que hacen que la app funcione:
+
+   index.html                  -> raíz del repo
+   lib/db.js                   -> carpeta lib/
+   api/activities/index.js     -> carpeta api/activities/   <-- ojo aquí
+
+OJO: hay varios "index.js" en el proyecto. Ese va en api/activities/,
+no en api/projects/ ni en api/tasks/.
+
+En GitHub: "Add file -> Upload files" y arrastra las CARPETAS
+(lib, api, supabase) junto con index.html. GitHub respeta la
+estructura de carpetas al arrastrar.
+
+Opcionales (no cambian el funcionamiento, dejan el repo ordenado):
+   supabase/migracion-2026-08-gantt-plus.sql
+   supabase/schema.sql
+   SETUP-SUPABASE.md
+
+
+PASO 3 · Espera el redeploy de Vercel
+--------------------------------------
+Entra a Proyectos -> "Gantt · macro".
+
+
+QUÉ CAMBIÓ
+----------
+- Proyectos: se elige en una pestaña arriba y debajo va su Gantt,
+  indicadores y microtareas. Recuerda cuál tenías abierto.
+- Plan de trabajo en Gantt o en Tabla (la tabla se diligencia completa).
+- Columna "Actividad" ensanchable arrastrando su borde.
+- Subir/bajar actividades con las flechas.
+- Tag "Completado" sobre la barra o el hito.
+- Ruta crítica: morada si va al día, rojo suave si está en riesgo.
+- Dependencias: arrastra el punto del borde de una barra hasta otra;
+  se dibuja la línea. Clic en la línea para quitarla.
+- Varios responsables por actividad (separados por coma).
+- Microtareas del proyecto: alta rápida y filtros
+  pendientes / en curso / hechas.

@@ -6,6 +6,11 @@ module.exports = async (req, res) => {
       const activity = await db.createActivity(req.body || {});
       return res.status(201).json({ activity });
     }
+    // Reordenar en lote: { reorder: [{ id, position }, ...] }
+    if (req.method === 'PATCH') {
+      const count = await db.reorderActivities(req.body || {});
+      return res.status(200).json({ success: true, count });
+    }
     res.status(405).json({ error: 'Method not allowed' });
   } catch (err) {
     console.error(err);

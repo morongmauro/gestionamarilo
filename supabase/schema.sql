@@ -44,12 +44,14 @@ create table if not exists activities (
   project_id   uuid not null references projects(id) on delete cascade,
   section_id   uuid references project_sections(id) on delete set null,
   name         text not null,
-  responsable  text,
+  responsable  text,                          -- espejo de responsables: nombres separados por coma
+  responsables text[] not null default '{}',   -- varios responsables por actividad
   start_date   date,
   deadline     date,
   status       text not null default 'pendiente' check (status in ('pendiente','en_curso','completada')),
   pct_complete int not null default 0 check (pct_complete between 0 and 100),
-  depends_on   uuid references activities(id) on delete set null,
+  depends_on   uuid references activities(id) on delete set null,  -- espejo: primera dependencia
+  depends_on_ids uuid[] not null default '{}', -- varias dependencias (ruta crítica)
   notes        text,
   position     int not null default 0,
   created_at   timestamptz not null default now(),

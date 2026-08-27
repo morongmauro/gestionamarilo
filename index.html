@@ -13,6 +13,8 @@
     --good:#2F9E6A; --good-bg:#E4F4EC;
     --warn:#DB940F; --warn-bg:#FBEECB;
     --crit:#DB4A44; --crit-bg:#FBE3E1;
+    --cp:#7A5AF8; --cp-bg:rgba(122,90,248,.13); --cp-ink:#5B3FD4;
+    --cp-late:#E98B86; --cp-late-bg:rgba(233,139,134,.20); --cp-late-ink:#B4443E;
     --shadow-sm:0 1px 2px rgba(26,23,18,.05), 0 1px 1px rgba(26,23,18,.03);
     --shadow:0 2px 5px rgba(26,23,18,.05), 0 10px 24px rgba(26,23,18,.06);
     --shadow-lg:0 4px 10px rgba(26,23,18,.06), 0 18px 44px rgba(26,23,18,.11);
@@ -30,6 +32,8 @@
     --good:#46B37E; --good-bg:rgba(70,179,126,.14);
     --warn:#F0AE3A; --warn-bg:rgba(240,174,58,.14);
     --crit:#F0645E; --crit-bg:rgba(240,100,94,.14);
+    --cp:#A48BFF; --cp-bg:rgba(164,139,255,.18); --cp-ink:#C3B2FF;
+    --cp-late:#F1938E; --cp-late-bg:rgba(241,147,142,.20); --cp-late-ink:#F5AFAB;
     --shadow-sm:0 1px 2px rgba(0,0,0,.35), 0 1px 1px rgba(0,0,0,.25);
     --shadow:0 2px 6px rgba(0,0,0,.35), 0 12px 30px rgba(0,0,0,.45);
     --shadow-lg:0 6px 14px rgba(0,0,0,.4), 0 22px 50px rgba(0,0,0,.55);
@@ -44,6 +48,8 @@
     --accent:#FFD000; --accent-ink:#8A6A00; --accent-soft:#FFF6D6;
     --good:#2F9E6A; --good-bg:#E4F4EC; --warn:#DB940F; --warn-bg:#FBEECB;
     --crit:#DB4A44; --crit-bg:#FBE3E1;
+    --cp:#7A5AF8; --cp-bg:rgba(122,90,248,.13); --cp-ink:#5B3FD4;
+    --cp-late:#E98B86; --cp-late-bg:rgba(233,139,134,.20); --cp-late-ink:#B4443E;
     --shadow-sm:0 1px 2px rgba(26,23,18,.05), 0 1px 1px rgba(26,23,18,.03);
     --shadow:0 2px 5px rgba(26,23,18,.05), 0 10px 24px rgba(26,23,18,.06);
     --shadow-lg:0 4px 10px rgba(26,23,18,.06), 0 18px 44px rgba(26,23,18,.11);
@@ -59,6 +65,8 @@
     --good:#46B37E; --good-bg:rgba(70,179,126,.14);
     --warn:#F0AE3A; --warn-bg:rgba(240,174,58,.14);
     --crit:#F0645E; --crit-bg:rgba(240,100,94,.14);
+    --cp:#A48BFF; --cp-bg:rgba(164,139,255,.18); --cp-ink:#C3B2FF;
+    --cp-late:#F1938E; --cp-late-bg:rgba(241,147,142,.20); --cp-late-ink:#F5AFAB;
     --shadow-sm:0 1px 2px rgba(0,0,0,.35), 0 1px 1px rgba(0,0,0,.25);
     --shadow:0 2px 6px rgba(0,0,0,.35), 0 12px 30px rgba(0,0,0,.45);
     --shadow-lg:0 6px 14px rgba(0,0,0,.4), 0 22px 50px rgba(0,0,0,.55);
@@ -306,19 +314,10 @@
   .banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-radius:12px;padding:11px 15px;margin-bottom:16px;font-size:12.5px;font-weight:600}
   .banner.warn{background:var(--warn-bg);color:var(--accent-ink)}
   .banner.crit{background:var(--crit-bg);color:var(--crit)}
-  .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:13px}
-  .pcard{background:var(--card);border-radius:var(--r);padding:17px;box-shadow:var(--shadow),var(--ring);cursor:pointer;transition:.16s}
-  .pcard:hover{box-shadow:var(--shadow);border-color:var(--line-2)}
-  .pcard.sel{border-color:var(--ink)}
-  .pcard-h{display:flex;align-items:flex-start;gap:9px;margin-bottom:10px}
-  .pcard-h .nm{flex:1;font-size:14px;font-weight:700;letter-spacing:-.01em;line-height:1.3}
   .stat-dot{width:9px;height:9px;border-radius:50%;margin-top:4px;flex-shrink:0}
   .sd-green{background:var(--good)} .sd-yellow{background:var(--warn)} .sd-red{background:var(--crit)}
-  .pcard .mt{font-size:11px;color:var(--muted);margin-bottom:11px}
   .track{height:6px;background:var(--sunk);border-radius:100px;overflow:hidden;margin-bottom:6px}
   .track .fill{height:100%;background:var(--accent);border-radius:100px}
-  .pcard .pct{font-size:10.5px;color:var(--muted);font-weight:600;margin-bottom:11px}
-  .pcard-chips{display:flex;flex-wrap:wrap;gap:5px}
 
   .panel{background:var(--card);border-radius:var(--r);padding:22px;box-shadow:var(--shadow),var(--ring);margin-top:18px}
   .panel-h{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:18px}
@@ -340,9 +339,9 @@
 
   /* GANTT */
   .gantt-scroll{overflow-x:auto;border-radius:12px;background:var(--card);box-shadow:var(--shadow-sm),var(--ring)}
-  .gantt{min-width:900px}
-  .g-row{display:grid;grid-template-columns:270px 1fr}
-  .g-left{padding:9px 14px;border-right:1px solid var(--line);display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0}
+  .gantt{min-width:calc(var(--gcol,270px) + 620px);position:relative}
+  .g-row{display:grid;grid-template-columns:var(--gcol,270px) 1fr}
+  .g-left{padding:9px 14px;border-right:1px solid var(--line);display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0;position:relative}
   .g-tl{position:relative;min-height:40px}
   .g-head{border-bottom:1px solid var(--line);background:var(--sunk);border-radius:12px 12px 0 0}
   .g-head .g-tl{min-height:32px}
@@ -357,7 +356,8 @@
   .g-sec .mt{font-size:10px;color:var(--faint);font-weight:600}
   .g-act{border-top:1px solid var(--line)}
   .g-act:hover{background:var(--sunk)}
-  .g-anm{font-size:12px;font-weight:600;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:6px}
+  .g-anm{font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;min-width:0}
+  .g-anm .nmtxt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
   .g-anm:hover{text-decoration:underline}
   .g-amt{font-size:10px;color:var(--faint);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .g-sdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
@@ -366,8 +366,8 @@
   .g-bar.ring{box-shadow:0 0 0 2px var(--warn)}
   .g-fill{position:absolute;left:0;top:0;bottom:0;background:rgba(0,0,0,.22)}
   .g-exp{position:absolute;top:0;bottom:0;width:2px;background:var(--ink);opacity:.6;z-index:2}
-  .g-sec .tools{display:flex;gap:3px;align-items:center;opacity:0;transition:.15s;flex-shrink:0}
-  .g-sec:hover .tools{opacity:1}
+  .g-sec .tools{position:absolute;right:6px;top:6px;display:flex;gap:2px;align-items:center;opacity:0;transition:.15s;flex-shrink:0;background:var(--card);border-radius:8px;padding:2px;box-shadow:var(--shadow-sm),var(--ring);z-index:7}
+  .g-sec:hover .tools,.g-sec .tools:focus-within{opacity:1}
   .g-sec .tools button{font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px;color:var(--faint)}
   .g-sec .tools button:hover{background:var(--line);color:var(--ink)}
   .g-sec.off .nm{color:var(--faint);text-decoration:line-through}
@@ -383,6 +383,106 @@
   .g-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:10px;color:var(--faint);font-weight:600;align-items:center}
   .g-legend span{display:flex;align-items:center;gap:5px}
   .sw{width:14px;height:8px;border-radius:3px;display:inline-block}
+
+  /* GANTT · extras (v7) */
+  .g-resizer{position:absolute;top:0;bottom:0;right:-4px;width:9px;cursor:col-resize;z-index:8;display:flex;align-items:center;justify-content:center}
+  .g-resizer::after{content:"";width:2px;height:60%;border-radius:2px;background:var(--line-2);opacity:0;transition:.15s}
+  .g-resizer:hover::after{opacity:1;background:var(--accent-ink)}
+  body.g-resizing{cursor:col-resize;user-select:none}
+  body.g-linking{cursor:crosshair;user-select:none}
+
+  /* Fila madre (fase) con avance más legible */
+  .g-sec .g-left{flex-direction:column;align-items:stretch;justify-content:center;gap:5px}
+  .g-sec .g-secrow{display:flex;align-items:center;gap:8px;min-width:0}
+  .g-sec .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .g-secpct{font-size:11px;font-weight:800;font-variant-numeric:tabular-nums;padding:1px 7px;border-radius:100px;background:var(--card);box-shadow:var(--ring);flex-shrink:0}
+  .g-secbar{position:relative;height:6px;border-radius:100px;background:color-mix(in srgb,var(--ink) 8%,transparent);overflow:visible}
+  .g-secbar i{position:absolute;left:0;top:0;bottom:0;border-radius:100px;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 70%,var(--good)),var(--good))}
+  .g-secbar .pmark{position:absolute;top:-3px;bottom:-3px;width:2px;border-radius:2px;background:var(--ink);opacity:.55}
+  .g-sec .mt{font-size:9.5px}
+  .g-roll{position:absolute;top:50%;transform:translateY(-50%);height:9px;border-radius:5px;background:color-mix(in srgb,var(--ink) 14%,transparent);overflow:hidden;z-index:1}
+  .g-roll i{position:absolute;left:0;top:0;bottom:0;background:color-mix(in srgb,var(--ink) 42%,transparent)}
+
+  /* Herramientas por fila: subir, bajar, microtarea */
+  .g-tools-act{position:absolute;right:6px;top:50%;transform:translateY(-50%);display:flex;gap:2px;opacity:0;transition:.15s;background:var(--card);border-radius:8px;padding:2px;box-shadow:var(--shadow-sm),var(--ring);z-index:7}
+  .g-act:hover .g-tools-act,.g-tools-act:focus-within{opacity:1}
+  .g-tools-act button{font-size:10px;line-height:1;padding:4px 6px;border-radius:6px;color:var(--muted)}
+  .g-tools-act button:hover{background:var(--sunk);color:var(--ink)}
+
+  /* Tag de completado sobre la barra / hito */
+  .g-done{position:absolute;top:50%;transform:translateY(-50%);white-space:nowrap;font-size:9px;font-weight:800;letter-spacing:.02em;padding:2px 7px;border-radius:100px;background:var(--good-bg);color:var(--good);box-shadow:var(--ring);z-index:5;pointer-events:none}
+  .g-done.inline{position:static;transform:none;margin-left:8px;display:inline-block}
+
+  /* Ruta crítica */
+  .g-bar.cp,.g-ms.cp{box-shadow:0 0 0 2px var(--cp)}
+  .g-bar.cp-late,.g-ms.cp-late{box-shadow:0 0 0 2px var(--cp-late)}
+  .g-act.crit{background:var(--cp-bg)}
+  .g-act.crit-late{background:var(--cp-late-bg)}
+  .cp-chip{font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;padding:1px 6px;border-radius:100px;background:var(--cp-bg);color:var(--cp-ink);flex-shrink:0}
+  .cp-chip.late{background:var(--cp-late-bg);color:var(--cp-late-ink)}
+
+  /* Conectores de dependencia */
+  .g-links{position:absolute;inset:0;width:100%;height:100%;z-index:6;pointer-events:none;overflow:visible}
+  .g-links path.g-link{fill:none;stroke:var(--line-2);stroke-width:1.6;pointer-events:stroke;cursor:pointer}
+  .g-links path.g-link:hover{stroke:var(--crit);stroke-width:2.4}
+  .g-links path.g-link.crit{stroke:var(--cp);stroke-width:2}
+  .g-links path.g-temp{fill:none;stroke:var(--accent-ink);stroke-width:2;stroke-dasharray:5 4}
+  .g-linkh{position:absolute;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:50%;background:var(--card);box-shadow:0 0 0 2px var(--accent-ink);cursor:crosshair;z-index:7;opacity:0;transition:opacity .15s}
+  .g-act:hover .g-linkh,body.g-linking .g-linkh{opacity:1}
+  .g-linkh:hover{background:var(--accent)}
+
+  /* PESTAÑAS DE PROYECTO */
+  .ptabs{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 10px;margin-bottom:6px;scrollbar-width:thin}
+  .ptab{position:relative;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:9px 14px 11px;border-radius:12px;background:var(--card);box-shadow:var(--shadow-sm),var(--ring);font-size:13px;font-weight:650;color:var(--muted);transition:.16s;overflow:hidden;max-width:280px}
+  .ptab:hover{box-shadow:var(--shadow),var(--ring);color:var(--ink)}
+  .ptab.on{background:var(--ink);color:var(--paper);box-shadow:var(--shadow)}
+  .ptab.on .pt-pct{background:rgba(255,255,255,.14);color:var(--accent)}
+  .ptab .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pt-pct{font-size:10.5px;font-weight:800;font-variant-numeric:tabular-nums;padding:1px 6px;border-radius:100px;background:var(--sunk);color:var(--muted);flex-shrink:0}
+  .pt-alert{font-size:10px;font-weight:800;padding:1px 6px;border-radius:100px;background:var(--crit-bg);color:var(--crit);flex-shrink:0}
+  .pt-track{position:absolute;left:0;right:0;bottom:0;height:3px;background:color-mix(in srgb,var(--ink) 10%,transparent)}
+  .pt-track i{display:block;height:100%;background:var(--accent)}
+  .ptab.add{padding:9px 14px;font-size:15px;font-weight:700}
+
+  /* PLAN: cabecera y tabla editable */
+  .plan-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  .plan-hint{font-size:10px;color:var(--faint);max-width:520px}
+  .ptable-wrap{overflow-x:auto;border-radius:12px;background:var(--card);box-shadow:var(--shadow-sm),var(--ring)}
+  .ptable{width:100%;min-width:1430px;border-collapse:collapse;font-size:12px}
+  .ptable th{text-align:left;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--faint);padding:9px 8px;background:var(--sunk);position:sticky;top:0;z-index:2;white-space:nowrap}
+  .ptable td{padding:4px 6px;border-top:1px solid var(--line);vertical-align:middle}
+  .ptable tr.act:hover{background:var(--sunk)}
+  .ptable tr.act.cp-ok{background:var(--cp-bg)}
+  .ptable tr.act.cp-late{background:var(--cp-late-bg)}
+  .ptable tr.sec td{background:var(--sunk);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.02em;color:var(--muted);padding:8px}
+  .ptable tr.sec.off td{color:var(--faint);text-decoration:line-through}
+  .ptable tr.addrow td{padding:5px 8px}
+  .pt-in{width:100%;min-width:0;font-family:inherit;font-size:12px;color:var(--ink);background:transparent;border:1px solid transparent;border-radius:7px;padding:5px 6px;outline:none;transition:.14s}
+  .pt-in:hover{border-color:var(--line)}
+  .pt-in:focus{border-color:var(--accent-ink);background:var(--card);box-shadow:0 0 0 3px var(--accent-soft)}
+  .pt-in.saved{background:var(--good-bg)}
+  .pt-in.nm{font-weight:650}
+  .pt-in.pct{text-align:right;font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+  .pt-in.pct::-webkit-outer-spin-button,.pt-in.pct::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .pt-ord{white-space:nowrap}
+  .pt-ord button,.pt-del{font-size:10px;color:var(--faint);padding:3px 4px;border-radius:6px}
+  .pt-ord button:hover,.pt-del:hover{background:var(--line);color:var(--ink)}
+  .ptable .addrow input{width:100%;border:none;background:transparent;font-family:inherit;font-size:12px;color:var(--ink);outline:none;padding:4px 0}
+  .ptable .addrow input::placeholder{color:var(--faint)}
+  .dep-cell{display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-width:150px}
+  .dep-chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:2px 4px 2px 7px;border-radius:100px;background:var(--sunk);color:var(--muted);white-space:nowrap}
+  .dep-chip button{font-size:11px;line-height:1;color:var(--faint);padding:0 3px;border-radius:50%}
+  .dep-chip button:hover{color:var(--crit)}
+  .dep-add{width:auto;min-width:34px;font-size:11px;padding:3px 4px;border:1px dashed var(--line-2);border-radius:7px;color:var(--faint)}
+
+  /* MICROTAREAS DEL PROYECTO */
+  .micro-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  .micro-add{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--sunk);border-radius:12px;padding:8px 10px;margin-bottom:12px}
+  .micro-add input[type=text]{flex:1;min-width:200px;border:none;background:transparent;font-family:inherit;font-size:13px;color:var(--ink);outline:none;padding:5px 2px}
+  .micro-add input[type=text]::placeholder{color:var(--faint)}
+  .micro-add select,.micro-add input[type=date]{font-family:inherit;font-size:11.5px;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:5px 8px;outline:none;max-width:190px}
+  .qrow.done .qtitle{text-decoration:line-through;color:var(--faint)}
+  .qrow.done .qcheck{background:var(--good);border-color:var(--good)}
 
   /* PANORAMA */
   .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:20px}
@@ -600,9 +700,9 @@
     <!-- Vista micro: tablero tipo Notion, columnas por proyecto -->
     <div id="proj-board"><div class="q-empty">Cargando…</div></div>
 
-    <!-- Vista macro: portafolio + Gantt -->
+    <!-- Vista macro: se elige el proyecto en una pestaña y debajo va todo lo suyo -->
     <div id="proj-gantt" style="display:none">
-      <div class="pgrid" id="pgrid"><div class="q-empty">Cargando proyectos…</div></div>
+      <div class="ptabs" id="ptabs"><div class="q-empty">Cargando proyectos…</div></div>
       <div id="p-detail"></div>
     </div>
   </div>
@@ -691,7 +791,7 @@
       <div class="field"><label>Nombre</label><input type="text" id="am-name" placeholder="Ej: Levantar requerimientos"></div>
       <div class="frow">
         <div class="field"><label>Fase</label><select id="am-section"></select></div>
-        <div class="field"><label>Responsable</label><input type="text" id="am-resp" placeholder="Opcional"></div>
+        <div class="field"><label>Responsables</label><input type="text" id="am-resp" placeholder="Diana, Camilo, Mauro…"><div class="hint" style="font-size:10px;color:var(--faint);margin-top:4px">Separa varios con coma.</div></div>
       </div>
       <div class="frow">
         <div class="field"><label>Inicio (opcional)</label><input type="date" id="am-start"></div>
@@ -701,7 +801,7 @@
         <div class="field"><label>Estado</label><select id="am-status"><option value="pendiente">Pendiente</option><option value="en_curso">En curso</option><option value="completada">Completada</option></select></div>
         <div class="field"><label>% cumplimiento: <strong id="am-pctl" style="color:var(--ink)">0%</strong></label><input type="range" id="am-pct" min="0" max="100" step="5" value="0" oninput="$('am-pctl').textContent=this.value+'%'"></div>
       </div>
-      <div class="field"><label>Depende de (opcional)</label><select id="am-dep"><option value="">— Ninguna —</option></select></div>
+      <div class="field"><label>Depende de (opcional)</label><div id="am-deps" style="display:flex;flex-direction:column;gap:6px;max-height:150px;overflow-y:auto;background:var(--sunk);border-radius:10px;padding:9px 11px"></div><div class="hint" style="font-size:10px;color:var(--faint);margin-top:4px">Marca todas las actividades que deben terminar antes. También puedes arrastrar el punto del borde de una barra del Gantt hasta otra.</div></div>
       <div class="field"><label>Notas</label><textarea id="am-notes" rows="2"></textarea></div>
     </div>
     <div class="modal-f">
@@ -941,7 +1041,7 @@
   // ---------- ROW MENU ----------
   function openRowMenu(ev,id){
     ev.stopPropagation();
-    const t=tasksIndex[id];if(!t)return;
+    const t=findTask(id);if(!t)return;
     const m=$('rowmenu');
     const done=t.kanbanStatus==='done';
     m.innerHTML=`
@@ -957,9 +1057,10 @@
   function closeRowMenu(){$('rowmenu').classList.remove('open');}
   document.addEventListener('click',e=>{if(!e.target.closest('#rowmenu')&&!e.target.closest('.qmore'))closeRowMenu();});
 
-  async function quickDone(id,ev){if(ev)ev.stopPropagation();try{await api('/api/tasks/'+id,'PATCH',{status:'done'});toast('✓ Completada');loadData();}catch(e){toast('⚠ '+e.message,false);}}
-  async function quickStatus(id,status){closeRowMenu();try{await api('/api/tasks/'+id,'PATCH',{status});toast('✓ Actualizada');loadData();}catch(e){toast('⚠ '+e.message,false);}}
-  async function quickDelete(id){closeRowMenu();if(!confirm('¿Eliminar esta tarea?'))return;try{await api('/api/tasks/'+id,'DELETE');toast('Eliminada');loadData();}catch(e){toast('⚠ '+e.message,false);}}
+  function afterTaskChange(){loadData();if(currentProjectDetail)refreshProjectDetail();}
+  async function quickDone(id,ev){if(ev)ev.stopPropagation();try{await api('/api/tasks/'+id,'PATCH',{status:'done'});toast('✓ Completada');afterTaskChange();}catch(e){toast('⚠ '+e.message,false);}}
+  async function quickStatus(id,status){closeRowMenu();try{await api('/api/tasks/'+id,'PATCH',{status});toast('✓ Actualizada');afterTaskChange();}catch(e){toast('⚠ '+e.message,false);}}
+  async function quickDelete(id){closeRowMenu();if(!confirm('¿Eliminar esta tarea?'))return;try{await api('/api/tasks/'+id,'DELETE');toast('Eliminada');afterTaskChange();}catch(e){toast('⚠ '+e.message,false);}}
 
   // ---------- ORDEN ESTABLE + MAPA DE CALOR ----------
   // Los proyectos top van SIEMPRE primero, en este orden fijo:
@@ -1139,7 +1240,7 @@
   function findTask(id){return tasksIndex[id]||(currentProjectDetail&&(currentProjectDetail.tasks||[]).find(t=>t.id===id))||null;}
   async function ensureProjects(force){if(!projectsCache||force){const d=await api('/api/projects');projectsCache=d.projects;}return projectsCache;}
 
-  async function openTaskModal(id,presetStatus,presetProject){
+  async function openTaskModal(id,presetStatus,presetProject,presetActivity){
     closeRowMenu();
     const t=id?findTask(id):null;
     if(id&&!t){toast('Sincronizando…',false);loadData();return;}
@@ -1156,7 +1257,7 @@
     const pid=t?t.projectId:(presetProject||null);
     fillTaskProjects(pid);
     openModal('m-task');
-    fillActivityOptions(pid,t?t.activityId:null);
+    fillActivityOptions(pid,t?t.activityId:(presetActivity||null));
     setTimeout(()=>$('tm-desc').focus(),80);
   }
   function fillTaskProjects(sel){
@@ -1185,6 +1286,16 @@
 
   // ---------- PROYECTOS ----------
   let projView='tablero';
+  let planView='gantt';          // cómo se ve el plan de trabajo: 'gantt' | 'tabla'
+  let microFilter='pendientes';  // microtareas: pendientes | curso | hechas | todas
+  let ganttColW=270;             // ancho de la columna de títulos del Gantt
+  try{
+    planView=localStorage.getItem('planViewV1')||'gantt';
+    const w=parseInt(localStorage.getItem('ganttColW'),10);
+    if(w>=160&&w<=680)ganttColW=w;
+  }catch{}
+  const LS_PROJ='selProjectV1';
+
   function setProjView(v){
     projView=v;
     $('pv-tablero').classList.toggle('on',v==='tablero');
@@ -1193,10 +1304,15 @@
     $('proj-gantt').style.display=v==='gantt'?'':'none';
     $('btn-sort-proj').style.display=v==='tablero'?'':'none';
     if(v==='tablero')renderProjectBoard();
+    else{renderProjectTabs();ensureProjectSelected();}
   }
   async function loadProjects(force){
-    try{if(!projectsCache||force){const d=await api('/api/projects');projectsCache=d.projects;}renderProjects();renderProjectBoard();}
-    catch(e){$('pgrid').innerHTML=`<div class="q-empty">⚠ ${esc(e.message)}</div>`;}
+    try{
+      if(!projectsCache||force){const d=await api('/api/projects');projectsCache=d.projects;}
+      renderProjectTabs();renderProjectBoard();
+      if(projView==='gantt')ensureProjectSelected();
+    }
+    catch(e){$('ptabs').innerHTML=`<div class="q-empty">⚠ ${esc(e.message)}</div>`;}
   }
 
   // Tablero tipo Notion: columnas por proyecto, tarjetas de microtareas
@@ -1235,35 +1351,49 @@
     const stripe=t.isOverdue||t.stagDays>=5?'s-crit':t.kanbanStatus==='doing'?'s-doing':(t.dueDate&&dayDiff(todayISO(),t.dueDate)<=3?'s-warn':'');
     return `<div class="ptask ${stripe}" onclick="openTaskModal('${t.id}')"><div class="tt">${esc(t.title)}</div><div class="cc">${chips.join('')}</div></div>`;
   }
-  function renderProjects(){
+  // Pestaña por proyecto: se elige arriba y debajo va su Gantt, indicadores y microtareas
+  function renderProjectTabs(){
     const ps=projectsCache||[];
     $('p-count').textContent=ps.length+' proyecto'+(ps.length===1?'':'s');
     const retr=ps.reduce((s,p)=>s+(p.summary?p.summary.retrasos:0),0),prox=ps.reduce((s,p)=>s+(p.summary?p.summary.proximas:0),0);
     if(retr||prox){const parts=[];if(retr)parts.push(`<strong>${retr} actividad${retr===1?'':'es'} retrasada${retr===1?'':'s'}</strong>`);if(prox)parts.push(`${prox} próxima${prox===1?'':'s'} a vencer`);$('p-alerts').innerHTML=`<div class="banner ${retr?'crit':'warn'}">⚠ ${parts.join(' · ')} en el portafolio</div>`;}
     else $('p-alerts').innerHTML='';
-    $('pgrid').innerHTML=ps.length?ps.map(pcard).join(''):'<div class="q-empty">Aún no tienes proyectos. Crea el primero con «＋ Nuevo proyecto».</div>';
+    $('ptabs').innerHTML=ps.length
+      ? ps.map(ptab).join('')+'<button class="ptab add" onclick="openProjectModal()" title="Nuevo proyecto">＋</button>'
+      : '<div class="q-empty">Aún no tienes proyectos. Crea el primero con «＋ Nuevo proyecto».</div>';
+    const on=$('ptabs').querySelector('.ptab.on');
+    if(on)on.scrollIntoView({block:'nearest',inline:'nearest'});
   }
-  function pcard(p){
+  function ptab(p){
     const s=p.summary||{},sel=currentProjectDetail&&currentProjectDetail.id===p.id;
-    const ch=[];
-    if(p.ice!=null)ch.push(`<span class="kc link">ICE ${p.ice}</span>`);
-    if(s.retrasos)ch.push(`<span class="kc hot">${s.retrasos} retrasada${s.retrasos===1?'':'s'}</span>`);
-    if(s.proximas)ch.push(`<span class="kc soon">${s.proximas} próxima${s.proximas===1?'':'s'}</span>`);
-    ch.push(`<span class="kc">${s.totalActividades||0} act.</span>`);
-    if(s.tareasActivas)ch.push(`<span class="kc">${s.tareasActivas} tareas</span>`);
-    return `<div class="pcard ${sel?'sel':''}" onclick="openProject('${p.id}')">
-      <div class="pcard-h"><span class="stat-dot sd-${s.status||'green'}"></span><div class="nm">${esc(p.name)}</div></div>
-      <div class="mt">${p.responsable?'👤 '+esc(p.responsable)+' · ':''}Fin: ${fmtDate(s.fechaFinal)}</div>
-      <div class="track"><div class="fill" style="width:${s.avance||0}%"></div></div>
-      <div class="pct">${s.avance||0}% · ${s.completadas||0}/${s.totalActividades||0} completadas</div>
-      <div class="pcard-chips">${ch.join('')}</div></div>`;
+    const tip=`${p.name} · ${s.avance||0}% ejecutado · ${s.completadas||0}/${s.totalActividades||0} actividades${s.retrasos?' · '+s.retrasos+' retrasada(s)':''}${s.tareasActivas?' · '+s.tareasActivas+' microtareas activas':''}`;
+    return `<button class="ptab ${sel?'on':''}" onclick="openProject('${p.id}')" title="${esc(tip)}">
+      <span class="stat-dot sd-${s.status||'green'}" style="margin:0"></span>
+      <span class="nm">${esc(p.name)}</span>
+      <span class="pt-pct">${s.avance||0}%</span>
+      ${s.retrasos?`<span class="pt-alert">${s.retrasos}</span>`:''}
+      <span class="pt-track"><i style="width:${s.avance||0}%"></i></span>
+    </button>`;
+  }
+  // Si no hay proyecto abierto, abre el último usado (o el primero)
+  function ensureProjectSelected(){
+    const ps=projectsCache||[];
+    if(!ps.length){$('p-detail').innerHTML='<div class="panel"><div class="q-empty">Aún no tienes proyectos. Crea el primero con «＋ Nuevo proyecto».</div></div>';return;}
+    if(currentProjectDetail&&ps.some(p=>p.id===currentProjectDetail.id)){renderProjectPanel();return;}
+    let saved=null;try{saved=localStorage.getItem(LS_PROJ);}catch{}
+    openProject((saved&&ps.some(p=>p.id===saved)?saved:ps[0].id));
   }
   async function openProject(id){
+    try{localStorage.setItem(LS_PROJ,id);}catch{}
     $('p-detail').innerHTML='<div class="panel"><div class="q-empty">Cargando…</div></div>';
-    try{const d=await api('/api/projects/'+id);currentProjectDetail=d.project;renderProjects();renderProjectPanel();$('p-detail').scrollIntoView({behavior:'smooth',block:'start'});}
+    try{const d=await api('/api/projects/'+id);currentProjectDetail=d.project;renderProjectTabs();renderProjectPanel();}
     catch(e){$('p-detail').innerHTML=`<div class="panel"><div class="q-empty">⚠ ${esc(e.message)}</div></div>`;}
   }
-  async function refreshProjectDetail(){if(!currentProjectDetail)return;try{const d=await api('/api/projects/'+currentProjectDetail.id);currentProjectDetail=d.project;renderProjectPanel();ensureProjects(true).then(renderProjects).catch(()=>{});}catch(e){toast('⚠ '+e.message,false);}}
+  async function refreshProjectDetail(){
+    if(!currentProjectDetail)return;
+    try{const d=await api('/api/projects/'+currentProjectDetail.id);currentProjectDetail=d.project;renderProjectPanel();ensureProjects(true).then(renderProjectTabs).catch(()=>{});}
+    catch(e){toast('⚠ '+e.message,false);}
+  }
 
   // Barra "cumplido vs ejecutado" del proyecto: dónde vas vs dónde deberías ir hoy
   function planVsRealHtml(s){
@@ -1285,11 +1415,38 @@
 
   const GC={completada:'var(--good)',retrasada:'var(--crit)',en_curso:'var(--accent)',pendiente:'var(--line-2)'};
   const AS={pendiente:'Pendiente',en_curso:'En curso',completada:'Completada',retrasada:'Retrasada'};
+
+  // Al reordenar/guardar en la tabla se pierde el foco: lo devolvemos a la misma celda
+  let pendingFocus=null;
+  function rememberFocus(){const el=document.activeElement;pendingFocus=(el&&el.dataset&&el.dataset.cell)||null;}
+  function restoreFocus(){
+    if(!pendingFocus)return;
+    const key=pendingFocus;pendingFocus=null;
+    const el=document.querySelector(`[data-cell="${key}"]`);
+    if(el)el.focus();
+  }
+
+  function setPlanView(v){
+    planView=v;try{localStorage.setItem('planViewV1',v);}catch{}
+    renderProjectPanel();
+  }
+  function setMicroFilter(k){microFilter=k;renderProjectPanel();}
+
   function renderProjectPanel(){
     const d=currentProjectDetail;if(!d)return;const s=d.summary;
+    const scroller=$('gantt-scroll');const keepScroll=scroller?scroller.scrollLeft:0;
     const badge=s.status==='red'?'<span class="badge red">Con retrasos</span>':s.status==='yellow'?'<span class="badge yellow">Deadlines cerca</span>':'<span class="badge green">Al día</span>';
     const crit=s.fechasCriticas.length?`<div style="margin-top:14px"><div class="subhead">Fechas críticas</div><div class="crit-list">${s.fechasCriticas.map(c=>`<span class="crit-chip ${c.alerta}" onclick="openActivityModal('${c.id}')">${c.alerta==='retraso'?'⏰':'⚠'} ${esc(c.name)} · ${fmtDate(c.deadline)} ${c.alerta==='retraso'?`(hace ${Math.abs(c.diasRestantes)}d)`:`(en ${c.diasRestantes}d)`}</span>`).join('')}</div></div>`:'';
-    const active=(d.tasks||[]).filter(t=>t.kanbanStatus!=='done').sort((a,b)=>b.score-a.score);
+    const rcCol=s.rutaCriticaEnRiesgo?'var(--cp-late-ink)':s.rutaCritica?'var(--cp-ink)':'var(--faint)';
+    const legend=`<div class="g-legend">
+      <span><span class="sw" style="background:var(--line-2)"></span>Pendiente</span>
+      <span><span class="sw" style="background:var(--accent)"></span>En curso</span>
+      <span><span class="sw" style="background:var(--good)"></span>Completada</span>
+      <span><span class="sw" style="background:var(--crit)"></span>Retrasada</span>
+      <span><span class="sw" style="background:var(--cp)"></span>Ruta crítica al día</span>
+      <span><span class="sw" style="background:var(--cp-late)"></span>Ruta crítica atrasada</span>
+      <span>◆ Solo deadline</span>
+    </div>`;
     $('p-detail').innerHTML=`<div class="panel">
       <div class="panel-h">
         <div><div class="nm">${esc(d.name)} ${badge}</div><div class="meta">👤 ${d.responsable?esc(d.responsable):'sin responsable'} <button class="btn btn-ghost btn-sm" style="padding:1px 7px" onclick="editResponsable()">✎</button>${d.descripcion?' · '+esc(d.descripcion):''}</div></div>
@@ -1304,31 +1461,48 @@
         <div class="b"><div class="v" style="color:${d.ice!=null?'var(--accent-ink)':'var(--faint)'}">${d.ice!=null?d.ice:'—'}</div><div class="l">ICE</div></div>
         <div class="b"><div class="s">${fmtDate(s.fechaFinal)}</div><div class="l">Fecha final</div></div>
         <div class="b"><div class="v">${s.completadas}/${s.totalActividades}</div><div class="l">Actividades</div></div>
+        <div class="b" title="Actividades sin holgura: si una se atrasa, se atrasa todo el proyecto"><div class="v" style="color:${rcCol}">${s.rutaCritica||0}${s.rutaCriticaEnRiesgo?` <span style="font-size:12px">(${s.rutaCriticaEnRiesgo} en riesgo)</span>`:''}</div><div class="l">Ruta crítica</div></div>
         <div class="b"><div class="v" style="color:${s.retrasos?'var(--crit)':'var(--good)'}">${s.retrasos}</div><div class="l">Retrasadas</div></div>
         <div class="b"><div class="v" style="color:${s.proximas?'var(--warn)':'var(--ink)'}">${s.proximas}</div><div class="l">Próximas 7d</div></div>
-        <div class="b"><div class="v">${s.tareasActivas}</div><div class="l">Tareas día a día</div></div>
+        <div class="b"><div class="v">${s.tareasActivas}</div><div class="l">Microtareas activas</div></div>
       </div>
       ${planVsRealHtml(s)}
       ${crit}
       <div style="margin-top:20px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div class="subhead" style="margin:0">Cronograma (Gantt)</div><div style="font-size:10px;color:var(--faint)">Escribe la actividad y Enter. Fechas y dependencias son opcionales. Pasa el mouse por una fase para renombrarla o marcarla como «no aplica».</div></div>
-        ${ganttHtml(d)}
-        <div class="g-legend">
-          <span><span class="sw" style="background:var(--line-2)"></span>Pendiente</span>
-          <span><span class="sw" style="background:var(--accent)"></span>En curso</span>
-          <span><span class="sw" style="background:var(--good)"></span>Completada</span>
-          <span><span class="sw" style="background:var(--crit)"></span>Retrasada</span>
-          <span>◆ Solo deadline</span>
+        <div class="plan-head">
+          <div class="subhead" style="margin:0">Plan de trabajo</div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <span class="plan-hint">${planView==='gantt'
+              ? 'Escribe la actividad y Enter. Arrastra el punto del borde de una barra hasta otra para conectar precedencias, y el borde de la columna «Actividad» para ensancharla.'
+              : 'Diligencia aquí toda la data: se guarda al salir de cada casilla.'}</span>
+            <div class="toggle">
+              <button class="${planView==='gantt'?'on':''}" onclick="setPlanView('gantt')">📊 Gantt</button>
+              <button class="${planView==='tabla'?'on':''}" onclick="setPlanView('tabla')">▤ Tabla</button>
+            </div>
+          </div>
         </div>
+        ${planView==='gantt'?ganttHtml(d)+legend:planTableHtml(d)}
       </div>
-      <div style="margin-top:22px">
-        <div class="subhead">Tareas del día a día vinculadas (${active.length})</div>
-        <div class="queue">${active.length?active.map(qrow).join(''):'<div class="q-empty">Sin tareas. Regístralas en «Hoy» mencionando este proyecto.</div>'}</div>
-      </div>
+      ${microHtml(d)}
     </div>`;
+    if(planView==='gantt'){
+      const sc=$('gantt-scroll');if(sc&&keepScroll)sc.scrollLeft=keepScroll;
+      requestAnimationFrame(drawDepLinks);
+    }
+    restoreFocus();
+  }
+
+  // ---------- GANTT ----------
+  // Orden visual: fases por posición y, dentro de cada una, actividades por posición
+  function orderedActs(d){
+    const secs=[...(d.sections||[])].sort((a,b)=>a.position-b.position);
+    const acts=d.activities||[],out=[];
+    secs.forEach(s=>acts.filter(a=>a.sectionId===s.id).forEach(a=>out.push(a)));
+    acts.filter(a=>!a.sectionId||!secs.some(s=>s.id===a.sectionId)).forEach(a=>out.push(a));
+    return out;
   }
   function ganttHtml(d){
-    const acts=d.activities||[],today=d.summary.today||todayISO();
+    const acts=orderedActs(d),today=d.summary.today||todayISO();
     const all=[today];acts.forEach(a=>{if(a.startDate)all.push(a.startDate);if(a.deadline)all.push(a.deadline);});all.sort();
     let min=addDays(all[0],-4),max=addDays(all[all.length-1],10);
     if(dayDiff(min,max)<42)max=addDays(min,42);
@@ -1343,38 +1517,352 @@
     const rows=groups.map(g=>{
       // Fase desactivada: fila delgada, sin actividades, con opción de reactivar
       if(g.sec&&g.sec.enabled===false){
-        return `<div class="g-row g-sec off"><div class="g-left"><span class="nm">${esc(g.name)}</span><span class="mt">no aplica</span><span class="tools" style="opacity:1"><button onclick="toggleSection('${g.id}',true)" title="Volver a activar esta fase">☑ activar</button></span></div><div class="g-tl" style="min-height:26px">${ticks}${todayLine}</div></div>`;
+        return `<div class="g-row g-sec off"><div class="g-left"><div class="g-secrow"><span class="nm">${esc(g.name)}</span><span class="mt">no aplica</span><span class="tools" style="opacity:1"><button onclick="toggleSection('${g.id}',true)" title="Volver a activar esta fase">☑ activar</button></span></div></div><div class="g-tl" style="min-height:26px">${ticks}${todayLine}</div></div>`;
       }
-      const avg=g.acts.length?Math.round(g.acts.reduce((s,a)=>s+a.pctComplete,0)/g.acts.length):0;
-      const tools=g.id?`<span class="tools">
-        <button onclick="renameSection('${g.id}')" title="Renombrar fase">✎</button>
-        <button onclick="toggleSection('${g.id}',false)" title="Desactivar: esta fase no aplica en este proyecto">◻ no aplica</button>
-        ${g.acts.length?'':`<button onclick="removeSection('${g.id}')" title="Eliminar fase vacía">🗑</button>`}
-      </span>`:'';
-      const sec=`<div class="g-row g-sec"><div class="g-left"><span class="nm">${esc(g.name)}</span><span class="mt">${g.acts.length?g.acts.length+' · '+avg+'%':''}</span>${tools}</div><div class="g-tl" style="min-height:30px">${ticks}${todayLine}</div></div>`;
-      const ar=g.acts.map(a=>gActRow(a,pct,total,today)).join('');
-      const add=`<div class="g-row g-add"><div class="g-left"><input placeholder="＋ Actividad en ${esc(g.name)} (Enter)" onkeydown="if(event.key==='Enter')addActivityInline('${g.id||''}',this)"></div><div class="g-tl" style="min-height:30px">${ticks}${todayLine}</div></div>`;
-      return sec+ar+add;
+      return gSecRow(g,pct,ticks,todayLine)+g.acts.map(a=>gActRow(a,pct,total,today,d)).join('')+
+        `<div class="g-row g-add"><div class="g-left"><input placeholder="＋ Actividad en ${esc(g.name)} (Enter)" onkeydown="if(event.key==='Enter')addActivityInline('${g.id||''}',this)"></div><div class="g-tl" style="min-height:30px">${ticks}${todayLine}</div></div>`;
     }).join('');
     const addSec=`<div class="g-row g-add"><div class="g-left"><input placeholder="＋ Nueva fase (Enter)" onkeydown="if(event.key==='Enter')addSectionInline(this)"></div><div class="g-tl" style="min-height:30px">${ticks}${todayLine}</div></div>`;
-    return `<div class="gantt-scroll"><div class="gantt"><div class="g-row g-head"><div class="g-left"><span class="g-hlab">Actividad</span></div><div class="g-tl">${ticks}${tlab}${todayLine}${todayFlag}</div></div>${rows}${addSec}</div></div>`;
+    const head=`<div class="g-row g-head"><div class="g-left"><span class="g-hlab">Actividad</span><span class="g-resizer" onmousedown="startColResize(event)" title="Arrastra para ensanchar o angostar esta columna"></span></div><div class="g-tl">${ticks}${tlab}${todayLine}${todayFlag}</div></div>`;
+    return `<div class="gantt-scroll" id="gantt-scroll"><div class="gantt" id="gantt" style="--gcol:${ganttColW}px"><svg class="g-links" id="g-links"></svg>${head}${rows}${addSec}</div></div>`;
+  }
+  // Fila madre (fase): avance propio, comparación con el plan y barra resumen en la línea de tiempo
+  function gSecRow(g,pct,ticks,todayLine){
+    const hechas=g.acts.filter(a=>a.estadoEfectivo==='completada').length;
+    const avg=g.acts.length?Math.round(g.acts.reduce((s,a)=>s+a.pctComplete,0)/g.acts.length):0;
+    const planes=g.acts.map(a=>a.pctEsperado).filter(v=>v!=null);
+    const plan=planes.length?Math.round(planes.reduce((s,v)=>s+v,0)/planes.length):null;
+    const col=plan==null?'var(--muted)':avg>=plan?'var(--good)':avg>=plan-15?'var(--warn)':'var(--crit)';
+    const pmark=plan!=null?`<span class="pmark" style="left:${plan}%" title="Plan a hoy: ${plan}%"></span>`:'';
+    const tools=g.id?`<span class="tools">
+      <button onclick="renameSection('${g.id}')" title="Renombrar fase">✎</button>
+      <button onclick="toggleSection('${g.id}',false)" title="Desactivar: esta fase no aplica en este proyecto">◻ no aplica</button>
+      ${g.acts.length?'':`<button onclick="removeSection('${g.id}')" title="Eliminar fase vacía">🗑</button>`}
+    </span>`:'';
+    const meta=g.acts.length?`${hechas}/${g.acts.length} completadas${plan!=null?` · plan a hoy ${plan}%`:''}`:'sin actividades';
+    const bar=g.acts.length?`<div class="g-secbar" title="Avance de la fase: ${avg}%${plan!=null?` · plan a hoy ${plan}%`:''}"><i style="width:${avg}%"></i>${pmark}</div>`:'';
+    const fechas=[];g.acts.forEach(a=>{if(a.startDate)fechas.push(a.startDate);if(a.deadline)fechas.push(a.deadline);});fechas.sort();
+    const roll=fechas.length?(()=>{const l=pct(fechas[0]),w=Math.max(1,pct(addDays(fechas[fechas.length-1],1))-l);
+      return `<div class="g-roll" style="left:${l}%;width:${w}%" title="${esc(g.name)}: ${fmtDate(fechas[0])} → ${fmtDate(fechas[fechas.length-1])} · ${avg}%"><i style="width:${avg}%"></i></div>`;})():'';
+    return `<div class="g-row g-sec"><div class="g-left">
+      <div class="g-secrow"><span class="nm">${esc(g.name)}</span>${g.acts.length?`<span class="g-secpct" style="color:${col}">${avg}%</span>`:''}${tools}</div>
+      ${bar}<span class="mt">${meta}</span>
+    </div><div class="g-tl" style="min-height:38px">${ticks}${todayLine}${roll}</div></div>`;
   }
   function gRowTicks(total){let t='';for(let i=0;i<=total;i+=7)t+=`<div class="g-tick" style="left:${i/total*100}%;opacity:.6"></div>`;return t;}
-  function gActRow(a,pct,total,today){
+  function gActRow(a,pct,total,today,d){
     const col=GC[a.estadoEfectivo]||GC.pendiente,warn=a.alerta==='proximidad'?'ring':'';
-    const meta=[];if(a.responsable)meta.push('👤 '+esc(a.responsable));if(a.deadline)meta.push(dueLabel(a.deadline));
-    if(a.pctEsperado!=null&&a.estadoEfectivo!=='completada'){
+    const done=a.estadoEfectivo==='completada';
+    // La ruta crítica manda el color de la barra: morada si va bien, rojo suave si está en riesgo
+    const cpCls=a.critical?(a.criticaEnRiesgo?'cp-late':'cp'):'';
+    // Ya completada: manda el verde. Solo lo que falta se pinta con el color de la ruta crítica.
+    const barCol=(a.critical&&!done)?(a.criticaEnRiesgo?'var(--cp-late)':'var(--cp)'):col;
+    const rowCls=a.critical?(a.criticaEnRiesgo?'crit crit-late':'crit'):'';
+    const resp=(a.responsables&&a.responsables.length)?a.responsables:(a.responsable?[a.responsable]:[]);
+    const meta=[];
+    if(resp.length)meta.push((resp.length>1?'👥 ':'👤 ')+esc(resp.join(', ')));
+    if(a.deadline)meta.push(dueLabel(a.deadline));
+    if(a.pctEsperado!=null&&!done){
       meta.push(`real ${a.pctComplete}% · plan ${a.pctEsperado}%`);
       if(a.pctComplete<a.pctEsperado-15)meta.push('<span style="color:var(--crit);font-weight:700">⚠ por detrás</span>');
     }else meta.push(a.pctComplete+'%');
     meta.push(AS[a.estadoEfectivo]||a.status);
-    const tip=`${a.name}${a.deadline?' · '+fmtDate(a.deadline):''} · real ${a.pctComplete}%${a.pctEsperado!=null?' vs plan '+a.pctEsperado+'%':''}`;let bar;
-    if(a.startDate&&a.deadline&&a.deadline>=a.startDate){const l=pct(a.startDate),w=Math.max(1.4,pct(addDays(a.deadline,1))-l);const expMark=(a.pctEsperado!=null&&a.estadoEfectivo!=='completada')?`<div class="g-exp" style="left:${a.pctEsperado}%" title="Plan a hoy: ${a.pctEsperado}%"></div>`:'';bar=`<div class="g-bar ${warn}" style="left:${l}%;width:${w}%;background:${col}" onclick="openActivityModal('${a.id}')" title="${esc(tip)}"><div class="g-fill" style="width:${a.pctComplete}%"></div>${expMark}</div>`;}
-    else if(a.startDate||a.deadline){const dd=a.deadline||a.startDate;bar=`<div class="g-ms ${warn}" style="left:calc(${pct(dd)}% - 6px);background:${col}" onclick="openActivityModal('${a.id}')" title="${esc(tip)}"></div>`;}
-    else bar=`<button class="g-nod" onclick="openActivityModal('${a.id}')">＋ agregar fechas</button>`;
-    return `<div class="g-row g-act"><div class="g-left"><div class="g-anm" onclick="openActivityModal('${a.id}')" title="${esc(a.name)}"><span class="g-sdot" style="background:${col}"></span>${esc(a.name)}</div><div class="g-amt">${meta.join(' · ')}</div></div><div class="g-tl">${gRowTicks(total)}<div class="g-today" style="left:${pct(today)}%"></div>${bar}</div></div>`;
+    if(a.critical)meta.push(`<span style="color:${a.criticaEnRiesgo?'var(--cp-late-ink)':'var(--cp-ink)'};font-weight:700">ruta crítica</span>`);
+    const tip=`${a.name}${a.deadline?' · '+fmtDate(a.deadline):''} · real ${a.pctComplete}%${a.pctEsperado!=null?' vs plan '+a.pctEsperado+'%':''}${a.critical?' · en la ruta crítica':''}`;
+    const doneTag=p=>`<span class="g-done" style="${p>78?`right:calc(${100-p}% + 8px)`:`left:calc(${p}% + 8px)`}">✓ Completado</span>`;
+    let bar,tag='',handle='';
+    if(a.startDate&&a.deadline&&a.deadline>=a.startDate){
+      const l=pct(a.startDate),w=Math.max(1.4,pct(addDays(a.deadline,1))-l),fin=l+w;
+      const expMark=(a.pctEsperado!=null&&!done)?`<div class="g-exp" style="left:${a.pctEsperado}%" title="Plan a hoy: ${a.pctEsperado}%"></div>`:'';
+      bar=`<div class="g-bar ${warn} ${cpCls}" data-act="${a.id}" style="left:${l}%;width:${w}%;background:${barCol}" onclick="openActivityModal('${a.id}')" title="${esc(tip)}"><div class="g-fill" style="width:${a.pctComplete}%"></div>${expMark}</div>`;
+      if(done)tag=doneTag(fin);
+      handle=`<span class="g-linkh" style="left:${fin}%" onmousedown="startLink(event,'${a.id}')" title="Arrastra hasta otra actividad: esta va antes que ella"></span>`;
+    }else if(a.startDate||a.deadline){
+      const dd=a.deadline||a.startDate,l=pct(dd);
+      bar=`<div class="g-ms ${warn} ${cpCls}" data-act="${a.id}" style="left:calc(${l}% - 6px);background:${barCol}" onclick="openActivityModal('${a.id}')" title="${esc(tip)}"></div>`;
+      if(done)tag=doneTag(l);
+      handle=`<span class="g-linkh" style="left:calc(${l}% + 9px)" onmousedown="startLink(event,'${a.id}')" title="Arrastra hasta otra actividad: esta va antes que ella"></span>`;
+    }else{
+      bar=`<button class="g-nod" data-act="${a.id}" onclick="openActivityModal('${a.id}')">＋ agregar fechas</button>${done?'<span class="g-done inline" style="position:absolute;left:150px;top:50%;transform:translateY(-50%)">✓ Completado</span>':''}`;
+    }
+    return `<div class="g-row g-act ${rowCls}"><div class="g-left">
+      <div class="g-anm" onclick="openActivityModal('${a.id}')" title="${esc(a.name)}"><span class="g-sdot" style="background:${col}"></span><span class="nmtxt">${esc(a.name)}</span>${a.critical?`<span class="cp-chip ${a.criticaEnRiesgo?'late':''}">crítica</span>`:''}</div>
+      <div class="g-amt">${meta.join(' · ')}</div>
+      <span class="g-tools-act">
+        <button onclick="event.stopPropagation();moveActivity('${a.id}',-1)" title="Subir">▲</button>
+        <button onclick="event.stopPropagation();moveActivity('${a.id}',1)" title="Bajar">▼</button>
+        <button onclick="event.stopPropagation();openTaskModal(null,'todo','${d.id}','${a.id}')" title="Nueva microtarea en esta actividad">＋</button>
+      </span>
+    </div><div class="g-tl">${gRowTicks(total)}<div class="g-today" style="left:${pct(today)}%"></div>${bar}${tag}${handle}</div></div>`;
   }
   async function addActivityInline(sectionId,inp){const name=inp.value.trim();if(!name||!currentProjectDetail)return;inp.disabled=true;try{await api('/api/activities','POST',{projectId:currentProjectDetail.id,sectionId:sectionId||null,name});toast('✓ Actividad agregada');await refreshProjectDetail();}catch(e){toast('⚠ '+e.message,false);inp.disabled=false;}}
+
+  // ---------- ANCHO DE LA COLUMNA DE TÍTULOS ----------
+  function startColResize(ev){
+    ev.preventDefault();ev.stopPropagation();
+    const x0=ev.clientX,w0=ganttColW;
+    const move=e=>{ganttColW=Math.max(160,Math.min(680,Math.round(w0+(e.clientX-x0))));const g=$('gantt');if(g)g.style.setProperty('--gcol',ganttColW+'px');};
+    const up=()=>{
+      document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);
+      document.body.classList.remove('g-resizing');
+      try{localStorage.setItem('ganttColW',String(ganttColW));}catch{}
+      drawDepLinks();
+    };
+    document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
+    document.body.classList.add('g-resizing');
+  }
+
+  // ---------- REORDENAR ACTIVIDADES ----------
+  async function moveActivity(id,dir){
+    const d=currentProjectDetail;if(!d)return;
+    const lista=orderedActs(d),a=lista.find(x=>x.id===id);if(!a)return;
+    const key=x=>x.sectionId||'';
+    const hermanas=lista.filter(x=>key(x)===key(a));
+    const i=hermanas.findIndex(x=>x.id===id),j=i+dir;
+    if(j<0||j>=hermanas.length){toast(dir<0?'Ya es la primera de su fase':'Ya es la última de su fase',false);return;}
+    [hermanas[i],hermanas[j]]=[hermanas[j],hermanas[i]];
+    let k=0;
+    const nuevo=lista.map(x=>key(x)===key(a)?hermanas[k++]:x);
+    rememberFocus();
+    try{
+      await api('/api/activities','PATCH',{reorder:nuevo.map((x,idx)=>({id:x.id,position:idx}))});
+      await refreshProjectDetail();
+    }catch(e){toast('⚠ '+e.message,false);}
+  }
+
+  // ---------- DEPENDENCIAS: ARRASTRAR Y LÍNEAS ----------
+  const SVGNS='http://www.w3.org/2000/svg';
+  let linking=null;
+  function ganttPoint(ev){const g=$('gantt');if(!g)return null;const r=g.getBoundingClientRect();return {x:ev.clientX-r.left,y:ev.clientY-r.top};}
+  function anchorsOf(g){
+    const r=g.getBoundingClientRect(),out={};
+    g.querySelectorAll('[data-act]').forEach(el=>{
+      const b=el.getBoundingClientRect();
+      out[el.dataset.act]={x1:b.left-r.left,x2:b.right-r.left,y:b.top-r.top+b.height/2};
+    });
+    return out;
+  }
+  // Codo: sale por la derecha de la predecesora y entra por la izquierda de la sucesora
+  function elbowPath(f,t){
+    const x1=f.x2+3,y1=f.y,x2=t.x1-9,y2=t.y;
+    if(x2>=x1+14){const mid=x1+Math.max(11,(x2-x1)/2);return `M${x1} ${y1} H${mid} V${y2} H${x2}`;}
+    const s=y2>=y1?1:-1;
+    return `M${x1} ${y1} H${x1+11} V${y1+s*15} H${x2-11} V${y2} H${x2}`;
+  }
+  function drawDepLinks(){
+    const g=$('gantt'),svg=$('g-links'),d=currentProjectDetail;
+    if(!g||!svg||!d)return;
+    svg.innerHTML=`<defs>
+      <marker id="gl-a" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5.5" markerHeight="5.5" orient="auto"><path d="M0 0 L8 4 L0 8 z" style="fill:var(--line-2)"/></marker>
+      <marker id="gl-c" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5.5" markerHeight="5.5" orient="auto"><path d="M0 0 L8 4 L0 8 z" style="fill:var(--cp)"/></marker>
+    </defs>`;
+    const an=anchorsOf(g),byId={};
+    (d.activities||[]).forEach(a=>{byId[a.id]=a;});
+    (d.activities||[]).forEach(a=>{
+      (a.dependsOnIds||[]).forEach(pid=>{
+        const f=an[pid],t=an[a.id],prev=byId[pid];
+        if(!f||!t||!prev)return;
+        const critica=a.critical&&prev.critical;
+        const path=document.createElementNS(SVGNS,'path');
+        path.setAttribute('d',elbowPath(f,t));
+        path.setAttribute('class','g-link'+(critica?' crit':''));
+        path.setAttribute('marker-end',critica?'url(#gl-c)':'url(#gl-a)');
+        const ti=document.createElementNS(SVGNS,'title');
+        ti.textContent=`${prev.name} → ${a.name} · clic para quitar la dependencia`;
+        path.appendChild(ti);
+        path.addEventListener('click',()=>removeDependency(pid,a.id));
+        svg.appendChild(path);
+      });
+    });
+  }
+  function startLink(ev,id){
+    ev.preventDefault();ev.stopPropagation();
+    const svg=$('g-links');if(!svg)return;
+    const an=anchorsOf($('gantt')),from=an[id];if(!from)return;
+    const path=document.createElementNS(SVGNS,'path');
+    path.setAttribute('class','g-temp');
+    svg.appendChild(path);
+    linking={from,fromId:id,path};
+    document.body.classList.add('g-linking');
+    document.addEventListener('mousemove',onLinkMove);
+    document.addEventListener('mouseup',onLinkUp);
+  }
+  function onLinkMove(ev){
+    if(!linking)return;
+    const p=ganttPoint(ev);if(!p)return;
+    linking.path.setAttribute('d',`M${linking.from.x2+3} ${linking.from.y} L${p.x} ${p.y}`);
+  }
+  function onLinkUp(ev){
+    if(!linking)return;
+    document.removeEventListener('mousemove',onLinkMove);
+    document.removeEventListener('mouseup',onLinkUp);
+    document.body.classList.remove('g-linking');
+    const {fromId,path}=linking;linking=null;
+    if(path&&path.parentNode)path.parentNode.removeChild(path);
+    const el=document.elementFromPoint(ev.clientX,ev.clientY);
+    const target=el&&el.closest?el.closest('[data-act]'):null;
+    if(!target){toast('Suéltala sobre otra barra del Gantt',false);return;}
+    const toId=target.dataset.act;
+    if(toId===fromId){toast('Una actividad no puede depender de sí misma',false);return;}
+    addDependency(fromId,toId);
+  }
+  async function addDependency(fromId,toId){
+    const d=currentProjectDetail;if(!d)return;
+    const t=(d.activities||[]).find(a=>a.id===toId);if(!t)return;
+    const ids=[...(t.dependsOnIds||[])];
+    if(ids.includes(fromId)){toast('Ya estaban conectadas');return;}
+    ids.push(fromId);
+    try{await api('/api/activities/'+toId,'PATCH',{dependsOnIds:ids});toast('✓ Dependencia creada');await refreshProjectDetail();}
+    catch(e){toast('⚠ '+e.message,false);}
+  }
+  async function removeDependency(fromId,toId){
+    const d=currentProjectDetail;if(!d)return;
+    const t=(d.activities||[]).find(a=>a.id===toId);if(!t)return;
+    const prev=(d.activities||[]).find(a=>a.id===fromId);
+    if(!confirm(`¿Quitar la dependencia «${prev?prev.name:'?'}» → «${t.name}»?`))return;
+    try{await api('/api/activities/'+toId,'PATCH',{dependsOnIds:(t.dependsOnIds||[]).filter(x=>x!==fromId)});toast('Dependencia quitada');await refreshProjectDetail();}
+    catch(e){toast('⚠ '+e.message,false);}
+  }
+  window.addEventListener('resize',()=>{if(planView==='gantt'&&currentProjectDetail)drawDepLinks();});
+
+  // ---------- PLAN EN TABLA (se diligencia toda la data aquí mismo) ----------
+  function planTableHtml(d){
+    const secs=[...(d.sections||[])].sort((a,b)=>a.position-b.position);
+    const acts=orderedActs(d);
+    const groups=secs.map(s=>({id:s.id,name:s.name,sec:s,acts:acts.filter(a=>a.sectionId===s.id)}));
+    const orphans=acts.filter(a=>!a.sectionId||!secs.some(s=>s.id===a.sectionId));
+    if(orphans.length)groups.push({id:null,name:'Otras',sec:null,acts:orphans});
+    const cols=11;
+    const rows=groups.map(g=>{
+      if(g.sec&&g.sec.enabled===false){
+        return `<tr class="sec off"><td colspan="${cols}">${esc(g.name)} · no aplica <button class="pt-del" onclick="toggleSection('${g.id}',true)" title="Volver a activar">☑ activar</button></td></tr>`;
+      }
+      const hechas=g.acts.filter(a=>a.estadoEfectivo==='completada').length;
+      const avg=g.acts.length?Math.round(g.acts.reduce((s,a)=>s+a.pctComplete,0)/g.acts.length):0;
+      const head=`<tr class="sec"><td colspan="${cols}">${esc(g.name)}${g.acts.length?` · ${hechas}/${g.acts.length} completadas · ${avg}%`:''}${g.id?` <button class="pt-del" onclick="renameSection('${g.id}')" title="Renombrar">✎</button>${g.acts.length?'':` <button class="pt-del" onclick="removeSection('${g.id}')" title="Eliminar fase vacía">🗑</button>`}`:''}</td></tr>`;
+      const body=g.acts.map(a=>ptRow(a,secs)).join('');
+      const add=`<tr class="addrow"><td colspan="${cols}"><input placeholder="＋ Actividad en ${esc(g.name)} (Enter)" onkeydown="if(event.key==='Enter')addActivityInline('${g.id||''}',this)"></td></tr>`;
+      return head+body+add;
+    }).join('');
+    const addSec=`<tr class="addrow"><td colspan="${cols}"><input placeholder="＋ Nueva fase (Enter)" onkeydown="if(event.key==='Enter')addSectionInline(this)"></td></tr>`;
+    return `<div class="ptable-wrap"><table class="ptable">
+      <thead><tr><th style="width:52px"></th><th style="min-width:250px">Actividad</th><th style="min-width:150px">Fase</th><th style="min-width:170px">Responsables</th><th style="min-width:142px">Inicio</th><th style="min-width:142px">Fin</th><th style="min-width:126px">Estado</th><th style="width:66px">%</th><th style="min-width:190px">Depende de</th><th style="min-width:170px">Notas</th><th style="width:34px"></th></tr></thead>
+      <tbody>${rows}${addSec}</tbody></table></div>`;
+  }
+  function ptRow(a,secs){
+    const cp=a.critical?(a.criticaEnRiesgo?'cp-late':'cp-ok'):'';
+    const secOpts='<option value="">— Sin fase —</option>'+secs.map(s=>`<option value="${s.id}"${a.sectionId===s.id?' selected':''}>${esc(s.name)}${s.enabled===false?' (no aplica)':''}</option>`).join('');
+    const stOpts=['pendiente','en_curso','completada'].map(v=>`<option value="${v}"${a.status===v?' selected':''}>${AS[v]}</option>`).join('');
+    const resp=(a.responsables&&a.responsables.length)?a.responsables.join(', '):(a.responsable||'');
+    const atraso=a.alerta==='retraso'?' style="color:var(--crit);font-weight:700"':'';
+    return `<tr class="act ${cp}">
+      <td class="pt-ord"><button onclick="moveActivity('${a.id}',-1)" title="Subir">▲</button><button onclick="moveActivity('${a.id}',1)" title="Bajar">▼</button></td>
+      <td><input class="pt-in nm" data-cell="${a.id}:name" value="${esc(a.name)}" onchange="patchActivity('${a.id}',{name:this.value.trim()},this)">${a.critical?`<span class="cp-chip ${a.criticaEnRiesgo?'late':''}">ruta crítica</span>`:''}</td>
+      <td><select class="pt-in" data-cell="${a.id}:sec" onchange="patchActivity('${a.id}',{sectionId:this.value||null},this)">${secOpts}</select></td>
+      <td><input class="pt-in" data-cell="${a.id}:resp" value="${esc(resp)}" placeholder="Diana, Camilo…" title="Separa varios con coma" onchange="patchActivity('${a.id}',{responsables:this.value},this)"></td>
+      <td><input type="date" class="pt-in" data-cell="${a.id}:start" value="${a.startDate||''}" onchange="patchActivity('${a.id}',{startDate:this.value||null},this)"></td>
+      <td><input type="date" class="pt-in" data-cell="${a.id}:end" value="${a.deadline||''}"${atraso} onchange="patchActivity('${a.id}',{deadline:this.value||null},this)"></td>
+      <td><select class="pt-in" data-cell="${a.id}:status" onchange="patchActivity('${a.id}',{status:this.value},this)">${stOpts}</select></td>
+      <td><input type="number" min="0" max="100" step="5" class="pt-in pct" data-cell="${a.id}:pct" value="${a.pctComplete}" onchange="patchActivity('${a.id}',{pctComplete:Number(this.value)},this)"></td>
+      <td>${depCellHtml(a)}</td>
+      <td><input class="pt-in" data-cell="${a.id}:notes" value="${esc(a.notes||'')}" placeholder="—" onchange="patchActivity('${a.id}',{notes:this.value},this)"></td>
+      <td><button class="pt-del" onclick="removeActivity('${a.id}')" title="Eliminar actividad">🗑</button></td>
+    </tr>`;
+  }
+  function depCellHtml(a){
+    const d=currentProjectDetail;if(!d)return '';
+    const otras=(d.activities||[]).filter(x=>x.id!==a.id);
+    const ids=a.dependsOnIds||[];
+    const chips=ids.map(id=>{
+      const o=otras.find(x=>x.id===id);if(!o)return '';
+      const nm=o.name.length>18?o.name.slice(0,17)+'…':o.name;
+      return `<span class="dep-chip" title="${esc(o.name)}">${esc(nm)}<button onclick="removeDependency('${id}','${a.id}')" title="Quitar">×</button></span>`;
+    }).join('');
+    const opts=otras.filter(o=>!ids.includes(o.id)).map(o=>`<option value="${o.id}">${esc(o.name)}</option>`).join('');
+    return `<div class="dep-cell">${chips}${opts?`<select class="pt-in dep-add" title="Agregar una actividad que debe terminar antes" onchange="if(this.value)addDependency(this.value,'${a.id}')"><option value="">＋</option>${opts}</select>`:''}</div>`;
+  }
+  async function patchActivity(id,body,el){
+    rememberFocus();
+    try{
+      await api('/api/activities/'+id,'PATCH',body);
+      if(el)el.classList.add('saved');
+      await refreshProjectDetail();
+    }catch(e){toast('⚠ '+e.message,false);await refreshProjectDetail();}
+  }
+  async function removeActivity(id){
+    const a=(currentProjectDetail&&currentProjectDetail.activities||[]).find(x=>x.id===id);
+    if(!confirm(`¿Eliminar la actividad «${a?a.name:''}»?`))return;
+    try{await api('/api/activities/'+id,'DELETE');toast('Eliminada');await refreshProjectDetail();}catch(e){toast('⚠ '+e.message,false);}
+  }
+
+  // ---------- MICROTAREAS DEL PROYECTO ----------
+  const MICRO_TABS=[['pendientes','Pendientes'],['curso','En curso'],['hechas','Hechas'],['todas','Todas']];
+  function microHtml(d){
+    const tasks=d.tasks||[];
+    const g={pendientes:tasks.filter(t=>t.kanbanStatus==='todo'),curso:tasks.filter(t=>t.kanbanStatus==='doing'),hechas:tasks.filter(t=>t.kanbanStatus==='done')};
+    const lista=(microFilter==='todas'?[...g.curso,...g.pendientes,...g.hechas]:(g[microFilter]||[]));
+    const orden=microFilter==='hechas'
+      ? [...lista].sort((a,b)=>(b.completedAt||'').localeCompare(a.completedAt||''))
+      : [...lista].sort((a,b)=>(b.score||0)-(a.score||0));
+    const acts=orderedActs(d);
+    const actOpts='<option value="">Sin actividad del Gantt</option>'+acts.map(a=>`<option value="${a.id}">⛓ ${esc(a.name)}</option>`).join('');
+    return `<div style="margin-top:26px">
+      <div class="micro-head">
+        <div class="subhead" style="margin:0">Microtareas del día a día · ${tasks.length}</div>
+        <div class="filters" style="margin:0">${MICRO_TABS.map(([k,l])=>`<button class="fchip ${microFilter===k?'on':''}" onclick="setMicroFilter('${k}')">${l}<span class="ct">${k==='todas'?tasks.length:(g[k]||[]).length}</span></button>`).join('')}</div>
+      </div>
+      <div class="micro-add">
+        <input type="text" id="micro-new" placeholder="＋ Nueva microtarea de este proyecto (Enter)" onkeydown="if(event.key==='Enter')addMicroInline(this)">
+        <select id="micro-act" title="Vincular a una actividad del Gantt">${actOpts}</select>
+        <input type="date" id="micro-due" title="Fecha límite (opcional)">
+        <button class="btn btn-soft btn-sm" onclick="openTaskModal(null,'todo','${d.id}')">⚙ Con detalle</button>
+      </div>
+      <div class="queue">${orden.length?orden.map(microRow).join(''):`<div class="q-empty">${microFilter==='hechas'?'Todavía no hay microtareas cerradas aquí.':'Nada por aquí. Agrega una arriba y queda ligada al proyecto.'}</div>`}</div>
+    </div>`;
+  }
+  function microRow(t){
+    if(t.kanbanStatus!=='done'){
+      const meta=[];
+      if(t.dueDate){const dd=dayDiff(todayISO(),t.dueDate);meta.push(`<span class="${dd<0?'hot':dd<=3?'soon':''}">${dueLabel(t.dueDate)}</span>`);}
+      else if(t.stagDays>=5)meta.push(`<span class="hot">Estancada ${t.stagDays}d</span>`);
+      if(t.kanbanStatus==='doing')meta.push('<span>En curso</span>');
+      if(t.tipoGestion&&t.tipoGestion!=='Propia')meta.push(`<span>${esc(t.tipoGestion)}</span>`);
+      if(t.activityName)meta.push(`<span>⛓ ${esc(t.activityName)}</span>`);
+      const metaHtml=meta.map((m,i)=>i?'<span class="sep"></span>'+m:m).join('');
+      const pri=(t.priority==='High'||t.priority==='Medium')?`<span class="pri-pill pri-${t.priority}">${PRI_LABEL[t.priority]}</span>`:'';
+      return `<div class="qrow ${stripeClass(t)}">
+        <button class="qcheck" title="Completar" onclick="quickDone('${t.id}',event)"></button>
+        <div class="qbody" onclick="openTaskModal('${t.id}')">
+          ${pri}<div class="qtitle">${esc(t.title)}</div>
+          <div class="qmeta">${metaHtml}</div>
+        </div>
+        <button class="qmore" onclick="openRowMenu(event,'${t.id}')">···</button>
+      </div>`;
+    }
+    const cuando=t.completedAt?new Date(t.completedAt).toLocaleDateString('es-CO',{day:'numeric',month:'short'}):'';
+    return `<div class="qrow done">
+      <button class="qcheck" title="Reabrir" onclick="quickStatus('${t.id}','todo')"></button>
+      <div class="qbody" onclick="openTaskModal('${t.id}')">
+        <div class="qtitle">${esc(t.title)}</div>
+        <div class="qmeta"><span>Cerrada ${cuando}</span>${t.activityName?`<span class="sep"></span><span>⛓ ${esc(t.activityName)}</span>`:''}</div>
+      </div>
+      <button class="qmore" onclick="openRowMenu(event,'${t.id}')">···</button>
+    </div>`;
+  }
+  async function addMicroInline(inp){
+    const description=inp.value.trim();
+    if(!description||!currentProjectDetail)return;
+    const act=$('micro-act'),due=$('micro-due');
+    const body={description,projectId:currentProjectDetail.id,activityId:(act&&act.value)||null,dueDate:(due&&due.value)||null};
+    inp.disabled=true;
+    try{
+      await api('/api/tasks','POST',body);
+      toast('✓ Microtarea agregada');
+      await refreshProjectDetail();
+      loadData();
+      const n=$('micro-new');if(n){n.value='';n.focus();}
+    }catch(e){toast('⚠ '+e.message,false);inp.disabled=false;}
+  }
 
   // ---------- FASES: renombrar, activar/desactivar, agregar ----------
   async function addSectionInline(inp){const name=inp.value.trim();if(!name||!currentProjectDetail)return;inp.disabled=true;try{await api('/api/sections','POST',{projectId:currentProjectDetail.id,name});toast('✓ Fase agregada');await refreshProjectDetail();}catch(e){toast('⚠ '+e.message,false);inp.disabled=false;}}
@@ -1440,20 +1928,24 @@
     closeRowMenu();const d=currentProjectDetail;if(!d)return;
     editingActivityId=id||null;const a=id?d.activities.find(x=>x.id===id):null;
     $('am-title').textContent=a?'Editar actividad':'Nueva actividad';
-    $('am-name').value=a?a.name:'';$('am-resp').value=a&&a.responsable?a.responsable:'';
+    $('am-name').value=a?a.name:'';$('am-resp').value=a?((a.responsables&&a.responsables.length)?a.responsables.join(', '):(a.responsable||'')):'';
     $('am-start').value=a&&a.startDate?a.startDate:'';$('am-deadline').value=a&&a.deadline?a.deadline:'';
     $('am-status').value=a?a.status:'pendiente';$('am-pct').value=a?a.pctComplete:0;$('am-pctl').textContent=($('am-pct').value)+'%';
     $('am-notes').value=a&&a.notes?a.notes:'';$('am-del').style.display=a?'':'none';
     const secs=[...d.sections].sort((x,y)=>x.position-y.position);
     $('am-section').innerHTML='<option value="">— Sin fase —</option>'+secs.map(s=>`<option value="${s.id}">${esc(s.name)}${s.enabled===false?' (no aplica)':''}</option>`).join('');
     $('am-section').value=a&&a.sectionId?a.sectionId:'';
-    $('am-dep').innerHTML='<option value="">— Ninguna —</option>'+d.activities.filter(x=>!a||x.id!==a.id).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('');
-    $('am-dep').value=a&&a.dependsOn?a.dependsOn:'';
+    const deps=(a&&a.dependsOnIds)||[];
+    const otras=d.activities.filter(x=>!a||x.id!==a.id);
+    $('am-deps').innerHTML=otras.length
+      ? otras.map(x=>`<label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:550;cursor:pointer"><input type="checkbox" class="am-dep-ck" value="${x.id}"${deps.includes(x.id)?' checked':''}> ${esc(x.name)}</label>`).join('')
+      : '<span style="font-size:11.5px;color:var(--faint)">Aún no hay otras actividades en este proyecto.</span>';
     openModal('m-act');setTimeout(()=>$('am-name').focus(),80);
   }
   async function saveActivity(){
     if(!currentProjectDetail)return;
-    const body={name:$('am-name').value.trim(),sectionId:$('am-section').value||null,responsable:$('am-resp').value.trim()||null,startDate:$('am-start').value||null,deadline:$('am-deadline').value||null,status:$('am-status').value,pctComplete:Number($('am-pct').value),dependsOn:$('am-dep').value||null,notes:$('am-notes').value.trim()||null};
+    const dependsOnIds=[...document.querySelectorAll('.am-dep-ck')].filter(c=>c.checked).map(c=>c.value);
+    const body={name:$('am-name').value.trim(),sectionId:$('am-section').value||null,responsables:$('am-resp').value,startDate:$('am-start').value||null,deadline:$('am-deadline').value||null,status:$('am-status').value,pctComplete:Number($('am-pct').value),dependsOnIds,notes:$('am-notes').value.trim()||null};
     if(!body.name){toast('⚠ El nombre es obligatorio',false);return;}
     try{if(editingActivityId)await api('/api/activities/'+editingActivityId,'PATCH',body);else await api('/api/activities','POST',{...body,projectId:currentProjectDetail.id});closeModal('m-act');toast('✓ Guardada');await refreshProjectDetail();}catch(e){toast('⚠ '+e.message,false);}
   }

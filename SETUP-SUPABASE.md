@@ -2,7 +2,10 @@
 
 La app ya no usa Notion para nada. Todo (tareas, proyectos, fases y actividades del Gantt) vive en tu Supabase. Sigue estos pasos una sola vez:
 
-> **¿Ya tenías la base creada?** Para las funciones nuevas (Gantt compartido por enlace y fases activables) ejecuta una sola vez [`supabase/migracion-2026-07-gantt.sql`](supabase/migracion-2026-07-gantt.sql) en **SQL Editor → New query → Run**. Es seguro correrlo más de una vez.
+> **¿Ya tenías la base creada?** Ejecuta una sola vez, en **SQL Editor → New query → Run**, las migraciones que te falten (son seguras de correr más de una vez):
+>
+> 1. [`supabase/migracion-2026-07-gantt.sql`](supabase/migracion-2026-07-gantt.sql) — Gantt compartido por enlace y fases activables.
+> 2. [`supabase/migracion-2026-08-gantt-plus.sql`](supabase/migracion-2026-08-gantt-plus.sql) — **varios responsables** y **varias dependencias** por actividad (esto último es lo que alimenta la ruta crítica). Sin esta migración, guardar actividades falla con un aviso que te recuerda correrla.
 
 ## 1. Crear el proyecto en Supabase
 
