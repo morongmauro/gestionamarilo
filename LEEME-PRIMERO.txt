@@ -1,57 +1,57 @@
-GANTT v7 · qué hacer con este zip
+GANTT v8 · qué hacer con este zip
 =================================
 
-PASO 1 · Supabase (hazlo ANTES de subir los archivos)
------------------------------------------------------
+PASO 1 · Supabase (SOLO si no lo corriste con el zip anterior)
+---------------------------------------------------------------
 Supabase -> SQL Editor -> New query -> pega TODO el contenido de
    supabase/migracion-2026-08-gantt-plus.sql
-y dale Run. Debe decir "Success. No rows returned".
-
-Es seguro correrlo más de una vez. Tus datos no se tocan: los
-responsables y dependencias que ya tenías se copian solos a las
-columnas nuevas.
-
-Si subes los archivos sin correr esto, guardar actividades falla
-(con un aviso que te recuerda esta migración).
+y dale Run. Es la misma migración del zip pasado: si ya la corriste,
+no hay nada nuevo que pegar. Es seguro correrla otra vez.
 
 
-PASO 2 · Sube los archivos al repo, respetando las carpetas
-------------------------------------------------------------
-Estos 3 son los que hacen que la app funcione:
-
+PASO 2 · Sube estos 4 archivos, respetando las carpetas
+--------------------------------------------------------
    index.html                  -> raíz del repo
    lib/db.js                   -> carpeta lib/
-   api/activities/index.js     -> carpeta api/activities/   <-- ojo aquí
+   api/activities/index.js     -> carpeta api/activities/
+   api/activities/[id].js      -> carpeta api/activities/   <-- NUEVO en esta versión
 
-OJO: hay varios "index.js" en el proyecto. Ese va en api/activities/,
-no en api/projects/ ni en api/tasks/.
+OJO: los dos últimos van en api/activities/, no en api/projects/
+ni en api/tasks/. El archivo se llama [id].js, con los corchetes.
 
-En GitHub: "Add file -> Upload files" y arrastra las CARPETAS
-(lib, api, supabase) junto con index.html. GitHub respeta la
-estructura de carpetas al arrastrar.
-
-Opcionales (no cambian el funcionamiento, dejan el repo ordenado):
+Opcionales (dejan el repo ordenado, no cambian el funcionamiento):
    supabase/migracion-2026-08-gantt-plus.sql
    supabase/schema.sql
    SETUP-SUPABASE.md
 
 
-PASO 3 · Espera el redeploy de Vercel
---------------------------------------
-Entra a Proyectos -> "Gantt · macro".
+QUÉ CAMBIÓ EN ESTA VERSIÓN
+---------------------------
+1. El estado sale del avance. Ya no eliges "pendiente / en curso /
+   completada": pones el %, y en 0% queda pendiente, con avance pasa a
+   en curso y en 100% queda completada.
 
+2. Conectar actividades ya funciona soltando en CUALQUIER parte de la
+   fila destino (antes exigía justo la barra y decía "prueba con otra
+   barra"). La fila se resalta mientras arrastras.
 
-QUÉ CAMBIÓ
-----------
-- Proyectos: se elige en una pestaña arriba y debajo va su Gantt,
-  indicadores y microtareas. Recuerda cuál tenías abierto.
-- Plan de trabajo en Gantt o en Tabla (la tabla se diligencia completa).
-- Columna "Actividad" ensanchable arrastrando su borde.
-- Subir/bajar actividades con las flechas.
-- Tag "Completado" sobre la barra o el hito.
-- Ruta crítica: morada si va al día, rojo suave si está en riesgo.
-- Dependencias: arrastra el punto del borde de una barra hasta otra;
-  se dibuja la línea. Clic en la línea para quitarla.
-- Varios responsables por actividad (separados por coma).
-- Microtareas del proyecto: alta rápida y filtros
-  pendientes / en curso / hechas.
+3. Al conectar dos actividades, las fechas se corren solas: la sucesora
+   arranca el día después de que termina su predecesora, conservando su
+   duración, y el corrimiento sigue en cascada. Solo empuja hacia
+   adelante: nunca te adelanta una fecha que ya pusiste.
+
+4. Se acabó el parpadeo. Cada cambio se pinta de una vez y el guardado
+   va por detrás; la página ya no recarga la sección entera. Si estás
+   escribiendo en una casilla, la respuesta del servidor no te la pisa.
+
+5. Las actividades se mueven arrastrando el ⠿ (aparece al pasar el mouse
+   sobre la fila), dentro de su fase o soltándolas en otra.
+
+6. Ficha "qué se necesita antes": para el mouse sobre una actividad y se
+   abre un panel con TODA la cadena que debe cumplirse antes (directas e
+   indirectas), marcando cuáles están listas y cuál es la que más frena.
+   Al mismo tiempo se resalta esa cadena en el Gantt y se atenúa el
+   resto, para no tener que seguir las líneas a ojo.
+
+Además: las etiquetas de fecha del Gantt se espacian solas cuando el
+plan es largo, para que no se amontonen.
