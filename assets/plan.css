@@ -205,3 +205,42 @@
   .pl .pl-c-nm{width:190px;min-width:190px;max-width:190px}
   .pl-wrap{max-height:70vh;border-radius:18px}
 }
+
+/* Responsable con nombres también en la vista Gantt */
+.pl .pl-c-rs{min-width:190px}
+.pl .pl-c-rs.corta{min-width:190px;width:auto}
+.pl .pl-rs .pl-tx.rs{display:inline-block;max-width:150px;vertical-align:middle;font-weight:500;color:var(--muted);overflow:hidden;text-overflow:ellipsis}
+
+/* Línea base y desvío */
+.pl .pl-c-lb{min-width:118px}
+.pl td.pl-lbc{font-size:11px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
+.pl .pl-c-dv{min-width:70px}
+.pl-dv{display:inline-flex;font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;font-variant-numeric:tabular-nums;vertical-align:middle}
+.pl-dv.late{background:var(--crit-bg);color:var(--crit)}
+.pl-dv.ok{background:var(--good-bg);color:var(--good)}
+.pl td.con-dv{white-space:nowrap}
+.pl-lb{position:absolute;top:4px;height:4px;border-radius:999px;background:color-mix(in srgb,var(--ink) 22%,transparent)}
+.pl-ley .sw.lb{height:4px;background:color-mix(in srgb,var(--ink) 22%,transparent)}
+
+/* Panel de involucrados al lado */
+.pl-layout{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:16px;align-items:start}
+.pl-main{min-width:0}
+.pl-side{background:var(--card);border-radius:22px;padding:14px 10px;box-shadow:0 1px 2px rgba(28,26,23,.03),0 10px 30px rgba(28,26,23,.045);position:sticky;top:90px;max-height:76vh;overflow:auto}
+.pl-side-h{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);padding:0 8px 8px}
+.pl-side-h .pl-mut{margin-left:4px}
+.pl-per{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:7px 8px;border-radius:16px;transition:background .15s}
+.pl-per:hover{background:var(--sunk)}
+.pl-per.on{background:var(--accent-soft)}
+.pl-per .pl-av{width:28px;height:28px;font-size:10px;margin:0;box-shadow:none;flex-shrink:0}
+.pl-per-t{display:flex;flex-direction:column;min-width:0;line-height:1.3}
+.pl-per-t b{font-size:12px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl-per-t span{font-size:10.5px;color:var(--muted)}
+.pl-per-t em{font-style:normal;font-weight:700}
+.pl-per-t em.late{color:var(--crit)}
+.pl-per-t em.soon{color:var(--accent-ink)}
+@media(max-width:1100px){.pl-layout{grid-template-columns:1fr}.pl-side{position:static;max-height:none;display:flex;flex-wrap:wrap;gap:4px}.pl-side-h{width:100%}.pl-per{width:auto}}
+/* Más espacio para el cronograma cuando está el panel de involucrados */
+.pl-layout{grid-template-columns:minmax(0,1fr) 220px}
+.pl-layout .pl .pl-c-nm{width:250px;min-width:250px;max-width:250px}
+.pl-layout .pl .pl-rs .pl-tx.rs{max-width:110px}
+.pl-layout .pl .pl-c-rs,.pl-layout .pl .pl-c-rs.corta{min-width:150px}

@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300..900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/plan.css">
 <script src="/assets/plan.js"></script>
+<script src="/assets/asistente.js"></script>
 <style>
   :root {
     --paper:#FAFAF8; --card:#FFFFFF; --sunk:#F4F2EC;
@@ -729,6 +730,35 @@
   .hechas-fold .pcol-list{margin-top:8px;opacity:.8}
   .pcol-list .hechas-fold summary{font-size:11px;padding:5px 12px}
   .ptask.hecha .tt{text-decoration:line-through;color:var(--faint)}
+
+  /* Línea base, propuestas y cajita de ajustes */
+  .lb-chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:5px 12px;border-radius:999px;background:var(--sunk);color:var(--muted)}
+  .prop-box{margin-top:16px;background:color-mix(in srgb,var(--accent) 9%,var(--card));border-radius:22px;padding:14px 16px}
+  .prop-h{font-size:12px;font-weight:800;margin-bottom:6px}
+  .prop-row{display:flex;align-items:center;gap:10px;padding:6px 0}
+  .prop-row .pl-cod{font-size:11px;font-weight:700;color:var(--muted);min-width:30px}
+  .prop-t{flex:1;min-width:0;display:flex;flex-direction:column;font-size:12px;line-height:1.35}
+  .prop-t b{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .prop-t span{color:var(--muted)}
+  .prop-t strong{color:var(--ink)}
+  .prop-row .pl-mini{font-size:10.5px;font-weight:700;padding:4px 11px;border-radius:999px;background:var(--card);color:var(--muted)}
+  .prop-row .pl-mini.ok{background:var(--good-bg);color:var(--good)}
+  .prop-box .pl-mut{color:var(--faint);font-weight:500}
+  .asist{margin:0 0 12px}
+  .asist-in{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:999px;padding:5px 6px 5px 16px;box-shadow:0 1px 2px rgba(28,26,23,.03),0 6px 20px rgba(28,26,23,.05)}
+  .asist-ic{color:var(--accent-ink);font-size:14px}
+  .asist-in input{flex:1;min-width:0;border:none;background:transparent;font-family:inherit;font-size:13px;font-weight:500;color:var(--ink);outline:none;padding:6px 0}
+  .asist-in input::placeholder{color:var(--faint)}
+  .asist-help{width:28px;height:28px;border-radius:50%;background:var(--sunk);color:var(--muted);font-weight:800;font-size:12px}
+  .asist-prev{margin-top:8px;background:var(--card);border-radius:20px;padding:12px 16px;font-size:12.5px;box-shadow:0 6px 20px rgba(28,26,23,.06)}
+  .asist-ok-h{font-weight:800;font-size:12px;margin-bottom:4px}
+  .asist-li{padding:2px 0;color:var(--ink)}
+  .asist-li.err{color:var(--crit)}
+  .asist-f{display:flex;gap:6px;margin-top:10px}
+  .asist-ej{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .asist-ej button{font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:999px;background:var(--sunk);color:var(--ink)}
+  .asist-ej button:hover{background:var(--accent-soft)}
+  .asist-prev .pl-mut{color:var(--faint);font-size:11px}
 </style>
 </head>
 <body>
@@ -961,6 +991,7 @@
         <div class="field"><label>Inicio (opcional)</label><input type="date" id="am-start"></div>
         <div class="field"><label>Deadline (opcional)</label><input type="date" id="am-deadline"></div>
       </div>
+      <div class="hint" id="am-lb" style="font-size:10.5px;color:var(--muted);margin-top:-6px;display:none"></div>
       <div class="frow">
         <div class="field"><label>Inicio real</label><input type="date" id="am-rstart"></div>
         <div class="field"><label>Fin real</label><input type="date" id="am-rend"><div class="hint" style="font-size:10px;color:var(--faint);margin-top:4px">Al ponerlo queda completada y lo que depende de ella se ajusta.</div></div>
@@ -1022,13 +1053,11 @@
 <!-- MODAL COMPARTIR GANTT -->
 <div class="backdrop" id="m-share" onclick="if(event.target===this)closeModal('m-share')">
   <div class="modal">
-    <div class="modal-h"><h3 id="sh-title">Compartir Gantt</h3><button class="x-close" onclick="closeModal('m-share')">×</button></div>
+    <div class="modal-h"><h3 id="sh-title">Compartir plan</h3><button class="x-close" onclick="closeModal('m-share')">×</button></div>
     <div class="modal-b">
-      <div class="hintbox">Quien reciba el enlace ve <strong>solo el Gantt y sus actividades</strong> de este proyecto. Tus tareas del día a día <strong>nunca</strong> se muestran. Con «Puede editar» la persona actualiza estado, % y fechas de las actividades, y puede crear nuevas.</div>
-      <div class="frow">
-        <div class="field"><label>Persona</label><input id="sh-label" placeholder="Ej: Diana"></div>
-        <div class="field"><label>Permiso</label><select id="sh-role"><option value="view">Solo ver</option><option value="edit">Puede editar</option></select></div>
-      </div>
+      <div class="hintbox">Quien reciba el enlace ve <strong>el plan de trabajo</strong> de este proyecto (tus tareas del día a día <strong>nunca</strong> se muestran). No puede cambiar lo que ya está asentado: <strong>propone</strong> actividades nuevas o ajustes, y tú los aceptas o descartas.</div>
+      <div class="field"><label>Persona o área</label><input id="sh-label" placeholder="Ej: Jurídica · Diana"></div>
+      <input type="hidden" id="sh-role" value="view">
       <button class="btn btn-primary" onclick="createShare()">＋ Generar enlace</button>
       <div class="field"><label>Enlaces activos</label><div id="sh-list" style="display:flex;flex-direction:column;gap:8px"></div></div>
     </div>
@@ -1477,7 +1506,7 @@
   let microHechasAbiertas=false; // microtareas: las completadas van colapsadas
   const pcolHechasAbiertas=new Set(); // tablero: columnas con las completadas desplegadas
   const LS_PLAN='planOptsV2';
-  const planOpts=Plan.opciones(LS_PLAN,{owner:true,editable:true}); // filtros, zoom y columnas de la hoja
+  const planOpts=Plan.opciones(LS_PLAN,{owner:true,editable:true,panel:false}); // filtros, zoom y columnas de la hoja
   let ganttColW=270;             // ancho de la columna de títulos del Gantt
   try{
     planView=localStorage.getItem('planViewV1')||'hoja';
@@ -1771,7 +1800,7 @@
     const respaldo=clonar(d.activities);
     const limpios=normalizarCambios(cambios);
     // Mismas reglas del servidor: si se mueve el fin, lo que depende se corre en cascada
-    const movidas=Plan.aplicarLocal(d.activities,id,limpios);
+    const movidas=Plan.aplicarLocal(d.activities,id,limpios,(d.summary&&d.summary.today)||todayISO());
     if(limpios.pctComplete!==undefined&&limpios.status===undefined)a.status=statusFromPct(a.pctComplete);
     recomputeLocal(false);
     renderPlan();
@@ -1816,7 +1845,10 @@
   }
   function planHeadHtml(){
     return `<div class="plan-head">
-      <div class="subhead" style="margin:0;display:flex;align-items:center;gap:8px">Plan de trabajo <span id="plan-saving" class="saving-dot">guardando…</span></div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div class="subhead" style="margin:0;display:flex;align-items:center;gap:8px">Plan de trabajo <span id="plan-saving" class="saving-dot">guardando…</span></div>
+        ${lineaBaseHtml()}
+      </div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <span class="plan-hint">${planView==='gantt'
           ? 'El % manda: al ponerlo, la actividad pasa a «en curso», y al llegar a 100% queda completada. Arrastra ⠿ para reordenar, el punto del borde de una barra hasta otra fila para conectarlas, y el borde de la columna «Actividad» para ensancharla.'
@@ -1879,8 +1911,10 @@
       </div>
       <div class="pk" id="p-kpis">${kpisHtml(d)}</div>
       <div id="p-signals">${planVsRealHtml(s)}${critHtml(s)}</div>
+      <div id="prop-wrap">${propuestasHtml(d)}</div>
       <div style="margin-top:20px">
         <div id="plan-head-wrap">${planHeadHtml()}</div>
+        <div id="asist-wrap">${asistHtml()}</div>
         <div id="plan-body">${planBodyHtml(d)}</div>
       </div>
       <div id="micro-wrap">${microHtml(d)}</div>
@@ -2402,7 +2436,7 @@
 
   // ---------- PLAN DE TRABAJO (assets/plan.js pinta; aquí se guardan los cambios) ----------
   function planModel(d){
-    return {sections:d.sections,activities:d.activities,tasks:d.tasks,today:(d.summary&&d.summary.today)||todayISO()};
+    return {sections:d.sections,activities:d.activities,tasks:d.tasks,lineaBase:d.lineaBaseAt||null,today:(d.summary&&d.summary.today)||todayISO()};
   }
   function planSetOpt(k,v){Plan.cambiar(planOpts,k,v);Plan.guardar(LS_PLAN,planOpts);renderPlan();}
   function planOnPatch(id,cambios){patchActivity(id,cambios);}
@@ -2429,6 +2463,107 @@
     else if(accion==='on')toggleSection(id,true);
     else if(accion==='remove')removeSection(id);
   }
+  // ---------- LÍNEA BASE ----------
+  // Congela las fechas planeadas; desde ahí se mueve lo proyectado y se ve el desvío
+  function lineaBaseHtml(){
+    const d=currentProjectDetail;if(!d)return '';
+    if(!d.lineaBaseAt)return `<button class="btn btn-soft btn-sm" onclick="fijarLineaBase()" title="Congela las fechas planeadas de hoy: desde ahí se comparan contra lo real">🔒 Fijar línea base</button>`;
+    const f=new Date(d.lineaBaseAt).toLocaleDateString('es-CO',{day:'numeric',month:'short',year:'numeric'});
+    return `<span class="lb-chip" title="Las fechas de la línea base no se mueven. Lo que cambia es lo proyectado (por fechas reales y dependencias) y se ve el desvío.">🔒 Línea base del ${f}</span>
+      <button class="btn btn-ghost btn-sm" onclick="fijarLineaBase(true)" title="Vuelve a congelar con las fechas proyectadas de hoy">Volver a fijar</button>
+      <button class="btn btn-ghost btn-sm" onclick="quitarLineaBase()">Quitar</button>`;
+  }
+  async function fijarLineaBase(otraVez){
+    const d=currentProjectDetail;if(!d)return;
+    const msg=otraVez
+      ?'¿Volver a fijar la línea base con las fechas proyectadas de hoy? La línea base anterior se reemplaza y el desvío vuelve a cero.'
+      :'¿Fijar la línea base? Las fechas planeadas de hoy quedan congeladas. Desde ahí, lo que se mueve es lo proyectado (por fechas reales y dependencias) y se ve el desvío contra lo pactado.';
+    if(!confirm(msg))return;
+    try{await api(`/api/projects/${d.id}?res=lineabase`,'POST',{accion:'fijar'});toast('🔒 Línea base fijada');planOpts.vista=planOpts.vista||'gantt';await refreshProjectDetail();}
+    catch(e){toast('⚠ '+e.message,false);}
+  }
+  async function quitarLineaBase(){
+    const d=currentProjectDetail;if(!d)return;
+    if(!confirm('¿Quitar la línea base? Se pierde la comparación contra lo pactado.'))return;
+    try{await api(`/api/projects/${d.id}?res=lineabase`,'POST',{accion:'quitar'});toast('Línea base quitada');await refreshProjectDetail();}
+    catch(e){toast('⚠ '+e.message,false);}
+  }
+
+  // ---------- AJUSTES PROPUESTOS DESDE EL ENLACE ----------
+  const CAMPO_AJUSTE={deadline:'Fin',startDate:'Inicio',responsables:'Responsable',entregable:'Entregable',name:'Nombre',nota:'Comentario'};
+  function propuestasHtml(d){
+    const ps=d.propuestas||[];
+    const nuevas=(d.activities||[]).filter(a=>a.propuesta).length;
+    if(!ps.length&&!nuevas)return '';
+    Plan.etapas(planModel(d));
+    const byId=Object.fromEntries((d.activities||[]).map(a=>[a.id,a]));
+    const val=p=>(p.campo==='deadline'||p.campo==='startDate')?Plan.fCorta(p.valor):esc(p.valor||'');
+    const actual=(p,a)=>!a?'':p.campo==='deadline'?Plan.fCorta(a.deadline):p.campo==='startDate'?Plan.fCorta(a.startDate):p.campo==='responsables'?esc(Plan.respDe(a).join(', ')):p.campo==='entregable'?esc(a.entregable||'—'):p.campo==='name'?esc(a.name):'';
+    return `<div class="prop-box">
+      <div class="prop-h">Propuestas desde el enlace compartido${nuevas?` · <span class="pl-mut">${nuevas} actividad${nuevas>1?'es':''} nueva${nuevas>1?'s':''} marcada${nuevas>1?'s':''} en el plan</span>`:''}</div>
+      ${ps.map(p=>{const a=byId[p.activityId];return `<div class="prop-row">
+        <span class="pl-cod">${a&&a._cod||''}</span>
+        <div class="prop-t"><b>${esc(a?a.name:'Actividad eliminada')}</b>
+          <span>${CAMPO_AJUSTE[p.campo]||p.campo}: ${p.campo==='nota'?`«${esc(p.valor)}»`:`${actual(p,a)} → <strong>${val(p)}</strong>`}${p.motivo?` · «${esc(p.motivo)}»`:''}${p.propuestoPor?` · ${esc(p.propuestoPor)}`:''}</span></div>
+        ${p.campo==='nota'?`<button class="pl-mini ok" onclick="resolverAjuste('${p.id}',false)">Visto</button>`:`<button class="pl-mini ok" onclick="resolverAjuste('${p.id}',true)">✓ Aplicar</button><button class="pl-mini" onclick="resolverAjuste('${p.id}',false)">✕ Descartar</button>`}
+      </div>`;}).join('')}
+    </div>`;
+  }
+  async function resolverAjuste(id,aceptar){
+    const d=currentProjectDetail;if(!d)return;
+    try{await api(`/api/projects/${d.id}?res=propuestas`,'POST',{propuestaId:id,aceptar});toast(aceptar?'✓ Ajuste aplicado':'Propuesta cerrada');await refreshProjectDetail();}
+    catch(e){toast('⚠ '+e.message,false);}
+  }
+
+  // ---------- CAJITA DE AJUSTES (sin IA) ----------
+  let asistPendiente=null;
+  function asistHtml(){
+    const ej=Asistente.ejemplos;
+    return `<div class="asist">
+      <div class="asist-in">
+        <span class="asist-ic">✦</span>
+        <input id="asist-txt" placeholder="Ajuste rápido: «${ej[0]}», «${ej[1]}», «${ej[2]}»…  (varios con ;)" onkeydown="if(event.key==='Enter'){event.preventDefault();asistInterpretar();}" oninput="if(!this.value)asistCancelar()">
+        <button class="btn btn-soft btn-sm" onclick="asistInterpretar()">Revisar</button>
+        <button class="asist-help" onclick="asistAyuda()" title="Qué frases entiende">?</button>
+      </div>
+      <div id="asist-prev"></div>
+    </div>`;
+  }
+  function asistAyuda(){
+    $('asist-prev').innerHTML=`<div class="asist-prev"><div class="asist-ok-h">Frases que entiendo (sin IA, no gasta nada)</div>
+      <div class="asist-ej">${Asistente.ejemplos.concat(['1.2 fin real 2/10','3.1 vence en 5 días hábiles','2.3 renombrar a Firma de escritura','pon a Tecnología de responsable en 4.1']).map(e=>`<button onclick="asistUsar(this.textContent)">${esc(e)}</button>`).join('')}</div>
+      <div class="pl-mut" style="margin-top:8px">Actividad por ID (2.1) o parte de su nombre. Fechas: «20 nov», «20/11», «viernes», «mañana», «en 5 días». Varias a la vez separadas con «;».</div></div>`;
+  }
+  function asistUsar(t){const i=$('asist-txt');if(i){i.value=t;i.focus();}}
+  function asistCancelar(){asistPendiente=null;const p=$('asist-prev');if(p)p.innerHTML='';}
+  function asistInterpretar(){
+    const d=currentProjectDetail;if(!d)return;
+    const txt=($('asist-txt')||{}).value||'';
+    if(!txt.trim()){asistAyuda();return;}
+    const r=Asistente.interpretar(txt,planModel(d));
+    asistPendiente=r.acciones.length?r.acciones:null;
+    $('asist-prev').innerHTML=`<div class="asist-prev">
+      ${r.acciones.length?`<div class="asist-ok-h">Voy a cambiar:</div>${r.acciones.map(a=>`<div class="asist-li">• ${esc(a.desc)}</div>`).join('')}`:''}
+      ${r.errores.map(e=>`<div class="asist-li err">⚠ ${esc(e)}</div>`).join('')}
+      <div class="asist-f">${r.acciones.length?`<button class="btn btn-primary btn-sm" onclick="asistAplicar()">Aplicar ${r.acciones.length>1?r.acciones.length+' cambios':''}</button>`:''}<button class="btn btn-ghost btn-sm" onclick="asistCancelar()">Cancelar</button>${r.errores.length?'<button class="btn btn-ghost btn-sm" onclick="asistAyuda()">Ver ejemplos</button>':''}</div>
+    </div>`;
+  }
+  async function asistAplicar(){
+    const d=currentProjectDetail;if(!d||!asistPendiente)return;
+    const acciones=asistPendiente;asistCancelar();
+    for(const a of acciones){
+      if(a.tipo==='patch')await applyActivity(a.id,a.cambios);
+      else if(a.tipo==='lote'){
+        marcarGuardando(1);
+        try{reconciliar(await api('/api/activities','PATCH',{projectId:d.id,fechas:a.items}));}
+        catch(e){toast('⚠ '+e.message,false);}
+        finally{marcarGuardando(-1);}
+      }
+    }
+    const i=$('asist-txt');if(i)i.value='';
+    toast(`✓ ${acciones.length} ajuste${acciones.length>1?'s':''} aplicado${acciones.length>1?'s':''}`);
+  }
+
   // Vincular / desvincular una tarea a una actividad: solo a mano
   async function vincularTarea(taskId,activityId){
     const d=currentProjectDetail;if(!d)return;
@@ -2574,13 +2709,13 @@
         const url=location.origin+'/share/'+s.token;
         return `<div style="display:flex;align-items:center;gap:8px;background:var(--sunk);border-radius:10px;padding:8px 10px">
           <div style="flex:1;min-width:0">
-            <div style="font-size:12.5px;font-weight:650">${esc(s.label||'Sin nombre')} · <span style="color:${s.role==='edit'?'var(--accent-ink)':'var(--muted)'}">${s.role==='edit'?'puede editar':'solo ve'}</span></div>
+            <div style="font-size:12.5px;font-weight:650">${esc(s.label||'Sin nombre')} · <span style="color:var(--muted)">ve y propone</span></div>
             <div style="font-size:10.5px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(url)}</div>
           </div>
           <button class="btn btn-soft btn-sm" onclick="copyShare('${url}')">Copiar</button>
           <button class="btn btn-danger btn-sm" onclick="revokeShare('${s.id}')">Revocar</button>
         </div>`;
-      }).join(''):'<div style="font-size:12px;color:var(--faint)">Aún no has compartido este Gantt.</div>';
+      }).join(''):'<div style="font-size:12px;color:var(--faint)">Aún no has compartido este plan.</div>';
     }catch(e){$('sh-list').innerHTML=`<span class="rchip bad">⚠ ${esc(e.message)}</span>`;}
   }
   async function createShare(){
@@ -2613,6 +2748,9 @@
     $('am-name').value=a?a.name:'';$('am-resp').value=a?((a.responsables&&a.responsables.length)?a.responsables.join(', '):(a.responsable||'')):'';
     $('am-start').value=a&&a.startDate?a.startDate:'';$('am-deadline').value=a&&a.deadline?a.deadline:'';
     $('am-rstart').value=a&&a.realStart?a.realStart:'';$('am-rend').value=a&&a.realEnd?a.realEnd:'';
+    const lb=$('am-lb');
+    if(a&&(a.baselineStart||a.baselineEnd)){lb.style.display='';lb.textContent=`🔒 Línea base: ${Plan.fCorta(a.baselineStart)||'—'} → ${Plan.fCorta(a.baselineEnd)||'—'}. Las fechas de arriba son las proyectadas.`;}
+    else lb.style.display='none';
     $('am-pct').value=a?a.pctComplete:0;onPctInput($('am-pct').value);
     $('am-notes').value=a&&a.notes?a.notes:'';$('am-ent').value=a&&a.entregable?a.entregable:'';$('am-del').style.display=a?'':'none';
     const secs=[...d.sections].sort((x,y)=>x.position-y.position);

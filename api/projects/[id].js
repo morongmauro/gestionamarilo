@@ -4,6 +4,9 @@
 //   GET    /api/projects/:id?res=shares                 → listar enlaces
 //   POST   /api/projects/:id?res=shares                 → crear enlace
 //   DELETE /api/projects/:id?res=shares&shareId=...     → revocar enlace
+//   POST   /api/projects/:id?res=lineabase              → fijar / quitar línea base { accion }
+//   GET    /api/projects/:id?res=propuestas             → ajustes propuestos pendientes
+//   POST   /api/projects/:id?res=propuestas             → aceptar / descartar { propuestaId, aceptar }
 //   GET    /api/projects/:id?res=plantilla              → plantillas disponibles
 //   POST   /api/projects/:id?res=plantilla              → cargar plantilla { key, inicio }
 const db = require('../../lib/db');
@@ -11,6 +14,22 @@ const db = require('../../lib/db');
 module.exports = async (req, res) => {
   const { id, res: sub, shareId } = req.query;
   try {
+    if (sub === 'lineabase') {
+      if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+      const { accion } = req.body || {};
+      if (accion === 'quitar') await db.quitarLineaBase(id);
+      else await db.fijarLineaBase(id);
+      return res.status(200).json({ success: true });
+    }
+    if (sub === 'propuestas') {
+      if (req.method === 'GET') return res.status(200).json({ propuestas: await db.listPropuestas(id) });
+      if (req.method === 'POST') {
+        const { propuestaId, aceptar } = req.body || {};
+        await db.resolverPropuesta(id, propuestaId, !!aceptar);
+        return res.status(200).json({ success: true });
+      }
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
     if (sub === 'plantilla') {
       if (req.method === 'GET') return res.status(200).json({ plantillas: db.listarPlantillas() });
       if (req.method === 'POST') {
