@@ -3,7 +3,7 @@
 // Entiende frases con forma conocida y las vuelve cambios al plan:
 //   «2.1 responsable Jurídica, Mauro»   «3.5 fin 20 nov»
 //   «1.3 inicio 5 oct»                  «2.4 avance 60»
-//   «1.1 terminó hoy»                   «2.2 empezó ayer»
+//   «1.1 terminó 29 sep»                «2.2 empezó ayer»
 //   «4.1 dura 8 días»                   «3.2 depende de 3.1»
 //   «mover etapa 3 +5 días»             «2.3 entregable Escritura firmada»
 //   «cuenta bancaria fin viernes»  (por nombre, si hay una sola que calce)
@@ -148,7 +148,9 @@
     if (!act) return { error: 'Eso se hace sobre una actividad: usa su ID (ej. 2.1).' };
 
     if (regla.campo === 'realEnd' || regla.campo === 'realStart') {
-      const f = parseFecha(resto.replace(/^\s*(?:el|en|:)?\s*/, ''), today) || today;
+      // La fecha real la dice el usuario: sin fecha no se asume ninguna
+      const f = parseFecha(resto.replace(/^\s*(?:el|en|:)?\s*/, ''), today);
+      if (!f) return { error: `¿Qué fecha? Ej.: «${act._cod} ${regla.campo === 'realEnd' ? 'terminó' : 'empezó'} 29 sep» o «${act._cod} ${regla.campo === 'realEnd' ? 'terminó' : 'empezó'} hoy».` };
       const cambios = { [regla.campo]: f };
       return { accion: { tipo: 'patch', id: act.id, cambios, desc: `${etiqueta} · ${regla.campo === 'realEnd' ? 'terminó el' : 'empezó el'} ${fc(f)}${regla.campo === 'realEnd' ? ' (queda completada)' : ''}` } };
     }
@@ -215,6 +217,6 @@
 
   window.Asistente = {
     interpretar, parseFecha,
-    ejemplos: ['2.1 responsable Jurídica, Mauro', '3.5 fin 20 nov', '1.1 terminó hoy', '2.4 avance 60', '4.1 dura 8 días', '3.2 depende de 3.1', 'mover etapa 3 +5 días', 'cuenta bancaria fin viernes'],
+    ejemplos: ['2.1 responsable Jurídica, Mauro', '3.5 fin 20 nov', '1.1 terminó 29 sep', '2.4 avance 60', '4.1 dura 8 días', '3.2 depende de 3.1', 'mover etapa 3 +5 días', 'cuenta bancaria fin viernes'],
   };
 })();
