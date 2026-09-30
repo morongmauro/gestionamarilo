@@ -3,6 +3,6 @@
   "outputDirectory": ".",
   "rewrites": [
     { "source": "/share/:token", "destination": "/share.html" },
-    { "source": "/((?!api|share).*)", "destination": "/index.html" }
+    { "source": "/((?!api|share|assets).*)", "destination": "/index.html" }
   ]
 }

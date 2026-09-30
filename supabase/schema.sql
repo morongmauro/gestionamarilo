@@ -54,6 +54,10 @@ create table if not exists activities (
   depends_on_ids uuid[] not null default '{}', -- varias dependencias (ruta crítica)
   notes        text,
   entregable   text,                          -- entregable / resultado (hoja de plan de trabajo)
+  real_start   date,                          -- fecha real de inicio (además de la planeada)
+  real_end     date,                          -- fecha real de fin: la da por terminada
+  propuesta    boolean not null default false, -- sumada desde un enlace de solo lectura
+  propuesta_por text,
   position     int not null default 0,
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
