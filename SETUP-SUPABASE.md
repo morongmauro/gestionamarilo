@@ -8,6 +8,7 @@ La app ya no usa Notion para nada. Todo (tareas, proyectos, fases y actividades 
 > 2. [`supabase/migracion-2026-08-gantt-plus.sql`](supabase/migracion-2026-08-gantt-plus.sql) — **varios responsables** y **varias dependencias** por actividad (esto último es lo que alimenta la ruta crítica). Sin esta migración, guardar actividades falla con un aviso que te recuerda correrla.
 > 3. [`supabase/migracion-2026-10-plan-trabajo.sql`](supabase/migracion-2026-10-plan-trabajo.sql) — columna **Entregable / resultado** de la hoja de plan de trabajo. Sin ella, cargar una plantilla o escribir un entregable falla con un aviso que te recuerda correrla.
 > 4. [`supabase/migracion-2026-10-fechas-reales.sql`](supabase/migracion-2026-10-fechas-reales.sql) — **fechas reales** de inicio y fin, y actividades **propuestas** desde un enlace compartido.
+> 5. [`supabase/migracion-2026-10-linea-base.sql`](supabase/migracion-2026-10-linea-base.sql) — **línea base** (fechas planeadas congeladas) y **ajustes propuestos** desde el enlace compartido.
 
 ## 1. Crear el proyecto en Supabase
 

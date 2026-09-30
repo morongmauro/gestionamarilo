@@ -1,47 +1,40 @@
-PLAN DE TRABAJO COLABORATIVO · qué hacer con esta versión
-==========================================================
+LÍNEA BASE, CAJITA DE AJUSTES Y PLAN COLABORATIVO · qué hacer
+==============================================================
 
 PASO 1 · Supabase (una sola vez)
 --------------------------------
-Supabase -> SQL Editor -> New query -> pega esto y dale Run:
-
-   alter table activities add column if not exists real_start date;
-   alter table activities add column if not exists real_end date;
-   alter table activities add column if not exists propuesta boolean not null default false;
-   alter table activities add column if not exists propuesta_por text;
-
-(Es el contenido de supabase/migracion-2026-10-fechas-reales.sql. Es seguro
-correrlo más de una vez. Si no habías corrido la del «entregable», corre
-también: alter table activities add column if not exists entregable text;)
+Supabase -> SQL Editor -> New query -> pega TODO el contenido de
+   supabase/migracion-2026-10-linea-base.sql
+y dale Run. Es seguro correrlo más de una vez.
+(Si no habías corrido supabase/migracion-2026-10-fechas-reales.sql, córrela antes.)
 
 
 QUÉ CAMBIÓ EN ESTA VERSIÓN
 ---------------------------
-1. Fechas en cascada: si mueves el fin de una actividad (plan o real), todo
-   lo que depende de ella se corre los mismos días hábiles, hacia adelante
-   o hacia atrás. Lo que ya terminó no se toca.
+1. Cajita de ajustes (sin IA, no gasta nada), arriba del plan en tu vista:
+     2.1 responsable Jurídica, Mauro      3.5 fin 20 nov
+     1.1 terminó hoy                      2.4 avance 60
+     4.1 dura 8 días                      3.2 depende de 3.1
+     mover etapa 3 +5 días                cuenta bancaria fin viernes
+   Te muestra qué va a cambiar y aplicas con un clic. Botón «?» = ejemplos.
 
-2. Fechas reales: además de inicio y fin planeados, cada actividad tiene
-   inicio real y fin real. Poner el fin real la da por completada.
+2. Línea base (botón «🔒 Fijar línea base»): congela las fechas planeadas.
+   Desde ahí se mueve lo PROYECTADO (por fechas reales y dependencias) y se
+   ve el DESVÍO en días hábiles contra lo pactado (+4d = va 4 días tarde).
+   Puedes volver a fijarla o quitarla.
 
-3. Plan de trabajo por áreas (vista principal del proyecto y del enlace
-   compartido, se ven igual):
-   - Cada área con su color; clic en un área para ver solo lo suyo, o filtra
-     por responsable.
-   - Vista «Gantt» (lo esencial + cronograma) o «Tabla completa» (entregable,
-     fechas reales, días hábiles, dependencias).
-   - Cronograma por semana, con zoom Día / Semana / Mes.
-   - Responsables con avatares, estado a color, filas compactas.
+3. Avance y fechas reales amarrados: poner avance marca el inicio real (hoy)
+   si no lo tenía; llegar a 100% marca el fin real; poner fin real deja el
+   avance en 100%.
 
-4. Enlace compartido: abajo hay un recuadro para agregar una actividad
-   (actividad, área, responsable, duración en días hábiles). Con enlace de
-   edición entra de una; con enlace de solo lectura queda como «Propuesta»
-   y tú la aceptas (✓) o descartas (✕) desde tu vista.
+4. El enlace compartido ya no edita lo asentado: ve el plan y PROPONE.
+   - Recuadro «Propón una actividad» (etapa, área responsable, duración).
+   - Recuadro plegado «¿Una fecha o un dato no cuadra? Propón un ajuste».
+   Tú ves las propuestas arriba del plan y las aplicas o descartas.
 
-5. Las tareas NO se vinculan solas a actividades: solo a mano. En el plan,
-   cada tarea vinculada tiene una × para desvincularla.
+5. Panel de «Involucrados» al lado (en el enlace va prendido): cada persona
+   o área con lo que tiene, lo atrasado y lo que vence pronto. Clic = filtra.
+   En la columna Responsable se ven los nombres, no solo las iniciales.
 
-6. Tablero de microtareas y microtareas del proyecto: las completadas
-   aparecen colapsadas; la flechita las despliega.
-
-7. Nuevo estilo: Montserrat, botones ovalados, sin bordes.
+6. Agrupar por etapa o por área responsable (Jurídica, Tecnología…), cada
+   una con su tono de color.

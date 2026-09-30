@@ -84,6 +84,18 @@
   .btn-primary{background:var(--accent);color:#1C1A17;box-shadow:0 4px 14px color-mix(in srgb,var(--accent) 40%,transparent)}
   .btn-primary:hover{filter:brightness(1.04);transform:translateY(-1px)}
   .btn-primary:disabled{opacity:.5;transform:none}
+  .ajuste{margin-top:14px;background:var(--card);border-radius:24px;padding:4px 24px;box-shadow:0 1px 2px rgba(28,26,23,.03),0 6px 20px rgba(28,26,23,.035)}
+  .ajuste summary{cursor:pointer;list-style:none;padding:14px 0;font-size:13px;font-weight:700;color:var(--muted);display:flex;align-items:center;gap:8px}
+  .ajuste summary::-webkit-details-marker{display:none}
+  .ajuste summary::before{content:"▸";font-size:10px;transition:transform .15s}
+  .ajuste[open] summary::before{transform:rotate(90deg)}
+  .ajuste summary:hover{color:var(--ink)}
+  .ajuste .body{padding-bottom:18px}
+  .ajgrid{display:grid;grid-template-columns:2fr 1fr 1.4fr;gap:10px}
+  .ajgrid .full{grid-column:1/-1}
+  @media(max-width:900px){.ajgrid{grid-template-columns:1fr}}
+  .btn-soft{background:var(--sunk);color:var(--ink)}
+  .btn-soft:hover{background:color-mix(in srgb,var(--ink) 8%,var(--sunk))}
   .toast{position:fixed;bottom:22px;left:50%;transform:translate(-50%,16px);background:var(--ink);color:var(--paper);padding:11px 20px;border-radius:999px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.2);z-index:500;opacity:0;pointer-events:none;transition:.25s;max-width:90vw}
   .toast.show{opacity:1;transform:translate(-50%,0)}
   .toast.err{background:var(--crit)}
@@ -111,18 +123,36 @@
     <p id="add-sub"></p>
     <div class="addgrid">
       <div class="field f-nm wide"><label>Actividad</label><input type="text" id="n-name" placeholder="Ej: Solicitar certificado de tradición y libertad" onkeydown="if(event.key==='Enter')agregar()"></div>
-      <div class="field mid"><label>Área</label><select id="n-area"></select></div>
-      <div class="field"><label>Responsable</label><input type="text" id="n-resp" placeholder="Ej: Jurídica"></div>
+      <div class="field mid"><label>Etapa</label><select id="n-area"></select></div>
+      <div class="field"><label>Área responsable</label><input type="text" id="n-resp" placeholder="Ej: Jurídica, Tecnología"></div>
       <div class="field"><label>Duración (días háb.)</label><input type="number" id="n-dur" min="1" max="365" value="3"></div>
       <div class="field"><label>Inicio (opcional)</label><input type="date" id="n-ini"></div>
       <div class="field mid"><label>Entregable (opcional)</label><input type="text" id="n-ent" placeholder="Ej: Certificado vigente"></div>
-      <div class="field" id="f-quien"><label>Tu nombre</label><input type="text" id="n-quien" placeholder="Para saber quién la propone"></div>
+      <div class="field" id="f-quien"><label>Tu nombre</label><input type="text" id="n-quien" placeholder="Para saber quién la propone" onchange="recordarNombre(this.value)"></div>
     </div>
     <div class="addfoot">
       <span class="note" id="add-note"></span>
-      <button class="btn btn-primary" id="n-go" onclick="agregar()">Agregar al plan</button>
+      <button class="btn btn-primary" id="n-go" onclick="agregar()">Proponer actividad</button>
     </div>
   </div>
+
+  <details class="ajuste" id="ajbox" style="display:none">
+    <summary>¿Una fecha o un dato no cuadra? Propón un ajuste</summary>
+    <div class="body">
+      <div class="ajgrid">
+        <div class="field"><label>Actividad</label><select id="a-act"></select></div>
+        <div class="field"><label>Qué cambiar</label><select id="a-campo" onchange="campoAjuste()">
+          <option value="deadline">Fecha de fin</option><option value="startDate">Fecha de inicio</option>
+          <option value="responsables">Responsable</option><option value="entregable">Entregable</option>
+          <option value="name">Nombre</option><option value="nota">Solo un comentario</option>
+        </select></div>
+        <div class="field"><label id="a-vlab">Nueva fecha</label><input type="date" id="a-val"></div>
+        <div class="field full"><label>Por qué (opcional)</label><input type="text" id="a-mot" placeholder="Ej: la notaría da cita hasta el 20"></div>
+        <div class="field"><label>Tu nombre</label><input type="text" id="a-quien" placeholder="Para saber quién lo propone" onchange="recordarNombre(this.value)"></div>
+      </div>
+      <div class="addfoot"><span class="note" id="aj-note"></span><button class="btn btn-soft" id="a-go" onclick="proponerAjuste()">Enviar propuesta</button></div>
+    </div>
+  </details>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -137,8 +167,11 @@
   function toast(msg,ok=true){const el=$('toast');el.textContent=msg;el.classList.toggle('err',!ok);el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),2800);}
   const todayISO=()=>new Date().toLocaleDateString('en-CA');
   function fmtDate(iso){if(!iso)return '—';return new Date(iso+'T12:00:00').toLocaleDateString('es-CO',{day:'numeric',month:'short'});}
-  const canEdit=()=>DATA&&DATA.role==='edit';
-  const opts=Plan.opciones(LS,{owner:false,editable:false});
+  // El enlace ve el plan y propone; no cambia lo que ya está asentado
+  const opts=Plan.opciones(LS,{owner:false,editable:false,panel:true});
+  opts.editable=false;
+  let nombre='';try{nombre=localStorage.getItem('planShareNombre')||'';}catch(e){}
+  function recordarNombre(v){nombre=String(v||'').trim();try{localStorage.setItem('planShareNombre',nombre);}catch(e){}['n-quien','a-quien'].forEach(id=>{if($(id)&&!$(id).value)$(id).value=nombre;});}
 
   async function api(method,body){
     const res=await fetch(API,{method,headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined});
@@ -160,7 +193,7 @@
     const s=DATA.summary,p=DATA.project;
     $('p-name').textContent=p.name;
     $('p-sub').textContent=(p.responsable?'Responsable: '+p.responsable+' · ':'')+'Plan de trabajo compartido'+(DATA.label?' con '+DATA.label:'');
-    const r=$('p-role');r.className='role '+(canEdit()?'edit':'view');r.textContent=canEdit()?'✎ Puedes editar':'👁 Solo lectura';
+    const r=$('p-role');r.className='role view';r.textContent='👁 Ver y proponer';
     document.title=p.name+' · Plan de trabajo';
     $('kpis').innerHTML=`
       <div><div class="v">${s.avance}%</div><div class="l">Ejecutado</div></div>
@@ -174,48 +207,54 @@
       $('planbar').innerHTML=`<div class="row"><span>Ejecutado <strong>${s.avance}%</strong> vs plan a hoy <strong>${s.avanceEsperado}%</strong></span><span style="color:${col}">${delta>=0?'▲ al día':'▼ '+Math.abs(delta)+' pts por detrás'}</span></div>
         <div class="track"><div class="fill" style="width:${s.avance}%;background:${col}"></div><div class="mark" style="left:${s.avanceEsperado}%"></div></div>`;
     }else $('planbar').innerHTML='';
-    $('hint').textContent=canEdit()
-      ? 'Elige tu área arriba para ir directo a lo tuyo. Puedes actualizar el avance, las fechas (plan y reales), el responsable y el entregable: se guarda solo. Si mueves el fin de una actividad, lo que depende de ella se corre en cascada.'
-      : 'Elige tu área arriba para ir directo a lo tuyo. Si crees que falta una actividad, propónla abajo.';
+    $('hint').textContent='Elige tu etapa o tu área arriba (o tu nombre en «Involucrados») para ir directo a lo tuyo. Si falta una actividad o una fecha no cuadra, propónlo abajo: quien lleva el plan lo revisa.'+(p.lineaBaseAt?' La barra gris delgada es la línea base (lo pactado); la de color, lo proyectado.':'');
     renderPlan();
     renderAddBox();
   }
   function renderPlan(){
     const w=$('pl-wrap'),keep=w?[w.scrollLeft,w.scrollTop]:null;
-    opts.editable=canEdit();
-    $('plan').innerHTML=Plan.render({sections:DATA.sections,activities:DATA.activities,today:(DATA.summary&&DATA.summary.today)||todayISO()},opts);
+    $('plan').innerHTML=Plan.render(modelo(),opts);
     const n=$('pl-wrap');if(n&&keep){n.scrollLeft=keep[0];n.scrollTop=keep[1];}
   }
+  function modelo(){return {sections:DATA.sections,activities:DATA.activities,lineaBase:DATA.project.lineaBaseAt||null,today:(DATA.summary&&DATA.summary.today)||todayISO()};}
   function renderAddBox(){
     const secs=[...(DATA.sections||[])].filter(s=>s.enabled!==false).sort((a,b)=>a.position-b.position);
     const sel=$('n-area'),prev=sel.value;
     sel.innerHTML=secs.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')||'<option value="">— Sin áreas —</option>';
-    if(prev&&secs.some(s=>s.id===prev))sel.value=prev;else if(opts.area&&secs.some(s=>s.id===opts.area))sel.value=opts.area;
+    if(prev&&secs.some(s=>s.id===prev))sel.value=prev;else if(opts.grupo&&secs.some(s=>s.id===opts.grupo))sel.value=opts.grupo;
     $('addbox').style.display='';
-    $('add-title').textContent=canEdit()?'¿Falta algo? Agrega una actividad':'¿Falta algo? Propón una actividad';
-    $('add-sub').textContent=canEdit()
-      ? 'Queda de una en el plan, en el área que elijas. Con la duración en días hábiles se calcula la fecha de fin (sin fines de semana ni festivos).'
-      : 'Queda marcada como «Propuesta» en el plan hasta que el dueño la acepte. Con la duración en días hábiles se calcula la fecha de fin.';
-    $('f-quien').style.display=canEdit()?'none':'';
-    $('n-go').textContent=canEdit()?'Agregar al plan':'Proponer actividad';
+    $('add-title').textContent='¿Falta algo? Propón una actividad';
+    $('add-sub').textContent='Queda marcada como «Propuesta» en el plan hasta que quien lo lleva la acepte. Con la duración en días hábiles se calcula la fecha de fin (sin fines de semana ni festivos).';
+    ['n-quien','a-quien'].forEach(id=>{if(!$(id).value)$(id).value=nombre;});
+    // Ajuste: actividades con su ID
+    const et=Plan.etapas(modelo());const aSel=$('a-act'),aPrev=aSel.value;
+    aSel.innerHTML=et.filter(g=>!(g.sec&&g.sec.enabled===false)).map(g=>`<optgroup label="${esc(g.cod+' · '+g.name)}">${g.acts.map(a=>`<option value="${a.id}">${esc(a._cod+' · '+a.name)}</option>`).join('')}</optgroup>`).join('');
+    if(aPrev)aSel.value=aPrev;
+    $('ajbox').style.display=(DATA.activities||[]).length?'':'none';
   }
 
   // ---------- Manejadores de la hoja (assets/plan.js) ----------
-  function planSetOpt(k,v){Plan.cambiar(opts,k,v);Plan.guardar(LS,opts);renderPlan();if(k==='area'&&v)$('n-area').value=v;}
-  async function planOnPatch(id,cambios){
-    if(!canEdit())return;
-    const limpios={...cambios};
-    if(limpios.name!==undefined&&!String(limpios.name).trim()){toast('⚠ El nombre no puede quedar vacío',false);renderPlan();return;}
-    if(limpios.responsables!==undefined){limpios.responsables=String(limpios.responsables).split(',').map(x=>x.trim()).filter(Boolean);limpios.responsable=limpios.responsables.join(', ')||null;}
-    if(limpios.pctComplete!==undefined)limpios.pctComplete=Math.max(0,Math.min(100,Number(limpios.pctComplete)||0));
-    const respaldo=JSON.parse(JSON.stringify(DATA.activities));
-    const movidas=Plan.aplicarLocal(DATA.activities,id,limpios);
-    renderPlan();
+  function planSetOpt(k,v){Plan.cambiar(opts,k,v);Plan.guardar(LS,opts);renderPlan();if(k==='grupo'&&v&&DATA.sections.some(s=>s.id===v))$('n-area').value=v;}
+  // Ajuste propuesto: el campo define qué se escribe
+  function campoAjuste(){
+    const c=$('a-campo').value,v=$('a-val');
+    const fecha=c==='deadline'||c==='startDate';
+    v.type=fecha?'date':'text';v.value='';
+    v.placeholder=c==='responsables'?'Ej: Jurídica, Tecnología':c==='nota'?'Tu comentario':'Nuevo valor';
+    $('a-vlab').textContent=fecha?'Nueva fecha':c==='nota'?'Comentario':'Nuevo valor';
+  }
+  async function proponerAjuste(){
+    const body={tipo:'ajuste',activityId:$('a-act').value,campo:$('a-campo').value,valor:$('a-val').value.trim(),motivo:$('a-mot').value.trim()||null,propuestoPor:$('a-quien').value.trim()||null};
+    if(!body.activityId){toast('⚠ Elige la actividad',false);return;}
+    if(!body.valor){toast('⚠ Escribe lo que propones',false);$('a-val').focus();return;}
+    $('a-go').disabled=true;
     try{
-      await api('PATCH',{activityId:id,...cambios});
-      toast(movidas?`✓ Guardado · ${movidas} fecha${movidas===1?'':'s'} corrida${movidas===1?'':'s'} en cascada`:'✓ Guardado');
-      DATA=await api('GET');render();
-    }catch(e){DATA.activities=respaldo;renderPlan();toast('⚠ '+e.message,false);}
+      await api('POST',body);
+      $('a-val').value='';$('a-mot').value='';
+      $('aj-note').textContent='✓ Propuesta enviada: quien lleva el plan la revisa.';
+      toast('✓ Propuesta enviada');
+    }catch(e){toast('⚠ '+e.message,false);}
+    finally{$('a-go').disabled=false;}
   }
 
   async function agregar(){
@@ -234,8 +273,8 @@
     try{
       await api('POST',body);
       ['n-name','n-resp','n-ini','n-ent'].forEach(id=>{$(id).value='';});
-      $('add-note').textContent=canEdit()?'✓ Actividad agregada.':'✓ Propuesta enviada: aparece marcada en el plan hasta que la acepten.';
-      toast(canEdit()?'✓ Actividad agregada':'✓ Propuesta enviada');
+      $('add-note').textContent='✓ Propuesta enviada: aparece marcada en el plan hasta que la acepten.';
+      toast('✓ Propuesta enviada');
       DATA=await api('GET');render();
     }catch(e){toast('⚠ '+e.message,false);}
     finally{$('n-go').disabled=false;}

@@ -1,5 +1,5 @@
-// Endpoint público del Gantt compartido. El token del enlace es la llave:
-// 'view' solo lee; 'edit' además actualiza/crea actividades del proyecto.
+// Endpoint público del plan compartido. El token del enlace es la llave:
+// se lee el plan y se PROPONEN actividades o ajustes; el dueño decide.
 // Nunca expone las tareas (micromanagement) del proyecto.
 const db = require('../../lib/db');
 
@@ -17,6 +17,11 @@ module.exports = async (req, res) => {
       return res.status(200).json({ activity });
     }
     if (req.method === 'POST') {
+      // Ajuste a una actividad existente: queda como propuesta para el dueño
+      if ((req.body || {}).tipo === 'ajuste') {
+        await db.shareProponerAjuste(token, req.body);
+        return res.status(201).json({ success: true });
+      }
       const activity = await db.shareCreateActivity(token, req.body || {});
       return res.status(201).json({ activity });
     }
@@ -24,7 +29,7 @@ module.exports = async (req, res) => {
   } catch (err) {
     console.error(err);
     const msg = err.message || 'Error';
-    const code = /no válido|revocado/.test(msg) ? 404 : /solo lectura/.test(msg) ? 403 : 500;
+    const code = /no válido|revocado/.test(msg) ? 404 : /solo lectura|no se editan/.test(msg) ? 403 : /no encontrada|no válida|Escribe/.test(msg) ? 400 : 500;
     res.status(code).json({ error: msg });
   }
 };

@@ -15,6 +15,7 @@ create table if not exists projects (
   responsable text,
   ice         numeric,
   archivado   boolean not null default false,
+  linea_base_at timestamptz,                  -- cuándo se fijó la línea base
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
@@ -58,6 +59,8 @@ create table if not exists activities (
   real_end     date,                          -- fecha real de fin: la da por terminada
   propuesta    boolean not null default false, -- sumada desde un enlace de solo lectura
   propuesta_por text,
+  baseline_start date,                        -- línea base: inicio congelado
+  baseline_end   date,                        -- línea base: fin congelado
   position     int not null default 0,
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
@@ -107,6 +110,23 @@ create table if not exists project_shares (
 create index if not exists idx_shares_project on project_shares(project_id);
 
 -- ------------------------------------------------------------
+-- AJUSTES PROPUESTOS desde un enlace compartido (el dueño decide)
+-- ------------------------------------------------------------
+create table if not exists propuestas_cambio (
+  id            uuid primary key default gen_random_uuid(),
+  project_id    uuid not null references projects(id) on delete cascade,
+  activity_id   uuid references activities(id) on delete cascade,
+  campo         text not null,
+  valor         text,
+  motivo        text,
+  propuesto_por text,
+  estado        text not null default 'pendiente' check (estado in ('pendiente','aceptada','descartada')),
+  created_at    timestamptz not null default now()
+);
+
+create index if not exists idx_propuestas_project on propuestas_cambio(project_id);
+
+-- ------------------------------------------------------------
 -- updated_at automático
 -- ------------------------------------------------------------
 create or replace function set_updated_at() returns trigger as $$
@@ -137,3 +157,4 @@ alter table project_sections enable row level security;
 alter table activities enable row level security;
 alter table tasks enable row level security;
 alter table project_shares enable row level security;
+alter table propuestas_cambio enable row level security;
