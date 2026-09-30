@@ -798,6 +798,17 @@
   .mem-chip{font-size:11px;font-weight:600;padding:4px 11px;border-radius:999px;background:var(--sunk);color:var(--ink)}
   .mem-chip em{font-style:normal;color:var(--faint);font-weight:500}
   .mem-chip.on{background:color-mix(in srgb,var(--c) 25%,var(--card))}
+  /* Indicadores del proyecto en grupos separados */
+  #p-kpis.pk{display:flex;flex-wrap:wrap;gap:12px;grid-template-columns:none}
+  .kg{background:var(--sunk);border-radius:20px;padding:12px 16px 14px;flex:1 1 auto;min-width:200px}
+  .kg-t{font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .kg-r{display:flex;gap:22px;flex-wrap:wrap}
+  .kg .b{background:transparent;padding:0;min-width:70px}
+  .kg .l{color:var(--muted)}
+  .kg-link{font-size:10px;font-weight:800;color:var(--accent-ink);text-transform:none;letter-spacing:0;padding:0 4px;text-decoration:underline}
+  .ptable th{color:var(--ink);font-weight:800}
+  .prop-alert{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;padding:4px 12px;border-radius:999px;background:var(--accent);color:#1C1A17;cursor:pointer}
+  .sp-item .pr{font-size:10px;font-weight:800;color:#1C1A17;background:var(--accent);border-radius:999px;padding:0 6px}
   .lb-chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:5px 12px;border-radius:999px;background:var(--sunk);color:var(--muted)}
   .prop-box{margin-top:16px;background:color-mix(in srgb,var(--accent) 9%,var(--card));border-radius:22px;padding:14px 16px}
   .prop-h{font-size:12px;font-weight:800;margin-bottom:6px}
@@ -1098,6 +1109,7 @@
         <div class="field"><label>Responsable</label><input type="text" id="pm-resp" placeholder="Opcional"></div>
         <div class="field"><label>ICE · 0 a 100</label><input type="number" id="pm-ice" min="0" max="100" step="1" placeholder="Ej: 70"></div>
       </div>
+      <div class="field"><label>Fecha meta (cuándo debe estar listo)</label><input type="date" id="pm-meta"><div class="hint" style="font-size:10px;color:var(--faint);margin-top:4px">Opcional. El plan te muestra si llega o cuántos días hábiles se pasa.</div></div>
       <div class="field"><label>Descripción</label><textarea id="pm-desc" rows="2" placeholder="Opcional"></textarea></div>
       <div class="hintbox">El <strong>ICE</strong> que pongas aquí entra directo en la fórmula de priorización: todas las tareas del proyecto lo heredan (y pisa el ICE viejo arrastrado de Notion).</div>
       <div class="hintbox" id="pm-hint">Al crearlo se generan sus 3 fases de Gantt: <strong>Estructuración y planeación · Ejecución y seguimiento a piloto · Implementación al negocio</strong>. Luego puedes renombrarlas, desactivarlas o agregar más.</div>
@@ -1209,7 +1221,7 @@
     const el=$('side-proj');if(!el)return;
     const ps=projectsCache||[];
     el.innerHTML=ps.length?ps.map(p=>{const s=p.summary||{},on=projView==='gantt'&&currentProjectDetail&&currentProjectDetail.id===p.id;
-      return `<button class="sp-item${on?' on':''}" onclick="abrirProyectoLateral('${p.id}')" title="${esc(p.name)}"><span class="stat-dot sd-${s.status||'green'}" style="margin:0"></span><span class="nm">${esc(p.name)}</span>${s.retrasos?`<span class="al">${s.retrasos}</span>`:''}<span class="pc">${s.avance||0}%</span></button>`;}).join('')
+      return `<button class="sp-item${on?' on':''}" onclick="abrirProyectoLateral('${p.id}')" title="${esc(p.name)}"><span class="stat-dot sd-${s.status||'green'}" style="margin:0"></span><span class="nm">${esc(p.name)}</span>${p.propuestasPendientes?`<span class="pr" title="${p.propuestasPendientes} propuesta${p.propuestasPendientes===1?'':'s'} del enlace esperando tu revisión">✉ ${p.propuestasPendientes}</span>`:''}${s.retrasos?`<span class="al">${s.retrasos}</span>`:''}<span class="pc">${s.avance||0}%</span></button>`;}).join('')
       :'<div style="font-size:12px;color:var(--faint);padding:6px 10px">Aún no hay proyectos.</div>';
   }
   function abrirProyectoLateral(id){
@@ -1930,19 +1942,37 @@
     }finally{marcarGuardando(-1);}
   }
 
+  // Diferencia en días hábiles entre el fin del plan y la fecha meta
+  function metaHtml(d){
+    const s=d.summary;
+    if(!d.fechaMeta)return `<div class="b"><div class="s" style="color:var(--faint)">—</div><div class="l">Fecha meta <button class="kg-link" onclick="openProjectModal('${d.id}')">poner</button></div></div>`;
+    if(!s.fechaFinal)return `<div class="b"><div class="s">${fmtDate(d.fechaMeta)}</div><div class="l">Fecha meta</div></div>`;
+    const dif=Plan.cal.difHabiles(d.fechaMeta,s.fechaFinal);
+    const txt=dif>0?`se pasa ${dif} día${dif===1?'':'s'} háb.`:dif<0?`sobran ${-dif} día${dif===-1?'':'s'} háb.`:'justo a tiempo';
+    return `<div class="b"><div class="s">${fmtDate(d.fechaMeta)}</div><div class="l">Fecha meta · <strong style="color:${dif>0?'var(--crit)':'var(--good)'}">${txt}</strong></div></div>`;
+  }
   function kpisHtml(d){
     const s=d.summary;
     const rcCol=s.rutaCriticaEnRiesgo?'var(--cp-late-ink)':s.rutaCritica?'var(--cp-ink)':'var(--faint)';
     return `
-      <div class="b"><div class="v">${s.avance}%</div><div class="l">Ejecutado</div></div>
-      <div class="b"><div class="v" style="color:${s.avanceEsperado!=null&&s.avance<s.avanceEsperado-10?'var(--crit)':'var(--ink)'}">${s.avanceEsperado!=null?s.avanceEsperado+'%':'—'}</div><div class="l">Plan a hoy</div></div>
-      <div class="b"><div class="v" style="color:${d.ice!=null?'var(--accent-ink)':'var(--faint)'}">${d.ice!=null?d.ice:'—'}</div><div class="l">ICE</div></div>
-      <div class="b"><div class="s">${fmtDate(s.fechaFinal)}</div><div class="l">Fecha final</div></div>
-      <div class="b"><div class="v">${s.completadas}/${s.totalActividades}</div><div class="l">Actividades</div></div>
-      <div class="b" title="Actividades sin holgura: si una se atrasa, se atrasa todo el proyecto"><div class="v" style="color:${rcCol}">${s.rutaCritica||0}${s.rutaCriticaEnRiesgo?` <span style="font-size:12px">(${s.rutaCriticaEnRiesgo} en riesgo)</span>`:''}</div><div class="l">Ruta crítica</div></div>
-      <div class="b"><div class="v" style="color:${s.retrasos?'var(--crit)':'var(--good)'}">${s.retrasos}</div><div class="l">Retrasadas</div></div>
-      <div class="b"><div class="v" style="color:${s.proximas?'var(--warn)':'var(--ink)'}">${s.proximas}</div><div class="l">Próximas 7d</div></div>
-      <div class="b"><div class="v">${s.tareasActivas}</div><div class="l">Microtareas activas</div></div>`;
+      <div class="kg"><div class="kg-t">Avance</div><div class="kg-r">
+        <div class="b"><div class="v">${s.avance}%</div><div class="l">Ejecutado</div></div>
+        <div class="b"><div class="v" style="color:${s.avanceEsperado!=null&&s.avance<s.avanceEsperado-10?'var(--crit)':'var(--ink)'}">${s.avanceEsperado!=null?s.avanceEsperado+'%':'—'}</div><div class="l">Plan a hoy</div></div>
+        <div class="b"><div class="v">${s.completadas}/${s.totalActividades}</div><div class="l">Actividades listas</div></div>
+      </div></div>
+      <div class="kg"><div class="kg-t">Fechas</div><div class="kg-r">
+        <div class="b"><div class="s">${fmtDate(s.fechaFinal)}</div><div class="l">Fin del plan</div></div>
+        ${metaHtml(d)}
+      </div></div>
+      <div class="kg"><div class="kg-t">Alertas</div><div class="kg-r">
+        <div class="b"><div class="v" style="color:${s.retrasos?'var(--crit)':'var(--good)'}">${s.retrasos}</div><div class="l">Atrasadas</div></div>
+        <div class="b"><div class="v" style="color:${s.proximas?'var(--warn)':'var(--ink)'}">${s.proximas}</div><div class="l">Vencen en 7 días</div></div>
+        <div class="b" title="Actividades sin holgura: si una se atrasa, se atrasa todo el proyecto"><div class="v" style="color:${rcCol}">${s.rutaCritica||0}${s.rutaCriticaEnRiesgo?` <span style="font-size:12px">(${s.rutaCriticaEnRiesgo} en riesgo)</span>`:''}</div><div class="l">Ruta crítica</div></div>
+      </div></div>
+      <div class="kg"><div class="kg-t">Día a día</div><div class="kg-r">
+        <div class="b"><div class="v" style="color:${d.ice!=null?'var(--accent-ink)':'var(--faint)'}">${d.ice!=null?d.ice:'—'}</div><div class="l">ICE</div></div>
+        <div class="b"><div class="v">${s.tareasActivas}</div><div class="l">Microtareas activas</div></div>
+      </div></div>`;
   }
   function critHtml(s){
     if(!s.fechasCriticas.length)return '';
@@ -2016,10 +2046,11 @@
     const d=currentProjectDetail;if(!d)return;const s=d.summary;
     const sc=$('gantt-scroll'),keepG=sc?sc.scrollLeft:0;
     hideReqCard();
+    const nProp=(d.propuestas||[]).length+(d.activities||[]).filter(a=>a.propuesta).length;
     const badge=s.status==='red'?'<span class="badge red">Con retrasos</span>':s.status==='yellow'?'<span class="badge yellow">Deadlines cerca</span>':'<span class="badge green">Al día</span>';
     $('p-detail').innerHTML=`<div class="panel">
       <div class="panel-h">
-        <div><div class="nm">${esc(d.name)} ${badge}</div><div class="meta">👤 ${d.responsable?esc(d.responsable):'sin responsable'} <button class="btn btn-ghost btn-sm" style="padding:1px 7px" onclick="editResponsable()">✎</button>${d.descripcion?' · '+esc(d.descripcion):''}</div></div>
+        <div><div class="nm">${esc(d.name)} ${badge}${nProp?` <span class="prop-alert" onclick="document.getElementById('prop-wrap').scrollIntoView({behavior:'smooth',block:'center'})" title="Hay propuestas del enlace compartido esperando tu revisión">✉ ${nProp} propuesta${nProp===1?'':'s'} por revisar</span>`:''}</div><div class="meta">👤 ${d.responsable?esc(d.responsable):'sin responsable'} <button class="btn btn-ghost btn-sm" style="padding:1px 7px" onclick="editResponsable()">✎</button>${d.descripcion?' · '+esc(d.descripcion):''}</div></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-soft btn-sm" onclick="openMiembros()" title="Quiénes participan en el proyecto y de qué área son">👥 Involucrados${(d.miembros||[]).length?` · ${d.miembros.length}`:''}</button>
           <button class="btn btn-soft btn-sm" onclick="openTplModal()" title="Cargar un plan de trabajo prediseñado en este proyecto">📥 Plantilla de plan</button>
@@ -2485,7 +2516,7 @@
     const groups=secs.map(s=>({id:s.id,name:s.name,sec:s,acts:acts.filter(a=>a.sectionId===s.id)}));
     const orphans=acts.filter(a=>!a.sectionId||!secs.some(s=>s.id===a.sectionId));
     if(orphans.length)groups.push({id:null,name:'Otras',sec:null,acts:orphans});
-    const cols=12;
+    const cols=13;
     const rows=groups.map(g=>{
       if(g.sec&&g.sec.enabled===false){
         return `<tr class="sec off"><td colspan="${cols}">${esc(g.name)} · no aplica <button class="pt-del" onclick="toggleSection('${g.id}',true)" title="Volver a activar">☑ activar</button></td></tr>`;
@@ -2499,7 +2530,7 @@
     }).join('');
     const addSec=`<tr class="addrow"><td colspan="${cols}"><input placeholder="＋ Nueva fase (Enter)" onkeydown="if(event.key==='Enter')addSectionInline(this)"></td></tr>`;
     return `<div class="ptable-wrap"><table class="ptable">
-      <thead><tr><th style="width:52px"></th><th style="min-width:250px">Actividad</th><th style="min-width:150px">Fase</th><th style="min-width:170px">Responsables</th><th style="min-width:142px">Inicio</th><th style="min-width:142px">Fin</th><th style="min-width:126px">Estado</th><th style="width:66px">%</th><th style="min-width:190px">Depende de</th><th style="min-width:190px">Entregable</th><th style="min-width:170px">Notas</th><th style="width:34px"></th></tr></thead>
+      <thead><tr><th style="width:52px"></th><th style="min-width:250px">Actividad</th><th style="min-width:150px">Fase</th><th style="min-width:170px">Responsables</th><th style="min-width:140px" title="Sale sola del área de cada responsable registrado en «Involucrados»">Área responsable</th><th style="min-width:142px">Inicio</th><th style="min-width:142px">Fin</th><th style="min-width:126px">Estado</th><th style="width:66px">%</th><th style="min-width:190px">Depende de</th><th style="min-width:190px">Entregable</th><th style="min-width:170px">Notas</th><th style="width:34px"></th></tr></thead>
       <tbody>${rows}${addSec}</tbody></table></div>`;
   }
   function ptRow(a,secs){
@@ -2512,7 +2543,8 @@
       <td class="pt-ord"><button onclick="moveActivity('${a.id}',-1)" title="Subir">▲</button><button onclick="moveActivity('${a.id}',1)" title="Bajar">▼</button></td>
       <td><input class="pt-in nm" data-cell="${a.id}:name" value="${esc(a.name)}" onchange="patchActivity('${a.id}',{name:this.value.trim()})">${a.critical?`<span class="cp-chip ${a.criticaEnRiesgo?'late':''}">ruta crítica</span>`:''}</td>
       <td><select class="pt-in" data-cell="${a.id}:sec" onchange="patchActivity('${a.id}',{sectionId:this.value||null})">${secOpts}</select></td>
-      <td><input class="pt-in" data-cell="${a.id}:resp" value="${esc(resp)}" placeholder="Diana, Camilo…" title="Separa varios con coma" onchange="patchActivity('${a.id}',{responsables:this.value})"></td>
+      <td><input class="pt-in" data-cell="${a.id}:resp" value="${esc(resp)}" list="dl-personas" placeholder="Diana, Camilo…" title="Separa varios con coma" onchange="patchActivity('${a.id}',{responsables:this.value})"></td>
+      <td>${Plan.areasActividad(a,(currentProjectDetail&&currentProjectDetail.miembros)||[]).map(x=>`<span class="pl-arp" style="--c:${Plan.colorDe(x)}">${esc(x)}</span>`).join('')||'<span style="color:var(--faint)" title="Registra al responsable en «Involucrados» con su área">—</span>'}</td>
       <td><input type="date" class="pt-in" data-cell="${a.id}:start" value="${a.startDate||''}" onchange="patchActivity('${a.id}',{startDate:this.value||null})"></td>
       <td><input type="date" class="pt-in" data-cell="${a.id}:end" value="${a.deadline||''}"${atraso} onchange="patchActivity('${a.id}',{deadline:this.value||null})"></td>
       <td><span class="st-badge" title="El estado sale del % de avance"><span class="g-sdot" style="background:${stCol}"></span>${AS[a.estadoEfectivo]||a.status}</span></td>
@@ -2557,7 +2589,7 @@
 
   // ---------- PLAN DE TRABAJO (assets/plan.js pinta; aquí se guardan los cambios) ----------
   function planModel(d){
-    return {sections:d.sections,activities:d.activities,tasks:d.tasks,miembros:d.miembros||[],lineaBase:d.lineaBaseAt||null,today:(d.summary&&d.summary.today)||todayISO()};
+    return {sections:d.sections,activities:d.activities,tasks:d.tasks,miembros:d.miembros||[],lineaBase:d.lineaBaseAt||null,fechaMeta:d.fechaMeta||null,today:(d.summary&&d.summary.today)||todayISO()};
   }
   function planSetOpt(k,v){Plan.cambiar(planOpts,k,v);Plan.guardar(LS_PLAN,planOpts);renderPlan();}
   function planOnPatch(id,cambios){patchActivity(id,cambios);}
@@ -3000,7 +3032,7 @@
     if(id)p=currentProjectDetail&&currentProjectDetail.id===id?currentProjectDetail:(projectsCache||[]).find(x=>x.id===id);
     $('pm-title').textContent=p?'Editar proyecto':'Nuevo proyecto';
     $('pm-name').value=p?p.name:'';$('pm-resp').value=p&&p.responsable?p.responsable:'';$('pm-desc').value=p&&p.descripcion?p.descripcion:'';
-    $('pm-ice').value=p&&p.ice!=null?p.ice:'';
+    $('pm-ice').value=p&&p.ice!=null?p.ice:'';$('pm-meta').value=p&&p.fechaMeta?p.fechaMeta:'';
     $('pm-hint').style.display=p?'none':'';$('pm-del').style.display=p?'':'none';
     openModal('m-proj');setTimeout(()=>$('pm-name').focus(),80);
   }
@@ -3008,6 +3040,9 @@
     const iceRaw=$('pm-ice').value;
     const body={name:$('pm-name').value.trim(),responsable:$('pm-resp').value.trim()||null,descripcion:$('pm-desc').value.trim()||null,ice:iceRaw===''?null:Math.max(0,Math.min(100,Number(iceRaw)||0))};
     if(!body.name){toast('⚠ El nombre es obligatorio',false);return;}
+    // La fecha meta solo viaja si cambió (así nada se cae si falta la migración)
+    const metaPrev=editingProjectId?((currentProjectDetail&&currentProjectDetail.id===editingProjectId?currentProjectDetail:(projectsCache||[]).find(x=>x.id===editingProjectId))||{}).fechaMeta||'':'';
+    if(($('pm-meta').value||'')!==metaPrev)body.fechaMeta=$('pm-meta').value||null;
     try{if(editingProjectId){await api('/api/projects/'+editingProjectId,'PATCH',body);if(currentProjectDetail&&currentProjectDetail.id===editingProjectId)await refreshProjectDetail();}else{const d=await api('/api/projects','POST',body);openProject(d.project.id);}closeModal('m-proj');toast('✓ Guardado');loadProjects(true);}catch(e){toast('⚠ '+e.message,false);}
   }
   async function deleteProjectFromModal(){if(!editingProjectId)return;if(!confirm('¿Eliminar este proyecto? Se borran sus fases y actividades. Las tareas quedan sin proyecto.'))return;try{await api('/api/projects/'+editingProjectId,'DELETE');closeModal('m-proj');if(currentProjectDetail&&currentProjectDetail.id===editingProjectId){currentProjectDetail=null;$('p-detail').innerHTML='';}toast('Eliminado');loadProjects(true);loadData();}catch(e){toast('⚠ '+e.message,false);}}

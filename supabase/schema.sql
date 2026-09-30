@@ -16,6 +16,7 @@ create table if not exists projects (
   ice         numeric,
   archivado   boolean not null default false,
   linea_base_at timestamptz,                  -- cuándo se fijó la línea base
+  fecha_meta  date,                           -- fecha en que el proyecto debe estar listo
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
