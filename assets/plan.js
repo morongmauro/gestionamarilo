@@ -125,7 +125,7 @@
   const has = fn => typeof window[fn] === 'function';
 
   // ---------- Escala del cronograma ----------
-  const ZOOM = { dia: 26, semana: 7, mes: 2.4 };
+  const ZOOM = { dia: 26, semana: 9, mes: 2.4 };
   const lunesDe = iso => { const dow = new Date(iso + 'T12:00:00Z').getUTCDay(); return addDays(iso, dow === 0 ? -6 : 1 - dow); };
   function escala(fechas, today, zoom) {
     const ppd = ZOOM[zoom] || ZOOM.semana;
@@ -165,7 +165,7 @@
         bot += `<span class="pl-sc-b${d === today ? ' now' : ''}${esHabil(d) ? '' : ' off'}" style="left:${E.x(d)}px;width:${E.ppd}px" title="${fCorta(d)}">${Number(d.slice(8, 10))}<em>${'DLMMJVS'[dow]}</em></span>`;
       }
     }
-    return `<div class="pl-scale" style="width:${E.W}px">${top}${bot}<span class="pl-sc-hoy" style="left:${E.x(today) + E.ppd / 2}px">Hoy</span></div>`;
+    return `<div class="pl-scale" style="width:${E.W}px">${top}${bot}<span class="pl-sc-hoy" style="left:${E.x(today) + E.ppd / 2}px" title="Hoy">${Number(today.slice(8, 10))}</span></div>`;
   }
   // Fondo de cada carril: franjas suaves por semana (o fin de semana en zoom día) + hoy
   function carrilFondo(E, today, zoom) {
@@ -256,6 +256,29 @@
     if (!editable) return `<td class="pl-d${v ? '' : ' vacio'}${extra || ''}">${txt}</td>`;
     return `<td class="pl-d${extra || ''}"><button class="pl-date${v ? '' : ' vacio'}" data-v="${v}" onclick="Plan.pickDate(this,'${a.id}','${campo}')" title="${v ? 'Cambiar fecha' : 'Poner fecha'}">${v ? txt : '＋'}</button></td>`;
   }
+  // «5 – 9 oct» / «28 sep – 2 oct»
+  function rangoTxt(i, f) {
+    if (!i && !f) return '';
+    if (!i || !f || i === f) return fCorta(i || f);
+    return i.slice(0, 7) === f.slice(0, 7) ? `${Number(i.slice(8, 10))} – ${fCorta(f)}` : `${fCorta(i)} – ${fCorta(f)}`;
+  }
+  // Píldora de cronograma como en Monday: se llena con el tiempo transcurrido
+  function pildoraRango(i, f, today, est, color, click) {
+    if (!i && !f) return '<span class="pl-mut">sin fechas</span>';
+    const a = i || f, b = f || i;
+    let p = today < a ? 0 : today > b ? 100 : Math.round((dayDiff(a, today) + 1) / (dayDiff(a, b) + 1) * 100);
+    const col = est === 'Completada' ? 'var(--good)' : est === 'Atrasada' ? 'var(--crit)' : color;
+    if (est === 'Completada') p = 100;
+    return `<span class="pl-tlp" style="--c:${col};--p:${p}%"${click || ''} title="${fCorta(a)} → ${fCorta(b)}"><b>${rangoTxt(i, f)}</b></span>`;
+  }
+  // Batería de estados del grupo
+  function bateria(acts, today) {
+    const n = { Completada: 0, 'En curso': 0, Atrasada: 0, 'Por iniciar': 0 };
+    acts.forEach(a => { n[estado(a, today)]++; });
+    const tot = acts.length || 1;
+    const tip = Object.entries(n).filter(([, v]) => v).map(([k, v]) => `${v} ${k.toLowerCase()}`).join(' · ');
+    return `<span class="pl-bat" title="${tip}">${Object.entries(n).filter(([, v]) => v).map(([k, v]) => `<i class="${k.replace(' ', '-')}" style="width:${v / tot * 100}%"></i>`).join('')}</span>`;
+  }
   // Desvío contra la línea base, en días hábiles (+ = va tarde)
   function desvio(a) {
     if (!a.baselineEnd) return null;
@@ -317,14 +340,15 @@
     const fondo = carrilFondo(E, today, zoom);
     const carril = contenido => `<td class="pl-tl"><div class="pl-lane" style="width:${E.W}px;${fondo.style}">${fondo.capas}${contenido}</div></td>`;
 
-    const nCols = 7 + (cols.dias ? 1 : 0) + (cols.entregable ? 1 : 0) + (cols.base ? 1 : 0) + (cols.real ? 2 : 0) + (cols.desvio ? 1 : 0) + (cols.deps ? 1 : 0);
+    const nCols = (full ? 7 : 6) + (cols.dias ? 1 : 0) + (cols.entregable ? 1 : 0) + (cols.base ? 1 : 0) + (cols.real ? 2 : 0) + (cols.desvio ? 1 : 0) + (cols.deps ? 1 : 0);
     const lbI = base ? 'Inicio proy.' : 'Inicio', lbF = base ? 'Fin proy.' : 'Fin';
     const head = `<thead><tr>
       <th class="pl-sk pl-c-id">ID</th><th class="pl-sk pl-c-nm">Actividad</th><th class="pl-c-rs">Responsable</th>
       ${cols.entregable ? '<th class="pl-c-en">Entregable / resultado</th>' : ''}
       ${cols.base ? '<th class="pl-c-lb" title="Fechas congeladas al fijar la línea base: no se mueven">🔒 Línea base</th>' : ''}
-      <th class="pl-c-d" title="${base ? 'Inicio proyectado: se recalcula solo con las fechas reales y las dependencias' : 'Inicio planeado'}">${lbI}</th>
-      <th class="pl-c-d" title="${base ? 'Fin proyectado: se recalcula solo con las fechas reales y las dependencias' : 'Fin planeado'}">${lbF}</th>
+      ${full ? `<th class="pl-c-d" title="${base ? 'Inicio proyectado: se recalcula solo con las fechas reales y las dependencias' : 'Inicio planeado'}">${lbI}</th>
+      <th class="pl-c-d" title="${base ? 'Fin proyectado: se recalcula solo con las fechas reales y las dependencias' : 'Fin planeado'}">${lbF}</th>`
+      : `<th class="pl-c-tl" title="${base ? 'Fechas proyectadas (se recalculan con lo real y las dependencias)' : 'Fechas planeadas'}">${base ? 'Cronograma proy.' : 'Cronograma'}</th>`}
       ${cols.real ? '<th class="pl-c-d real" title="Cuándo empezó de verdad">Inicio real</th><th class="pl-c-d real" title="Cuándo terminó de verdad (la da por completada)">Fin real</th>' : ''}
       ${cols.dias ? '<th class="pl-c-n" title="Días hábiles, sin fines de semana ni festivos de Colombia">Días</th>' : ''}
       ${cols.desvio ? '<th class="pl-c-dv" title="Días hábiles de diferencia entre el fin (real o proyectado) y la línea base">Desvío</th>' : ''}
@@ -354,11 +378,12 @@
         <td class="pl-sk pl-c-id"><span class="pl-acod">${g.area ? esc(g.name.slice(0, 1).toUpperCase()) : (g.cod || '')}</span></td>
         <td class="pl-sk pl-c-nm"><span class="pl-an">${esc(g.name)}</span><span class="pl-mut">${hechas}/${acts.length} · ${avg}%</span>${tools}</td>
         <td></td>${cols.entregable ? '<td></td>' : ''}${cols.base ? '<td></td>' : ''}
-        <td class="pl-d b">${fCorta(fI)}</td><td class="pl-d b con-dv">${fCorta(fF)}${!cols.full && base && dvMax != null && dvMax > 0 ? ' ' + desvioHtml(dvMax) : ''}</td>${cols.real ? '<td></td><td></td>' : ''}
+        ${full ? `<td class="pl-d b">${fCorta(fI)}</td><td class="pl-d b">${fCorta(fF)}</td>`
+          : `<td class="pl-tlc">${fI ? pildoraRango(fI, fF, today, estA, g.color) : ''}${base && dvMax != null && dvMax > 0 ? ' ' + desvioHtml(dvMax) : ''}</td>`}${cols.real ? '<td></td><td></td>' : ''}
         ${cols.dias ? `<td class="pl-n">${fI ? diasHabiles(fI, fF) : ''}</td>` : ''}
         ${cols.desvio ? `<td>${dvMax != null && dvMax > 0 ? desvioHtml(dvMax) : ''}</td>` : ''}
         <td class="pl-p${full ? '' : ' corta'}">${full ? `<span class="pl-pbar" style="--c:${g.color}"><i style="width:${avg}%"></i></span>` : ''}<b>${avg}%</b></td>
-        <td>${estA ? estHtml(estA) : ''}</td>${cols.deps ? '<td></td>' : ''}
+        <td class="pl-stc">${acts.length ? bateria(acts, today) : ''}</td>${cols.deps ? '<td></td>' : ''}
         ${carril(sum)}
       </tr>`;
       const actRows = acts.map(a => filaActividad(a, g, today, E, carril, editable, opts, cols, codigo, base) +
@@ -398,8 +423,8 @@
       const cls = est === 'Completada' ? ' ok' : est === 'Atrasada' ? ' late' : '';
       const click = has('planOnOpen') && opts.owner ? ` onclick="planOnOpen('${a.id}')"` : '';
       barra += ini === fin
-        ? `<span class="pl-ms${cls}" style="left:${x0 + E.ppd / 2}px;--c:${g.color}" title="${tip}"${click}></span>`
-        : `<span class="pl-b${cls}" style="left:${x0}px;width:${w}px;--c:${g.color}" title="${tip}"${click}><i style="width:${pct}%"></i></span>`;
+        ? `<span class="pl-ms${cls}" style="left:${x0 + E.ppd / 2}px;--c:${g.color}" title="${tip}"${click}></span><span class="pl-blab" style="left:${x0 + E.ppd / 2 + 12}px">${esc(a.name)}</span>`
+        : `<span class="pl-b${cls}" style="left:${x0}px;width:${w}px;--c:${g.color}" title="${tip}"${click}><i style="width:${pct}%"></i>${w >= 90 ? `<em>${esc(a.name)}</em>` : ''}</span>${w < 90 ? `<span class="pl-blab" style="left:${x0 + w + 8}px">${esc(a.name)}</span>` : ''}`;
     }
     if (a.realStart) {
       const rf = a.realEnd || today;
@@ -424,7 +449,7 @@
     // Una propuesta ocupa la columna de estado: quién la hizo y, para el dueño, aceptar / descartar
     const estCell = a.propuesta
       ? `<td class="pl-propc"><span class="pl-prop" title="Propuesta desde el enlace compartido${a.propuestaPor ? ' por ' + esc(a.propuestaPor) : ''}">Propuesta</span>${opts.owner ? `<button class="pl-mini ok" onclick="planOnProposal('${a.id}',true)" title="Aceptar en el plan">✓</button><button class="pl-mini" onclick="planOnProposal('${a.id}',false)" title="Descartar">✕</button>` : (a.propuestaPor ? `<span class="pl-mut">${esc(a.propuestaPor)}</span>` : '')}</td>`
-      : `<td>${estHtml(est)}</td>`;
+      : `<td class="pl-stc">${estHtml(est)}</td>`;
     const lb = a.baselineStart || a.baselineEnd ? `${fCorta(a.baselineStart)} → ${fCorta(a.baselineEnd)}` : '<span class="pl-mut">nueva</span>';
     // En la vista Gantt el desvío acompaña al fin; en la tabla tiene su columna
     const dvChip = !cols.full && dv ? ` ${desvioHtml(dv)}` : '';
@@ -434,7 +459,8 @@
       <td class="pl-rs">${avatares(respDe(a))}${cols.full ? inp('responsables', resp, '—', 'rs') : `<span class="pl-tx rs" title="${esc(resp)}">${esc(resp) || '<span class="pl-mut">—</span>'}</span>`}</td>
       ${cols.entregable ? `<td>${inp('entregable', a.entregable || '', '—', 'en')}</td>` : ''}
       ${cols.base ? `<td class="pl-lbc" title="Congelada: no se mueve">${lb}</td>` : ''}
-      ${celdaFecha(a, 'startDate', editable)}${celdaFecha(a, 'deadline', editable, (est === 'Atrasada' ? ' late' : '') + (dvChip ? ' con-dv' : '')).replace('</td>', dvChip + '</td>')}
+      ${cols.full ? celdaFecha(a, 'startDate', editable) + celdaFecha(a, 'deadline', editable, est === 'Atrasada' ? ' late' : '')
+        : `<td class="pl-tlc">${pildoraRango(a.startDate, a.deadline, today, est, g.color, has('planOnOpen') && opts.owner ? ` onclick="planOnOpen('${a.id}')" role="button"` : '')}${dvChip}</td>`}
       ${cols.real ? celdaFecha(a, 'realStart', editable, ' real') + celdaFecha(a, 'realEnd', editable, ' real') : ''}
       ${cols.dias ? `<td class="pl-n">${dias}</td>` : ''}
       ${cols.desvio ? `<td>${desvioHtml(dv)}</td>` : ''}

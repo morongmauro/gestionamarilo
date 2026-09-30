@@ -2490,17 +2490,18 @@
   }
 
   // ---------- AJUSTES PROPUESTOS DESDE EL ENLACE ----------
-  const CAMPO_AJUSTE={deadline:'Fin',startDate:'Inicio',responsables:'Responsable',entregable:'Entregable',name:'Nombre',nota:'Comentario'};
+  const CAMPO_AJUSTE={deadline:'Fin',startDate:'Inicio',duracion:'Duración',responsables:'Responsable',entregable:'Entregable',name:'Nombre',nota:'Comentario'};
   function propuestasHtml(d){
     const ps=d.propuestas||[];
     const nuevas=(d.activities||[]).filter(a=>a.propuesta).length;
     if(!ps.length&&!nuevas)return '';
     Plan.etapas(planModel(d));
     const byId=Object.fromEntries((d.activities||[]).map(a=>[a.id,a]));
-    const val=p=>(p.campo==='deadline'||p.campo==='startDate')?Plan.fCorta(p.valor):esc(p.valor||'');
-    const actual=(p,a)=>!a?'':p.campo==='deadline'?Plan.fCorta(a.deadline):p.campo==='startDate'?Plan.fCorta(a.startDate):p.campo==='responsables'?esc(Plan.respDe(a).join(', ')):p.campo==='entregable'?esc(a.entregable||'—'):p.campo==='name'?esc(a.name):'';
+    const val=p=>(p.campo==='deadline'||p.campo==='startDate')?Plan.fCorta(p.valor):p.campo==='duracion'?`${esc(p.valor)} días háb.`:esc(p.valor||'');
+    const actual=(p,a)=>!a?'':p.campo==='duracion'?(a.startDate&&a.deadline?`${Plan.cal.diasHabiles(a.startDate,a.deadline)} días háb.`:'sin fechas'):p.campo==='deadline'?Plan.fCorta(a.deadline):p.campo==='startDate'?Plan.fCorta(a.startDate):p.campo==='responsables'?esc(Plan.respDe(a).join(', ')):p.campo==='entregable'?esc(a.entregable||'—'):p.campo==='name'?esc(a.name):'';
     return `<div class="prop-box">
-      <div class="prop-h">Propuestas desde el enlace compartido${nuevas?` · <span class="pl-mut">${nuevas} actividad${nuevas>1?'es':''} nueva${nuevas>1?'s':''} marcada${nuevas>1?'s':''} en el plan</span>`:''}</div>
+      <div class="prop-h" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span>Propuestas desde el enlace compartido${nuevas?` · <span class="pl-mut">${nuevas} actividad${nuevas>1?'es':''} nueva${nuevas>1?'s':''} marcada${nuevas>1?'s':''} en el plan</span>`:''}</span>
+        ${ps.filter(p=>p.campo!=='nota').length>1?`<button class="btn btn-soft btn-sm" style="margin-left:auto" onclick="aplicarTodasPropuestas()">✓ Aplicar todas (${ps.filter(p=>p.campo!=='nota').length})</button>`:''}</div>
       ${ps.map(p=>{const a=byId[p.activityId];return `<div class="prop-row">
         <span class="pl-cod">${a&&a._cod||''}</span>
         <div class="prop-t"><b>${esc(a?a.name:'Actividad eliminada')}</b>
@@ -2508,6 +2509,13 @@
         ${p.campo==='nota'?`<button class="pl-mini ok" onclick="resolverAjuste('${p.id}',false)">Visto</button>`:`<button class="pl-mini ok" onclick="resolverAjuste('${p.id}',true)">✓ Aplicar</button><button class="pl-mini" onclick="resolverAjuste('${p.id}',false)">✕ Descartar</button>`}
       </div>`;}).join('')}
     </div>`;
+  }
+  async function aplicarTodasPropuestas(){
+    const d=currentProjectDetail;if(!d)return;
+    const n=(d.propuestas||[]).filter(p=>p.campo!=='nota').length;
+    if(!confirm(`¿Aplicar los ${n} ajustes propuestos? Se aplican en el orden del plan y las fechas se corren en cascada.`))return;
+    try{const r=await api(`/api/projects/${d.id}?res=propuestas`,'POST',{todas:true});toast(`✓ ${r.aplicadas} ajuste${r.aplicadas===1?'':'s'} aplicado${r.aplicadas===1?'':'s'}`);await refreshProjectDetail();}
+    catch(e){toast('⚠ '+e.message,false);await refreshProjectDetail();}
   }
   async function resolverAjuste(id,aceptar){
     const d=currentProjectDetail;if(!d)return;

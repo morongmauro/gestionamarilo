@@ -24,7 +24,11 @@ module.exports = async (req, res) => {
     if (sub === 'propuestas') {
       if (req.method === 'GET') return res.status(200).json({ propuestas: await db.listPropuestas(id) });
       if (req.method === 'POST') {
-        const { propuestaId, aceptar } = req.body || {};
+        const { propuestaId, aceptar, todas } = req.body || {};
+        if (todas) {
+          const aplicadas = await db.aplicarTodasPropuestas(id);
+          return res.status(200).json({ success: true, aplicadas });
+        }
         await db.resolverPropuesta(id, propuestaId, !!aceptar);
         return res.status(200).json({ success: true });
       }

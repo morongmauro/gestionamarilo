@@ -95,6 +95,18 @@
   .ajgrid .full{grid-column:1/-1}
   @media(max-width:900px){.ajgrid{grid-template-columns:1fr}}
   .btn-soft{background:var(--sunk);color:var(--ink)}
+  .est-p{font-size:12px;color:var(--muted);margin:0 0 12px;max-width:720px}
+  .est-top{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:640px;margin-bottom:10px}
+  @media(max-width:700px){.est-top{grid-template-columns:1fr}}
+  .est-row{display:grid;grid-template-columns:42px minmax(0,1fr) 110px 110px minmax(0,1fr);gap:10px;align-items:center;padding:5px 0;font-size:12.5px}
+  .est-row.h{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
+  .est-row .cod{font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+  .est-row .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .est-row .hoy{color:var(--muted);font-variant-numeric:tabular-nums}
+  .est-row input{width:100%;border:none;border-radius:999px;padding:8px 12px;font-family:inherit;font-size:12.5px;background:var(--sunk);color:var(--ink);outline:none}
+  .est-row input:focus{background:var(--card);box-shadow:0 0 0 3px var(--accent-soft)}
+  .est-row input.cambio{background:var(--accent-soft)}
+  @media(max-width:800px){.est-row{grid-template-columns:36px minmax(0,1fr) 90px}.est-row .hoy,.est-row .mot,.est-row.h span:nth-child(3),.est-row.h span:nth-child(5){display:none}}
   .btn-soft:hover{background:color-mix(in srgb,var(--ink) 8%,var(--sunk))}
   .toast{position:fixed;bottom:22px;left:50%;transform:translate(-50%,16px);background:var(--ink);color:var(--paper);padding:11px 20px;border-radius:999px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.2);z-index:500;opacity:0;pointer-events:none;transition:.25s;max-width:90vw}
   .toast.show{opacity:1;transform:translate(-50%,0)}
@@ -136,13 +148,26 @@
     </div>
   </div>
 
+  <details class="ajuste" id="estbox" style="display:none">
+    <summary>⏱ Estimar duraciones de tu área</summary>
+    <div class="body">
+      <p class="est-p">Elige tu área o tu nombre y escribe cuántos días hábiles crees que toma cada actividad. Solo se envían las que cambies; quien lleva el plan las revisa y las aplica.</p>
+      <div class="est-top">
+        <div class="field"><label>Área / responsable</label><select id="e-quien" onchange="renderEstimacion()"></select></div>
+        <div class="field"><label>Tu nombre</label><input type="text" id="e-nombre" placeholder="Para saber quién estima" onchange="recordarNombre(this.value)"></div>
+      </div>
+      <div id="e-lista"></div>
+      <div class="addfoot"><span class="note" id="e-note"></span><button class="btn btn-primary" id="e-go" onclick="enviarEstimaciones()">Enviar estimaciones</button></div>
+    </div>
+  </details>
+
   <details class="ajuste" id="ajbox" style="display:none">
     <summary>¿Una fecha o un dato no cuadra? Propón un ajuste</summary>
     <div class="body">
       <div class="ajgrid">
         <div class="field"><label>Actividad</label><select id="a-act"></select></div>
         <div class="field"><label>Qué cambiar</label><select id="a-campo" onchange="campoAjuste()">
-          <option value="deadline">Fecha de fin</option><option value="startDate">Fecha de inicio</option>
+          <option value="deadline">Fecha de fin</option><option value="startDate">Fecha de inicio</option><option value="duracion">Duración (días hábiles)</option>
           <option value="responsables">Responsable</option><option value="entregable">Entregable</option>
           <option value="name">Nombre</option><option value="nota">Solo un comentario</option>
         </select></div>
@@ -171,7 +196,7 @@
   const opts=Plan.opciones(LS,{owner:false,editable:false,panel:true});
   opts.editable=false;
   let nombre='';try{nombre=localStorage.getItem('planShareNombre')||'';}catch(e){}
-  function recordarNombre(v){nombre=String(v||'').trim();try{localStorage.setItem('planShareNombre',nombre);}catch(e){}['n-quien','a-quien'].forEach(id=>{if($(id)&&!$(id).value)$(id).value=nombre;});}
+  function recordarNombre(v){nombre=String(v||'').trim();try{localStorage.setItem('planShareNombre',nombre);}catch(e){}['n-quien','a-quien','e-nombre'].forEach(id=>{if($(id)&&!$(id).value)$(id).value=nombre;});}
 
   async function api(method,body){
     const res=await fetch(API,{method,headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined});
@@ -231,17 +256,57 @@
     aSel.innerHTML=et.filter(g=>!(g.sec&&g.sec.enabled===false)).map(g=>`<optgroup label="${esc(g.cod+' · '+g.name)}">${g.acts.map(a=>`<option value="${a.id}">${esc(a._cod+' · '+a.name)}</option>`).join('')}</optgroup>`).join('');
     if(aPrev)aSel.value=aPrev;
     $('ajbox').style.display=(DATA.activities||[]).length?'':'none';
+    // Ronda de estimación: áreas / responsables del plan
+    const gente=[];(DATA.activities||[]).forEach(a=>Plan.respDe(a).forEach(r=>{if(!gente.some(x=>Plan.norm(x)===Plan.norm(r)))gente.push(r);}));
+    gente.sort((x,y)=>x.localeCompare(y));
+    const eSel=$('e-quien'),ePrev=eSel.value||opts.resp||'';
+    eSel.innerHTML='<option value="">Todas las actividades</option>'+gente.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('');
+    eSel.value=gente.some(g=>g===ePrev)?ePrev:'';
+    if(!$('e-nombre').value)$('e-nombre').value=nombre;
+    $('estbox').style.display=(DATA.activities||[]).length?'':'none';
+    renderEstimacion();
   }
 
   // ---------- Manejadores de la hoja (assets/plan.js) ----------
   function planSetOpt(k,v){Plan.cambiar(opts,k,v);Plan.guardar(LS,opts);renderPlan();if(k==='grupo'&&v&&DATA.sections.some(s=>s.id===v))$('n-area').value=v;}
+  // ---------- Ronda de estimación de duraciones ----------
+  function renderEstimacion(){
+    const quien=$('e-quien').value;
+    const et=Plan.etapas(modelo());
+    const filas=[];
+    et.filter(g=>!(g.sec&&g.sec.enabled===false)).forEach(g=>g.acts.forEach(a=>{
+      if(quien&&!Plan.respDe(a).some(r=>Plan.norm(r)===Plan.norm(quien)))return;
+      if(a.realEnd||(a.pctComplete||0)>=100)return;
+      filas.push(a);
+    }));
+    $('e-lista').innerHTML=filas.length?`<div class="est-row h"><span>ID</span><span>Actividad</span><span>Hoy</span><span>Tu estimado</span><span>Comentario</span></div>`+
+      filas.map(a=>{const hoy=a.startDate&&a.deadline?Plan.cal.diasHabiles(a.startDate,a.deadline):null;
+        return `<div class="est-row" data-id="${a.id}" data-hoy="${hoy||''}"><span class="cod">${a._cod}</span><span class="nm" title="${esc(a.name)}">${esc(a.name)}</span><span class="hoy">${hoy?hoy+' días':'—'}</span><input type="number" min="1" max="365" placeholder="${hoy||'días'}" oninput="this.classList.toggle('cambio',!!this.value&&this.value!==this.closest('.est-row').dataset.hoy)"><input class="mot" type="text" placeholder="Opcional"></div>`;}).join('')
+      :'<div class="est-p">No hay actividades pendientes para este responsable.</div>';
+  }
+  async function enviarEstimaciones(){
+    const items=[...document.querySelectorAll('#e-lista .est-row[data-id]')].map(r=>{
+      const [dur,mot]=r.querySelectorAll('input');
+      return {activityId:r.dataset.id,campo:'duracion',valor:dur.value.trim(),motivo:mot.value.trim()||null,hoy:r.dataset.hoy};
+    }).filter(x=>x.valor&&x.valor!==x.hoy).map(({hoy,...x})=>x);
+    if(!items.length){toast('⚠ Escribe al menos una duración distinta a la actual',false);return;}
+    $('e-go').disabled=true;
+    try{
+      const r=await api('POST',{tipo:'ajuste',items,propuestoPor:$('e-nombre').value.trim()||null});
+      $('e-note').textContent=`✓ ${r.enviadas} estimaci${r.enviadas===1?'ón enviada':'ones enviadas'}: quien lleva el plan las revisa.`;
+      toast('✓ Estimaciones enviadas');
+      renderEstimacion();
+    }catch(e){toast('⚠ '+e.message,false);}
+    finally{$('e-go').disabled=false;}
+  }
+
   // Ajuste propuesto: el campo define qué se escribe
   function campoAjuste(){
     const c=$('a-campo').value,v=$('a-val');
     const fecha=c==='deadline'||c==='startDate';
-    v.type=fecha?'date':'text';v.value='';
+    v.type=fecha?'date':c==='duracion'?'number':'text';v.value='';
     v.placeholder=c==='responsables'?'Ej: Jurídica, Tecnología':c==='nota'?'Tu comentario':'Nuevo valor';
-    $('a-vlab').textContent=fecha?'Nueva fecha':c==='nota'?'Comentario':'Nuevo valor';
+    $('a-vlab').textContent=fecha?'Nueva fecha':c==='duracion'?'Días hábiles':c==='nota'?'Comentario':'Nuevo valor';
   }
   async function proponerAjuste(){
     const body={tipo:'ajuste',activityId:$('a-act').value,campo:$('a-campo').value,valor:$('a-val').value.trim(),motivo:$('a-mot').value.trim()||null,propuestoPor:$('a-quien').value.trim()||null};
