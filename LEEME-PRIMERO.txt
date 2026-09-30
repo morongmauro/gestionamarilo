@@ -1,42 +1,28 @@
-FECHA META, DURACIONES Y VISTA ORDENADA · qué hacer
-====================================================
+NOTAS Y TAREAS POR ACTIVIDAD · qué hacer
+=========================================
 
 PASO 1 · Supabase (una sola vez)
 --------------------------------
-Supabase -> SQL Editor -> New query -> pega y dale Run:
-
-   alter table projects add column if not exists fecha_meta date;
-
-(Es supabase/migracion-2026-10-fecha-meta.sql. Si te falta la de
-involucrados, córrela también: supabase/migracion-2026-10-involucrados.sql)
-
-
-PASO 2 · Nueva SAS con meta a finales de noviembre
----------------------------------------------------
-1. «✎ Editar proyecto» -> Fecha meta: 30/11/2026 -> Guardar.
-2. Arriba, en «Fechas», ves «Fin del plan» y «Fecha meta · se pasa N días
-   háb.» (o «sobran»). En el cronograma hay una línea morada punteada en la
-   meta y las actividades que terminan después llevan ⚑.
-3. Juega con las duraciones en la columna «Días» (editable): el fin se
-   recalcula y lo que depende se corre en cascada. También en la cajita:
-   «2.1 dura 3 días». Si una etapa entera no aplica antes de la meta (p. ej.
-   «Cumplimiento recurrente y cierre», que es posterior a la constitución),
-   márcala «no aplica» o sácala de la ruta.
+Supabase -> SQL Editor -> New query -> pega TODO el contenido de
+   supabase/migracion-2026-10-notas.sql
+y dale Run. Es seguro correrlo más de una vez.
+(Si te faltan las anteriores: fecha-meta, involucrados, linea-base,
+ fechas-reales — ver SETUP-SUPABASE.md.)
 
 
 QUÉ CAMBIÓ EN ESTA VERSIÓN
 ---------------------------
-1. Fecha meta del proyecto: indicador de días que sobran / faltan, línea en
-   el cronograma y ⚑ en lo que se pasa (también en el enlace compartido).
-2. Columna «Días» editable en la vista Gantt y en la tabla.
-3. Opciones de vista en grupos con título: Vista · Agrupar por · Escala del
-   cronograma · Mostrar (interruptores con nombre: Líneas de relación, Panel
-   de involucrados, Tareas del día a día, Entregable, Fechas reales, Depende
-   de). Debajo, «Filtrar» por responsable y por etapa / área.
-4. Indicadores agrupados: Avance · Fechas · Alertas · Día a día.
-5. Títulos de columnas más oscuros y legibles.
-6. Tabla completa (y vista ▤ Tabla): columna «Área responsable», que sale
-   sola del área de cada responsable registrado en «Involucrados».
-7. Enlace compartido: «Propón una actividad» queda plegado; tú ves un aviso
-   ✉ en la barra lateral y en el encabezado del proyecto cuando hay
-   propuestas por revisar.
+1. Cada actividad del plan tiene un indicador «💬 notas · ☑ hechas/total»
+   (o «＋ nota / tarea» al pasar el mouse). Al tocarlo se abre el panel de la
+   actividad, a la derecha:
+   - Nota general: la descripción fija de la actividad.
+   - Bitácora: notas con fecha y hora de lo que va pasando (Ctrl+Enter
+     guarda). Son privadas: no salen en el enlace compartido.
+   - Tareas: crea tareas de esa actividad (con fecha límite opcional),
+     márcalas hechas, ábrelas, desvincúlalas o vincula una que ya existía.
+   Esc o × lo cierra.
+
+2. En la cajita de ajustes:
+     2.3 nota: la notaría pidió el certificado actualizado
+     2.3 tarea: llamar a la notaría para viernes
+   («para …» al final pone la fecha límite de la tarea)

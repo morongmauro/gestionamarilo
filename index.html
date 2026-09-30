@@ -809,6 +809,36 @@
   .ptable th{color:var(--ink);font-weight:800}
   .prop-alert{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;padding:4px 12px;border-radius:999px;background:var(--accent);color:#1C1A17;cursor:pointer}
   .sp-item .pr{font-size:10px;font-weight:800;color:#1C1A17;background:var(--accent);border-radius:999px;padding:0 6px}
+  /* Panel lateral de la actividad */
+  .act-drawer{position:fixed;top:14px;right:14px;bottom:14px;width:420px;max-width:calc(100vw - 28px);background:var(--card);border-radius:28px;box-shadow:0 20px 60px rgba(20,18,14,.22);z-index:320;display:flex;flex-direction:column;transform:translateX(calc(100% + 30px));transition:transform .25s}
+  .act-drawer.open{transform:none}
+  .act-drawer-h{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:20px 22px 10px}
+  .dt-cod{font-size:10.5px;font-weight:800;letter-spacing:.05em;color:var(--muted);text-transform:uppercase}
+  .dt-nm{font-size:17px;font-weight:800;line-height:1.25;margin:3px 0 8px}
+  .dt-meta{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:11.5px;color:var(--muted);font-weight:600}
+  .dt-meta .pl-est{color:#fff}
+  .act-drawer-b{flex:1;overflow-y:auto;padding:6px 22px 22px}
+  .dt-t{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ink);margin-bottom:8px}
+  .dt-t span{text-transform:none;letter-spacing:0;font-weight:500;color:var(--faint);margin-left:6px}
+  .dt-sec textarea,.dt-sec input[type=text],.dt-sec input[type=date]{width:100%;border:none;border-radius:16px;padding:10px 14px;font-family:inherit;font-size:13px;color:var(--ink);background:var(--sunk);outline:none;resize:vertical}
+  .dt-sec textarea:focus,.dt-sec input:focus{background:var(--card);box-shadow:0 0 0 3px var(--accent-soft)}
+  .dt-add{display:flex;flex-direction:column;gap:6px;align-items:flex-end;margin-bottom:10px}
+  .dt-add-t{flex-direction:row;flex-wrap:wrap;align-items:center}
+  .dt-add-t input[type=text]{flex:1 1 100%;border-radius:999px}
+  .dt-add-t input[type=date]{flex:1;border-radius:999px;padding:8px 12px}
+  .dt-nota{background:var(--sunk);border-radius:16px;padding:9px 12px;margin-bottom:6px}
+  .dt-nota-f{display:flex;justify-content:space-between;font-size:10.5px;font-weight:700;color:var(--muted)}
+  .dt-nota-f button{color:var(--faint);font-size:13px;line-height:1;padding:0 4px;border-radius:999px}
+  .dt-nota-f button:hover{color:var(--crit)}
+  .dt-nota-t{font-size:12.5px;margin-top:3px;line-height:1.45}
+  .dt-tarea{display:flex;align-items:center;gap:10px;padding:6px 2px;font-size:12.5px}
+  .dt-tarea .tt{flex:1;min-width:0;cursor:pointer;font-weight:550}
+  .dt-tarea .tt:hover{text-decoration:underline}
+  .dt-tarea.hecha .tt{text-decoration:line-through;color:var(--faint)}
+  .dt-tarea .dd{font-size:11px;color:var(--muted);white-space:nowrap}
+  .dt-tarea .dd.late{color:var(--crit);font-weight:700}
+  .dt-vacio{font-size:12px;color:var(--faint);padding:4px 2px}
+  .dt-vinc{margin-top:8px;width:100%}
   .lb-chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:5px 12px;border-radius:999px;background:var(--sunk);color:var(--muted)}
   .prop-box{margin-top:16px;background:color-mix(in srgb,var(--accent) 9%,var(--card));border-radius:22px;padding:14px 16px}
   .prop-h{font-size:12px;font-weight:800;margin-bottom:6px}
@@ -1138,6 +1168,11 @@
     <div class="modal-f"><span></span><div style="display:flex;gap:8px"><button class="btn btn-ghost" onclick="closeModal('m-mem')">Cerrar</button><button class="btn btn-primary" id="mem-go" onclick="guardarMiembro()">＋ Agregar</button></div></div>
   </div>
 </div>
+<!-- PANEL LATERAL DE LA ACTIVIDAD (notas y tareas) -->
+<aside class="act-drawer" id="act-drawer">
+  <div class="act-drawer-h" id="act-drawer-h"></div>
+  <div class="act-drawer-b" id="act-drawer-b"></div>
+</aside>
 <datalist id="dl-personas"></datalist>
 <datalist id="dl-areas"></datalist>
 
@@ -2075,6 +2110,8 @@
       requestAnimationFrame(drawDepLinks);
     }else if(planView==='hoja')requestAnimationFrame(()=>Plan.dibujarLineas());
     renderDatalist();
+    if(detalleId)renderDetalle();
+    if(detalleId)renderDetalle();
     restoreFocus();
   }
 
@@ -2589,7 +2626,7 @@
 
   // ---------- PLAN DE TRABAJO (assets/plan.js pinta; aquí se guardan los cambios) ----------
   function planModel(d){
-    return {sections:d.sections,activities:d.activities,tasks:d.tasks,miembros:d.miembros||[],lineaBase:d.lineaBaseAt||null,fechaMeta:d.fechaMeta||null,today:(d.summary&&d.summary.today)||todayISO()};
+    return {sections:d.sections,activities:d.activities,tasks:d.tasks,notas:d.notas||[],miembros:d.miembros||[],lineaBase:d.lineaBaseAt||null,fechaMeta:d.fechaMeta||null,today:(d.summary&&d.summary.today)||todayISO()};
   }
   function planSetOpt(k,v){Plan.cambiar(planOpts,k,v);Plan.guardar(LS_PLAN,planOpts);renderPlan();}
   function planOnPatch(id,cambios){patchActivity(id,cambios);}
@@ -2788,6 +2825,14 @@
     const acciones=asistPendiente;asistCancelar();
     for(const a of acciones){
       if(a.tipo==='patch')await applyActivity(a.id,a.cambios);
+      else if(a.tipo==='nota'){
+        try{const r=await api(`/api/activities/${a.id}?res=notas`,'POST',{texto:a.texto});d.notas=[r.nota,...(d.notas||[])];renderPlan();}
+        catch(e){toast('⚠ '+e.message,false);}
+      }
+      else if(a.tipo==='tarea'){
+        try{await api('/api/tasks','POST',{description:a.texto,projectId:d.id,activityId:a.id,dueDate:a.due||null});await refreshProjectDetail();loadData();}
+        catch(e){toast('⚠ '+e.message,false);}
+      }
       else if(a.tipo==='lote'){
         marcarGuardando(1);
         try{reconciliar(await api('/api/activities','PATCH',{projectId:d.id,fechas:a.items}));}
@@ -2798,6 +2843,97 @@
     const i=$('asist-txt');if(i)i.value='';
     toast(`✓ ${acciones.length} ajuste${acciones.length>1?'s':''} aplicado${acciones.length>1?'s':''}`);
   }
+
+  // ---------- PANEL DE LA ACTIVIDAD: nota general, bitácora de notas y tareas ----------
+  let detalleId=null;
+  function planOnDetalle(id){detalleId=id;renderDetalle();$('act-drawer').classList.add('open');setTimeout(()=>{const t=$('dt-nota-new');if(t)t.focus();},120);}
+  function cerrarDetalle(){detalleId=null;$('act-drawer').classList.remove('open');}
+  function fechaHora(iso){const d=new Date(iso||Date.now());if(isNaN(d))return 'recién';return d.toLocaleDateString('es-CO',{day:'numeric',month:'short'})+' · '+d.toLocaleTimeString('es-CO',{hour:'numeric',minute:'2-digit'});}
+  function renderDetalle(){
+    const d=currentProjectDetail,el=$('act-drawer-b');
+    if(!d||!detalleId||!el)return;
+    const a=(d.activities||[]).find(x=>x.id===detalleId);
+    if(!a){cerrarDetalle();return;}
+    Plan.etapas(planModel(d));
+    const est=Plan.estado(a,(d.summary&&d.summary.today)||todayISO());
+    const notas=(d.notas||[]).filter(n=>n.activityId===a.id);
+    const tareas=(d.tasks||[]).filter(t=>t.activityId===a.id).sort((x,y)=>(x.kanbanStatus==='done')-(y.kanbanStatus==='done')||(x.dueDate||'9').localeCompare(y.dueDate||'9'));
+    const sueltas=(d.tasks||[]).filter(t=>!t.activityId&&t.kanbanStatus!=='done');
+    const resp=Plan.respDe(a).join(', ');
+    $('act-drawer-h').innerHTML=`<div style="min-width:0"><div class="dt-cod">${a._cod||''}${a._etapa?' · '+esc(a._etapa):''}</div><div class="dt-nm">${esc(a.name)}</div>
+      <div class="dt-meta"><span class="pl-est ${est.replace(' ','-')}">${est}</span>${a.startDate||a.deadline?`<span>${Plan.fCorta(a.startDate)} → ${Plan.fCorta(a.deadline)}</span>`:''}${resp?`<span>👤 ${esc(resp)}</span>`:''}<span>${a.pctComplete||0}%</span></div></div>
+      <button class="x-close" onclick="cerrarDetalle()">×</button>`;
+    el.innerHTML=`
+      <div class="dt-sec">
+        <div class="dt-t">Nota general <span>la descripción fija de la actividad</span></div>
+        <textarea id="dt-nota-fija" rows="2" placeholder="Ej: aplica solo si hay aportes en especie…" onblur="guardarNotaFija(this.value)">${esc(a.notes||'')}</textarea>
+      </div>
+      <div class="sep" style="margin:14px 0"></div>
+      <div class="dt-sec">
+        <div class="dt-t">Bitácora <span>lo que va pasando, con fecha · solo tú la ves</span></div>
+        <div class="dt-add">
+          <textarea id="dt-nota-new" rows="2" placeholder="Escribe una nota… (Ctrl+Enter para guardar)" onkeydown="if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){event.preventDefault();agregarNota();}"></textarea>
+          <button class="btn btn-primary btn-sm" onclick="agregarNota()">＋ Nota</button>
+        </div>
+        ${notas.length?notas.map(n=>`<div class="dt-nota"><div class="dt-nota-f">${fechaHora(n.createdAt)}<button onclick="borrarNota('${n.id}')" title="Borrar nota">×</button></div><div class="dt-nota-t">${esc(n.texto).replace(/\n/g,'<br>')}</div></div>`).join('')
+          :'<div class="dt-vacio">Aún no hay notas en la bitácora.</div>'}
+      </div>
+      <div class="sep" style="margin:14px 0"></div>
+      <div class="dt-sec">
+        <div class="dt-t">Tareas <span>${tareas.length?`${tareas.filter(t=>t.kanbanStatus==='done').length}/${tareas.length} hechas`:'las microtareas de esta actividad'}</span></div>
+        <div class="dt-add dt-add-t">
+          <input type="text" id="dt-tarea-new" placeholder="Nueva tarea para esta actividad (Enter)" onkeydown="if(event.key==='Enter')agregarTareaDetalle()">
+          <input type="date" id="dt-tarea-due" title="Fecha límite (opcional)">
+          <button class="btn btn-primary btn-sm" onclick="agregarTareaDetalle()">＋ Tarea</button>
+        </div>
+        ${tareas.length?tareas.map(t=>{const h=t.kanbanStatus==='done',venc=!h&&t.dueDate&&t.dueDate<todayISO();return `<div class="dt-tarea${h?' hecha':''}">
+          <button class="pl-chk${h?' on':''}" title="${h?'Reabrir':'Marcar hecha'}" onclick="${h?`quickStatus('${t.id}','todo')`:`quickDone('${t.id}',event)`}"></button>
+          <span class="tt" onclick="openTaskModal('${t.id}')">${esc(t.title)}</span>
+          <span class="dd${venc?' late':''}">${t.dueDate?(h?Plan.fCorta(t.dueDate):dueLabel(t.dueDate)):''}</span>
+          <button class="pl-x" style="opacity:1" title="Desvincular de esta actividad" onclick="vincularTarea('${t.id}',null)">×</button>
+        </div>`;}).join(''):'<div class="dt-vacio">Sin tareas todavía.</div>'}
+        ${sueltas.length?`<select class="pl-sel dt-vinc" onchange="if(this.value)vincularTarea(this.value,'${a.id}')"><option value="">＋ Vincular una tarea existente del proyecto…</option>${sueltas.map(t=>`<option value="${t.id}">${esc(t.title)}</option>`).join('')}</select>`:''}
+      </div>
+      <div class="sep" style="margin:14px 0"></div>
+      <button class="btn btn-soft btn-sm" onclick="openActivityModal('${a.id}')">✎ Editar fechas, responsables y dependencias</button>`;
+  }
+  function guardarNotaFija(v){
+    const d=currentProjectDetail;if(!d||!detalleId)return;
+    const a=d.activities.find(x=>x.id===detalleId);if(!a)return;
+    const nuevo=v.trim();
+    if(nuevo===(a.notes||''))return;
+    applyActivity(detalleId,{notes:nuevo||null});
+  }
+  async function agregarNota(){
+    const d=currentProjectDetail,t=$('dt-nota-new');if(!d||!detalleId||!t)return;
+    const texto=t.value.trim();if(!texto)return;
+    t.disabled=true;
+    try{
+      const r=await api(`/api/activities/${detalleId}?res=notas`,'POST',{texto});
+      d.notas=[r.nota,...(d.notas||[])];
+      renderDetalle();renderPlan();toast('✓ Nota guardada');
+      const n=$('dt-nota-new');if(n)n.focus();
+    }catch(e){toast('⚠ '+e.message,false);t.disabled=false;}
+  }
+  async function borrarNota(id){
+    const d=currentProjectDetail;if(!d||!detalleId)return;
+    if(!confirm('¿Borrar esta nota?'))return;
+    try{await api(`/api/activities/${detalleId}?res=notas&noteId=${id}`,'DELETE');d.notas=(d.notas||[]).filter(n=>n.id!==id);renderDetalle();renderPlan();}
+    catch(e){toast('⚠ '+e.message,false);}
+  }
+  async function agregarTareaDetalle(){
+    const d=currentProjectDetail,t=$('dt-tarea-new');if(!d||!detalleId||!t)return;
+    const description=t.value.trim();if(!description)return;
+    const due=($('dt-tarea-due')||{}).value||null;
+    t.disabled=true;
+    try{
+      await api('/api/tasks','POST',{description,projectId:d.id,activityId:detalleId,dueDate:due});
+      toast('✓ Tarea agregada');
+      await refreshProjectDetail();loadData();
+      const n=$('dt-tarea-new');if(n)n.focus();
+    }catch(e){toast('⚠ '+e.message,false);t.disabled=false;}
+  }
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&detalleId&&!document.querySelector('.backdrop.show'))cerrarDetalle();});
 
   // Vincular / desvincular una tarea a una actividad: solo a mano
   async function vincularTarea(taskId,activityId){

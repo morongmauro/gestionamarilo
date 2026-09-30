@@ -125,6 +125,20 @@ create table if not exists project_members (
 create index if not exists idx_members_project on project_members(project_id);
 
 -- ------------------------------------------------------------
+-- BITÁCORA DE NOTAS POR ACTIVIDAD (privada: no sale en el enlace)
+-- ------------------------------------------------------------
+create table if not exists activity_notes (
+  id          uuid primary key default gen_random_uuid(),
+  project_id  uuid not null references projects(id) on delete cascade,
+  activity_id uuid not null references activities(id) on delete cascade,
+  texto       text not null,
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists idx_notes_activity on activity_notes(activity_id);
+create index if not exists idx_notes_project on activity_notes(project_id);
+
+-- ------------------------------------------------------------
 -- AJUSTES PROPUESTOS desde un enlace compartido (el dueño decide)
 -- ------------------------------------------------------------
 create table if not exists propuestas_cambio (
@@ -174,3 +188,4 @@ alter table tasks enable row level security;
 alter table project_shares enable row level security;
 alter table propuestas_cambio enable row level security;
 alter table project_members enable row level security;
+alter table activity_notes enable row level security;

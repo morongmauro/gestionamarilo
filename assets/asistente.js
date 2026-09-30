@@ -6,6 +6,7 @@
 //   «1.1 terminó 29 sep»                «2.2 empezó ayer»
 //   «4.1 dura 8 días»                   «3.2 depende de 3.1»
 //   «mover etapa 3 +5 días»             «2.3 entregable Escritura firmada»
+//   «2.3 nota: …»                       «2.3 tarea: llamar a la notaría para viernes»
 //   «cuenta bancaria fin viernes»  (por nombre, si hay una sola que calce)
 // Devuelve una vista previa; nada se guarda hasta que se confirma.
 // Necesita assets/plan.js (calendario hábil y códigos 1.1, 1.2…).
@@ -60,6 +61,9 @@
   // ---------- Reglas: qué se quiere cambiar ----------
   // Cada regla busca en el texto normalizado; los valores de texto se sacan del original.
   const REGLAS = [
+    // «2.1 nota: …» y «2.1 tarea: … para viernes» (con dos puntos, para no confundir)
+    { campo: 'nota', re: /\b(nota|comentario|apunte)\s*:/d },
+    { campo: 'tarea', re: /\b(tarea|pendiente|to ?do)\s*:/d },
     { campo: 'realEnd', re: /\b(termino|finalizo|se cerro|se termino|quedo lista|quedo listo|fin real|esta lista|esta listo|completada|completado|ya se hizo)\b/d, fecha: 'opcional' },
     { campo: 'realStart', re: /\b(empezo|arranco|comenzo|inicio real|se inicio|ya empezo)\b/d, fecha: 'opcional' },
     { campo: 'mover', re: /\b(mover|mueve|correr|corre|aplazar|aplaza|posponer|pospon|adelantar|adelanta|atrasar|atrasa|retrasar|retrasa)\b/d },
@@ -184,6 +188,16 @@
       const nuevos = quitar ? actuales.filter(x => !ids.includes(x)) : [...new Set([...actuales, ...ids])];
       return { accion: { tipo: 'patch', id: act.id, cambios: { dependsOnIds: nuevos }, desc: `${etiqueta} · ${quitar ? 'ya no depende de' : 'depende de'} ${codigos.join(', ')}` } };
     }
+    if (regla.campo === 'nota' || regla.campo === 'tarea') {
+      let texto = orig.slice(finKw).trim();
+      if (!texto) return { error: `¿Qué ${regla.campo}? Ej.: «${act._cod} ${regla.campo}: ${regla.campo === 'nota' ? 'la notaría pidió otro documento' : 'llamar a la notaría para viernes'}».` };
+      if (regla.campo === 'nota') return { accion: { tipo: 'nota', id: act.id, texto, desc: `${etiqueta} · nota: «${texto}»` } };
+      // «… para viernes» al final = fecha límite de la tarea
+      let due = null;
+      const mp = normar(texto).match(/\s+para\s+(.+)$/);
+      if (mp) { const f = parseFecha(mp[1], today); if (f) { due = f; texto = texto.slice(0, mp.index).trim(); } }
+      return { accion: { tipo: 'tarea', id: act.id, texto, due, desc: `${etiqueta} · nueva tarea: «${texto}»${due ? ` (vence ${fc(due)})` : ''}` } };
+    }
     // Campos de texto: el valor se toma del texto original (con mayúsculas y tildes)
     const valor = valorTexto(orig, finKw);
     if (!valor) return { error: `Falta el valor en «${orig}».` };
@@ -217,6 +231,6 @@
 
   window.Asistente = {
     interpretar, parseFecha,
-    ejemplos: ['2.1 responsable Jurídica, Mauro', '3.5 fin 20 nov', '1.1 terminó 29 sep', '2.4 avance 60', '4.1 dura 8 días', '3.2 depende de 3.1', 'mover etapa 3 +5 días', 'cuenta bancaria fin viernes'],
+    ejemplos: ['2.1 responsable Jurídica, Mauro', '3.5 fin 20 nov', '1.1 terminó 29 sep', '2.4 avance 60', '4.1 dura 8 días', '3.2 depende de 3.1', 'mover etapa 3 +5 días', '2.3 nota: la notaría pidió otro documento', '2.3 tarea: llamar a la notaría para viernes'],
   };
 })();
