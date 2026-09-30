@@ -731,7 +731,72 @@
   .pcol-list .hechas-fold summary{font-size:11px;padding:5px 12px}
   .ptask.hecha .tt{text-decoration:line-through;color:var(--faint)}
 
+  /* ============ BARRA LATERAL ============ */
+  body{padding:18px 22px 18px 18px}
+  .app{display:grid;grid-template-columns:auto minmax(0,1fr);gap:22px;align-items:start}
+  .nav-side{position:sticky;top:18px;width:236px;height:calc(100vh - 36px);display:flex;flex-direction:column;gap:6px;background:var(--card);border-radius:28px;padding:14px 12px;box-shadow:0 2px 18px rgba(28,26,23,.06);overflow:hidden;transition:width .2s}
+  .side-top{display:flex;align-items:center;gap:10px;padding:2px 4px 10px}
+  .side-top .logo{flex-shrink:0}
+  .side-brand{min-width:0;flex:1}
+  .side-brand b{display:block;font-size:14px;font-weight:800;white-space:nowrap}
+  .side-brand .sub{font-size:10.5px;color:var(--faint);display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .side-col{width:28px;height:28px;border-radius:50%;background:var(--sunk);color:var(--muted);font-weight:800;flex-shrink:0;transition:transform .2s}
+  .nav-side .tabs{display:flex;flex-direction:column;gap:3px;background:none;box-shadow:none;padding:0;margin:0;width:auto;border-radius:0}
+  .nav-side .tab{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:10px 14px;border-radius:999px;font-size:13.5px;font-weight:600}
+  .nav-side .tab .ic{width:18px;text-align:center;font-size:15px;flex-shrink:0}
+  .nav-side .tab.active{background:var(--ink);color:var(--paper)}
+  .side-proj{display:flex;flex-direction:column;min-height:0;flex:1;margin-top:8px;padding-top:12px;background:linear-gradient(var(--sunk),var(--sunk)) top/100% 1px no-repeat}
+  .side-proj-h{display:flex;justify-content:space-between;align-items:center;font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);padding:4px 10px 8px;width:100%}
+  .side-proj-ar{transition:transform .2s}
+  .side-proj.plegado .side-proj-ar{transform:rotate(-90deg)}
+  .side-proj.plegado #side-proj,.side-proj.plegado .side-new{display:none}
+  #side-proj{display:flex;flex-direction:column;gap:2px;overflow-y:auto;min-height:0;flex:1}
+  .sp-item{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:8px 10px;border-radius:16px;font-size:12.5px;font-weight:600;color:var(--ink)}
+  .sp-item:hover{background:var(--sunk)}
+  .sp-item.on{background:var(--accent-soft)}
+  .sp-item .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sp-item .pc{font-size:10.5px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+  .sp-item .al{font-size:10px;font-weight:800;color:#fff;background:var(--crit);border-radius:999px;padding:0 6px}
+  .side-new{margin-top:6px;padding:9px 12px;border-radius:999px;background:var(--sunk);font-size:12px;font-weight:700;color:var(--muted)}
+  .side-new:hover{background:var(--accent-soft);color:var(--accent-ink)}
+  /* Colapsada: solo íconos */
+  .app.col .nav-side{width:68px}
+  .app.col .side-brand,.app.col .nav-side .tab .lb,.app.col .side-proj{display:none}
+  .app.col .side-top{flex-direction:column}
+  .app.col .side-col{transform:rotate(180deg)}
+  .app.col .nav-side .tab{justify-content:center;padding:10px 0}
+  /* Con la barra abierta, los proyectos se eligen allá (las pestañas de arriba sobran) */
+  @media(min-width:901px){.app:not(.col) #ptabs{display:none}}
+  .header{justify-content:flex-end}
+  .side-burger{display:none;width:36px;height:36px;border-radius:50%;background:var(--sunk);font-size:16px;margin-right:auto}
+  .side-scrim{display:none}
+  @media(max-width:900px){
+    body{padding:12px 14px}
+    .app{grid-template-columns:1fr}
+    .nav-side{position:fixed;left:10px;top:10px;bottom:10px;height:auto;z-index:400;transform:translateX(-120%);transition:transform .25s;width:260px}
+    .app.open .nav-side{transform:none}
+    .app.col .nav-side{width:260px}
+    .app.col .side-brand,.app.col .nav-side .tab .lb,.app.col .side-proj{display:revert}
+    .side-col{display:none}
+    .side-burger{display:block}
+    .app.open ~ .side-scrim{display:block;position:fixed;inset:0;background:rgba(20,18,14,.35);z-index:350}
+  }
+  /* Separadores suaves entre bloques */
+  .sep{height:1px;margin:22px 0;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--ink) 11%,transparent) 8%,color-mix(in srgb,var(--ink) 11%,transparent) 92%,transparent)}
+
   /* Línea base, propuestas y cajita de ajustes */
+  .mem-list{display:flex;flex-direction:column;gap:2px;max-height:300px;overflow:auto}
+  .mem-area{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:10px 2px 4px}
+  .mem-area i{width:8px;height:8px;border-radius:50%}
+  .mem-row{display:flex;align-items:center;gap:10px;padding:5px 2px}
+  .mem-t{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.3}
+  .mem-t b{font-size:12.5px;font-weight:700}
+  .mem-t span{font-size:11px;color:var(--muted)}
+  .mem-row .pl-mini{font-size:11px;padding:4px 9px;border-radius:999px;background:var(--sunk);color:var(--muted)}
+  .mem-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+  .mem-chip{font-size:11px;font-weight:600;padding:4px 11px;border-radius:999px;background:var(--sunk);color:var(--ink)}
+  .mem-chip em{font-style:normal;color:var(--faint);font-weight:500}
+  .mem-chip.on{background:color-mix(in srgb,var(--c) 25%,var(--card))}
   .lb-chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:5px 12px;border-radius:999px;background:var(--sunk);color:var(--muted)}
   .prop-box{margin-top:16px;background:color-mix(in srgb,var(--accent) 9%,var(--card));border-radius:22px;padding:14px 16px}
   .prop-h{font-size:12px;font-weight:800;margin-bottom:6px}
@@ -762,26 +827,34 @@
 </style>
 </head>
 <body>
+<div class="app" id="app">
+<!-- ============ BARRA LATERAL (colapsable) ============ -->
+<aside class="nav-side" id="side">
+  <div class="side-top">
+    <div class="logo">M</div>
+    <div class="side-brand"><b>Gestión Mauro</b><div class="sub" id="sub"><span class="live"></span> Conectando…</div></div>
+    <button class="side-col" onclick="toggleSide()" title="Colapsar / expandir la barra">‹</button>
+  </div>
+  <nav class="tabs">
+    <button class="tab active" data-tab="hoy" onclick="showTab('hoy',this)" title="Hoy"><span class="ic">☀</span><span class="lb">Hoy</span></button>
+    <button class="tab" data-tab="proyectos" onclick="showTab('proyectos',this)" title="Proyectos"><span class="ic">▦</span><span class="lb">Proyectos</span></button>
+    <button class="tab" data-tab="panorama" onclick="showTab('panorama',this)" title="Panorama"><span class="ic">◔</span><span class="lb">Panorama</span></button>
+  </nav>
+  <div class="side-proj" id="side-proj-wrap" style="display:none">
+    <button class="side-proj-h" onclick="toggleSideProj()"><span>Proyectos</span><span class="side-proj-ar" id="side-proj-ar">▾</span></button>
+    <div id="side-proj"></div>
+    <button class="side-new" onclick="openProjectModal()">＋ Nuevo proyecto</button>
+  </div>
+</aside>
+
 <div class="container">
 
   <div class="header">
-    <div class="brand">
-      <div class="logo">M</div>
-      <div>
-        <h1>Gestión Mauro <span class="ver">v6 · notion</span></h1>
-        <div class="sub" id="sub"><span class="live"></span> Conectando…</div>
-      </div>
-    </div>
+    <button class="side-burger" onclick="toggleSideMovil()" title="Menú">☰</button>
     <div class="header-right">
       <span id="time">--:--</span>
       <span class="date" id="date">—</span>
     </div>
-  </div>
-
-  <div class="tabs">
-    <button class="tab active" data-tab="hoy" onclick="showTab('hoy',this)">Hoy</button>
-    <button class="tab" data-tab="proyectos" onclick="showTab('proyectos',this)">Proyectos</button>
-    <button class="tab" data-tab="panorama" onclick="showTab('panorama',this)">Panorama</button>
   </div>
 
   <!-- ============ HOY ============ -->
@@ -943,6 +1016,8 @@
   </div>
 
 </div>
+</div>
+<div class="side-scrim" onclick="toggleSideMovil(false)"></div>
 
 <!-- row menu -->
 <div class="menu" id="rowmenu"></div>
@@ -985,7 +1060,7 @@
       <div class="field"><label>Nombre</label><input type="text" id="am-name" placeholder="Ej: Levantar requerimientos"></div>
       <div class="frow">
         <div class="field"><label>Fase</label><select id="am-section"></select></div>
-        <div class="field"><label>Responsables</label><input type="text" id="am-resp" placeholder="Diana, Camilo, Mauro…"><div class="hint" style="font-size:10px;color:var(--faint);margin-top:4px">Separa varios con coma.</div></div>
+        <div class="field"><label>Responsables</label><input type="text" id="am-resp" list="dl-personas" placeholder="Diana, Camilo, Mauro…"><div class="hint" style="font-size:10px;color:var(--faint);margin-top:4px">Separa varios con coma, o toca un involucrado:</div><div id="am-chips" class="mem-chips"></div></div>
       </div>
       <div class="frow">
         <div class="field"><label>Inicio (opcional)</label><input type="date" id="am-start"></div>
@@ -1032,6 +1107,26 @@
     </div>
   </div>
 </div>
+
+<!-- MODAL INVOLUCRADOS DEL PROYECTO -->
+<div class="backdrop" id="m-mem" onclick="if(event.target===this)closeModal('m-mem')">
+  <div class="modal">
+    <div class="modal-h"><h3>Involucrados del proyecto</h3><button class="x-close" onclick="closeModal('m-mem')">×</button></div>
+    <div class="modal-b">
+      <div class="hintbox">Quiénes participan y de qué área son. Es distinto del <strong>responsable</strong> de cada actividad, pero ahí puedes usar estos nombres (varios por actividad). La vista «Por área» usa el área de cada persona.</div>
+      <div id="mem-list" class="mem-list"></div>
+      <div class="sep" style="margin:6px 0"></div>
+      <div class="frow">
+        <div class="field"><label>Nombre</label><input type="text" id="mem-nombre" placeholder="Ej: Diana Rojas" onkeydown="if(event.key==='Enter')guardarMiembro()"></div>
+        <div class="field"><label>Área</label><input type="text" id="mem-area" list="dl-areas" placeholder="Ej: Jurídica" onkeydown="if(event.key==='Enter')guardarMiembro()"></div>
+      </div>
+      <div class="field"><label>Rol (opcional)</label><input type="text" id="mem-rol" placeholder="Ej: Abogada corporativa" onkeydown="if(event.key==='Enter')guardarMiembro()"></div>
+    </div>
+    <div class="modal-f"><span></span><div style="display:flex;gap:8px"><button class="btn btn-ghost" onclick="closeModal('m-mem')">Cerrar</button><button class="btn btn-primary" id="mem-go" onclick="guardarMiembro()">＋ Agregar</button></div></div>
+  </div>
+</div>
+<datalist id="dl-personas"></datalist>
+<datalist id="dl-areas"></datalist>
 
 <!-- MODAL PLANTILLA DE PLAN DE TRABAJO -->
 <div class="backdrop" id="m-tpl" onclick="if(event.target===this)closeModal('m-tpl')">
@@ -1104,12 +1199,31 @@
   function dueLabel(iso){const d=dayDiff(todayISO(),iso);if(d<0)return `Venció hace ${Math.abs(d)}d`;if(d===0)return 'Vence hoy';if(d===1)return 'Vence mañana';return `Vence en ${d}d`;}
 
   // ---------- TABS ----------
+  // ---------- BARRA LATERAL ----------
+  function toggleSide(){const a=$('app');a.classList.toggle('col');try{localStorage.setItem('sideColV1',a.classList.contains('col')?'1':'0');}catch{}if(currentProjectDetail)requestAnimationFrame(()=>Plan.dibujarLineas());}
+  function toggleSideMovil(v){const a=$('app');a.classList.toggle('open',v===undefined?!a.classList.contains('open'):v);}
+  function toggleSideProj(){const w=$('side-proj-wrap');w.classList.toggle('plegado');try{localStorage.setItem('sideProjV1',w.classList.contains('plegado')?'1':'0');}catch{}}
+  try{if(localStorage.getItem('sideColV1')==='1')document.getElementById('app').classList.add('col');if(localStorage.getItem('sideProjV1')==='1')document.getElementById('side-proj-wrap').classList.add('plegado');}catch{}
+  function renderSideProjects(){
+    const el=$('side-proj');if(!el)return;
+    const ps=projectsCache||[];
+    el.innerHTML=ps.length?ps.map(p=>{const s=p.summary||{},on=projView==='gantt'&&currentProjectDetail&&currentProjectDetail.id===p.id;
+      return `<button class="sp-item${on?' on':''}" onclick="abrirProyectoLateral('${p.id}')" title="${esc(p.name)}"><span class="stat-dot sd-${s.status||'green'}" style="margin:0"></span><span class="nm">${esc(p.name)}</span>${s.retrasos?`<span class="al">${s.retrasos}</span>`:''}<span class="pc">${s.avance||0}%</span></button>`;}).join('')
+      :'<div style="font-size:12px;color:var(--faint);padding:6px 10px">Aún no hay proyectos.</div>';
+  }
+  function abrirProyectoLateral(id){
+    toggleSideMovil(false);
+    if(projView!=='gantt')setProjView('gantt');
+    openProject(id);
+  }
   function showTab(name,btn){
     document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
     document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
     if(btn)btn.classList.add('active');
     $('v-'+name).classList.add('active');
     if(name==='proyectos')loadProjects();
+    const sp=$('side-proj-wrap');if(sp)sp.style.display=name==='proyectos'?'':'none';
+    toggleSideMovil(false);
   }
   function showTabByName(name){const b=document.querySelector(`.tab[data-tab="${name}"]`);if(b)showTab(name,b);}
 
@@ -1577,6 +1691,7 @@
   // Pestaña por proyecto: se elige arriba y debajo va su Gantt, indicadores y microtareas
   function renderProjectTabs(){
     const ps=projectsCache||[];
+    renderSideProjects();
     $('p-count').textContent=ps.length+' proyecto'+(ps.length===1?'':'s');
     const retr=ps.reduce((s,p)=>s+(p.summary?p.summary.retrasos:0),0),prox=ps.reduce((s,p)=>s+(p.summary?p.summary.proximas:0),0);
     if(retr||prox){const parts=[];if(retr)parts.push(`<strong>${retr} actividad${retr===1?'':'es'} retrasada${retr===1?'':'s'}</strong>`);if(prox)parts.push(`${prox} próxima${prox===1?'':'s'} a vencer`);$('p-alerts').innerHTML=`<div class="banner ${retr?'crit':'warn'}">⚠ ${parts.join(' · ')} en el portafolio</div>`;}
@@ -1884,6 +1999,7 @@
       requestAnimationFrame(drawDepLinks);
     }else if(planView==='hoja'){
       const n=$('pl-wrap');if(n&&keepH){n.scrollLeft=keepH[0];n.scrollTop=keepH[1];}
+      requestAnimationFrame(()=>Plan.dibujarLineas());
     }else{
       const n=document.querySelector('.ptable-wrap');if(n&&keepT)n.scrollLeft=keepT;
     }
@@ -1904,6 +2020,7 @@
       <div class="panel-h">
         <div><div class="nm">${esc(d.name)} ${badge}</div><div class="meta">👤 ${d.responsable?esc(d.responsable):'sin responsable'} <button class="btn btn-ghost btn-sm" style="padding:1px 7px" onclick="editResponsable()">✎</button>${d.descripcion?' · '+esc(d.descripcion):''}</div></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-soft btn-sm" onclick="openMiembros()" title="Quiénes participan en el proyecto y de qué área son">👥 Involucrados${(d.miembros||[]).length?` · ${d.miembros.length}`:''}</button>
           <button class="btn btn-soft btn-sm" onclick="openTplModal()" title="Cargar un plan de trabajo prediseñado en este proyecto">📥 Plantilla de plan</button>
           <button class="btn btn-soft btn-sm" onclick="openShareModal()">🔗 Compartir plan</button>
           <button class="btn btn-soft btn-sm" onclick="openProjectModal('${d.id}')">✎ Editar proyecto</button>
@@ -1912,17 +2029,20 @@
       <div class="pk" id="p-kpis">${kpisHtml(d)}</div>
       <div id="p-signals">${planVsRealHtml(s)}${critHtml(s)}</div>
       <div id="prop-wrap">${propuestasHtml(d)}</div>
-      <div style="margin-top:20px">
+      <div class="sep"></div>
+      <div>
         <div id="plan-head-wrap">${planHeadHtml()}</div>
         <div id="asist-wrap">${asistHtml()}</div>
         <div id="plan-body">${planBodyHtml(d)}</div>
       </div>
+      <div class="sep"></div>
       <div id="micro-wrap">${microHtml(d)}</div>
     </div>`;
     if(planView==='gantt'){
       const n=$('gantt-scroll');if(n&&keepG)n.scrollLeft=keepG;
       requestAnimationFrame(drawDepLinks);
-    }
+    }else if(planView==='hoja')requestAnimationFrame(()=>Plan.dibujarLineas());
+    renderDatalist();
     restoreFocus();
   }
 
@@ -2355,7 +2475,7 @@
     if(!confirm(`¿Quitar la dependencia «${prev?prev.name:'?'}» → «${t.name}»?`))return;
     applyActivity(toId,{dependsOnIds:(t.dependsOnIds||[]).filter(x=>x!==fromId)});
   }
-  window.addEventListener('resize',()=>{if(planView==='gantt'&&currentProjectDetail)drawDepLinks();});
+  window.addEventListener('resize',()=>{if(!currentProjectDetail)return;if(planView==='gantt')drawDepLinks();else if(planView==='hoja')Plan.dibujarLineas();});
 
   // ---------- PLAN EN TABLA (se diligencia toda la data aquí mismo) ----------
   function planTableHtml(d){
@@ -2436,7 +2556,7 @@
 
   // ---------- PLAN DE TRABAJO (assets/plan.js pinta; aquí se guardan los cambios) ----------
   function planModel(d){
-    return {sections:d.sections,activities:d.activities,tasks:d.tasks,lineaBase:d.lineaBaseAt||null,today:(d.summary&&d.summary.today)||todayISO()};
+    return {sections:d.sections,activities:d.activities,tasks:d.tasks,miembros:d.miembros||[],lineaBase:d.lineaBaseAt||null,today:(d.summary&&d.summary.today)||todayISO()};
   }
   function planSetOpt(k,v){Plan.cambiar(planOpts,k,v);Plan.guardar(LS_PLAN,planOpts);renderPlan();}
   function planOnPatch(id,cambios){patchActivity(id,cambios);}
@@ -2463,6 +2583,80 @@
     else if(accion==='on')toggleSection(id,true);
     else if(accion==='remove')removeSection(id);
   }
+  // ---------- INVOLUCRADOS DEL PROYECTO ----------
+  let editandoMiembro=null;
+  function nombresSugeridos(){
+    const d=currentProjectDetail;if(!d)return {personas:[],areas:[]};
+    const personas=[],areas=[];
+    const add=(arr,v)=>{v=String(v||'').trim();if(v&&!arr.some(x=>Plan.norm(x)===Plan.norm(v)))arr.push(v);};
+    (d.miembros||[]).forEach(m=>{add(personas,m.nombre);add(areas,m.area);});
+    (d.activities||[]).forEach(a=>Plan.respDe(a).forEach(r=>add(personas,r)));
+    areas.forEach(a=>add(personas,a));
+    return {personas,areas};
+  }
+  function renderDatalist(){
+    const {personas,areas}=nombresSugeridos();
+    const dp=$('dl-personas'),da=$('dl-areas');
+    if(dp)dp.innerHTML=personas.map(p=>`<option value="${esc(p)}">`).join('');
+    if(da)da.innerHTML=areas.map(p=>`<option value="${esc(p)}">`).join('');
+  }
+  function renderAmChips(){
+    const d=currentProjectDetail,el=$('am-chips');if(!el)return;
+    const ms=(d&&d.miembros)||[];
+    const act=Plan.respDe({responsables:$('am-resp').value.split(',').map(x=>x.trim()).filter(Boolean)}).map(Plan.norm);
+    el.innerHTML=ms.length?ms.map(m=>`<button type="button" class="mem-chip${act.includes(Plan.norm(m.nombre))?' on':''}" style="--c:${Plan.colorDe(m.area||m.nombre)}" onclick="toggleRespChip('${esc(m.nombre).replace(/'/g,"\\'")}')">${esc(m.nombre)}${m.area?` <em>${esc(m.area)}</em>`:''}</button>`).join('')
+      :'<span style="font-size:10.5px;color:var(--faint)">Agrega involucrados en «👥 Involucrados» para elegirlos aquí.</span>';
+  }
+  function toggleRespChip(nombre){
+    const inp=$('am-resp');
+    let l=inp.value.split(',').map(x=>x.trim()).filter(Boolean);
+    const i=l.findIndex(x=>Plan.norm(x)===Plan.norm(nombre));
+    if(i>=0)l.splice(i,1);else l.push(nombre);
+    inp.value=l.join(', ');renderAmChips();
+  }
+  function openMiembros(){
+    editandoMiembro=null;$('mem-go').textContent='＋ Agregar';
+    ['mem-nombre','mem-area','mem-rol'].forEach(id=>{$(id).value='';});
+    renderMiembros();renderDatalist();openModal('m-mem');setTimeout(()=>$('mem-nombre').focus(),80);
+  }
+  function renderMiembros(){
+    const d=currentProjectDetail;if(!d)return;
+    const ms=d.miembros||[];
+    const areas=new Map();ms.forEach(m=>{const k=m.area||'Sin área';if(!areas.has(k))areas.set(k,[]);areas.get(k).push(m);});
+    $('mem-list').innerHTML=ms.length?[...areas.entries()].sort((x,y)=>x[0].localeCompare(y[0])).map(([a,l])=>`<div class="mem-area"><i style="background:${Plan.colorDe(a)}"></i>${esc(a)}</div>`+l.map(m=>`<div class="mem-row">
+        <span class="pl-av" style="background:${Plan.colorDe(m.nombre)};width:28px;height:28px;font-size:10px;margin:0;box-shadow:none">${esc(m.nombre.split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase())}</span>
+        <div class="mem-t"><b>${esc(m.nombre)}</b><span>${esc(m.area||'Sin área')}${m.rol?' · '+esc(m.rol):''}</span></div>
+        <button class="pl-mini" onclick="editarMiembro('${m.id}')">✎</button><button class="pl-mini" onclick="borrarMiembro('${m.id}')">🗑</button>
+      </div>`).join('')).join('')
+      :'<div style="font-size:12px;color:var(--faint);padding:4px 0">Aún no hay involucrados. Agrégalos abajo.</div>';
+  }
+  function editarMiembro(id){
+    const m=(currentProjectDetail.miembros||[]).find(x=>x.id===id);if(!m)return;
+    editandoMiembro=id;$('mem-nombre').value=m.nombre;$('mem-area').value=m.area||'';$('mem-rol').value=m.rol||'';
+    $('mem-go').textContent='Guardar cambios';$('mem-nombre').focus();
+  }
+  async function guardarMiembro(){
+    const d=currentProjectDetail;if(!d)return;
+    const body={id:editandoMiembro||undefined,nombre:$('mem-nombre').value.trim(),area:$('mem-area').value.trim(),rol:$('mem-rol').value.trim()};
+    if(!body.nombre){toast('⚠ Escribe el nombre',false);return;}
+    try{
+      const r=await api(`/api/projects/${d.id}?res=miembros`,'POST',body);
+      d.miembros=d.miembros||[];
+      const i=d.miembros.findIndex(x=>x.id===r.miembro.id);
+      if(i>=0)d.miembros[i]=r.miembro;else d.miembros.push(r.miembro);
+      editandoMiembro=null;$('mem-go').textContent='＋ Agregar';
+      ['mem-nombre','mem-rol'].forEach(id=>{$(id).value='';});$('mem-nombre').focus();
+      renderMiembros();renderDatalist();renderPlan();toast('✓ Guardado');
+    }catch(e){toast('⚠ '+e.message,false);}
+  }
+  async function borrarMiembro(id){
+    const d=currentProjectDetail;if(!d)return;
+    const m=(d.miembros||[]).find(x=>x.id===id);
+    if(!confirm(`¿Quitar a ${m?m.nombre:'esta persona'} de los involucrados? (No cambia los responsables de las actividades.)`))return;
+    try{await api(`/api/projects/${d.id}?res=miembros&memberId=${id}`,'DELETE');d.miembros=(d.miembros||[]).filter(x=>x.id!==id);renderMiembros();renderDatalist();renderPlan();}
+    catch(e){toast('⚠ '+e.message,false);}
+  }
+
   // ---------- LÍNEA BASE ----------
   // Congela las fechas planeadas; desde ahí se mueve lo proyectado y se ve el desvío
   function lineaBaseHtml(){
@@ -2754,6 +2948,7 @@
     editingActivityId=id||null;const a=id?d.activities.find(x=>x.id===id):null;
     $('am-title').textContent=a?'Editar actividad':'Nueva actividad';
     $('am-name').value=a?a.name:'';$('am-resp').value=a?((a.responsables&&a.responsables.length)?a.responsables.join(', '):(a.responsable||'')):'';
+    renderAmChips();
     $('am-start').value=a&&a.startDate?a.startDate:'';$('am-deadline').value=a&&a.deadline?a.deadline:'';
     $('am-rstart').value=a&&a.realStart?a.realStart:'';$('am-rend').value=a&&a.realEnd?a.realEnd:'';
     const lb=$('am-lb');

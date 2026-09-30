@@ -4,6 +4,7 @@
 //   GET    /api/projects/:id?res=shares                 → listar enlaces
 //   POST   /api/projects/:id?res=shares                 → crear enlace
 //   DELETE /api/projects/:id?res=shares&shareId=...     → revocar enlace
+//   GET/POST/DELETE /api/projects/:id?res=miembros       → involucrados (nombre + área)
 //   POST   /api/projects/:id?res=lineabase              → fijar / quitar línea base { accion }
 //   GET    /api/projects/:id?res=propuestas             → ajustes propuestos pendientes
 //   POST   /api/projects/:id?res=propuestas             → aceptar / descartar { propuestaId, aceptar }
@@ -14,6 +15,16 @@ const db = require('../../lib/db');
 module.exports = async (req, res) => {
   const { id, res: sub, shareId } = req.query;
   try {
+    if (sub === 'miembros') {
+      if (req.method === 'GET') return res.status(200).json({ miembros: await db.listMiembros(id) });
+      if (req.method === 'POST' || req.method === 'PATCH') return res.status(200).json({ miembro: await db.guardarMiembro(id, req.body || {}) });
+      if (req.method === 'DELETE') {
+        if (!req.query.memberId) return res.status(400).json({ error: 'memberId es obligatorio' });
+        await db.borrarMiembro(id, req.query.memberId);
+        return res.status(200).json({ success: true });
+      }
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
     if (sub === 'lineabase') {
       if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
       const { accion } = req.body || {};

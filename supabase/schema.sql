@@ -110,6 +110,20 @@ create table if not exists project_shares (
 create index if not exists idx_shares_project on project_shares(project_id);
 
 -- ------------------------------------------------------------
+-- INVOLUCRADOS DEL PROYECTO (persona + área; distinto del responsable)
+-- ------------------------------------------------------------
+create table if not exists project_members (
+  id         uuid primary key default gen_random_uuid(),
+  project_id uuid not null references projects(id) on delete cascade,
+  nombre     text not null,
+  area       text,
+  rol        text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_members_project on project_members(project_id);
+
+-- ------------------------------------------------------------
 -- AJUSTES PROPUESTOS desde un enlace compartido (el dueño decide)
 -- ------------------------------------------------------------
 create table if not exists propuestas_cambio (
@@ -158,3 +172,4 @@ alter table activities enable row level security;
 alter table tasks enable row level security;
 alter table project_shares enable row level security;
 alter table propuestas_cambio enable row level security;
+alter table project_members enable row level security;
