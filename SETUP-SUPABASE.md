@@ -9,6 +9,7 @@ La app ya no usa Notion para nada. Todo (tareas, proyectos, fases y actividades 
 > 3. [`supabase/migracion-2026-10-plan-trabajo.sql`](supabase/migracion-2026-10-plan-trabajo.sql) — columna **Entregable / resultado** de la hoja de plan de trabajo. Sin ella, cargar una plantilla o escribir un entregable falla con un aviso que te recuerda correrla.
 > 4. [`supabase/migracion-2026-10-fechas-reales.sql`](supabase/migracion-2026-10-fechas-reales.sql) — **fechas reales** de inicio y fin, y actividades **propuestas** desde un enlace compartido.
 > 5. [`supabase/migracion-2026-10-linea-base.sql`](supabase/migracion-2026-10-linea-base.sql) — **línea base** (fechas planeadas congeladas) y **ajustes propuestos** desde el enlace compartido.
+> 6. [`supabase/migracion-2026-10-involucrados.sql`](supabase/migracion-2026-10-involucrados.sql) — **involucrados** del proyecto (nombre + área).
 
 ## 1. Crear el proyecto en Supabase
 

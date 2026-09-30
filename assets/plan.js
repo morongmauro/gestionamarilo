@@ -145,7 +145,7 @@
       const sig = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, '0')}-01`;
       const x0 = E.x(d), x1 = E.x(sig > E.fin ? addDays(E.fin, 1) : sig);
       if (zoom === 'mes') bot += `<span class="pl-sc-b" style="left:${x0}px;width:${x1 - x0}px">${MES[m - 1]}</span>`;
-      else top += `<span class="pl-sc-t" style="left:${x0}px;width:${x1 - x0}px">${MES_L[m - 1]}${m === 1 || d === E.ini ? ' ' + String(y).slice(2) : ''}</span>`;
+      else top += `<span class="pl-sc-t" style="left:${x0}px;width:${x1 - x0}px">${x1 - x0 < 90 ? MES[m - 1] : MES_L[m - 1]}${(m === 1 || d === E.ini) && x1 - x0 >= 60 ? ' ' + String(y).slice(2) : ''}</span>`;
       d = sig;
     }
     if (zoom === 'mes') {
@@ -192,16 +192,31 @@
     const gs = secs.map((s, i) => ({ key: s.id, id: s.id, name: s.name, sec: s, color: AREA_COLORS[i % AREA_COLORS.length], acts: acts.filter(a => a.sectionId === s.id).sort(orden) }));
     const huerf = acts.filter(a => !a.sectionId || !secs.some(s => s.id === a.sectionId)).sort(orden);
     if (huerf.length) gs.push({ key: '_otras', id: null, name: 'Otras', sec: null, color: '#9A9384', acts: huerf });
-    let n = 0;
-    gs.forEach(g => { if (g.sec && g.sec.enabled === false) return; n++; g.cod = String(n); g.acts.forEach((a, i) => { a._cod = `${n}.${i + 1}`; a._etapa = g.name; }); });
+    // Una etapa cuyo nombre empieza con «0 ·» se numera 0 (arranque); las demás siguen 1, 2, 3…
+    let n = 0, primera = true;
+    gs.forEach(g => {
+      if (g.sec && g.sec.enabled === false) return;
+      const cero = /^0\s*[·.:\-–]\s*/.test(g.name);
+      if (cero) g.name = g.name.replace(/^0\s*[·.:\-–]\s*/, '');
+      const num = cero && primera ? 0 : ++n;
+      primera = false;
+      g.cod = String(num);
+      g.acts.forEach((a, i) => { a._cod = `${num}.${i + 1}`; a._etapa = g.name; });
+    });
     return gs;
+  }
+  // Área de un nombre: si es un involucrado del proyecto, su área; si no, el nombre mismo (p. ej. «Jurídica»)
+  function areaDe(nombre, miembros) {
+    const m = (miembros || []).find(x => norm(x.nombre) === norm(nombre));
+    return m ? (m.area || 'Sin área') : nombre;
   }
   function porArea(model, gsEtapas) {
     const orden = [];
     gsEtapas.forEach(g => { if (!(g.sec && g.sec.enabled === false)) g.acts.forEach(a => orden.push(a)); });
     const mapa = new Map();
     orden.forEach(a => {
-      const nombre = respDe(a)[0] || 'Sin responsable';
+      const r0 = respDe(a)[0];
+      const nombre = r0 ? areaDe(r0, model.miembros) : 'Sin responsable';
       const k = 'a:' + norm(nombre);
       if (!mapa.has(k)) mapa.set(k, { key: k, id: null, name: nombre, sec: null, area: true, color: nombre === 'Sin responsable' ? '#9A9384' : colorDe(nombre), acts: [] });
       mapa.get(k).acts.push(a);
@@ -246,6 +261,7 @@
         <div class="pl-seg" title="Zoom del cronograma">${seg('zoom', 'dia', 'Día', opts.zoom)}${seg('zoom', 'semana', 'Semana', opts.zoom)}${seg('zoom', 'mes', 'Mes', opts.zoom)}</div>
         ${opts.vista === 'tabla' ? `<span class="pl-sep"></span>${col('entregable', 'Entregable')}${col('real', 'Fechas reales')}${col('deps', 'Depende de')}` : ''}
         ${opts.owner ? `<button class="pl-pill${opts.tareas ? ' on' : ''}" onclick="planSetOpt('tareas',${!opts.tareas})">${opts.tareas ? '✓ ' : ''}Tareas</button>` : ''}
+        <button class="pl-pill${opts.lineas !== false ? ' on' : ''}" onclick="planSetOpt('lineas',${opts.lineas === false})" title="Líneas entre actividades que dependen una de otra">${opts.lineas !== false ? '✓ ' : ''}Relaciones</button>
         <button class="pl-pill${opts.panel ? ' on' : ''}" onclick="planSetOpt('panel',${!opts.panel})" title="Panel de involucrados al lado">${opts.panel ? '✓ ' : ''}Involucrados</button>
       </div>`;
   }
@@ -292,26 +308,77 @@
   // ---------- Panel de involucrados (para que todos estén enterados) ----------
   function involucradosHtml(model, opts) {
     const today = model.today, en7 = addDays(today, 7);
-    const gente = new Map();
+    const stats = new Map();
+    const statDe = nombre => {
+      const k = norm(nombre);
+      if (!stats.has(k)) stats.set(k, { nombre, total: 0, hechas: 0, tarde: 0, pronto: 0 });
+      return stats.get(k);
+    };
     (model.activities || []).forEach(a => respDe(a).forEach(r => {
-      const k = norm(r);
-      if (!gente.has(k)) gente.set(k, { nombre: r, total: 0, hechas: 0, tarde: 0, pronto: [] });
-      const p = gente.get(k), est = estado(a, today);
+      const p = statDe(r), est = estado(a, today);
       p.total++;
       if (est === 'Completada') p.hechas++;
       else if (est === 'Atrasada') p.tarde++;
-      else if (a.deadline && a.deadline <= en7) p.pronto.push(a);
+      else if (a.deadline && a.deadline <= en7) p.pronto++;
     }));
-    const lista = [...gente.values()].sort((x, y) => y.tarde - x.tarde || y.pronto.length - x.pronto.length || y.total - x.total);
-    if (!lista.length) return '';
+    const miembros = model.miembros || [];
     const on = n => norm(opts.resp) === norm(n);
+    const ini = n => n.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+    const fila = (nombre, sub) => {
+      const p = stats.get(norm(nombre)) || { total: 0, hechas: 0, tarde: 0, pronto: 0 };
+      return `<button class="pl-per${on(nombre) ? ' on' : ''}" onclick="planSetOpt('resp',${on(nombre) ? "''" : `'${esc(nombre).replace(/'/g, "\\'")}'`})" title="Ver solo lo de ${esc(nombre)}">
+        <span class="pl-av" style="background:${colorDe(nombre)}">${esc(ini(nombre))}</span>
+        <span class="pl-per-t"><b>${esc(nombre)}</b><span>${sub ? esc(sub) + ' · ' : ''}${p.total ? `${p.hechas}/${p.total} listas` : 'sin actividades'}${p.tarde ? ` · <em class="late">${p.tarde} atrasada${p.tarde > 1 ? 's' : ''}</em>` : ''}${p.pronto ? ` · <em class="soon">${p.pronto} vence${p.pronto > 1 ? 'n' : ''} pronto</em>` : ''}</span></span>
+      </button>`;
+    };
+    let html = '';
+    if (miembros.length) {
+      // Involucrados agrupados por su área
+      const areas = new Map();
+      miembros.forEach(m => { const k = m.area || 'Sin área'; if (!areas.has(k)) areas.set(k, []); areas.get(k).push(m); });
+      html += [...areas.entries()].sort((x, y) => x[0].localeCompare(y[0])).map(([area, ms]) =>
+        `<div class="pl-side-a" style="--c:${colorDe(area)}"><i></i>${esc(area)}</div>${ms.map(m => fila(m.nombre, m.rol)).join('')}`).join('');
+    }
+    // Responsables que no están en la lista de involucrados (p. ej. un área escrita tal cual)
+    const esMiembro = n => miembros.some(m => norm(m.nombre) === norm(n));
+    const otros = [...stats.values()].filter(p => !esMiembro(p.nombre)).sort((x, y) => y.tarde - x.tarde || y.total - x.total);
+    if (otros.length) html += `${miembros.length ? '<div class="pl-side-a"><i></i>Otros responsables</div>' : ''}${otros.map(p => fila(p.nombre)).join('')}`;
+    if (!html) return '';
     return `<aside class="pl-side">
-      <div class="pl-side-h">Involucrados <span class="pl-mut">${lista.length}</span></div>
-      ${lista.map(p => `<button class="pl-per${on(p.nombre) ? ' on' : ''}" onclick="planSetOpt('resp',${on(p.nombre) ? "''" : `'${esc(p.nombre).replace(/'/g, "\\'")}'`})" title="Ver solo lo de ${esc(p.nombre)}">
-        <span class="pl-av" style="background:${colorDe(p.nombre)}">${esc(p.nombre.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase())}</span>
-        <span class="pl-per-t"><b>${esc(p.nombre)}</b><span>${p.hechas}/${p.total} listas${p.tarde ? ` · <em class="late">${p.tarde} atrasada${p.tarde > 1 ? 's' : ''}</em>` : ''}${p.pronto.length ? ` · <em class="soon">${p.pronto.length} vence${p.pronto.length > 1 ? 'n' : ''} pronto</em>` : ''}</span></span>
-      </button>`).join('')}
+      <div class="pl-side-h">Involucrados <span class="pl-mut">${miembros.length || stats.size}</span></div>
+      ${html}
     </aside>`;
+  }
+
+  // ---------- Líneas de relación (dependencias) sobre el cronograma ----------
+  function dibujarLineas(raiz) {
+    const cont = raiz || document;
+    cont.querySelectorAll('svg.pl-links').forEach(svg => {
+      let deps = [];
+      try { deps = JSON.parse(svg.dataset.deps || '[]'); } catch (e) {}
+      const canvas = svg.parentElement;
+      const cr = canvas.getBoundingClientRect();
+      svg.setAttribute('width', canvas.scrollWidth);
+      svg.setAttribute('height', canvas.scrollHeight);
+      const caja = id => {
+        const el = canvas.querySelector(`[data-id="${id}"]`);
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        return { l: r.left - cr.left, r: r.right - cr.left, y: r.top - cr.top + r.height / 2 };
+      };
+      let paths = '';
+      deps.forEach(([de, a]) => {
+        const p = caja(de), q = caja(a);
+        if (!p || !q) return;
+        const x1 = p.r, y1 = p.y, x2 = q.l - 3, y2 = q.y;
+        const codo = Math.max(x1 + 8, Math.min(x2 - 8, x1 + 14));
+        const d = x2 - 8 > x1
+          ? `M${x1},${y1} H${codo} V${y2} H${x2}`
+          : `M${x1},${y1} H${x1 + 8} V${(y1 + y2) / 2} H${x2 - 10} V${y2} H${x2}`;
+        paths += `<path d="${d}" />`;
+      });
+      svg.innerHTML = `<defs><marker id="pl-flecha" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="pl-flecha"/></marker></defs>${paths.replace(/<path d="/g, '<path marker-end="url(#pl-flecha)" d="')}`;
+    });
   }
 
   function render(model, opts) {
@@ -399,9 +466,11 @@
       <span><i class="sw late"></i>Atrasado</span>${base ? '<span><i class="sw lb"></i>Línea base</span>' : ''}<span><i class="sw real"></i>Ejecución real</span><span><i class="sw ms"></i>Hito (un solo día)</span>
       <span><i class="sw hoy"></i>Hoy</span><span class="pl-mut">Días hábiles sin fines de semana ni festivos de Colombia${opts.owner ? ' · ID morado = ruta crítica' : ''}</span>
     </div>`;
-    const tabla = `<div class="pl-wrap" id="pl-wrap"><table class="pl">${head}<tbody>${filas}${addArea}</tbody></table></div>`;
+    const deps = [];
+    if (opts.lineas !== false) (model.activities || []).forEach(a => (a.dependsOnIds || []).forEach(p => deps.push([p, a.id])));
+    const tabla = `<div class="pl-wrap" id="pl-wrap"><div class="pl-canvas"><table class="pl">${head}<tbody>${filas}${addArea}</tbody></table><svg class="pl-links" data-deps='${esc(JSON.stringify(deps))}'></svg></div></div>`;
     const panel = opts.panel ? involucradosHtml(model, opts) : '';
-    return `${filtrosHtml(model, opts, gs)}${vacio}
+    return `${filtrosHtml(model, opts, gs)}<div class="pl-div"></div>${vacio}
       ${panel ? `<div class="pl-layout"><div class="pl-main">${tabla}</div>${panel}</div>` : tabla}
       ${leyenda}${opts.owner ? sueltasHtml(model, gsEt) : ''}`;
   }
@@ -423,8 +492,8 @@
       const cls = est === 'Completada' ? ' ok' : est === 'Atrasada' ? ' late' : '';
       const click = has('planOnOpen') && opts.owner ? ` onclick="planOnOpen('${a.id}')"` : '';
       barra += ini === fin
-        ? `<span class="pl-ms${cls}" style="left:${x0 + E.ppd / 2}px;--c:${g.color}" title="${tip}"${click}></span><span class="pl-blab" style="left:${x0 + E.ppd / 2 + 12}px">${esc(a.name)}</span>`
-        : `<span class="pl-b${cls}" style="left:${x0}px;width:${w}px;--c:${g.color}" title="${tip}"${click}><i style="width:${pct}%"></i>${w >= 90 ? `<em>${esc(a.name)}</em>` : ''}</span>${w < 90 ? `<span class="pl-blab" style="left:${x0 + w + 8}px">${esc(a.name)}</span>` : ''}`;
+        ? `<span class="pl-ms${cls}" data-id="${a.id}" style="left:${x0 + E.ppd / 2}px;--c:${g.color}" title="${tip}"${click}></span>`
+        : `<span class="pl-b${cls}" data-id="${a.id}" style="left:${x0}px;width:${w}px;--c:${g.color}" title="${tip}"${click}><i style="width:${pct}%"></i></span>`;
     }
     if (a.realStart) {
       const rf = a.realEnd || today;
@@ -435,7 +504,7 @@
       ? `<button class="pl-cod"${cp} onclick="planOnOpen('${a.id}')" title="Abrir detalle (dependencias, notas)">${a._cod}</button>`
       : `<span class="pl-cod">${a._cod}</span>`;
     const inp = (campo, valor, ph, cls) => editable
-      ? `<input class="pl-in ${cls || ''}" data-cell="${a.id}:${campo}" value="${esc(valor)}" placeholder="${ph}" title="${esc(valor)}" onchange="planOnPatch('${a.id}',{${campo}:this.value.trim()})">`
+      ? `<input class="pl-in ${cls || ''}" data-cell="${a.id}:${campo}" value="${esc(valor)}" placeholder="${ph}" title="${esc(valor)}"${campo === 'responsables' ? ' list="dl-personas"' : ''} onchange="planOnPatch('${a.id}',{${campo}:this.value.trim()})">`
       : `<span class="pl-tx ${cls || ''}" title="${esc(valor)}">${esc(valor) || '<span class="pl-mut">—</span>'}</span>`;
     const deps = (a.dependsOnIds || []).map(id => codigo[id]).filter(Boolean).join(', ');
     const dias = a.startDate && a.deadline ? diasHabiles(a.startDate, a.deadline) : '';
@@ -517,7 +586,7 @@
   }
 
   window.Plan = {
-    render, estado, pickDate, aplicarLocal, adelantar, cascada, colorDe, respDe, norm, fCorta,
+    render, estado, pickDate, aplicarLocal, adelantar, cascada, colorDe, respDe, norm, fCorta, dibujarLineas,
     etapas,
     cal: { esHabil, habilDesde, finHabil, diasHabiles, sumarHabiles, difHabiles, moverRango },
     colores: AREA_COLORS,
@@ -527,7 +596,7 @@
       try { const g = JSON.parse(localStorage.getItem(clave) || 'null'); if (g) { o = Object.assign(o, g, { cols: Object.assign({}, o.cols, g.cols || {}) }); } } catch (e) {}
       return o;
     },
-    guardar(clave, o) { try { localStorage.setItem(clave, JSON.stringify({ vista: o.vista, zoom: o.zoom, agrupar: o.agrupar, panel: o.panel, tareas: o.tareas, cols: o.cols })); } catch (e) {} },
+    guardar(clave, o) { try { localStorage.setItem(clave, JSON.stringify({ vista: o.vista, zoom: o.zoom, agrupar: o.agrupar, panel: o.panel, lineas: o.lineas, tareas: o.tareas, cols: o.cols })); } catch (e) {} },
     cambiar(o, k, v) {
       if (k === 'col') o.cols[v] = !o.cols[v];
       else if (k === 'agrupar') { o.agrupar = v; o.grupo = null; }

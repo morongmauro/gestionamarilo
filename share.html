@@ -136,7 +136,7 @@
     <div class="addgrid">
       <div class="field f-nm wide"><label>Actividad</label><input type="text" id="n-name" placeholder="Ej: Solicitar certificado de tradición y libertad" onkeydown="if(event.key==='Enter')agregar()"></div>
       <div class="field mid"><label>Etapa</label><select id="n-area"></select></div>
-      <div class="field"><label>Área responsable</label><input type="text" id="n-resp" placeholder="Ej: Jurídica, Tecnología"></div>
+      <div class="field"><label>Responsable</label><input type="text" id="n-resp" list="dl-personas" placeholder="Ej: Diana, Jurídica"></div>
       <div class="field"><label>Duración (días háb.)</label><input type="number" id="n-dur" min="1" max="365" value="3"></div>
       <div class="field"><label>Inicio (opcional)</label><input type="date" id="n-ini"></div>
       <div class="field mid"><label>Entregable (opcional)</label><input type="text" id="n-ent" placeholder="Ej: Certificado vigente"></div>
@@ -179,6 +179,7 @@
     </div>
   </details>
 </div>
+<datalist id="dl-personas"></datalist>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -239,9 +240,10 @@
   function renderPlan(){
     const w=$('pl-wrap'),keep=w?[w.scrollLeft,w.scrollTop]:null;
     $('plan').innerHTML=Plan.render(modelo(),opts);
+    requestAnimationFrame(()=>Plan.dibujarLineas());
     const n=$('pl-wrap');if(n&&keep){n.scrollLeft=keep[0];n.scrollTop=keep[1];}
   }
-  function modelo(){return {sections:DATA.sections,activities:DATA.activities,lineaBase:DATA.project.lineaBaseAt||null,today:(DATA.summary&&DATA.summary.today)||todayISO()};}
+  function modelo(){return {sections:DATA.sections,activities:DATA.activities,miembros:DATA.miembros||[],lineaBase:DATA.project.lineaBaseAt||null,today:(DATA.summary&&DATA.summary.today)||todayISO()};}
   function renderAddBox(){
     const secs=[...(DATA.sections||[])].filter(s=>s.enabled!==false).sort((a,b)=>a.position-b.position);
     const sel=$('n-area'),prev=sel.value;
@@ -257,7 +259,10 @@
     if(aPrev)aSel.value=aPrev;
     $('ajbox').style.display=(DATA.activities||[]).length?'':'none';
     // Ronda de estimación: áreas / responsables del plan
-    const gente=[];(DATA.activities||[]).forEach(a=>Plan.respDe(a).forEach(r=>{if(!gente.some(x=>Plan.norm(x)===Plan.norm(r)))gente.push(r);}));
+    const gente=[];const sumar=r=>{if(r&&!gente.some(x=>Plan.norm(x)===Plan.norm(r)))gente.push(r);};
+    (DATA.miembros||[]).forEach(m=>sumar(m.nombre));
+    (DATA.activities||[]).forEach(a=>Plan.respDe(a).forEach(sumar));
+    const dl=$('dl-personas');if(dl)dl.innerHTML=gente.concat((DATA.miembros||[]).map(m=>m.area).filter(Boolean)).map(g=>`<option value="${esc(g)}">`).join('');
     gente.sort((x,y)=>x.localeCompare(y));
     const eSel=$('e-quien'),ePrev=eSel.value||opts.resp||'';
     eSel.innerHTML='<option value="">Todas las actividades</option>'+gente.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('');
@@ -345,6 +350,7 @@
     finally{$('n-go').disabled=false;}
   }
 
+  window.addEventListener('resize',()=>{if(DATA)Plan.dibujarLineas();});
   load();
 </script>
 </body>

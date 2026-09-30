@@ -287,3 +287,16 @@
 .pl-scale .pl-sc-b.now{opacity:0}
 .pl-ley .sw.hoy{background:var(--pl-today)}
 .pl-ley .sw.ok{background:#00C875}.pl-ley .sw.late{background:#E2445C}
+
+/* Separador suave entre bloques (sin bordes) */
+.pl-div{height:1px;margin:4px 4px 16px;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--ink) 12%,transparent) 12%,color-mix(in srgb,var(--ink) 12%,transparent) 88%,transparent)}
+
+/* Líneas de relación entre actividades */
+.pl-canvas{position:relative;width:max-content;min-width:100%}
+.pl-links{position:absolute;left:0;top:0;pointer-events:none;z-index:1;overflow:visible}
+.pl-links path{fill:none;stroke:color-mix(in srgb,var(--ink) 38%,transparent);stroke-width:1.4;stroke-linejoin:round}
+.pl-links .pl-flecha{fill:color-mix(in srgb,var(--ink) 45%,transparent);stroke:none}
+
+/* Panel de involucrados: áreas */
+.pl-side-a{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:12px 8px 4px}
+.pl-side-a i{width:8px;height:8px;border-radius:50%;background:var(--c,var(--faint))}
