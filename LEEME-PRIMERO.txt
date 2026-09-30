@@ -1,44 +1,42 @@
-BARRA LATERAL, INVOLUCRADOS, ETAPA 0 Y RELACIONES · qué hacer
-===============================================================
+FECHA META, DURACIONES Y VISTA ORDENADA · qué hacer
+====================================================
 
 PASO 1 · Supabase (una sola vez)
 --------------------------------
-Supabase -> SQL Editor -> New query -> pega TODO el contenido de
-   supabase/migracion-2026-10-involucrados.sql
-y dale Run. Es seguro correrlo más de una vez.
-(Si te faltan las anteriores, córrelas antes, en orden:
- migracion-2026-10-fechas-reales.sql y migracion-2026-10-linea-base.sql)
+Supabase -> SQL Editor -> New query -> pega y dale Run:
+
+   alter table projects add column if not exists fecha_meta date;
+
+(Es supabase/migracion-2026-10-fecha-meta.sql. Si te falta la de
+involucrados, córrela también: supabase/migracion-2026-10-involucrados.sql)
 
 
-PASO 2 · Proyecto de la nueva SAS
----------------------------------
-1. Nombre: en el proyecto, «✎ Editar proyecto» -> Nombre: Nueva SAS -> Guardar.
-2. Etapa 0: botón «📥 Plantilla de plan» -> «Constitución nueva SAS» ->
-   Inicio del plan: 28/09/2026 -> Cargar plan.
-   No duplica nada de lo que ya tienes. Agrega la etapa «0 · Arranque del
-   proyecto» (0.1 Kick off el 28 sep, 0.2 Construcción del cronograma hasta
-   el 7 oct), la pone de primera y hace que 1.1 y 1.2 dependan de 0.2: todo
-   lo demás se corre para arrancar después del 7 de octubre.
-   (Si el kick off es otra fecha, en la cajita: «0.1 inicio 28 oct».)
-3. Involucrados: botón «👥 Involucrados» -> nombre + área (+ rol).
+PASO 2 · Nueva SAS con meta a finales de noviembre
+---------------------------------------------------
+1. «✎ Editar proyecto» -> Fecha meta: 30/11/2026 -> Guardar.
+2. Arriba, en «Fechas», ves «Fin del plan» y «Fecha meta · se pasa N días
+   háb.» (o «sobran»). En el cronograma hay una línea morada punteada en la
+   meta y las actividades que terminan después llevan ⚑.
+3. Juega con las duraciones en la columna «Días» (editable): el fin se
+   recalcula y lo que depende se corre en cascada. También en la cajita:
+   «2.1 dura 3 días». Si una etapa entera no aplica antes de la meta (p. ej.
+   «Cumplimiento recurrente y cierre», que es posterior a la constitución),
+   márcala «no aplica» o sácala de la ruta.
 
 
 QUÉ CAMBIÓ EN ESTA VERSIÓN
 ---------------------------
-1. Barra lateral a la izquierda con Hoy · Proyectos · Panorama. Se colapsa
-   con «‹» (queda solo con íconos). En Proyectos, la lista de proyectos va en
-   la barra (se pliega tocando «Proyectos»). En el celular se abre con ☰.
-
-2. Involucrados del proyecto: nombre + área (+ rol). Es distinto del
-   responsable: en cada actividad el responsable puede ser uno o varios, y al
-   escribirlo te sugiere los involucrados (o tócalos en la ficha).
-   «Por área» agrupa según el área de cada persona, y el panel lateral de
-   involucrados los muestra por área (también en el enlace compartido).
-
-3. Etapa 0: si una etapa se llama «0 · …» se numera 0 (0.1, 0.2…).
-
-4. Líneas de relación entre actividades en el cronograma (también en el
-   enlace). Se apagan con «Relaciones». La barra ya no lleva el nombre
-   adentro (está en la columna Actividad).
-
-5. Separadores entre bloques para que la información no se pierda.
+1. Fecha meta del proyecto: indicador de días que sobran / faltan, línea en
+   el cronograma y ⚑ en lo que se pasa (también en el enlace compartido).
+2. Columna «Días» editable en la vista Gantt y en la tabla.
+3. Opciones de vista en grupos con título: Vista · Agrupar por · Escala del
+   cronograma · Mostrar (interruptores con nombre: Líneas de relación, Panel
+   de involucrados, Tareas del día a día, Entregable, Fechas reales, Depende
+   de). Debajo, «Filtrar» por responsable y por etapa / área.
+4. Indicadores agrupados: Avance · Fechas · Alertas · Día a día.
+5. Títulos de columnas más oscuros y legibles.
+6. Tabla completa (y vista ▤ Tabla): columna «Área responsable», que sale
+   sola del área de cada responsable registrado en «Involucrados».
+7. Enlace compartido: «Propón una actividad» queda plegado; tú ves un aviso
+   ✉ en la barra lateral y en el encabezado del proyecto cuando hay
+   propuestas por revisar.

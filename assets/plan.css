@@ -300,3 +300,40 @@
 /* Panel de involucrados: áreas */
 .pl-side-a{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:12px 8px 4px}
 .pl-side-a i{width:8px;height:8px;border-radius:50%;background:var(--c,var(--faint))}
+
+/* ============================================================
+   Opciones de vista organizadas por grupos
+   ============================================================ */
+.pl-opts{display:flex;flex-wrap:wrap;gap:14px 26px;align-items:flex-start;background:var(--card);border-radius:22px;padding:14px 18px;box-shadow:0 1px 2px rgba(28,26,23,.03),0 6px 20px rgba(28,26,23,.04);margin-bottom:10px}
+.pl-og{display:flex;flex-direction:column;gap:6px}
+.pl-ol{font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.pl-og-sw{flex:1;min-width:260px}
+.pl-sws{display:flex;flex-wrap:wrap;gap:6px 14px}
+.pl-sw{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--muted);padding:5px 4px}
+.pl-sw i{position:relative;width:30px;height:17px;border-radius:999px;background:color-mix(in srgb,var(--ink) 16%,transparent);transition:background .15s;flex-shrink:0}
+.pl-sw i::after{content:"";position:absolute;left:2px;top:2px;width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .15s}
+.pl-sw.on{color:var(--ink)}
+.pl-sw.on i{background:#00C875}
+.pl-sw.on i::after{transform:translateX(13px)}
+.pl-filt{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:4px 4px 0}
+.pl-filt .pl-areas{margin:0;flex:1}
+.pl-filt > .pl-ol{margin-right:2px}
+
+/* Títulos de columnas legibles */
+.pl th{color:var(--ink);font-size:10px;font-weight:800;letter-spacing:.05em}
+.pl th.real{color:color-mix(in srgb,var(--ink) 80%,var(--good))}
+.pl-sc-t{color:var(--ink);font-weight:800}
+.pl-sc-b{color:var(--muted);font-weight:700}
+
+/* Área responsable */
+.pl .pl-c-ar{min-width:150px}
+.pl td.pl-arc{white-space:nowrap}
+.pl-arp{display:inline-flex;font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:color-mix(in srgb,var(--c) 18%,var(--card));color:color-mix(in srgb,var(--c) 60%,var(--ink));margin-right:4px}
+
+/* Días editable */
+.pl-in.dur{width:46px;text-align:center}
+
+/* Fecha meta */
+.pl-meta{position:absolute;top:0;bottom:0;width:0;border-left:2px dashed #9B5DE5;opacity:.75}
+.pl-sc-meta{position:absolute;top:4px;transform:translateX(-50%);font-size:9px;font-weight:800;color:#fff;background:#9B5DE5;padding:1px 8px;border-radius:999px;white-space:nowrap;z-index:2}
+.pl-pasa{display:inline-flex;margin-left:6px;font-size:12px;color:#9B5DE5;font-weight:800;vertical-align:middle}

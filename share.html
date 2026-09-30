@@ -54,7 +54,11 @@
   .role{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:999px;font-size:11.5px;font-weight:700}
   .role.edit{background:var(--accent-soft);color:var(--accent-ink)}
   .role.view{background:var(--sunk);color:var(--muted)}
-  .kpis{display:flex;gap:30px;flex-wrap:wrap;margin:0 6px 18px}
+  .kpis{display:flex;gap:12px;flex-wrap:wrap;margin:0 0 18px}
+  .kg{background:var(--card);border-radius:22px;padding:12px 18px 14px;flex:1 1 auto;min-width:200px;box-shadow:0 1px 2px rgba(28,26,23,.03),0 6px 20px rgba(28,26,23,.04)}
+  .kg-t{font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .kg-r{display:flex;gap:24px;flex-wrap:wrap}
+  .sep-s{height:1px;margin:26px 0 4px;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--ink) 11%,transparent) 8%,color-mix(in srgb,var(--ink) 11%,transparent) 92%,transparent)}
   .kpis .v{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.05;font-variant-numeric:tabular-nums}
   .kpis .s{font-size:17px;font-weight:800;line-height:1.5}
   .kpis .l{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);margin-top:4px}
@@ -130,9 +134,11 @@
   <div class="hint" id="hint"></div>
   <div id="plan"><div class="q-empty">Cargando plan…</div></div>
 
-  <div class="addbox" id="addbox" style="display:none">
-    <h2 id="add-title">¿Falta algo? Agrega una actividad</h2>
-    <p id="add-sub"></p>
+  <div class="sep-s"></div>
+  <details class="ajuste" id="addbox" style="display:none">
+    <summary id="add-title">¿Falta algo? Propón una actividad</summary>
+    <div class="body">
+    <p id="add-sub" class="est-p"></p>
     <div class="addgrid">
       <div class="field f-nm wide"><label>Actividad</label><input type="text" id="n-name" placeholder="Ej: Solicitar certificado de tradición y libertad" onkeydown="if(event.key==='Enter')agregar()"></div>
       <div class="field mid"><label>Etapa</label><select id="n-area"></select></div>
@@ -146,7 +152,8 @@
       <span class="note" id="add-note"></span>
       <button class="btn btn-primary" id="n-go" onclick="agregar()">Proponer actividad</button>
     </div>
-  </div>
+    </div>
+  </details>
 
   <details class="ajuste" id="estbox" style="display:none">
     <summary>⏱ Estimar duraciones de tu área</summary>
@@ -221,13 +228,21 @@
     $('p-sub').textContent=(p.responsable?'Responsable: '+p.responsable+' · ':'')+'Plan de trabajo compartido'+(DATA.label?' con '+DATA.label:'');
     const r=$('p-role');r.className='role view';r.textContent='👁 Ver y proponer';
     document.title=p.name+' · Plan de trabajo';
+    const meta=p.fechaMeta,dif=meta&&s.fechaFinal?Plan.cal.difHabiles(meta,s.fechaFinal):null;
     $('kpis').innerHTML=`
-      <div><div class="v">${s.avance}%</div><div class="l">Ejecutado</div></div>
-      <div><div class="v">${s.avanceEsperado!=null?s.avanceEsperado+'%':'—'}</div><div class="l">Plan a hoy</div></div>
-      <div><div class="s">${fmtDate(s.fechaFinal)}</div><div class="l">Fecha final</div></div>
-      <div><div class="v">${s.completadas}/${s.totalActividades}</div><div class="l">Actividades</div></div>
-      <div><div class="v" style="color:${s.retrasos?'var(--crit)':'var(--good)'}">${s.retrasos}</div><div class="l">Atrasadas</div></div>
-      <div><div class="v" style="color:${s.proximas?'var(--warn)':'var(--ink)'}">${s.proximas}</div><div class="l">Vencen en 7 días</div></div>`;
+      <div class="kg"><div class="kg-t">Avance</div><div class="kg-r">
+        <div><div class="v">${s.avance}%</div><div class="l">Ejecutado</div></div>
+        <div><div class="v">${s.avanceEsperado!=null?s.avanceEsperado+'%':'—'}</div><div class="l">Plan a hoy</div></div>
+        <div><div class="v">${s.completadas}/${s.totalActividades}</div><div class="l">Actividades listas</div></div>
+      </div></div>
+      <div class="kg"><div class="kg-t">Fechas</div><div class="kg-r">
+        <div><div class="s">${fmtDate(s.fechaFinal)}</div><div class="l">Fin del plan</div></div>
+        ${meta?`<div><div class="s">${fmtDate(meta)}</div><div class="l">Fecha meta${dif!=null?` · <strong style="color:${dif>0?'var(--crit)':'var(--good)'}">${dif>0?'se pasa '+dif+' días háb.':dif<0?'sobran '+(-dif)+' días háb.':'justo a tiempo'}</strong>`:''}</div></div>`:''}
+      </div></div>
+      <div class="kg"><div class="kg-t">Alertas</div><div class="kg-r">
+        <div><div class="v" style="color:${s.retrasos?'var(--crit)':'var(--good)'}">${s.retrasos}</div><div class="l">Atrasadas</div></div>
+        <div><div class="v" style="color:${s.proximas?'var(--warn)':'var(--ink)'}">${s.proximas}</div><div class="l">Vencen en 7 días</div></div>
+      </div></div>`;
     if(s.avanceEsperado!=null){
       const delta=s.avance-s.avanceEsperado,col=delta<-10?'var(--crit)':delta<0?'var(--warn)':'var(--good)';
       $('planbar').innerHTML=`<div class="row"><span>Ejecutado <strong>${s.avance}%</strong> vs plan a hoy <strong>${s.avanceEsperado}%</strong></span><span style="color:${col}">${delta>=0?'▲ al día':'▼ '+Math.abs(delta)+' pts por detrás'}</span></div>
@@ -243,14 +258,14 @@
     requestAnimationFrame(()=>Plan.dibujarLineas());
     const n=$('pl-wrap');if(n&&keep){n.scrollLeft=keep[0];n.scrollTop=keep[1];}
   }
-  function modelo(){return {sections:DATA.sections,activities:DATA.activities,miembros:DATA.miembros||[],lineaBase:DATA.project.lineaBaseAt||null,today:(DATA.summary&&DATA.summary.today)||todayISO()};}
+  function modelo(){return {sections:DATA.sections,activities:DATA.activities,miembros:DATA.miembros||[],lineaBase:DATA.project.lineaBaseAt||null,fechaMeta:DATA.project.fechaMeta||null,today:(DATA.summary&&DATA.summary.today)||todayISO()};}
   function renderAddBox(){
     const secs=[...(DATA.sections||[])].filter(s=>s.enabled!==false).sort((a,b)=>a.position-b.position);
     const sel=$('n-area'),prev=sel.value;
     sel.innerHTML=secs.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')||'<option value="">— Sin áreas —</option>';
     if(prev&&secs.some(s=>s.id===prev))sel.value=prev;else if(opts.grupo&&secs.some(s=>s.id===opts.grupo))sel.value=opts.grupo;
     $('addbox').style.display='';
-    $('add-title').textContent='¿Falta algo? Propón una actividad';
+    $('add-title').textContent='➕ ¿Falta algo? Propón una actividad';
     $('add-sub').textContent='Queda marcada como «Propuesta» en el plan hasta que quien lo lleva la acepte. Con la duración en días hábiles se calcula la fecha de fin (sin fines de semana ni festivos).';
     ['n-quien','a-quien'].forEach(id=>{if(!$(id).value)$(id).value=nombre;});
     // Ajuste: actividades con su ID

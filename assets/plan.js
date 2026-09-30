@@ -206,6 +206,16 @@
     return gs;
   }
   // Área de un nombre: si es un involucrado del proyecto, su área; si no, el nombre mismo (p. ej. «Jurídica»)
+  // Áreas de los responsables de una actividad (sin repetir)
+  function areasActividad(a, miembros) {
+    const out = [];
+    respDe(a).forEach(r => {
+      const m = (miembros || []).find(x => norm(x.nombre) === norm(r));
+      const area = m ? m.area : ((miembros || []).some(x => norm(x.area) === norm(r)) ? r : null);
+      if (area && !out.some(x => norm(x) === norm(area))) out.push(area);
+    });
+    return out;
+  }
   function areaDe(nombre, miembros) {
     const m = (miembros || []).find(x => norm(x.nombre) === norm(nombre));
     return m ? (m.area || 'Sin área') : nombre;
@@ -245,24 +255,35 @@
     const personas = [];
     (model.activities || []).forEach(a => respDe(a).forEach(r => { if (!personas.some(p => norm(p) === norm(r))) personas.push(r); }));
     personas.sort((a, b) => a.localeCompare(b));
-    const seg = (k, v, l, actual) => `<button class="${actual === v ? 'on' : ''}" onclick="planSetOpt('${k}','${v}')">${l}</button>`;
-    const col = (k, l) => `<button class="pl-pill${opts.cols[k] ? ' on' : ''}" onclick="planSetOpt('col','${k}')">${opts.cols[k] ? '✓ ' : ''}${l}</button>`;
-    return `<div class="pl-areas">
-        <button class="pl-chip todas${opts.grupo ? '' : ' on'}" onclick="planSetOpt('grupo',null)">${agr === 'area' ? 'Todas las áreas' : 'Todas las etapas'}</button>
-        ${vivas.map(chip).join('')}
+    const seg = (k, v, l, actual, tip) => `<button class="${actual === v ? 'on' : ''}" onclick="planSetOpt('${k}','${v}')"${tip ? ` title="${tip}"` : ''}>${l}</button>`;
+    // Interruptor con nombre claro de lo que muestra u oculta
+    const sw = (on, accion, l, tip) => `<button class="pl-sw${on ? ' on' : ''}" onclick="${accion}" title="${tip}"><i></i>${l}</button>`;
+    const full = opts.vista === 'tabla';
+    return `<div class="pl-opts">
+        <div class="pl-og"><span class="pl-ol">Vista</span>
+          <div class="pl-seg">${seg('vista', 'gantt', '📊 Gantt', opts.vista || 'gantt', 'Lo esencial y el cronograma a la vista')}${seg('vista', 'tabla', '▤ Tabla completa', opts.vista || 'gantt', 'Todas las columnas: área, entregable, fechas reales, dependencias…')}</div></div>
+        <div class="pl-og"><span class="pl-ol">Agrupar por</span>
+          <div class="pl-seg">${seg('agrupar', 'etapa', 'Etapa', agr, 'Etapas del plan (1, 2, 3…)')}${seg('agrupar', 'area', 'Área responsable', agr, 'Área de cada responsable (según los involucrados)')}</div></div>
+        <div class="pl-og"><span class="pl-ol">Escala del cronograma</span>
+          <div class="pl-seg">${seg('zoom', 'dia', 'Día', opts.zoom)}${seg('zoom', 'semana', 'Semana', opts.zoom)}${seg('zoom', 'mes', 'Mes', opts.zoom)}</div></div>
+        <div class="pl-og pl-og-sw"><span class="pl-ol">Mostrar</span>
+          <div class="pl-sws">
+            ${sw(opts.lineas !== false, `planSetOpt('lineas',${opts.lineas === false})`, 'Líneas de relación', 'Flechas entre actividades que dependen una de otra')}
+            ${sw(!!opts.panel, `planSetOpt('panel',${!opts.panel})`, 'Panel de involucrados', 'Lista lateral de personas y áreas con lo que tiene cada una')}
+            ${opts.owner ? sw(!!opts.tareas, `planSetOpt('tareas',${!opts.tareas})`, 'Tareas del día a día', 'Las microtareas vinculadas, debajo de cada actividad') : ''}
+            ${full ? sw(!!opts.cols.entregable, "planSetOpt('col','entregable')", 'Entregable', 'Columna de entregable / resultado') + sw(!!opts.cols.real, "planSetOpt('col','real')", 'Fechas reales', 'Columnas de inicio y fin reales') + sw(!!opts.cols.deps, "planSetOpt('col','deps')", 'Depende de', 'Columna con los IDs de las que la condicionan') : ''}
+          </div></div>
       </div>
-      <div class="pl-bar-opts">
-        <div class="pl-seg" title="Cómo agrupar">${seg('agrupar', 'etapa', 'Por etapa', agr)}${seg('agrupar', 'area', 'Por área', agr)}</div>
+      <div class="pl-filt">
+        <span class="pl-ol">Filtrar</span>
         <select class="pl-sel" onchange="planSetOpt('resp',this.value)" title="Ver solo lo de un responsable">
           <option value="">👤 Todos los responsables</option>
           ${personas.map(p => `<option value="${esc(p)}"${norm(opts.resp) === norm(p) ? ' selected' : ''}>${esc(p)}</option>`).join('')}
         </select>
-        <div class="pl-seg" title="Qué tanto ver">${seg('vista', 'gantt', 'Gantt', opts.vista || 'gantt')}${seg('vista', 'tabla', 'Tabla completa', opts.vista || 'gantt')}</div>
-        <div class="pl-seg" title="Zoom del cronograma">${seg('zoom', 'dia', 'Día', opts.zoom)}${seg('zoom', 'semana', 'Semana', opts.zoom)}${seg('zoom', 'mes', 'Mes', opts.zoom)}</div>
-        ${opts.vista === 'tabla' ? `<span class="pl-sep"></span>${col('entregable', 'Entregable')}${col('real', 'Fechas reales')}${col('deps', 'Depende de')}` : ''}
-        ${opts.owner ? `<button class="pl-pill${opts.tareas ? ' on' : ''}" onclick="planSetOpt('tareas',${!opts.tareas})">${opts.tareas ? '✓ ' : ''}Tareas</button>` : ''}
-        <button class="pl-pill${opts.lineas !== false ? ' on' : ''}" onclick="planSetOpt('lineas',${opts.lineas === false})" title="Líneas entre actividades que dependen una de otra">${opts.lineas !== false ? '✓ ' : ''}Relaciones</button>
-        <button class="pl-pill${opts.panel ? ' on' : ''}" onclick="planSetOpt('panel',${!opts.panel})" title="Panel de involucrados al lado">${opts.panel ? '✓ ' : ''}Involucrados</button>
+        <div class="pl-areas">
+          <button class="pl-chip todas${opts.grupo ? '' : ' on'}" onclick="planSetOpt('grupo',null)">${agr === 'area' ? 'Todas las áreas' : 'Todas las etapas'}</button>
+          ${vivas.map(chip).join('')}
+        </div>
       </div>`;
   }
 
@@ -350,6 +371,16 @@
     </aside>`;
   }
 
+  // Duración editable: fin = inicio + N días hábiles (sin inicio, arranca el próximo día hábil)
+  let ultimoModelo = null;
+  function cambiarDuracion(id, valor) {
+    const n = Math.round(Number(valor));
+    if (!(n >= 1 && n <= 365) || !ultimoModelo) return;
+    const a = (ultimoModelo.activities || []).find(x => x.id === id); if (!a) return;
+    const ini = a.startDate || habilDesde(addDays(ultimoModelo.today, 1));
+    window.planOnPatch(id, { startDate: ini, deadline: finHabil(ini, n) });
+  }
+
   // ---------- Líneas de relación (dependencias) sobre el cronograma ----------
   function dibujarLineas(raiz) {
     const cont = raiz || document;
@@ -392,7 +423,8 @@
     // Vista «gantt»: lo esencial y el cronograma a la vista. «tabla»: todas las columnas.
     const full = opts.vista === 'tabla';
     const c0 = opts.cols || {};
-    const cols = { entregable: full && c0.entregable, real: full && c0.real, deps: full && c0.deps, dias: full, base: full && base, desvio: full && base, full };
+    const cols = { entregable: full && c0.entregable, real: full && c0.real, deps: full && c0.deps, dias: true, area: full, base: full && base, desvio: full && base, full };
+    ultimoModelo = model;
     const tareas = opts.owner && opts.tareas ? (model.tasks || []) : [];
     const tareasDe = id => tareas.filter(t => t.activityId === id)
       .sort((x, y) => (x.kanbanStatus === 'done') - (y.kanbanStatus === 'done') || (x.dueDate || '9').localeCompare(y.dueDate || '9'));
@@ -405,23 +437,26 @@
     const zoom = opts.zoom || 'semana';
     const E = escala(fechas, today, zoom);
     const fondo = carrilFondo(E, today, zoom);
+    const meta = model.fechaMeta || null;
+    if (meta && meta >= E.ini && meta <= E.fin) fondo.capas += `<span class="pl-meta" style="left:${E.x(addDays(meta, 1))}px" title="Fecha meta: ${fCorta(meta)}"></span>`;
     const carril = contenido => `<td class="pl-tl"><div class="pl-lane" style="width:${E.W}px;${fondo.style}">${fondo.capas}${contenido}</div></td>`;
 
-    const nCols = (full ? 7 : 6) + (cols.dias ? 1 : 0) + (cols.entregable ? 1 : 0) + (cols.base ? 1 : 0) + (cols.real ? 2 : 0) + (cols.desvio ? 1 : 0) + (cols.deps ? 1 : 0);
+    const nCols = (full ? 7 : 6) + (cols.dias ? 1 : 0) + (cols.area ? 1 : 0) + (cols.entregable ? 1 : 0) + (cols.base ? 1 : 0) + (cols.real ? 2 : 0) + (cols.desvio ? 1 : 0) + (cols.deps ? 1 : 0);
     const lbI = base ? 'Inicio proy.' : 'Inicio', lbF = base ? 'Fin proy.' : 'Fin';
     const head = `<thead><tr>
       <th class="pl-sk pl-c-id">ID</th><th class="pl-sk pl-c-nm">Actividad</th><th class="pl-c-rs">Responsable</th>
+      ${cols.area ? '<th class="pl-c-ar" title="Sale sola del área de cada responsable registrado en «Involucrados»">Área responsable</th>' : ''}
       ${cols.entregable ? '<th class="pl-c-en">Entregable / resultado</th>' : ''}
       ${cols.base ? '<th class="pl-c-lb" title="Fechas congeladas al fijar la línea base: no se mueven">🔒 Línea base</th>' : ''}
       ${full ? `<th class="pl-c-d" title="${base ? 'Inicio proyectado: se recalcula solo con las fechas reales y las dependencias' : 'Inicio planeado'}">${lbI}</th>
       <th class="pl-c-d" title="${base ? 'Fin proyectado: se recalcula solo con las fechas reales y las dependencias' : 'Fin planeado'}">${lbF}</th>`
       : `<th class="pl-c-tl" title="${base ? 'Fechas proyectadas (se recalculan con lo real y las dependencias)' : 'Fechas planeadas'}">${base ? 'Cronograma proy.' : 'Cronograma'}</th>`}
       ${cols.real ? '<th class="pl-c-d real" title="Cuándo empezó de verdad">Inicio real</th><th class="pl-c-d real" title="Cuándo terminó de verdad (la da por completada)">Fin real</th>' : ''}
-      ${cols.dias ? '<th class="pl-c-n" title="Días hábiles, sin fines de semana ni festivos de Colombia">Días</th>' : ''}
+      ${cols.dias ? `<th class="pl-c-n" title="Duración en días hábiles (sin fines de semana ni festivos de Colombia)${editable ? '. Cámbiala aquí: el fin se recalcula y lo que depende se corre en cascada' : ''}">Días</th>` : ''}
       ${cols.desvio ? '<th class="pl-c-dv" title="Días hábiles de diferencia entre el fin (real o proyectado) y la línea base">Desvío</th>' : ''}
       <th class="pl-c-p${full ? '' : ' corta'}">Avance</th><th class="pl-c-e">Estado</th>
       ${cols.deps ? '<th class="pl-c-dp">Depende de</th>' : ''}
-      <th class="pl-tl-h">${escalaHead(E, today, zoom)}</th>
+      <th class="pl-tl-h">${escalaHead(E, today, zoom).replace(/<\/div>$/, meta && meta >= E.ini && meta <= E.fin ? `<span class="pl-sc-meta" style="left:${E.x(addDays(meta, 1))}px">Meta ${fCorta(meta)}</span></div>` : '</div>')}</th>
     </tr></thead>`;
 
     const filas = gs.map(g => {
@@ -444,7 +479,7 @@
       const areaRow = `<tr class="pl-area" style="--c:${g.color}">
         <td class="pl-sk pl-c-id"><span class="pl-acod">${g.area ? esc(g.name.slice(0, 1).toUpperCase()) : (g.cod || '')}</span></td>
         <td class="pl-sk pl-c-nm"><span class="pl-an">${esc(g.name)}</span><span class="pl-mut">${hechas}/${acts.length} · ${avg}%</span>${tools}</td>
-        <td></td>${cols.entregable ? '<td></td>' : ''}${cols.base ? '<td></td>' : ''}
+        <td></td>${cols.area ? '<td></td>' : ''}${cols.entregable ? '<td></td>' : ''}${cols.base ? '<td></td>' : ''}
         ${full ? `<td class="pl-d b">${fCorta(fI)}</td><td class="pl-d b">${fCorta(fF)}</td>`
           : `<td class="pl-tlc">${fI ? pildoraRango(fI, fF, today, estA, g.color) : ''}${base && dvMax != null && dvMax > 0 ? ' ' + desvioHtml(dvMax) : ''}</td>`}${cols.real ? '<td></td><td></td>' : ''}
         ${cols.dias ? `<td class="pl-n">${fI ? diasHabiles(fI, fF) : ''}</td>` : ''}
@@ -526,12 +561,15 @@
       <td class="pl-sk pl-c-id">${idCell}</td>
       <td class="pl-sk pl-c-nm"><div class="pl-nmw" title="${esc(a.name + (a.entregable ? ' → ' + a.entregable : '') + (opts.agrupar === 'area' && a._etapa ? ' · ' + a._etapa : ''))}">${inp('name', a.name, 'Actividad', 'nm')}</div></td>
       <td class="pl-rs">${avatares(respDe(a))}${cols.full ? inp('responsables', resp, '—', 'rs') : `<span class="pl-tx rs" title="${esc(resp)}">${esc(resp) || '<span class="pl-mut">—</span>'}</span>`}</td>
+      ${cols.area ? `<td class="pl-arc">${areasActividad(a, ultimoModelo && ultimoModelo.miembros).map(x => `<span class="pl-arp" style="--c:${colorDe(x)}">${esc(x)}</span>`).join('') || '<span class="pl-mut" title="Registra al responsable en «Involucrados» con su área">—</span>'}</td>` : ''}
       ${cols.entregable ? `<td>${inp('entregable', a.entregable || '', '—', 'en')}</td>` : ''}
       ${cols.base ? `<td class="pl-lbc" title="Congelada: no se mueve">${lb}</td>` : ''}
       ${cols.full ? celdaFecha(a, 'startDate', editable) + celdaFecha(a, 'deadline', editable, est === 'Atrasada' ? ' late' : '')
-        : `<td class="pl-tlc">${pildoraRango(a.startDate, a.deadline, today, est, g.color, has('planOnOpen') && opts.owner ? ` onclick="planOnOpen('${a.id}')" role="button"` : '')}${dvChip}</td>`}
+        : `<td class="pl-tlc">${pildoraRango(a.startDate, a.deadline, today, est, g.color, has('planOnOpen') && opts.owner ? ` onclick="planOnOpen('${a.id}')" role="button"` : '')}${dvChip}${ultimoModelo && ultimoModelo.fechaMeta && a.deadline && a.deadline > ultimoModelo.fechaMeta && est !== 'Completada' ? `<span class="pl-pasa" title="Termina después de la fecha meta (${fCorta(ultimoModelo.fechaMeta)})">⚑</span>` : ''}</td>`}
       ${cols.real ? celdaFecha(a, 'realStart', editable, ' real') + celdaFecha(a, 'realEnd', editable, ' real') : ''}
-      ${cols.dias ? `<td class="pl-n">${dias}</td>` : ''}
+      ${cols.dias ? (editable
+        ? `<td class="pl-n"><input type="number" min="1" max="365" class="pl-in pct dur" data-cell="${a.id}:dur" value="${dias}" placeholder="—" title="Días hábiles: al cambiarla se recalcula el fin" onchange="Plan.cambiarDuracion('${a.id}',this.value)"></td>`
+        : `<td class="pl-n">${dias}</td>`) : ''}
       ${cols.desvio ? `<td>${desvioHtml(dv)}</td>` : ''}
       ${pctCell}
       ${estCell}
@@ -586,7 +624,7 @@
   }
 
   window.Plan = {
-    render, estado, pickDate, aplicarLocal, adelantar, cascada, colorDe, respDe, norm, fCorta, dibujarLineas,
+    render, estado, pickDate, aplicarLocal, adelantar, cascada, colorDe, respDe, norm, fCorta, dibujarLineas, cambiarDuracion, areasActividad,
     etapas,
     cal: { esHabil, habilDesde, finHabil, diasHabiles, sumarHabiles, difHabiles, moverRango },
     colores: AREA_COLORS,

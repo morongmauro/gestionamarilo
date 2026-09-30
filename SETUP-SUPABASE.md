@@ -10,6 +10,7 @@ La app ya no usa Notion para nada. Todo (tareas, proyectos, fases y actividades 
 > 4. [`supabase/migracion-2026-10-fechas-reales.sql`](supabase/migracion-2026-10-fechas-reales.sql) — **fechas reales** de inicio y fin, y actividades **propuestas** desde un enlace compartido.
 > 5. [`supabase/migracion-2026-10-linea-base.sql`](supabase/migracion-2026-10-linea-base.sql) — **línea base** (fechas planeadas congeladas) y **ajustes propuestos** desde el enlace compartido.
 > 6. [`supabase/migracion-2026-10-involucrados.sql`](supabase/migracion-2026-10-involucrados.sql) — **involucrados** del proyecto (nombre + área).
+> 7. [`supabase/migracion-2026-10-fecha-meta.sql`](supabase/migracion-2026-10-fecha-meta.sql) — **fecha meta** del proyecto.
 
 ## 1. Crear el proyecto en Supabase
 
