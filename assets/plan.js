@@ -371,6 +371,16 @@
     </aside>`;
   }
 
+  // Indicador de notas y tareas de una actividad (abre su panel)
+  function notasTareasBtn(a) {
+    const m = ultimoModelo || {};
+    const nN = (m.notas || []).filter(n => n.activityId === a.id).length + (a.notes ? 1 : 0);
+    const ts = (m.tasks || []).filter(t => t.activityId === a.id);
+    const nT = ts.filter(t => t.kanbanStatus !== 'done').length, nH = ts.length - nT;
+    const vacio = !nN && !ts.length;
+    return `<button class="pl-nb${vacio ? ' vacio' : ''}" onclick="planOnDetalle('${a.id}')" title="Notas y tareas de esta actividad">${vacio ? '＋ nota / tarea' : `${nN ? `💬 ${nN}` : ''}${ts.length ? ` ☑ ${nH}/${ts.length}` : ''}`}</button>`;
+  }
+
   // Duración editable: fin = inicio + N días hábiles (sin inicio, arranca el próximo día hábil)
   let ultimoModelo = null;
   function cambiarDuracion(id, valor) {
@@ -559,7 +569,7 @@
     const dvChip = !cols.full && dv ? ` ${desvioHtml(dv)}` : '';
     return `<tr class="pl-act${a.propuesta ? ' prop' : ''}" style="--c:${g.color}">
       <td class="pl-sk pl-c-id">${idCell}</td>
-      <td class="pl-sk pl-c-nm"><div class="pl-nmw" title="${esc(a.name + (a.entregable ? ' → ' + a.entregable : '') + (opts.agrupar === 'area' && a._etapa ? ' · ' + a._etapa : ''))}">${inp('name', a.name, 'Actividad', 'nm')}</div></td>
+      <td class="pl-sk pl-c-nm"><div class="pl-nmw" title="${esc(a.name + (a.entregable ? ' → ' + a.entregable : '') + (opts.agrupar === 'area' && a._etapa ? ' · ' + a._etapa : ''))}">${inp('name', a.name, 'Actividad', 'nm')}${opts.owner && has('planOnDetalle') ? notasTareasBtn(a) : ''}</div></td>
       <td class="pl-rs">${avatares(respDe(a))}${cols.full ? inp('responsables', resp, '—', 'rs') : `<span class="pl-tx rs" title="${esc(resp)}">${esc(resp) || '<span class="pl-mut">—</span>'}</span>`}</td>
       ${cols.area ? `<td class="pl-arc">${areasActividad(a, ultimoModelo && ultimoModelo.miembros).map(x => `<span class="pl-arp" style="--c:${colorDe(x)}">${esc(x)}</span>`).join('') || '<span class="pl-mut" title="Registra al responsable en «Involucrados» con su área">—</span>'}</td>` : ''}
       ${cols.entregable ? `<td>${inp('entregable', a.entregable || '', '—', 'en')}</td>` : ''}
