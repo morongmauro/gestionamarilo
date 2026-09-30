@@ -96,24 +96,16 @@
     return n;
   }
   // Aplica cambios a una actividad del modelo local con las mismas reglas del servidor
-  const hoyLocal = () => new Date().toLocaleDateString('en-CA');
-  // Avance y fechas reales van amarrados: con avance empieza, al 100% termina (y al revés)
-  function amarrarReal(a, cambios, today) {
-    const t = today || hoyLocal();
+  // Las fechas reales solo las pone el usuario (nunca se inventan).
+  // Lo único automático: poner el fin real deja el avance en 100%.
+  function amarrarReal(a, cambios) {
     if (cambios.realEnd && cambios.pctComplete === undefined) { a.pctComplete = 100; a.status = 'completada'; }
-    if (cambios.realEnd && !a.realStart && cambios.realStart === undefined) a.realStart = a.startDate && a.startDate <= cambios.realEnd ? a.startDate : cambios.realEnd;
-    if (cambios.pctComplete !== undefined) {
-      const p = Number(cambios.pctComplete) || 0;
-      if (p > 0 && !a.realStart && cambios.realStart === undefined) a.realStart = t;
-      if (p >= 100 && !a.realEnd && cambios.realEnd === undefined) a.realEnd = t;
-      if (p < 100 && a.realEnd && cambios.realEnd === undefined) a.realEnd = null;
-    }
   }
   function aplicarLocal(acts, id, cambios, today) {
     const a = acts.find(x => x.id === id); if (!a) return 0;
     const antes = finEf(a);
     Object.assign(a, cambios);
-    amarrarReal(a, cambios, today);
+    amarrarReal(a, cambios);
     const toca = ['startDate', 'deadline', 'realStart', 'realEnd', 'dependsOnIds', 'pctComplete'].some(k => cambios[k] !== undefined);
     if (!toca) return 0;
     const despues = finEf(a);

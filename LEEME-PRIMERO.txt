@@ -13,7 +13,7 @@ QUÉ CAMBIÓ EN ESTA VERSIÓN
 ---------------------------
 1. Cajita de ajustes (sin IA, no gasta nada), arriba del plan en tu vista:
      2.1 responsable Jurídica, Mauro      3.5 fin 20 nov
-     1.1 terminó hoy                      2.4 avance 60
+     1.1 terminó 29 sep                   2.4 avance 60
      4.1 dura 8 días                      3.2 depende de 3.1
      mover etapa 3 +5 días                cuenta bancaria fin viernes
    Te muestra qué va a cambiar y aplicas con un clic. Botón «?» = ejemplos.
@@ -23,9 +23,9 @@ QUÉ CAMBIÓ EN ESTA VERSIÓN
    ve el DESVÍO en días hábiles contra lo pactado (+4d = va 4 días tarde).
    Puedes volver a fijarla o quitarla.
 
-3. Avance y fechas reales amarrados: poner avance marca el inicio real (hoy)
-   si no lo tenía; llegar a 100% marca el fin real; poner fin real deja el
-   avance en 100%.
+3. Las fechas reales las pones tú, a mano: la app nunca las inventa (ni al
+   poner avance ni al llegar a 100%). Lo único automático: poner el fin real
+   deja el avance en 100%. En la cajita, «terminó» / «empezó» piden la fecha.
 
 4. El enlace compartido ya no edita lo asentado: ve el plan y PROPONE.
    - Recuadro «Propón una actividad» (etapa, área responsable, duración).
