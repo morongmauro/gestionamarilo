@@ -6,7 +6,6 @@
 //   DELETE /api/projects/:id?res=shares&shareId=...     → revocar enlace
 //   GET    /api/projects/:id?res=plantilla              → plantillas disponibles
 //   POST   /api/projects/:id?res=plantilla              → cargar plantilla { key, inicio }
-//   POST   /api/projects/:id?res=ubicar                 → ubicar tareas sueltas en el plan
 const db = require('../../lib/db');
 
 module.exports = async (req, res) => {
@@ -20,11 +19,6 @@ module.exports = async (req, res) => {
         return res.status(200).json({ resultado });
       }
       return res.status(405).json({ error: 'Method not allowed' });
-    }
-    if (sub === 'ubicar') {
-      if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-      const ubicadas = await db.ubicarTareas(id);
-      return res.status(200).json({ ubicadas });
     }
     if (sub === 'shares') {
       if (req.method === 'GET') {

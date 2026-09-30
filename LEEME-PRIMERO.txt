@@ -1,48 +1,47 @@
-HOJA DE PLAN DE TRABAJO · qué hacer con esta versión
-=====================================================
+PLAN DE TRABAJO COLABORATIVO · qué hacer con esta versión
+==========================================================
 
 PASO 1 · Supabase (una sola vez)
 --------------------------------
-Supabase -> SQL Editor -> New query -> pega TODO el contenido de
-   supabase/migracion-2026-10-plan-trabajo.sql
-y dale Run. Agrega la columna «Entregable / resultado» a las
-actividades. Es seguro correrla otra vez.
-(Si no habías corrido migracion-2026-08-gantt-plus.sql, córrela antes.)
+Supabase -> SQL Editor -> New query -> pega esto y dale Run:
 
+   alter table activities add column if not exists real_start date;
+   alter table activities add column if not exists real_end date;
+   alter table activities add column if not exists propuesta boolean not null default false;
+   alter table activities add column if not exists propuesta_por text;
 
-PASO 2 · Cargar el plan de la nueva SAS en tu proyecto
-------------------------------------------------------
-1. Proyectos -> Gantt · macro -> abre tu proyecto de constitución de la SAS.
-2. Botón «📥 Plantilla de plan» -> plantilla «Constitución nueva SAS».
-3. Elige la fecha de inicio y dale «Cargar plan».
-
-Qué hace:
-- Crea 6 fases y 29 actividades con responsable, entregable, duración
-  en días hábiles y dependencias (las fechas son una PROPUESTA: ajústalas).
-- Si el proyecto tenía las 3 fases por defecto vacías, las reemplaza.
-- No duplica: si ya existe una actividad con el mismo nombre, la respeta.
-- Tus tareas de ese proyecto se ubican solas debajo de la actividad que
-  les corresponde. Las que no calcen quedan en «Tareas sin ubicar en el
-  plan» (al final de la hoja) para que las ubiques con un clic.
+(Es el contenido de supabase/migracion-2026-10-fechas-reales.sql. Es seguro
+correrlo más de una vez. Si no habías corrido la del «entregable», corre
+también: alter table activities add column if not exists entregable text;)
 
 
 QUÉ CAMBIÓ EN ESTA VERSIÓN
 ---------------------------
-1. Nueva vista «📋 Hoja de trabajo» en el plan de cada proyecto (junto a
-   Gantt y Tabla), con la estructura del Excel:
-   ID (1, 1.1…) · Actividad · Responsable · Entregable / resultado ·
-   Inicio · Fin · Días hábiles · % Avance · Estado · Depende de ·
-   cronograma semanal por mes (S1, S2…).
-   - Barra clara = planeado, barra oscura = avance, ◆ = hito, semana
-     actual en rojo. Fila de cada fase con fechas, días y % consolidados.
-   - Estado como en el Excel: Completada · Atrasada · En curso · Por iniciar.
-   - Días hábiles sin fines de semana ni festivos de Colombia.
-   - Todo se edita en la misma hoja y se guarda al salir de la casilla.
-   - Debajo de cada actividad van sus tareas del día a día (botón
-     «↳ Tareas» para mostrarlas u ocultarlas).
+1. Fechas en cascada: si mueves el fin de una actividad (plan o real), todo
+   lo que depende de ella se corre los mismos días hábiles, hacia adelante
+   o hacia atrás. Lo que ya terminó no se toca.
 
-2. Lo que ya tenía la app y el Excel no, se mantiene: dependencias con
-   corrimiento automático de fechas, ruta crítica (ID en morado) y plan
-   vs. ejecutado.
+2. Fechas reales: además de inicio y fin planeados, cada actividad tiene
+   inicio real y fin real. Poner el fin real la da por completada.
 
-3. Campo «Entregable» también en la vista Tabla y en la ficha de la actividad.
+3. Plan de trabajo por áreas (vista principal del proyecto y del enlace
+   compartido, se ven igual):
+   - Cada área con su color; clic en un área para ver solo lo suyo, o filtra
+     por responsable.
+   - Vista «Gantt» (lo esencial + cronograma) o «Tabla completa» (entregable,
+     fechas reales, días hábiles, dependencias).
+   - Cronograma por semana, con zoom Día / Semana / Mes.
+   - Responsables con avatares, estado a color, filas compactas.
+
+4. Enlace compartido: abajo hay un recuadro para agregar una actividad
+   (actividad, área, responsable, duración en días hábiles). Con enlace de
+   edición entra de una; con enlace de solo lectura queda como «Propuesta»
+   y tú la aceptas (✓) o descartas (✕) desde tu vista.
+
+5. Las tareas NO se vinculan solas a actividades: solo a mano. En el plan,
+   cada tarea vinculada tiene una × para desvincularla.
+
+6. Tablero de microtareas y microtareas del proyecto: las completadas
+   aparecen colapsadas; la flechita las despliega.
+
+7. Nuevo estilo: Montserrat, botones ovalados, sin bordes.

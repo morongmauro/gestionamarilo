@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sistema Mauro · Gestión</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300..900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/plan.css">
+<script src="/assets/plan.js"></script>
 <style>
   :root {
     --paper:#FAFAF8; --card:#FFFFFF; --sunk:#F4F2EC;
@@ -20,8 +25,8 @@
     --shadow-lg:0 4px 10px rgba(26,23,18,.06), 0 18px 44px rgba(26,23,18,.11);
     --glass:rgba(255,255,255,.72);
     --glass-brd:rgba(255,255,255,.6);
-    --ring:inset 0 0 0 1px rgba(26,23,18,.06);
-    --sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI Variable","Segoe UI",system-ui,Roboto,"Helvetica Neue",Arial,sans-serif;
+    --ring:0 0 0 0 transparent;
+    --sans:"Montserrat",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;
     --r:16px;
   }
   @media (prefers-color-scheme:dark){:root{
@@ -39,7 +44,7 @@
     --shadow-lg:0 6px 14px rgba(0,0,0,.4), 0 22px 50px rgba(0,0,0,.55);
     --glass:rgba(29,27,22,.66);
     --glass-brd:rgba(255,255,255,.08);
-    --ring:inset 0 0 0 1px rgba(255,255,255,.07);
+    --ring:0 0 0 0 transparent;
   }}
   :root[data-theme="light"]{
     --paper:#FAFAF8; --card:#FFFFFF; --sunk:#F4F2EC;
@@ -55,7 +60,7 @@
     --shadow-lg:0 4px 10px rgba(26,23,18,.06), 0 18px 44px rgba(26,23,18,.11);
     --glass:rgba(255,255,255,.72);
     --glass-brd:rgba(255,255,255,.6);
-    --ring:inset 0 0 0 1px rgba(26,23,18,.06);
+    --ring:0 0 0 0 transparent;
   }
   :root[data-theme="dark"]{
     --paper:#141310; --card:#1D1B16; --sunk:#232019;
@@ -72,7 +77,7 @@
     --shadow-lg:0 6px 14px rgba(0,0,0,.4), 0 22px 50px rgba(0,0,0,.55);
     --glass:rgba(29,27,22,.66);
     --glass-brd:rgba(255,255,255,.08);
-    --ring:inset 0 0 0 1px rgba(255,255,255,.07);
+    --ring:0 0 0 0 transparent;
   }
   *{margin:0;padding:0;box-sizing:border-box}
   body{
@@ -84,12 +89,12 @@
     font-size:15px; line-height:1.5; letter-spacing:-.01em;
     -webkit-font-smoothing:antialiased; min-height:100vh; padding:18px 22px;
   }
-  .container{max-width:1280px;margin:0 auto}
+  .container{max-width:1560px;margin:0 auto}
   button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
   ::selection{background:var(--accent);color:#1A1712}
 
   /* HEADER — glass flotante */
-  .header{display:flex;justify-content:space-between;align-items:center;gap:12px;position:sticky;top:12px;z-index:50;padding:11px 16px;margin-bottom:18px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-brd);box-shadow:var(--shadow);backdrop-filter:blur(16px) saturate(1.6);-webkit-backdrop-filter:blur(16px) saturate(1.6)}
+  .header{display:flex;justify-content:space-between;align-items:center;gap:12px;position:sticky;top:12px;z-index:50;padding:11px 16px;margin-bottom:18px;border-radius:16px;background:var(--glass);border:none;box-shadow:var(--shadow);backdrop-filter:blur(16px) saturate(1.6);-webkit-backdrop-filter:blur(16px) saturate(1.6)}
   .brand{display:flex;align-items:center;gap:11px}
   .logo{width:34px;height:34px;border-radius:10px;background:var(--ink);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;box-shadow:var(--shadow-sm)}
   .brand h1{font-size:15px;font-weight:750;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
@@ -100,7 +105,7 @@
   .header-right .date{color:var(--ink);font-weight:650}
 
   /* TABS */
-  .tabs{display:flex;gap:3px;background:var(--glass);padding:4px;border-radius:13px;width:fit-content;margin-bottom:24px;border:1px solid var(--glass-brd);box-shadow:var(--shadow-sm);backdrop-filter:blur(10px)}
+  .tabs{display:flex;gap:3px;background:var(--glass);padding:4px;border-radius:13px;width:fit-content;margin-bottom:24px;border:none;box-shadow:var(--shadow-sm);backdrop-filter:blur(10px)}
   .tab{padding:8px 18px;border-radius:9px;font-weight:600;font-size:13px;color:var(--muted);transition:.18s cubic-bezier(.2,.7,.3,1);letter-spacing:-.01em}
   .tab.active{background:var(--ink);color:var(--paper);box-shadow:var(--shadow-sm)}
   .tab:not(.active):hover{color:var(--ink);background:color-mix(in srgb,var(--ink) 6%,transparent)}
@@ -134,17 +139,17 @@
   .mini-ring{width:46px;height:46px;flex-shrink:0}
 
   /* FOCO — el único momento con acento amarillo fuerte */
-  .foco{background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 7%,var(--card)),var(--card) 55%);border-left:4px solid var(--accent);border-radius:var(--r);padding:22px 24px;box-shadow:var(--shadow),var(--ring);position:relative;overflow:hidden}
+  .foco{background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 7%,var(--card)),var(--card) 55%);border:none;border-radius:var(--r);padding:22px 24px;box-shadow:var(--shadow),var(--ring);position:relative;overflow:hidden}
   .foco::after{content:"";position:absolute;top:-40%;right:-8%;width:45%;height:180%;background:radial-gradient(ellipse,color-mix(in srgb,var(--accent) 22%,transparent),transparent 65%);pointer-events:none;opacity:.5}
   .foco .lab{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.02em;color:var(--accent-ink);display:flex;align-items:center;gap:7px;margin-bottom:11px;position:relative}
   .foco .lab::before{content:"★";font-size:12px}
   .foco .ttl{font-size:21px;font-weight:750;letter-spacing:-.025em;line-height:1.22;margin-bottom:11px;text-wrap:balance;position:relative}
   .foco .meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12px;color:var(--muted);font-weight:500;margin-bottom:17px;position:relative}
   .foco .meta .hot{color:var(--crit);font-weight:700}
-  .foco .meta .proj{background:var(--sunk);border:1px solid var(--line);padding:2px 10px;border-radius:100px;font-size:11px}
+  .foco .meta .proj{background:var(--sunk);border:none;padding:2px 10px;border-radius:100px;font-size:11px}
   .foco .actions{display:flex;gap:8px;position:relative}
   .foco .flist{display:flex;flex-direction:column;position:relative}
-  .foco .fitem{padding:14px 0;border-top:1px dashed var(--line-2)}
+  .foco .fitem{padding:14px 0;border:none}
   .foco .fitem:first-child{padding-top:0;border-top:0}
   .foco .fitem .ttl2{font-size:15px;font-weight:700;letter-spacing:-.015em;line-height:1.3;margin-bottom:8px}
   .foco .rank{display:inline-flex;align-items:center;justify-content:center;width:21px;height:21px;border-radius:7px;background:var(--accent);color:#1A1712;font-size:11px;font-weight:800;margin-right:8px;flex-shrink:0;vertical-align:2px}
@@ -178,7 +183,7 @@
   .btn-primary:hover{filter:brightness(1.05);transform:translateY(-1px)}
   .btn-soft{background:var(--card);color:var(--ink);box-shadow:var(--shadow-sm),var(--ring)}
   .btn-soft:hover{box-shadow:var(--shadow),var(--ring)}
-  .btn-ghost{color:var(--muted);border:1px solid transparent}
+  .btn-ghost{color:var(--muted);border:none}
   .btn-ghost:hover{background:var(--sunk);color:var(--ink)}
   .btn-sm{font-size:11px;padding:6px 11px;border-radius:8px}
   .btn-danger{color:var(--crit);background:var(--crit-bg)}
@@ -202,13 +207,13 @@
 
   /* QUEUE */
   .queue{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
-  .qrow{display:flex;align-items:center;gap:10px;padding:5px 13px;border-top:1px solid var(--line);position:relative;transition:background .12s;min-height:38px}
+  .qrow{display:flex;align-items:center;gap:10px;padding:5px 13px;border:none;position:relative;transition:background .12s;min-height:38px}
   .qrow:first-child{border-top:0}
   .qrow:hover{background:var(--sunk)}
   .qrow::before{content:"";position:absolute;left:0;top:5px;bottom:5px;width:3px;border-radius:3px;background:transparent}
   .qrow.s-crit::before{background:var(--crit)}
   .qrow.s-warn::before{background:var(--warn)}
-  .qcheck{width:17px;height:17px;border-radius:5px;border:1.6px solid var(--line-2);flex-shrink:0;transition:.15s;position:relative}
+  .qcheck{width:17px;height:17px;border-radius:5px;border:none;flex-shrink:0;transition:.15s;position:relative}
   .qcheck:hover{border-color:var(--good)}
   .qcheck:hover::after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--good);font-weight:700}
   .qbody{flex:1;min-width:0;cursor:pointer;display:flex;align-items:center;gap:10px}
@@ -229,7 +234,7 @@
   .q-empty{padding:26px 16px;text-align:center;color:var(--faint);font-size:13px}
 
   /* row menu popover */
-  .menu{position:fixed;z-index:400;background:var(--glass);backdrop-filter:blur(14px) saturate(1.5);-webkit-backdrop-filter:blur(14px) saturate(1.5);border:1px solid var(--glass-brd);border-radius:12px;box-shadow:var(--shadow-lg);padding:5px;min-width:172px;display:none}
+  .menu{position:fixed;z-index:400;background:var(--glass);backdrop-filter:blur(14px) saturate(1.5);-webkit-backdrop-filter:blur(14px) saturate(1.5);border:none;border-radius:12px;box-shadow:var(--shadow-lg);padding:5px;min-width:172px;display:none}
   .menu.open{display:block}
   .menu button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:8px 10px;border-radius:7px;font-size:13px;font-weight:550;color:var(--ink)}
   .menu button:hover{background:var(--sunk)}
@@ -263,10 +268,10 @@
   .kdot{width:7px;height:7px;border-radius:50%}
   .kcount{font-size:11px;font-weight:600;color:var(--muted);background:var(--sunk);padding:1px 8px;border-radius:100px}
   .klist{display:flex;flex-direction:column;gap:8px;min-height:40px}
-  .kcard{background:var(--card);border-radius:11px;padding:11px 12px;cursor:grab;transition:.14s;position:relative;border-left:3px solid transparent;box-shadow:var(--shadow-sm),var(--ring)}
+  .kcard{background:var(--card);border-radius:11px;padding:11px 12px;cursor:grab;transition:.14s;position:relative;border:none;box-shadow:var(--shadow-sm),var(--ring)}
   .kcard:hover{box-shadow:var(--shadow),var(--ring);transform:translateY(-1px)}
-  .kcard.s-crit{border-left-color:var(--crit)}
-  .kcard.s-warn{border-left-color:var(--warn)}
+  .kcard.s-crit{background:color-mix(in srgb,var(--crit) 9%,var(--card))}
+  .kcard.s-warn{background:color-mix(in srgb,var(--warn) 9%,var(--card))}
   .kcard .kt{font-size:13px;font-weight:450;line-height:1.4}
   .kcard.done .kt{color:var(--muted);text-decoration:line-through}
   .kchips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
@@ -274,7 +279,7 @@
   .kc.hot{background:var(--crit-bg);color:var(--crit);border-color:transparent}
   .kc.soon{background:var(--warn-bg);color:var(--accent-ink);border-color:transparent}
   .kc.link{background:var(--accent-soft);color:var(--accent-ink);border-color:transparent}
-  .kadd{display:block;width:100%;margin-top:8px;padding:9px;border:1px dashed var(--line-2);border-radius:11px;font-size:12px;font-weight:600;color:var(--muted);background:transparent;transition:.15s}
+  .kadd{display:block;width:100%;margin-top:8px;padding:9px;border:none;border-radius:11px;font-size:12px;font-weight:600;color:var(--muted);background:transparent;transition:.15s}
   .kadd:hover{border-color:var(--accent);color:var(--accent-ink);background:var(--accent-soft)}
 
   /* MAPA DE CALOR del tablero de proyectos */
@@ -295,12 +300,12 @@
   .pcol-h .nm{flex:1;font-size:12.5px;font-weight:700;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .pcol-h .ct{font-size:11px;font-weight:600;color:var(--muted);background:var(--sunk);padding:0 8px;border-radius:100px}
   .pcol-list{display:flex;flex-direction:column;gap:8px;overflow-y:auto;padding:1px}
-  .ptask{background:var(--card);border-radius:11px;padding:10px 11px;cursor:pointer;border-left:3px solid transparent;box-shadow:var(--shadow-sm),var(--ring);transition:.14s}
+  .ptask{background:var(--card);border-radius:11px;padding:10px 11px;cursor:pointer;border:none;box-shadow:var(--shadow-sm),var(--ring);transition:.14s}
   .ptask:hover{transform:translateY(-1px);box-shadow:var(--shadow),var(--ring)}
-  .ptask.s-crit{border-left-color:var(--crit)} .ptask.s-warn{border-left-color:var(--warn)} .ptask.s-doing{border-left-color:var(--accent)}
+  .ptask.s-crit{background:color-mix(in srgb,var(--crit) 9%,var(--card))} .ptask.s-warn{background:color-mix(in srgb,var(--warn) 9%,var(--card))} .ptask.s-doing{background:color-mix(in srgb,var(--accent) 9%,var(--card))}
   .ptask .tt{font-size:13px;font-weight:450;line-height:1.4;margin-bottom:8px}
   .ptask .cc{display:flex;flex-wrap:wrap;gap:4px}
-  .pcol-add{padding:8px;border:1px dashed var(--line-2);border-radius:10px;font-size:12px;font-weight:600;color:var(--muted);background:transparent;transition:.15s;text-align:left}
+  .pcol-add{padding:8px;border:none;border-radius:10px;font-size:12px;font-weight:600;color:var(--muted);background:transparent;transition:.15s;text-align:left}
   .pcol-add:hover{border-color:var(--accent);color:var(--accent-ink);background:var(--card)}
   .tk{font-size:10px;font-weight:550;padding:2px 7px;border-radius:100px;background:var(--sunk);color:var(--muted)}
   .tk.prio-High{background:var(--crit-bg);color:var(--crit);border-color:transparent}
@@ -341,20 +346,20 @@
   .gantt-scroll{overflow-x:auto;border-radius:12px;background:var(--card);box-shadow:var(--shadow-sm),var(--ring)}
   .gantt{min-width:calc(var(--gcol,270px) + 620px);position:relative}
   .g-row{display:grid;grid-template-columns:var(--gcol,270px) 1fr}
-  .g-left{padding:9px 14px;border-right:1px solid var(--line);display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0;position:relative}
+  .g-left{padding:9px 14px;border:none;display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0;position:relative}
   .g-tl{position:relative;min-height:40px}
-  .g-head{border-bottom:1px solid var(--line);background:var(--sunk);border-radius:12px 12px 0 0}
+  .g-head{border:none;background:var(--sunk);border-radius:12px 12px 0 0}
   .g-head .g-tl{min-height:32px}
   .g-hlab{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.025em;color:var(--faint)}
-  .g-tick{position:absolute;top:0;bottom:0;border-left:1px solid var(--line)}
+  .g-tick{position:absolute;top:0;bottom:0;width:1px;background:var(--line);opacity:.55}
   .g-tlab{position:absolute;top:8px;font-size:9px;font-weight:600;color:var(--faint);padding-left:5px;white-space:nowrap}
   .g-today{position:absolute;top:0;bottom:0;width:2px;background:var(--accent-ink);opacity:.5;z-index:3}
   .g-flag{position:absolute;top:2px;font-size:8px;font-weight:800;background:var(--accent);color:#1A1712;padding:1px 5px;border-radius:4px;z-index:4;transform:translateX(-50%)}
-  .g-sec{background:var(--sunk);border-top:1px solid var(--line)}
+  .g-sec{background:var(--sunk);border:none}
   .g-sec .g-left{flex-direction:row;align-items:center;justify-content:space-between;gap:8px}
   .g-sec .nm{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.02em;color:var(--muted)}
   .g-sec .mt{font-size:10px;color:var(--faint);font-weight:600}
-  .g-act{border-top:1px solid var(--line)}
+  .g-act{border:none}
   .g-act:hover{background:var(--sunk)}
   .g-anm{font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;min-width:0}
   .g-anm .nmtxt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
@@ -374,9 +379,9 @@
   .g-sec.off .g-left{opacity:.75}
   .g-ms{position:absolute;top:50%;width:13px;height:13px;transform:translateY(-50%) rotate(45deg);border-radius:3px;cursor:pointer;z-index:2}
   .g-ms.ring{box-shadow:0 0 0 2px var(--warn)}
-  .g-nod{position:absolute;top:50%;transform:translateY(-50%);left:8px;background:transparent;border:1px dashed var(--line-2);color:var(--faint);font-size:10px;font-weight:600;padding:3px 10px;border-radius:100px}
+  .g-nod{position:absolute;top:50%;transform:translateY(-50%);left:8px;background:transparent;border:none;color:var(--faint);font-size:10px;font-weight:600;padding:3px 10px;border-radius:100px}
   .g-nod:hover{border-color:var(--ink);color:var(--ink)}
-  .g-add{border-top:1px solid var(--line)}
+  .g-add{border:none}
   .g-add .g-left{padding:6px 14px}
   .g-add input{width:100%;border:none;background:transparent;font-family:inherit;font-size:12px;color:var(--ink);outline:none;padding:4px 0}
   .g-add input::placeholder{color:var(--faint)}
@@ -459,7 +464,7 @@
   /* Ficha «qué se necesita antes» */
   .reqcard{position:fixed;z-index:120;width:390px;max-width:calc(100vw - 24px);max-height:70vh;overflow-y:auto;background:var(--card);border-radius:14px;box-shadow:var(--shadow-lg),var(--ring);padding:14px 0 0;opacity:0;visibility:hidden;transform:translateY(4px);transition:.16s cubic-bezier(.2,.7,.3,1)}
   .reqcard.show{opacity:1;visibility:visible;transform:none}
-  .req-h{padding:0 15px 11px;border-bottom:1px solid var(--line)}
+  .req-h{padding:0 15px 11px;border:none}
   .req-t{font-size:13px;font-weight:750;letter-spacing:-.01em;line-height:1.35}
   .req-s{font-size:10.5px;color:var(--faint);font-weight:600;margin-top:3px}
   .req-list{padding:6px 0;max-height:44vh;overflow-y:auto}
@@ -476,7 +481,7 @@
   .req-direct{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;margin-left:6px;padding:1px 5px;border-radius:100px;background:var(--accent-soft);color:var(--accent-ink)}
   .req-meta{font-size:10px;color:var(--faint);font-weight:550;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .req-row.late .req-meta{color:var(--crit);font-weight:700}
-  .req-foot{padding:10px 15px;border-top:1px solid var(--line);font-size:10.5px;color:var(--muted);font-weight:600;background:var(--sunk);border-radius:0 0 14px 14px}
+  .req-foot{padding:10px 15px;border:none;font-size:10.5px;color:var(--muted);font-weight:600;background:var(--sunk);border-radius:0 0 14px 14px}
   .req-empty{padding:16px 15px;font-size:12px;color:var(--faint);text-align:center}
 
   /* PESTAÑAS DE PROYECTO */
@@ -498,14 +503,14 @@
   .ptable-wrap{overflow-x:auto;border-radius:12px;background:var(--card);box-shadow:var(--shadow-sm),var(--ring)}
   .ptable{width:100%;min-width:1430px;border-collapse:collapse;font-size:12px}
   .ptable th{text-align:left;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--faint);padding:9px 8px;background:var(--sunk);position:sticky;top:0;z-index:2;white-space:nowrap}
-  .ptable td{padding:4px 6px;border-top:1px solid var(--line);vertical-align:middle}
+  .ptable td{padding:4px 6px;border:none;vertical-align:middle}
   .ptable tr.act:hover{background:var(--sunk)}
   .ptable tr.act.cp-ok{background:var(--cp-bg)}
   .ptable tr.act.cp-late{background:var(--cp-late-bg)}
   .ptable tr.sec td{background:var(--sunk);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.02em;color:var(--muted);padding:8px}
   .ptable tr.sec.off td{color:var(--faint);text-decoration:line-through}
   .ptable tr.addrow td{padding:5px 8px}
-  .pt-in{width:100%;min-width:0;font-family:inherit;font-size:12px;color:var(--ink);background:transparent;border:1px solid transparent;border-radius:7px;padding:5px 6px;outline:none;transition:.14s}
+  .pt-in{width:100%;min-width:0;font-family:inherit;font-size:12px;color:var(--ink);background:transparent;border:none;border-radius:7px;padding:5px 6px;outline:none;transition:.14s}
   .pt-in:hover{border-color:var(--line)}
   .pt-in:focus{border-color:var(--accent-ink);background:var(--card);box-shadow:0 0 0 3px var(--accent-soft)}
   .pt-in.saved{background:var(--good-bg)}
@@ -521,74 +526,14 @@
   .dep-chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:2px 4px 2px 7px;border-radius:100px;background:var(--sunk);color:var(--muted);white-space:nowrap}
   .dep-chip button{font-size:11px;line-height:1;color:var(--faint);padding:0 3px;border-radius:50%}
   .dep-chip button:hover{color:var(--crit)}
-  .dep-add{width:auto;min-width:34px;font-size:11px;padding:3px 4px;border:1px dashed var(--line-2);border-radius:7px;color:var(--faint)}
-
-  /* HOJA DE PLAN DE TRABAJO (formato Excel: ID · entregable · días hábiles · semanas) */
-  .hoja-wrap{overflow:auto;max-height:78vh;border-radius:12px;background:var(--card);box-shadow:var(--shadow-sm),var(--ring)}
-  .hoja{border-collapse:separate;border-spacing:0;font-size:12px;min-width:100%}
-  .hoja th{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--faint);background:var(--sunk);padding:6px 6px;white-space:nowrap;position:sticky;z-index:3;border-bottom:1px solid var(--line)}
-  .hoja thead tr:nth-child(1) th{top:0;height:26px}
-  .hoja thead tr:nth-child(2) th{top:26px;height:20px}
-  .hoja thead tr:nth-child(3) th{top:46px}
-  .hoja th.mes{text-align:center;color:var(--muted);border-left:1px solid var(--line-2)}
-  .hoja th.wk{text-align:center;min-width:30px;width:30px;padding:4px 0;font-size:9px;font-variant-numeric:tabular-nums;border-left:1px solid var(--line)}
-  .hoja th.wk.now{background:var(--crit);color:#fff}
-  .hoja td{padding:3px 5px;border-bottom:1px solid var(--line);vertical-align:middle;background:var(--card)}
-  .hoja td.wk{padding:0;border-left:1px solid var(--line);height:28px;position:relative}
-  .hoja td.wk.now{background:var(--crit-bg)}
-  .hoja .stk{position:sticky;z-index:2}
-  .hoja th.stk{z-index:4}
-  .hoja .c-id{left:0;min-width:44px;width:44px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums;text-align:center}
-  .hoja .c-act{left:44px;min-width:320px;width:320px;max-width:320px;box-shadow:inset -1px 0 0 var(--line-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .hoja tr.fase td{background:var(--sunk);font-weight:800;color:var(--ink)}
-  .hoja tr.fase td.c-act{font-size:11.5px;text-transform:uppercase;letter-spacing:.02em;white-space:normal}
-  .hoja tr.fase .pt-del{opacity:.35}.hoja tr.fase:hover .pt-del{opacity:1}
-  .hoja tr.fase.off td{color:var(--faint);text-decoration:line-through;font-weight:600}
-  .hoja tr.act:hover td{background:var(--sunk)}
-  .hoja tr.tarea td{font-size:11.5px;color:var(--muted);background:var(--paper)}
-  .hoja tr.tarea td.c-act{padding-left:22px}
-  .hoja tr.tarea .tt{cursor:pointer}
-  .hoja tr.tarea .tt:hover{color:var(--ink);text-decoration:underline}
-  .hoja tr.tarea.hecha .tt{text-decoration:line-through;color:var(--faint)}
-  .hoja .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-  .hoja .pt-in{padding:4px 5px}
-  .hoja .pt-in.fecha{width:112px;font-size:11px;padding:4px 2px}
-  .hoja .pt-in.ent{min-width:170px}
-  .hoja .pt-in.rsp{min-width:125px}
-  .hoja .pctbox{display:flex;align-items:center;gap:2px;justify-content:flex-end}
-  .hoja .pctbox .pt-in{width:48px}
-  .hoja .deps{font-size:10.5px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
-  .hoja .addrow input{width:100%;border:none;background:transparent;font-family:inherit;font-size:12px;color:var(--ink);outline:none;padding:4px 0}
-  .hoja .addrow input::placeholder{color:var(--faint)}
-  .hj-plan{position:absolute;left:0;right:0;top:8px;bottom:8px;background:var(--accent-soft);box-shadow:inset 0 0 0 1px rgba(138,106,0,.25)}
-  .hj-plan.fase{background:rgba(26,23,18,.10);box-shadow:none;top:10px;bottom:10px}
-  .hj-real{position:absolute;left:0;right:0;top:8px;bottom:8px;background:var(--accent-ink)}
-  .hj-real.fase{background:var(--muted);top:10px;bottom:10px}
-  .hj-real.hecha{background:var(--good)}
-  .hj-real.tarde{background:var(--crit)}
-  .hj-ms{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--accent-ink);z-index:1}
-  .hj-dot{position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--muted)}
-  .hj-dot.hecha{background:var(--good)}.hj-dot.tarde{background:var(--crit)}.hj-dot.curso{background:var(--accent-ink)}
-  .est{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:100px;white-space:nowrap}
-  .est.Completada{background:var(--good-bg);color:var(--good)}
-  .est.Atrasada{background:var(--crit-bg);color:var(--crit)}
-  .est.En-curso{background:var(--accent-soft);color:var(--accent-ink)}
-  .est.Por-iniciar{background:var(--sunk);color:var(--muted)}
-  .hj-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:10.5px;color:var(--muted);margin-top:10px;align-items:center}
-  .hj-legend .sw{display:inline-block;width:18px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle}
-  .hj-sueltas{margin-top:14px;background:var(--sunk);border-radius:12px;padding:12px 14px}
-  .hj-sueltas .row{display:flex;gap:10px;align-items:center;padding:5px 0;border-top:1px solid var(--line);font-size:12px}
-  .hj-sueltas .row:first-of-type{border-top:none}
-  .hj-sueltas .row .tt{flex:1;min-width:0;cursor:pointer}
-  .hj-sueltas .row select{max-width:320px}
-  .hj-empty{padding:28px 18px;text-align:center;color:var(--muted);font-size:13px}
+  .dep-add{width:auto;min-width:34px;font-size:11px;padding:3px 4px;border:none;border-radius:7px;color:var(--faint)}
 
   /* MICROTAREAS DEL PROYECTO */
   .micro-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
   .micro-add{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--sunk);border-radius:12px;padding:8px 10px;margin-bottom:12px}
   .micro-add input[type=text]{flex:1;min-width:200px;border:none;background:transparent;font-family:inherit;font-size:13px;color:var(--ink);outline:none;padding:5px 2px}
   .micro-add input[type=text]::placeholder{color:var(--faint)}
-  .micro-add select,.micro-add input[type=date]{font-family:inherit;font-size:11.5px;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:5px 8px;outline:none;max-width:190px}
+  .micro-add select,.micro-add input[type=date]{font-family:inherit;font-size:11.5px;color:var(--muted);background:var(--card);border:none;border-radius:8px;padding:5px 8px;outline:none;max-width:190px}
   .qrow.done .qtitle{text-decoration:line-through;color:var(--faint)}
   .qrow.done .qcheck{background:var(--good);border-color:var(--good)}
 
@@ -606,7 +551,7 @@
   .chart{background:var(--card);border-radius:var(--r);padding:18px;box-shadow:var(--shadow),var(--ring)}
   .chart .ct{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.02em;color:var(--faint);margin-bottom:14px}
   .ph-list{display:flex;flex-direction:column;gap:7px;max-height:260px;overflow-y:auto}
-  .ph-row{display:flex;align-items:center;gap:9px;padding:9px 11px;background:var(--paper);border:1px solid var(--line);border-radius:10px;cursor:pointer}
+  .ph-row{display:flex;align-items:center;gap:9px;padding:9px 11px;background:var(--paper);border:none;border-radius:10px;cursor:pointer}
   .ph-row:hover{border-color:var(--line-2)}
   .ph-nm{flex:1;font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .ph-chip{font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;background:var(--sunk);color:var(--muted)}
@@ -617,8 +562,8 @@
   .d14 .bar.today{background:var(--ink)} .d14 .bar.zero{background:var(--sunk)}
   .d14 .n{font-size:10px;font-weight:800;font-variant-numeric:tabular-nums}
   .d14 .lb{font-size:9px;color:var(--faint);font-weight:600;text-align:center;line-height:1.1}
-  .report{background:var(--card);border-left:4px solid var(--accent);border-radius:var(--r);padding:22px;box-shadow:var(--shadow),var(--ring)}
-  .report-h{display:flex;justify-content:space-between;align-items:center;padding-bottom:15px;margin-bottom:16px;border-bottom:1px solid var(--line)}
+  .report{background:var(--card);border:none;border-radius:var(--r);padding:22px;box-shadow:var(--shadow),var(--ring)}
+  .report-h{display:flex;justify-content:space-between;align-items:center;padding-bottom:15px;margin-bottom:16px;border:none}
   .report-h .t{font-size:14px;font-weight:700}
   .report-h .m{font-size:11px;color:var(--faint);margin-top:2px}
   .rsec{margin-bottom:15px}
@@ -628,8 +573,8 @@
   /* MODALS */
   .backdrop{position:fixed;inset:0;background:rgba(20,18,14,.4);z-index:300;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
   .backdrop.show{display:flex;animation:fade .18s}
-  .modal{background:var(--card);border:1px solid var(--glass-brd);border-radius:20px;width:520px;max-width:100%;max-height:92vh;overflow-y:auto;box-shadow:var(--shadow-lg)}
-  .modal-h{padding:17px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--card);z-index:2;border-radius:20px 20px 0 0}
+  .modal{background:var(--card);border:none;border-radius:20px;width:520px;max-width:100%;max-height:92vh;overflow-y:auto;box-shadow:var(--shadow-lg)}
+  .modal-h{padding:17px 20px;display:flex;justify-content:space-between;align-items:center;border:none;position:sticky;top:0;background:var(--card);z-index:2;border-radius:20px 20px 0 0}
   .modal-h h3{font-size:15px;font-weight:700}
   .x-close{width:30px;height:30px;border-radius:8px;color:var(--muted);font-size:19px;display:flex;align-items:center;justify-content:center}
   .x-close:hover{background:var(--sunk);color:var(--ink)}
@@ -642,14 +587,14 @@
   .field textarea{resize:vertical;min-height:58px}
   .field input[type=range]{padding:0;accent-color:var(--accent)}
   .modal-f{display:flex;justify-content:space-between;align-items:center;padding:0 20px 20px;gap:8px}
-  .hintbox{font-size:11px;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .hintbox{font-size:11px;color:var(--muted);background:var(--paper);border:none;border-radius:10px;padding:10px 12px}
 
   /* CHAT */
   .fab{position:fixed;bottom:22px;right:22px;background:var(--ink);color:var(--accent);padding:12px 18px;border-radius:100px;font-weight:700;font-size:13px;box-shadow:var(--shadow);display:flex;align-items:center;gap:8px;z-index:100;transition:.2s}
   .fab:hover{transform:translateY(-2px)}
   .chat-panel{position:fixed;top:0;right:0;bottom:0;width:400px;max-width:100vw;background:var(--card);box-shadow:-8px 0 32px rgba(20,18,14,.15);transform:translateX(100%);transition:transform .3s;z-index:200;display:flex;flex-direction:column}
   .chat-panel.open{transform:none}
-  .chat-hd{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+  .chat-hd{padding:16px 18px;border:none;display:flex;justify-content:space-between;align-items:center}
   .chat-hd .t{font-size:14px;font-weight:700}
   .chat-hd .s{font-size:11px;color:var(--faint);margin-top:1px}
   .chat-msgs{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
@@ -658,10 +603,10 @@
   .cmsg.user{background:var(--ink);color:var(--paper);align-self:flex-end;border-bottom-right-radius:4px}
   .cmsg strong{font-weight:700}
   .cmsg code{background:var(--line);padding:1px 5px;border-radius:4px;font-size:12px}
-  .chat-sug{display:flex;flex-wrap:wrap;gap:6px;padding:8px 18px;border-top:1px solid var(--line)}
-  .chat-sug button{font-size:11px;font-weight:500;padding:6px 11px;border-radius:100px;background:var(--card);border:1px solid var(--line);color:var(--muted)}
+  .chat-sug{display:flex;flex-wrap:wrap;gap:6px;padding:8px 18px;border:none}
+  .chat-sug button{font-size:11px;font-weight:500;padding:6px 11px;border-radius:100px;background:var(--card);border:none;color:var(--muted)}
   .chat-sug button:hover{background:var(--sunk);color:var(--ink)}
-  .chat-in{padding:13px 18px;border-top:1px solid var(--line);display:flex;gap:8px;align-items:center}
+  .chat-in{padding:13px 18px;border:none;display:flex;gap:8px;align-items:center}
   .chat-in input{flex:1;border:none;background:var(--sunk);border-radius:10px;padding:10px 13px;font-family:inherit;font-size:13px;color:var(--ink);outline:none;box-shadow:var(--ring)}
   .chat-in input:focus{box-shadow:0 0 0 3px var(--accent-soft),var(--ring)}
   .chat-in button{width:38px;height:38px;border-radius:10px;background:var(--accent);color:#1A1712;font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center}
@@ -676,6 +621,114 @@
   .toast.err{background:var(--crit)}
   .spin{width:12px;height:12px;border:2px solid var(--line-2);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite;display:inline-block}
   @keyframes sp{to{transform:rotate(360deg)}}
+
+  /* ============================================================
+     ESTILO 2026-10 · Montserrat, formas de píldora, sin bordes.
+     La jerarquía sale del peso y tamaño de la letra y de fondos
+     suaves; nada de rectángulos delineados.
+     ============================================================ */
+  :root{--paper:#F6F5F1;--sunk:#EFEDE7;--r:24px}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#131210;--sunk:#221F19}}
+  :root[data-theme="dark"]{--paper:#131210;--sunk:#221F19}
+  body{font-size:14px;letter-spacing:0;background-image:none}
+  h1,h2,h3,.nm,.qtitle,.ttl,.ttl2{letter-spacing:-.01em}
+  .header{border-radius:999px;background:var(--card);box-shadow:0 2px 18px rgba(28,26,23,.06);padding:10px 12px 10px 12px;backdrop-filter:none}
+  .logo{border-radius:999px;background:var(--accent);color:#1C1A17;font-weight:900}
+  .brand h1{font-weight:800;font-size:15px}
+  .ver{display:none}
+  .tabs{border-radius:999px;background:var(--card);box-shadow:0 2px 12px rgba(28,26,23,.05);padding:5px;backdrop-filter:none}
+  .tab{border-radius:999px;font-weight:600;padding:8px 20px}
+  .tab.active{background:var(--ink);color:var(--paper);box-shadow:none}
+  .btn{border-radius:999px;font-weight:600;padding:9px 18px}
+  .btn-sm{border-radius:999px;padding:6px 14px;font-size:11.5px}
+  .btn-primary{background:var(--accent);box-shadow:0 4px 14px color-mix(in srgb,var(--accent) 40%,transparent);font-weight:700}
+  .btn-soft{background:var(--sunk);box-shadow:none;color:var(--ink)}
+  .btn-soft:hover{background:color-mix(in srgb,var(--ink) 9%,var(--sunk));box-shadow:none}
+  .btn-ghost:hover{background:var(--sunk)}
+  .btn-danger{border-radius:999px}
+  .toggle{border-radius:999px;padding:3px;box-shadow:none}
+  .toggle button{border-radius:999px;padding:6px 15px}
+  .toggle button.on{box-shadow:0 1px 6px rgba(28,26,23,.08)}
+  .fchip{box-shadow:none;background:var(--sunk)}
+  .fchip:hover{box-shadow:none;background:color-mix(in srgb,var(--ink) 8%,var(--sunk))}
+  .x-close{border-radius:999px}
+  .kpi,.queue,.kcol,.pcol,.stile,.chart,.report,.foco,.panel{box-shadow:0 1px 2px rgba(28,26,23,.03),0 10px 30px rgba(28,26,23,.045);border-radius:var(--r)}
+  .kpi:hover{box-shadow:0 1px 2px rgba(28,26,23,.03),0 14px 34px rgba(28,26,23,.07)}
+  .kpi .v,.stile .v{font-weight:800}
+  .capture{box-shadow:none;border-radius:var(--r)}
+  .capture textarea{box-shadow:none;border-radius:18px}
+  .cap-sel{box-shadow:none;background:var(--card)}
+  .sec-title,.subhead,.chart .ct,.field label,.pk .l{font-weight:700;letter-spacing:.07em}
+  .sec-title::before{border-radius:999px;height:6px;width:6px}
+  .qrow{border-radius:14px;margin:0 6px}
+  .queue{padding:6px 0}
+  .qcheck{border-radius:999px;background:color-mix(in srgb,var(--ink) 11%,transparent)}
+  .qcheck:hover{background:color-mix(in srgb,var(--good) 40%,transparent)}
+  .qtitle{font-weight:550}
+  .kcard,.ptask{box-shadow:0 1px 3px rgba(28,26,23,.06);border-radius:16px}
+  .kcard:hover,.ptask:hover{box-shadow:0 6px 18px rgba(28,26,23,.09)}
+  .pcol{background:linear-gradient(180deg,color-mix(in srgb,var(--tint,var(--sunk)) 16%,var(--card)),var(--card) 90px)}
+  .pcol-add,.kadd{background:var(--sunk);border-radius:999px;text-align:center}
+  .pcol-add:hover,.kadd:hover{background:var(--accent-soft);color:var(--accent-ink)}
+  .ptabs{padding:4px 2px 12px}
+  .ptab{border-radius:999px;box-shadow:none;background:var(--card);padding:9px 16px 11px}
+  .ptab:hover{box-shadow:0 4px 14px rgba(28,26,23,.07)}
+  .ptab.on{box-shadow:0 6px 18px rgba(28,26,23,.16)}
+  .panel{padding:26px}
+  .panel-h .nm{font-size:22px;font-weight:800}
+  .pk{gap:6px}
+  .pk .b{background:transparent;box-shadow:none;padding:4px 10px 4px 0}
+  .pk .v{font-size:24px;font-weight:800}
+  .pk .s{font-size:16px;font-weight:800}
+  .crit-chip{border-radius:999px;box-shadow:none;background:var(--sunk)}
+  .banner{border-radius:999px}
+  .modal{border-radius:28px;box-shadow:0 30px 80px rgba(20,18,14,.25)}
+  .modal-h{border-radius:28px 28px 0 0;padding:20px 24px 8px}
+  .modal-h h3{font-weight:800;font-size:17px}
+  .modal-b{padding:16px 24px 20px}
+  .modal-f{padding:0 24px 22px}
+  .field input,.field select,.field textarea{border-radius:14px;box-shadow:none}
+  .hintbox{background:var(--sunk);border-radius:16px}
+  .menu{border-radius:18px}
+  .micro-add{border-radius:999px;padding:6px 8px 6px 18px}
+  .micro-add select,.micro-add input[type=date]{border-radius:999px;background:var(--card)}
+  .ph-row{background:var(--sunk);border-radius:999px}
+  .chat-sug button{background:var(--sunk)}
+  .chat-in input{border-radius:999px}
+  .chat-in button{border-radius:999px}
+  .toast{border-radius:999px;padding:11px 20px}
+  .fab{box-shadow:0 8px 24px rgba(28,26,23,.2)}
+  .ptable-wrap,.gantt-scroll{box-shadow:0 1px 2px rgba(28,26,23,.03),0 10px 30px rgba(28,26,23,.045);border-radius:22px}
+  .ptable th{background:var(--card)}
+  .ptable tr.act:nth-of-type(even) td{background:color-mix(in srgb,var(--sunk) 35%,var(--card))}
+  .ptable tr.sec td{background:var(--sunk);border-radius:0}
+  .pt-in{border-radius:999px}
+  .dep-add{background:var(--sunk);border-radius:999px}
+  .dep-chip{background:var(--accent-soft);color:var(--accent-ink)}
+  /* Vista de dependencias (Gantt con flechas): más compacta y amable */
+  .g-left{padding:5px 12px;gap:0}
+  .g-tl{min-height:34px}
+  .g-head{background:var(--card)}
+  .g-sec{background:var(--sunk)}
+  .g-act:nth-of-type(even){background:color-mix(in srgb,var(--sunk) 30%,transparent)}
+  .g-bar{border-radius:999px;height:16px}
+  .g-fill{border-radius:999px}
+  .g-ms{border-radius:3px}
+  .g-nod{background:var(--sunk);border-radius:999px}
+  .g-flag{border-radius:999px;padding:1px 7px}
+  .g-roll,.g-roll i{border-radius:999px}
+  /* Completadas colapsadas (microtareas y tablero) */
+  .hechas-fold{margin-top:10px}
+  .hechas-fold summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--muted);padding:6px 14px;border-radius:999px;background:var(--sunk);user-select:none}
+  .hechas-fold summary::-webkit-details-marker{display:none}
+  .hechas-fold summary::before{content:"▸";font-size:10px;transition:transform .15s}
+  .hechas-fold[open] summary::before{transform:rotate(90deg)}
+  .hechas-fold summary span{font-weight:600;color:var(--faint)}
+  .hechas-fold summary:hover{color:var(--ink)}
+  .hechas-fold .queue{margin-top:8px;opacity:.85}
+  .hechas-fold .pcol-list{margin-top:8px;opacity:.8}
+  .pcol-list .hechas-fold summary{font-size:11px;padding:5px 12px}
+  .ptask.hecha .tt{text-decoration:line-through;color:var(--faint)}
 </style>
 </head>
 <body>
@@ -908,6 +961,10 @@
         <div class="field"><label>Inicio (opcional)</label><input type="date" id="am-start"></div>
         <div class="field"><label>Deadline (opcional)</label><input type="date" id="am-deadline"></div>
       </div>
+      <div class="frow">
+        <div class="field"><label>Inicio real</label><input type="date" id="am-rstart"></div>
+        <div class="field"><label>Fin real</label><input type="date" id="am-rend"><div class="hint" style="font-size:10px;color:var(--faint);margin-top:4px">Al ponerlo queda completada y lo que depende de ella se ajusta.</div></div>
+      </div>
       <div class="field">
         <label>Avance: <strong id="am-pctl" style="color:var(--ink)">0%</strong> <span id="am-state" class="st-badge" style="margin-left:6px"></span></label>
         <input type="range" id="am-pct" min="0" max="100" step="5" value="0" oninput="onPctInput(this.value)">
@@ -953,7 +1010,7 @@
       <div class="field"><label>Plantilla</label><select id="tpl-key" onchange="renderTplInfo()"></select></div>
       <div class="field"><label>Inicio del plan</label><input type="date" id="tpl-inicio"><div class="hint" style="font-size:10px;color:var(--faint);margin-top:4px">Las fechas se proponen en días hábiles (sin festivos de Colombia) desde aquí, respetando las dependencias. Son una propuesta: ajústalas en la hoja.</div></div>
       <div id="tpl-info"></div>
-      <div class="hintbox">Se carga en <strong id="tpl-proj"></strong>. No duplica nada: si una fase o actividad ya existe con el mismo nombre, se respeta. Las fases por defecto que estén vacías se reemplazan. Al final, tus tareas de este proyecto se ubican solas en la actividad que les corresponde (las que no calcen quedan abajo para que las ubiques tú).</div>
+      <div class="hintbox">Se carga en <strong id="tpl-proj"></strong>. No duplica nada: si una fase o actividad ya existe con el mismo nombre, se respeta. Las fases por defecto que estén vacías se reemplazan. Tus tareas no se tocan: las vinculas tú a una actividad cuando quieras.</div>
     </div>
     <div class="modal-f">
       <span></span>
@@ -1417,12 +1474,13 @@
   // ---------- PROYECTOS ----------
   let projView='tablero';
   let planView='gantt';          // cómo se ve el plan de trabajo: 'gantt' | 'tabla'
-  let microFilter='pendientes';  // microtareas: pendientes | curso | hechas | todas
-  let hojaTareas=true;           // hoja de trabajo: mostrar tareas bajo cada actividad
+  let microHechasAbiertas=false; // microtareas: las completadas van colapsadas
+  const pcolHechasAbiertas=new Set(); // tablero: columnas con las completadas desplegadas
+  const LS_PLAN='planOptsV2';
+  const planOpts=Plan.opciones(LS_PLAN,{owner:true,editable:true}); // filtros, zoom y columnas de la hoja
   let ganttColW=270;             // ancho de la columna de títulos del Gantt
   try{
-    planView=localStorage.getItem('planViewV1')||'gantt';
-    hojaTareas=localStorage.getItem('hojaTareasV1')!=='0';
+    planView=localStorage.getItem('planViewV1')||'hoja';
     const w=parseInt(localStorage.getItem('ganttColW'),10);
     if(w>=160&&w<=680)ganttColW=w;
   }catch{}
@@ -1468,20 +1526,24 @@
     const tint=c.id?`hsla(${hue},60%,50%,.55)`:'var(--line-2)';
     const cards=c.tasks.map(ptaskHtml).join('')||'<div style="font-size:12px;color:var(--faint);padding:8px 4px">Sin tareas</div>';
     const add=c.id?`<button class="pcol-add" onclick="openTaskModal(null,'todo','${c.id}')">＋ Nueva tarea</button>`:'';
-    return `<div class="pcol" style="border-top:3px solid ${tint}">
+    // Las completadas del proyecto quedan colapsadas; la flechita las despliega
+    const key=c.id||'_sin';
+    const hechas=(currentData.doneAll||[]).filter(t=>(t.projectId||null)===(c.id||null));
+    const fold=hechas.length?`<details class="hechas-fold"${pcolHechasAbiertas.has(key)?' open':''} ontoggle="this.open?pcolHechasAbiertas.add('${key}'):pcolHechasAbiertas.delete('${key}')"><summary>Completadas <span>${hechas.length}</span></summary><div class="pcol-list">${hechas.map(ptaskHtml).join('')}</div></details>`:'';
+    return `<div class="pcol" style="--tint:${tint}">
       <div class="pcol-h"><span class="cdot sd-${c.status}"></span><span class="nm" title="${esc(c.name)}">${esc(c.name)}</span><span class="ct">${c.tasks.length}</span></div>
-      <div class="pcol-list">${cards}</div>${add}</div>`;
+      <div class="pcol-list">${cards}${fold}</div>${add}</div>`;
   }
   function ptaskHtml(t){
     const chips=[];
     if(t.priority==='High'||t.priority==='Medium')chips.push(`<span class="tk prio-${t.priority}">${PRI_LABEL[t.priority]}</span>`);
-    chips.push(`<span class="tk ${t.kanbanStatus==='doing'?'st-doing':''}">${t.kanbanStatus==='doing'?'En curso':'Por hacer'}</span>`);
+    chips.push(`<span class="tk ${t.kanbanStatus==='doing'?'st-doing':''}">${t.kanbanStatus==='done'?'Hecha':t.kanbanStatus==='doing'?'En curso':'Por hacer'}</span>`);
     if(t.dueDate){const d=dayDiff(todayISO(),t.dueDate);chips.push(`<span class="tk ${d<0?'hot':d<=3?'soon':''}">📅 ${fmtDate(t.dueDate)}</span>`);}
     if(t.effortLevel)chips.push(`<span class="tk">${EFF[t.effortLevel]||t.effortLevel}</span>`);
     if(t.tipoGestion&&t.tipoGestion!=='Propia')chips.push(`<span class="tk">${esc(t.tipoGestion)}</span>`);
     if(t.stagDays>=5)chips.push(`<span class="tk hot">Estancada ${t.stagDays}d</span>`);
-    const stripe=t.isOverdue||t.stagDays>=5?'s-crit':t.kanbanStatus==='doing'?'s-doing':(t.dueDate&&dayDiff(todayISO(),t.dueDate)<=3?'s-warn':'');
-    return `<div class="ptask ${stripe}" onclick="openTaskModal('${t.id}')"><div class="tt">${esc(t.title)}</div><div class="cc">${chips.join('')}</div></div>`;
+    const stripe=t.kanbanStatus==='done'?'':t.isOverdue||t.stagDays>=5?'s-crit':t.kanbanStatus==='doing'?'s-doing':(t.dueDate&&dayDiff(todayISO(),t.dueDate)<=3?'s-warn':'');
+    return `<div class="ptask ${stripe}${t.kanbanStatus==='done'?' hecha':''}" onclick="openTaskModal('${t.id}')"><div class="tt">${esc(t.title)}</div><div class="cc">${chips.join('')}</div></div>`;
   }
   // Pestaña por proyecto: se elige arriba y debajo va su Gantt, indicadores y microtareas
   function renderProjectTabs(){
@@ -1562,7 +1624,7 @@
     planView=v;try{localStorage.setItem('planViewV1',v);}catch{}
     renderPlan();
   }
-  function setMicroFilter(k){microFilter=k;renderMicro();}
+  function toggleMicroHechas(open){microHechasAbiertas=open;}
 
   // ---------- MODELO LOCAL ----------
   // Espejo de la lógica del servidor para que cada cambio se vea al instante:
@@ -1583,30 +1645,8 @@
     return a;
   }
   // Las sucesoras se corren para empezar cuando termina su predecesora (solo hacia adelante)
-  function shiftSuccessorsLocal(list){
-    const byId=new Map(list.map(a=>[a.id,a])),estado={};
-    let movidas=0;
-    const resolver=a=>{
-      if(estado[a.id])return;
-      estado[a.id]='visitando';
-      let minimo=null;
-      (a.dependsOnIds||[]).forEach(pid=>{
-        const p=byId.get(pid);if(!p||p.id===a.id)return;
-        resolver(p);
-        if(p.deadline){const sig=addDays(p.deadline,1);if(!minimo||sig>minimo)minimo=sig;}
-      });
-      const inicio=a.startDate||a.deadline;
-      if(minimo&&inicio&&inicio<minimo){
-        const delta=dayDiff(inicio,minimo);
-        if(a.startDate)a.startDate=addDays(a.startDate,delta);
-        if(a.deadline)a.deadline=addDays(a.deadline,delta);
-        movidas++;
-      }
-      estado[a.id]='listo';
-    };
-    list.forEach(resolver);
-    return movidas;
-  }
+  // Nada arranca antes del día hábil siguiente al fin de lo que lo condiciona
+  function shiftSuccessorsLocal(list){return Plan.adelantar(list);}
   function criticalPathLocal(list){
     list.forEach(a=>{a.critical=false;a.slack=null;a.criticaEnRiesgo=false;});
     const fechas=[];list.forEach(a=>{if(a.startDate)fechas.push(a.startDate);if(a.deadline)fechas.push(a.deadline);});
@@ -1730,9 +1770,10 @@
     }
     const respaldo=clonar(d.activities);
     const limpios=normalizarCambios(cambios);
-    Object.assign(a,limpios);
+    // Mismas reglas del servidor: si se mueve el fin, lo que depende se corre en cascada
+    const movidas=Plan.aplicarLocal(d.activities,id,limpios);
     if(limpios.pctComplete!==undefined&&limpios.status===undefined)a.status=statusFromPct(a.pctComplete);
-    const movidas=recomputeLocal();
+    recomputeLocal(false);
     renderPlan();
     if(movidas)toast(`✓ Guardado · ${movidas} fecha${movidas===1?'':'s'} corrida${movidas===1?'':'s'} por dependencias`);
     marcarGuardando(1);
@@ -1780,19 +1821,18 @@
         <span class="plan-hint">${planView==='gantt'
           ? 'El % manda: al ponerlo, la actividad pasa a «en curso», y al llegar a 100% queda completada. Arrastra ⠿ para reordenar, el punto del borde de una barra hasta otra fila para conectarlas, y el borde de la columna «Actividad» para ensancharla.'
           : planView==='hoja'
-          ? 'Hoja semanal tipo Excel: las casillas se editan y se guardan al salir. Debajo de cada actividad van sus tareas del día a día.'
+          ? 'Todo se edita aquí mismo y se guarda solo. Si mueves el fin de una actividad, lo que depende de ella se corre en cascada.'
           : 'Diligencia aquí toda la data: se guarda al salir de cada casilla. El estado sale solo del % de avance.'}</span>
-        ${planView==='hoja'?`<button class="fchip ${hojaTareas?'on':''}" onclick="toggleHojaTareas()" title="Mostrar u ocultar las tareas debajo de cada actividad">↳ Tareas</button>`:''}
         <div class="toggle">
-          <button class="${planView==='hoja'?'on':''}" onclick="setPlanView('hoja')">📋 Hoja de trabajo</button>
-          <button class="${planView==='gantt'?'on':''}" onclick="setPlanView('gantt')">📊 Gantt</button>
+          <button class="${planView==='hoja'?'on':''}" onclick="setPlanView('hoja')">Plan de trabajo</button>
+          <button class="${planView==='gantt'?'on':''}" onclick="setPlanView('gantt')">Dependencias</button>
           <button class="${planView==='tabla'?'on':''}" onclick="setPlanView('tabla')">▤ Tabla</button>
         </div>
       </div>
     </div>`;
   }
   function planBodyHtml(d){
-    if(planView==='hoja')return hojaHtml(d);
+    if(planView==='hoja')return Plan.render(planModel(d),planOpts);
     return planView==='gantt'?ganttHtml(d)+legendHtml():planTableHtml(d);
   }
   // Repinta solo lo que cambia con una edición: indicadores y plan. Sin recargar nada.
@@ -1804,14 +1844,14 @@
     $('p-signals').innerHTML=planVsRealHtml(d.summary)+critHtml(d.summary);
     const sc=$('gantt-scroll'),keepG=sc?sc.scrollLeft:0;
     const tb=document.querySelector('.ptable-wrap'),keepT=tb?tb.scrollLeft:0;
-    const hj=document.querySelector('.hoja-wrap'),keepH=hj?[hj.scrollLeft,hj.scrollTop]:null;
+    const hj=$('pl-wrap'),keepH=hj?[hj.scrollLeft,hj.scrollTop]:null;
     $('plan-head-wrap').innerHTML=planHeadHtml();
     $('plan-body').innerHTML=planBodyHtml(d);
     if(planView==='gantt'){
       const n=$('gantt-scroll');if(n&&keepG)n.scrollLeft=keepG;
       requestAnimationFrame(drawDepLinks);
     }else if(planView==='hoja'){
-      const n=document.querySelector('.hoja-wrap');if(n&&keepH){n.scrollLeft=keepH[0];n.scrollTop=keepH[1];}
+      const n=$('pl-wrap');if(n&&keepH){n.scrollLeft=keepH[0];n.scrollTop=keepH[1];}
     }else{
       const n=document.querySelector('.ptable-wrap');if(n&&keepT)n.scrollLeft=keepT;
     }
@@ -1833,7 +1873,7 @@
         <div><div class="nm">${esc(d.name)} ${badge}</div><div class="meta">👤 ${d.responsable?esc(d.responsable):'sin responsable'} <button class="btn btn-ghost btn-sm" style="padding:1px 7px" onclick="editResponsable()">✎</button>${d.descripcion?' · '+esc(d.descripcion):''}</div></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-soft btn-sm" onclick="openTplModal()" title="Cargar un plan de trabajo prediseñado en este proyecto">📥 Plantilla de plan</button>
-          <button class="btn btn-soft btn-sm" onclick="openShareModal()">🔗 Compartir Gantt</button>
+          <button class="btn btn-soft btn-sm" onclick="openShareModal()">🔗 Compartir plan</button>
           <button class="btn btn-soft btn-sm" onclick="openProjectModal('${d.id}')">✎ Editar proyecto</button>
         </div>
       </div>
@@ -2360,194 +2400,44 @@
     finally{marcarGuardando(-1);}
   }
 
-  // ---------- HOJA DE PLAN DE TRABAJO (formato Excel) ----------
-  // ID · Actividad · Responsable · Entregable · Inicio · Fin · Días hábiles ·
-  // % Avance · Estado · Depende de · cronograma semanal. Las tareas del día a
-  // día van debajo de su actividad; las que no tienen actividad, al final.
-  const MESES=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
-  const festivosCache={};
-  function festivosCO(y){
-    if(festivosCache[y])return festivosCache[y];
-    const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3);
-    const h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451);
-    const pas=`${y}-${String(Math.floor((h+l-7*m+114)/31)).padStart(2,'0')}-${String((h+l-7*m+114)%31+1).padStart(2,'0')}`;
-    const lunes=iso=>{const dow=new Date(iso+'T12:00:00Z').getUTCDay();return dow===1?iso:addDays(iso,(8-dow)%7);};
-    const f2=(mm,dd)=>`${y}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}`;
-    festivosCache[y]=new Set([f2(1,1),f2(5,1),f2(7,20),f2(8,7),f2(12,8),f2(12,25),addDays(pas,-3),addDays(pas,-2),
-      lunes(f2(1,6)),lunes(f2(3,19)),lunes(f2(6,29)),lunes(f2(8,15)),lunes(f2(10,12)),lunes(f2(11,1)),lunes(f2(11,11)),
-      lunes(addDays(pas,39)),lunes(addDays(pas,60)),lunes(addDays(pas,68))]);
-    return festivosCache[y];
+  // ---------- PLAN DE TRABAJO (assets/plan.js pinta; aquí se guardan los cambios) ----------
+  function planModel(d){
+    return {sections:d.sections,activities:d.activities,tasks:d.tasks,today:(d.summary&&d.summary.today)||todayISO()};
   }
-  function esHabil(iso){const dow=new Date(iso+'T12:00:00Z').getUTCDay();return dow!==0&&dow!==6&&!festivosCO(Number(iso.slice(0,4))).has(iso);}
-  function habilDesde(iso){let x=iso;while(!esHabil(x))x=addDays(x,1);return x;}
-  // Equivalente a NETWORKDAYS del Excel (con festivos de Colombia)
-  function diasHabiles(ini,fin){
-    if(!ini||!fin||fin<ini)return null;
-    let n=0;for(let x=ini;x<=fin;x=addDays(x,1))if(esHabil(x))n++;
-    return n;
-  }
-  // Misma regla del Excel: Completada · Atrasada · En curso · Por iniciar
-  function estadoHoja(ini,fin,pct,today){
-    if(pct>=100)return 'Completada';
-    if(fin&&today>fin)return 'Atrasada';
-    if(ini&&today>=ini)return 'En curso';
-    if(!ini&&!fin&&pct>0)return 'En curso';
-    return 'Por iniciar';
-  }
-  function estHtml(e){return `<span class="est ${e.replace(' ','-')}">${e}</span>`;}
-  function lunesDe(iso){const dow=new Date(iso+'T12:00:00Z').getUTCDay();return addDays(iso,dow===0?-6:1-dow);}
-  function fmtCorto(iso){return new Date(iso+'T12:00:00').toLocaleDateString('es-CO',{day:'2-digit',month:'short'}).replace('.','');}
-  function toggleHojaTareas(){hojaTareas=!hojaTareas;try{localStorage.setItem('hojaTareasV1',hojaTareas?'1':'0');}catch{}renderPlan();}
-
-  // Celda semanal: barra clara = planeado · barra oscura = avance · ◆ = hito
-  function hojaCeldas(semanas,ini,fin,pct,estado,esFase,hoySem){
-    return semanas.map(w=>{
-      const wEnd=addDays(w,6),now=w===hoySem?' now':'';
-      if(!ini)return `<td class="wk${now}"></td>`;
-      const plan=ini<=wEnd&&fin>=w;
-      let real=false;
-      if(pct>0){const finReal=addDays(ini,Math.max(1,Math.round((dayDiff(ini,fin)+1)*pct/100))-1);real=ini<=wEnd&&finReal>=w;}
-      const hito=ini===fin&&plan&&!esFase;
-      const cls=esFase?' fase':'',rc=pct>=100?' hecha':estado==='Atrasada'?' tarde':'';
-      return `<td class="wk${now}">${plan&&!hito?`<div class="hj-plan${cls}"></div>`:''}${real&&!hito?`<div class="hj-real${cls}${rc}"></div>`:''}${hito?`<div class="hj-ms" style="${pct>=100?'color:var(--good)':estado==='Atrasada'?'color:var(--crit)':''}">◆</div>`:''}</td>`;
-    }).join('');
-  }
-  function hojaHtml(d){
-    const today=(d.summary&&d.summary.today)||todayISO();
-    const secs=[...(d.sections||[])].sort((a,b)=>a.position-b.position);
-    const acts=orderedActs(d);
-    const groups=secs.map(s=>({id:s.id,name:s.name,sec:s,acts:acts.filter(a=>a.sectionId===s.id)}));
-    const orphans=acts.filter(a=>!a.sectionId||!secs.some(s=>s.id===a.sectionId));
-    if(orphans.length)groups.push({id:null,name:'Otras',sec:null,acts:orphans});
-    const tareas=d.tasks||[];
-    const tareasDe=id=>tareas.filter(t=>t.activityId===id).sort((x,y)=>(x.kanbanStatus==='done')-(y.kanbanStatus==='done')||(x.dueDate||'9').localeCompare(y.dueDate||'9'));
-
-    // Códigos tipo Excel: 1, 1.1, 1.2…
-    const codigo={};let nf=0;const codFase={};
-    groups.forEach(g=>{if(g.sec&&g.sec.enabled===false)return;nf++;codFase[g.id||'_']=String(nf);g.acts.forEach((a,i)=>{codigo[a.id]=`${nf}.${i+1}`;});});
-
-    // Semanas del cronograma
-    const fechas=[today];
-    acts.forEach(a=>{if(a.startDate)fechas.push(a.startDate);if(a.deadline)fechas.push(a.deadline);});
-    if(hojaTareas)tareas.forEach(t=>{if(t.activityId&&t.dueDate)fechas.push(t.dueDate);});
-    fechas.sort();
-    const w0=lunesDe(fechas[0]);let wN=lunesDe(fechas[fechas.length-1]);
-    if(dayDiff(w0,wN)<7*11)wN=addDays(w0,7*11);
-    const semanas=[];for(let w=w0;w<=wN&&semanas.length<80;w=addDays(w,7))semanas.push(w);
-    const hoySem=lunesDe(today);
-    const variosAnios=semanas[0].slice(0,4)!==semanas[semanas.length-1].slice(0,4);
-    const meses=[];semanas.forEach(w=>{const k=w.slice(0,7);const u=meses[meses.length-1];if(u&&u.k===k)u.n++;else meses.push({k,n:1});});
-    const nW=semanas.length,FIJAS=10,COLS=FIJAS+nW;
-
-    const head=`<thead>
-      <tr>
-        <th class="stk c-id" rowspan="3">ID</th><th class="stk c-act" rowspan="3">Actividad</th>
-        <th rowspan="3">Responsable</th><th rowspan="3">Entregable / resultado</th><th rowspan="3">Inicio</th><th rowspan="3">Fin</th>
-        <th rowspan="3" title="Días hábiles, sin fines de semana ni festivos de Colombia">Días háb.</th><th rowspan="3">% Avance</th><th rowspan="3">Estado</th><th rowspan="3">Depende de</th>
-        ${meses.map(m=>`<th class="mes" colspan="${m.n}">${MESES[Number(m.k.slice(5,7))-1]}${variosAnios?' '+m.k.slice(2,4):''}</th>`).join('')}
-      </tr>
-      <tr>${semanas.map((w,i)=>`<th class="wk${w===hoySem?' now':''}" title="Semana del ${fmtDate(w)}">S${i+1}</th>`).join('')}</tr>
-      <tr>${semanas.map(w=>`<th class="wk${w===hoySem?' now':''}" title="Lunes ${fmtDate(w)}">${Number(w.slice(8,10))}</th>`).join('')}</tr>
-    </thead>`;
-
-    const vacias=semanas.map(w=>`<td class="wk${w===hoySem?' now':''}"></td>`).join('');
-    const filas=groups.map(g=>{
-      if(g.sec&&g.sec.enabled===false){
-        return `<tr class="fase off"><td class="stk c-id"></td><td class="stk c-act">${esc(g.name)} · no aplica <button class="pt-del" onclick="toggleSection('${g.id}',true)" title="Volver a activar">☑ activar</button></td><td colspan="${FIJAS-2}"></td>${vacias}</tr>`;
-      }
-      const cf=codFase[g.id||'_'];
-      const fs=[];g.acts.forEach(a=>{if(a.startDate)fs.push(a.startDate);if(a.deadline)fs.push(a.deadline);});fs.sort();
-      const fIni=fs[0]||null,fFin=fs[fs.length-1]||null;
-      const avg=g.acts.length?Math.round(g.acts.reduce((s,a)=>s+a.pctComplete,0)/g.acts.length):0;
-      const estF=g.acts.length?estadoHoja(fIni,fFin,avg,today):'';
-      const dh=diasHabiles(fIni,fFin);
-      const tools=g.id?` <button class="pt-del" onclick="renameSection('${g.id}')" title="Renombrar fase">✎</button> <button class="pt-del" onclick="toggleSection('${g.id}',false)" title="Esta fase no aplica">◻</button>${g.acts.length?'':` <button class="pt-del" onclick="removeSection('${g.id}')" title="Eliminar fase vacía">🗑</button>`}`:'';
-      const faseRow=`<tr class="fase"><td class="stk c-id">${cf}</td><td class="stk c-act">${esc(g.name)}${tools}</td><td></td><td></td>
-        <td class="num">${fIni?fmtCorto(fIni):''}</td><td class="num">${fFin?fmtCorto(fFin):''}</td><td class="num">${dh!=null?dh:''}</td>
-        <td class="num">${g.acts.length?avg+'%':''}</td><td>${estF?estHtml(estF):''}</td><td></td>
-        ${hojaCeldas(semanas,fIni,fFin,avg,estF,true,hoySem)}</tr>`;
-      const actRows=g.acts.map(a=>{
-        const ini=a.startDate||a.deadline,fin=a.deadline||a.startDate;
-        const est=estadoHoja(a.startDate,a.deadline,a.pctComplete,today);
-        const resp=(a.responsables&&a.responsables.length)?a.responsables.join(', '):(a.responsable||'');
-        const deps=(a.dependsOnIds||[]).map(id=>codigo[id]).filter(Boolean).join(', ');
-        const dh2=diasHabiles(a.startDate,a.deadline);
-        const cp=a.critical?`style="color:${a.criticaEnRiesgo?'var(--cp-late-ink)':'var(--cp-ink)'}" title="Ruta crítica · abrir detalle"`:'title="Abrir detalle (dependencias, notas)"';
-        let row=`<tr class="act">
-          <td class="stk c-id"><button class="pt-del" style="font-size:11.5px;font-weight:700;color:inherit" ${cp} onclick="openActivityModal('${a.id}')">${codigo[a.id]||''}</button></td>
-          <td class="stk c-act"><input class="pt-in nm" data-cell="${a.id}:hname" value="${esc(a.name)}" title="${esc(a.name)}" onchange="patchActivity('${a.id}',{name:this.value.trim()})"></td>
-          <td><input class="pt-in rsp" data-cell="${a.id}:hresp" value="${esc(resp)}" placeholder="—" title="Separa varios con coma" onchange="patchActivity('${a.id}',{responsables:this.value})"></td>
-          <td><input class="pt-in ent" data-cell="${a.id}:hent" value="${esc(a.entregable||'')}" placeholder="—" title="${esc(a.entregable||'')}" onchange="patchActivity('${a.id}',{entregable:this.value.trim()})"></td>
-          <td><input type="date" class="pt-in fecha" data-cell="${a.id}:hstart" value="${a.startDate||''}" onchange="patchActivity('${a.id}',{startDate:this.value||null})"></td>
-          <td><input type="date" class="pt-in fecha" data-cell="${a.id}:hend" value="${a.deadline||''}"${est==='Atrasada'?' style="color:var(--crit);font-weight:700"':''} onchange="patchActivity('${a.id}',{deadline:this.value||null})"></td>
-          <td class="num">${dh2!=null?dh2:''}</td>
-          <td><div class="pctbox"><input type="number" min="0" max="100" step="5" class="pt-in pct" data-cell="${a.id}:hpct" value="${a.pctComplete}" onchange="patchActivity('${a.id}',{pctComplete:Number(this.value)})">%</div></td>
-          <td>${estHtml(est)}</td>
-          <td class="deps">${deps||'—'}</td>
-          ${hojaCeldas(semanas,ini,fin,a.pctComplete,est,false,hoySem)}
-        </tr>`;
-        if(hojaTareas)row+=tareasDe(a.id).map(t=>hojaTareaRow(t,semanas,hoySem,today)).join('');
-        return row;
-      }).join('');
-      const add=`<tr class="addrow"><td class="stk c-id"></td><td class="stk c-act" colspan="1"><input placeholder="＋ Actividad en ${esc(g.name)} (Enter)" onkeydown="if(event.key==='Enter')addActivityInline('${g.id||''}',this)"></td><td colspan="${COLS-2}"></td></tr>`;
-      return faseRow+actRows+add;
-    }).join('');
-    const addSec=`<tr class="addrow"><td class="stk c-id"></td><td class="stk c-act"><input placeholder="＋ Nueva fase (Enter)" onkeydown="if(event.key==='Enter')addSectionInline(this)"></td><td colspan="${COLS-2}"></td></tr>`;
-
-    const vacio=acts.length?'':`<div class="hj-empty">Este proyecto aún no tiene plan de trabajo.<br><br><button class="btn btn-primary btn-sm" onclick="openTplModal()">📥 Cargar plantilla de plan</button> <span style="margin:0 6px;color:var(--faint)">o</span> escribe las actividades abajo, fase por fase.</div>`;
-    return `${vacio}<div class="hoja-wrap"><table class="hoja">${head}<tbody>${filas}${addSec}</tbody></table></div>
-      <div class="hj-legend">
-        <span><span class="sw" style="background:var(--accent-soft);box-shadow:inset 0 0 0 1px rgba(138,106,0,.25)"></span>Planeado</span>
-        <span><span class="sw" style="background:var(--accent-ink)"></span>Avance</span>
-        <span><span class="sw" style="background:var(--good)"></span>Completado</span>
-        <span><span class="sw" style="background:var(--crit)"></span>Atrasado</span>
-        <span>◆ Hito (inicio = fin)</span>
-        <span><span class="sw" style="background:var(--crit);width:10px"></span>Semana actual</span>
-        <span>● Tarea (en su fecha límite)</span>
-        <span>Días háb. sin fines de semana ni festivos de Colombia · ID morado = ruta crítica</span>
-      </div>
-      ${hojaSueltasHtml(d,acts,codigo)}`;
-  }
-  function hojaTareaRow(t,semanas,hoySem,today){
-    const hecha=t.kanbanStatus==='done',vencida=!hecha&&t.dueDate&&t.dueDate<today;
-    const est=hecha?'<span class="est Completada">Hecha</span>':vencida?'<span class="est Atrasada">Vencida</span>':t.kanbanStatus==='doing'?'<span class="est En-curso">En curso</span>':'<span class="est Por-iniciar">Por hacer</span>';
-    const dot=hecha?'hecha':vencida?'tarde':t.kanbanStatus==='doing'?'curso':'';
-    const celdas=semanas.map(w=>{const now=w===hoySem?' now':'';const aqui=t.dueDate&&t.dueDate>=w&&t.dueDate<=addDays(w,6);return `<td class="wk${now}">${aqui?`<span class="hj-dot ${dot}" title="${esc(t.title)} · ${fmtDate(t.dueDate)}"></span>`:''}</td>`;}).join('');
-    return `<tr class="tarea ${hecha?'hecha':''}">
-      <td class="stk c-id"><button class="pt-del" title="${hecha?'Reabrir':'Marcar hecha'}" onclick="${hecha?`quickStatus('${t.id}','todo')`:`quickDone('${t.id}',event)`}">${hecha?'☑':'☐'}</button></td>
-      <td class="stk c-act"><span class="tt" onclick="openTaskModal('${t.id}')" title="${esc(t.title)}">↳ ${esc(t.title)}</span></td>
-      <td>${t.tipoGestion&&t.tipoGestion!=='Propia'?esc(t.tipoGestion):''}</td><td></td><td></td>
-      <td class="num">${t.dueDate?fmtCorto(t.dueDate):''}</td><td></td><td></td><td>${est}</td><td></td>${celdas}</tr>`;
-  }
-  // Tareas del proyecto que aún no cuelgan de ninguna actividad del plan
-  function hojaSueltasHtml(d,acts,codigo){
-    const sueltas=(d.tasks||[]).filter(t=>!t.activityId&&t.kanbanStatus!=='done');
-    if(!sueltas.length||!acts.length)return '';
-    const opts='<option value="">Ubicar en…</option>'+acts.map(a=>`<option value="${a.id}">${codigo[a.id]?codigo[a.id]+' · ':''}${esc(a.name)}</option>`).join('');
-    return `<div class="hj-sueltas">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px">
-        <div class="subhead" style="margin:0">Tareas sin ubicar en el plan · ${sueltas.length}</div>
-        <button class="btn btn-soft btn-sm" onclick="ubicarTareasAuto()" title="Busca la actividad que corresponde a cada tarea según sus palabras">🔗 Ubicar automáticamente</button>
-      </div>
-      ${sueltas.map(t=>`<div class="row"><span class="tt" onclick="openTaskModal('${t.id}')">${esc(t.title)}${t.dueDate?` <span style="color:var(--faint);font-size:11px">· ${fmtDate(t.dueDate)}</span>`:''}</span><select class="pt-in" style="width:auto;border-color:var(--line-2)" onchange="if(this.value)ubicarTarea('${t.id}',this.value)">${opts}</select></div>`).join('')}
-    </div>`;
-  }
-  async function ubicarTarea(taskId,activityId){
+  function planSetOpt(k,v){Plan.cambiar(planOpts,k,v);Plan.guardar(LS_PLAN,planOpts);renderPlan();}
+  function planOnPatch(id,cambios){patchActivity(id,cambios);}
+  function planOnOpen(id){openActivityModal(id);}
+  function planOnAdd(sectionId,inp){if(sectionId==='__area__')addSectionInline(inp);else addActivityInline(sectionId,inp);}
+  async function planOnProposal(id,aceptar){
+    if(aceptar){applyActivity(id,{propuesta:false});toast('✓ Actividad aceptada en el plan');return;}
     const d=currentProjectDetail;if(!d)return;
-    const t=(d.tasks||[]).find(x=>x.id===taskId),a=(d.activities||[]).find(x=>x.id===activityId);
+    const a=d.activities.find(x=>x.id===id);
+    if(!confirm(`¿Descartar la propuesta «${a?a.name:''}»?`))return;
+    try{reconciliar(await api(`/api/activities/${id}?projectId=${d.id}`,'DELETE'));toast('Propuesta descartada');}
+    catch(e){toast('⚠ '+e.message,false);}
+  }
+  function planOnTask(accion,id,extra){
+    if(accion==='open')openTaskModal(id);
+    else if(accion==='done')quickDone(id);
+    else if(accion==='reopen')quickStatus(id,'todo');
+    else if(accion==='link')vincularTarea(id,extra);
+    else if(accion==='unlink')vincularTarea(id,null);
+  }
+  function planOnSection(accion,id){
+    if(accion==='rename')renameSection(id);
+    else if(accion==='off')toggleSection(id,false);
+    else if(accion==='on')toggleSection(id,true);
+    else if(accion==='remove')removeSection(id);
+  }
+  // Vincular / desvincular una tarea a una actividad: solo a mano
+  async function vincularTarea(taskId,activityId){
+    const d=currentProjectDetail;if(!d)return;
+    const t=(d.tasks||[]).find(x=>x.id===taskId),a=activityId?(d.activities||[]).find(x=>x.id===activityId):null;
     const antes=t?{activityId:t.activityId,activityName:t.activityName}:null;
-    if(t){t.activityId=activityId;t.activityName=a?a.name:null;}
+    if(t){t.activityId=activityId||null;t.activityName=a?a.name:null;}
     renderPlan();renderMicro();
-    try{await api('/api/tasks/'+taskId,'PATCH',{activityId});toast('✓ Tarea ubicada');loadData();}
+    try{await api('/api/tasks/'+taskId,'PATCH',{activityId:activityId||null});toast(activityId?'✓ Tarea vinculada':'Tarea desvinculada');loadData();}
     catch(e){if(t&&antes)Object.assign(t,antes);renderPlan();renderMicro();toast('⚠ '+e.message,false);}
-  }
-  async function ubicarTareasAuto(){
-    const d=currentProjectDetail;if(!d)return;
-    try{
-      const r=await api(`/api/projects/${d.id}?res=ubicar`,'POST');
-      toast(r.ubicadas?`✓ ${r.ubicadas} tarea${r.ubicadas===1?'':'s'} ubicada${r.ubicadas===1?'':'s'}`:'No encontré a qué actividad corresponde ninguna: ubícalas a mano');
-      if(r.ubicadas){await refreshProjectDetail();loadData();}
-    }catch(e){toast('⚠ '+e.message,false);}
   }
 
   // ---------- PLANTILLAS DE PLAN ----------
@@ -2555,7 +2445,7 @@
   async function openTplModal(){
     const d=currentProjectDetail;if(!d)return;
     $('tpl-proj').textContent=d.name;
-    $('tpl-inicio').value=habilDesde(addDays(todayISO(),1));
+    $('tpl-inicio').value=Plan.cal.habilDesde(addDays(todayISO(),1));
     $('tpl-go').disabled=false;
     openModal('m-tpl');
     try{
@@ -2578,7 +2468,6 @@
       closeModal('m-tpl');
       const partes=[`${r.creadas} actividades`];
       if(r.omitidas)partes.push(`${r.omitidas} ya existían`);
-      if(r.tareasUbicadas)partes.push(`${r.tareasUbicadas} tareas ubicadas`);
       toast('✓ Plan cargado · '+partes.join(' · '));
       planView='hoja';try{localStorage.setItem('planViewV1','hoja');}catch{}
       await refreshProjectDetail();
@@ -2587,20 +2476,16 @@
   }
 
   // ---------- MICROTAREAS DEL PROYECTO ----------
-  const MICRO_TABS=[['pendientes','Pendientes'],['curso','En curso'],['hechas','Hechas'],['todas','Todas']];
   function microHtml(d){
     const tasks=d.tasks||[];
-    const g={pendientes:tasks.filter(t=>t.kanbanStatus==='todo'),curso:tasks.filter(t=>t.kanbanStatus==='doing'),hechas:tasks.filter(t=>t.kanbanStatus==='done')};
-    const lista=(microFilter==='todas'?[...g.curso,...g.pendientes,...g.hechas]:(g[microFilter]||[]));
-    const orden=microFilter==='hechas'
-      ? [...lista].sort((a,b)=>(b.completedAt||'').localeCompare(a.completedAt||''))
-      : [...lista].sort((a,b)=>(b.score||0)-(a.score||0));
+    // Activas primero (en curso arriba); las completadas, colapsadas al final
+    const activas=tasks.filter(t=>t.kanbanStatus!=='done').sort((a,b)=>(b.kanbanStatus==='doing')-(a.kanbanStatus==='doing')||(b.score||0)-(a.score||0));
+    const hechas=tasks.filter(t=>t.kanbanStatus==='done').sort((a,b)=>(b.completedAt||'').localeCompare(a.completedAt||''));
     const acts=orderedActs(d);
     const actOpts='<option value="">Sin actividad del Gantt</option>'+acts.map(a=>`<option value="${a.id}">⛓ ${esc(a.name)}</option>`).join('');
     return `<div style="margin-top:26px">
       <div class="micro-head">
-        <div class="subhead" style="margin:0">Microtareas del día a día · ${tasks.length}</div>
-        <div class="filters" style="margin:0">${MICRO_TABS.map(([k,l])=>`<button class="fchip ${microFilter===k?'on':''}" onclick="setMicroFilter('${k}')">${l}<span class="ct">${k==='todas'?tasks.length:(g[k]||[]).length}</span></button>`).join('')}</div>
+        <div class="subhead" style="margin:0">Microtareas del día a día · ${activas.length} activa${activas.length===1?'':'s'}</div>
       </div>
       <div class="micro-add">
         <input type="text" id="micro-new" placeholder="＋ Nueva microtarea de este proyecto (Enter)" onkeydown="if(event.key==='Enter')addMicroInline(this)">
@@ -2608,7 +2493,8 @@
         <input type="date" id="micro-due" title="Fecha límite (opcional)">
         <button class="btn btn-soft btn-sm" onclick="openTaskModal(null,'todo','${d.id}')">⚙ Con detalle</button>
       </div>
-      <div class="queue">${orden.length?orden.map(microRow).join(''):`<div class="q-empty">${microFilter==='hechas'?'Todavía no hay microtareas cerradas aquí.':'Nada por aquí. Agrega una arriba y queda ligada al proyecto.'}</div>`}</div>
+      <div class="queue">${activas.length?activas.map(microRow).join(''):'<div class="q-empty">Nada pendiente. Agrega una arriba y queda ligada al proyecto.</div>'}</div>
+      ${hechas.length?`<details class="hechas-fold"${microHechasAbiertas?' open':''} ontoggle="toggleMicroHechas(this.open)"><summary>Completadas <span>${hechas.length}</span></summary><div class="queue">${hechas.map(microRow).join('')}</div></details>`:''}
     </div>`;
   }
   function microRow(t){
@@ -2726,6 +2612,7 @@
     $('am-title').textContent=a?'Editar actividad':'Nueva actividad';
     $('am-name').value=a?a.name:'';$('am-resp').value=a?((a.responsables&&a.responsables.length)?a.responsables.join(', '):(a.responsable||'')):'';
     $('am-start').value=a&&a.startDate?a.startDate:'';$('am-deadline').value=a&&a.deadline?a.deadline:'';
+    $('am-rstart').value=a&&a.realStart?a.realStart:'';$('am-rend').value=a&&a.realEnd?a.realEnd:'';
     $('am-pct').value=a?a.pctComplete:0;onPctInput($('am-pct').value);
     $('am-notes').value=a&&a.notes?a.notes:'';$('am-ent').value=a&&a.entregable?a.entregable:'';$('am-del').style.display=a?'':'none';
     const secs=[...d.sections].sort((x,y)=>x.position-y.position);
@@ -2746,6 +2633,11 @@
     // El entregable solo viaja si cambió (así nada se cae si falta la migración de octubre)
     const ent=$('am-ent').value.trim(),previa=editingActivityId?(currentProjectDetail.activities.find(x=>x.id===editingActivityId)||{}).entregable||'':'';
     if(ent!==previa)body.entregable=ent;
+    // Las fechas reales solo viajan si cambiaron (así nada se cae si falta la migración)
+    const act0=editingActivityId?(currentProjectDetail.activities.find(x=>x.id===editingActivityId)||{}):{};
+    const rs=$('am-rstart').value||null,re=$('am-rend').value||null;
+    if(rs!==(act0.realStart||null))body.realStart=rs;
+    if(re!==(act0.realEnd||null)){body.realEnd=re;if(re&&body.pctComplete<100)delete body.pctComplete;}
     if(editingActivityId){
       closeModal('m-act');
       applyActivity(editingActivityId,body);
