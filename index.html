@@ -523,6 +523,66 @@
   .dep-chip button:hover{color:var(--crit)}
   .dep-add{width:auto;min-width:34px;font-size:11px;padding:3px 4px;border:1px dashed var(--line-2);border-radius:7px;color:var(--faint)}
 
+  /* HOJA DE PLAN DE TRABAJO (formato Excel: ID · entregable · días hábiles · semanas) */
+  .hoja-wrap{overflow:auto;max-height:78vh;border-radius:12px;background:var(--card);box-shadow:var(--shadow-sm),var(--ring)}
+  .hoja{border-collapse:separate;border-spacing:0;font-size:12px;min-width:100%}
+  .hoja th{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--faint);background:var(--sunk);padding:6px 6px;white-space:nowrap;position:sticky;z-index:3;border-bottom:1px solid var(--line)}
+  .hoja thead tr:nth-child(1) th{top:0;height:26px}
+  .hoja thead tr:nth-child(2) th{top:26px;height:20px}
+  .hoja thead tr:nth-child(3) th{top:46px}
+  .hoja th.mes{text-align:center;color:var(--muted);border-left:1px solid var(--line-2)}
+  .hoja th.wk{text-align:center;min-width:30px;width:30px;padding:4px 0;font-size:9px;font-variant-numeric:tabular-nums;border-left:1px solid var(--line)}
+  .hoja th.wk.now{background:var(--crit);color:#fff}
+  .hoja td{padding:3px 5px;border-bottom:1px solid var(--line);vertical-align:middle;background:var(--card)}
+  .hoja td.wk{padding:0;border-left:1px solid var(--line);height:28px;position:relative}
+  .hoja td.wk.now{background:var(--crit-bg)}
+  .hoja .stk{position:sticky;z-index:2}
+  .hoja th.stk{z-index:4}
+  .hoja .c-id{left:0;min-width:44px;width:44px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums;text-align:center}
+  .hoja .c-act{left:44px;min-width:320px;width:320px;max-width:320px;box-shadow:inset -1px 0 0 var(--line-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hoja tr.fase td{background:var(--sunk);font-weight:800;color:var(--ink)}
+  .hoja tr.fase td.c-act{font-size:11.5px;text-transform:uppercase;letter-spacing:.02em;white-space:normal}
+  .hoja tr.fase .pt-del{opacity:.35}.hoja tr.fase:hover .pt-del{opacity:1}
+  .hoja tr.fase.off td{color:var(--faint);text-decoration:line-through;font-weight:600}
+  .hoja tr.act:hover td{background:var(--sunk)}
+  .hoja tr.tarea td{font-size:11.5px;color:var(--muted);background:var(--paper)}
+  .hoja tr.tarea td.c-act{padding-left:22px}
+  .hoja tr.tarea .tt{cursor:pointer}
+  .hoja tr.tarea .tt:hover{color:var(--ink);text-decoration:underline}
+  .hoja tr.tarea.hecha .tt{text-decoration:line-through;color:var(--faint)}
+  .hoja .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .hoja .pt-in{padding:4px 5px}
+  .hoja .pt-in.fecha{width:112px;font-size:11px;padding:4px 2px}
+  .hoja .pt-in.ent{min-width:170px}
+  .hoja .pt-in.rsp{min-width:125px}
+  .hoja .pctbox{display:flex;align-items:center;gap:2px;justify-content:flex-end}
+  .hoja .pctbox .pt-in{width:48px}
+  .hoja .deps{font-size:10.5px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .hoja .addrow input{width:100%;border:none;background:transparent;font-family:inherit;font-size:12px;color:var(--ink);outline:none;padding:4px 0}
+  .hoja .addrow input::placeholder{color:var(--faint)}
+  .hj-plan{position:absolute;left:0;right:0;top:8px;bottom:8px;background:var(--accent-soft);box-shadow:inset 0 0 0 1px rgba(138,106,0,.25)}
+  .hj-plan.fase{background:rgba(26,23,18,.10);box-shadow:none;top:10px;bottom:10px}
+  .hj-real{position:absolute;left:0;right:0;top:8px;bottom:8px;background:var(--accent-ink)}
+  .hj-real.fase{background:var(--muted);top:10px;bottom:10px}
+  .hj-real.hecha{background:var(--good)}
+  .hj-real.tarde{background:var(--crit)}
+  .hj-ms{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--accent-ink);z-index:1}
+  .hj-dot{position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--muted)}
+  .hj-dot.hecha{background:var(--good)}.hj-dot.tarde{background:var(--crit)}.hj-dot.curso{background:var(--accent-ink)}
+  .est{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:100px;white-space:nowrap}
+  .est.Completada{background:var(--good-bg);color:var(--good)}
+  .est.Atrasada{background:var(--crit-bg);color:var(--crit)}
+  .est.En-curso{background:var(--accent-soft);color:var(--accent-ink)}
+  .est.Por-iniciar{background:var(--sunk);color:var(--muted)}
+  .hj-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:10.5px;color:var(--muted);margin-top:10px;align-items:center}
+  .hj-legend .sw{display:inline-block;width:18px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle}
+  .hj-sueltas{margin-top:14px;background:var(--sunk);border-radius:12px;padding:12px 14px}
+  .hj-sueltas .row{display:flex;gap:10px;align-items:center;padding:5px 0;border-top:1px solid var(--line);font-size:12px}
+  .hj-sueltas .row:first-of-type{border-top:none}
+  .hj-sueltas .row .tt{flex:1;min-width:0;cursor:pointer}
+  .hj-sueltas .row select{max-width:320px}
+  .hj-empty{padding:28px 18px;text-align:center;color:var(--muted);font-size:13px}
+
   /* MICROTAREAS DEL PROYECTO */
   .micro-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
   .micro-add{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--sunk);border-radius:12px;padding:8px 10px;margin-bottom:12px}
@@ -854,6 +914,7 @@
         <div class="hint" style="font-size:10px;color:var(--faint);margin-top:4px">No hay que elegir estado: en 0% queda pendiente, con avance pasa a en curso y en 100% queda completada.</div>
       </div>
       <div class="field"><label>Depende de (opcional)</label><div id="am-deps" style="display:flex;flex-direction:column;gap:6px;max-height:150px;overflow-y:auto;background:var(--sunk);border-radius:10px;padding:9px 11px"></div><div class="hint" style="font-size:10px;color:var(--faint);margin-top:4px">Marca todas las actividades que deben terminar antes. También puedes arrastrar el punto del borde de una barra del Gantt hasta otra.</div></div>
+      <div class="field"><label>Entregable / resultado</label><input type="text" id="am-ent" placeholder="Ej: Certificado de existencia y representación legal"></div>
       <div class="field"><label>Notas</label><textarea id="am-notes" rows="2"></textarea></div>
     </div>
     <div class="modal-f">
@@ -880,6 +941,23 @@
     <div class="modal-f">
       <button class="btn btn-danger btn-sm" id="pm-del" onclick="deleteProjectFromModal()" style="display:none">Eliminar</button>
       <div style="display:flex;gap:8px"><button class="btn btn-ghost" onclick="closeModal('m-proj')">Cancelar</button><button class="btn btn-primary" onclick="saveProject()">Guardar</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PLANTILLA DE PLAN DE TRABAJO -->
+<div class="backdrop" id="m-tpl" onclick="if(event.target===this)closeModal('m-tpl')">
+  <div class="modal">
+    <div class="modal-h"><h3>Cargar plan de trabajo</h3><button class="x-close" onclick="closeModal('m-tpl')">×</button></div>
+    <div class="modal-b">
+      <div class="field"><label>Plantilla</label><select id="tpl-key" onchange="renderTplInfo()"></select></div>
+      <div class="field"><label>Inicio del plan</label><input type="date" id="tpl-inicio"><div class="hint" style="font-size:10px;color:var(--faint);margin-top:4px">Las fechas se proponen en días hábiles (sin festivos de Colombia) desde aquí, respetando las dependencias. Son una propuesta: ajústalas en la hoja.</div></div>
+      <div id="tpl-info"></div>
+      <div class="hintbox">Se carga en <strong id="tpl-proj"></strong>. No duplica nada: si una fase o actividad ya existe con el mismo nombre, se respeta. Las fases por defecto que estén vacías se reemplazan. Al final, tus tareas de este proyecto se ubican solas en la actividad que les corresponde (las que no calcen quedan abajo para que las ubiques tú).</div>
+    </div>
+    <div class="modal-f">
+      <span></span>
+      <div style="display:flex;gap:8px"><button class="btn btn-ghost" onclick="closeModal('m-tpl')">Cancelar</button><button class="btn btn-primary" id="tpl-go" onclick="cargarPlantilla()">Cargar plan</button></div>
     </div>
   </div>
 </div>
@@ -1340,9 +1418,11 @@
   let projView='tablero';
   let planView='gantt';          // cómo se ve el plan de trabajo: 'gantt' | 'tabla'
   let microFilter='pendientes';  // microtareas: pendientes | curso | hechas | todas
+  let hojaTareas=true;           // hoja de trabajo: mostrar tareas bajo cada actividad
   let ganttColW=270;             // ancho de la columna de títulos del Gantt
   try{
     planView=localStorage.getItem('planViewV1')||'gantt';
+    hojaTareas=localStorage.getItem('hojaTareasV1')!=='0';
     const w=parseInt(localStorage.getItem('ganttColW'),10);
     if(w>=160&&w<=680)ganttColW=w;
   }catch{}
@@ -1699,8 +1779,12 @@
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <span class="plan-hint">${planView==='gantt'
           ? 'El % manda: al ponerlo, la actividad pasa a «en curso», y al llegar a 100% queda completada. Arrastra ⠿ para reordenar, el punto del borde de una barra hasta otra fila para conectarlas, y el borde de la columna «Actividad» para ensancharla.'
+          : planView==='hoja'
+          ? 'Hoja semanal tipo Excel: las casillas se editan y se guardan al salir. Debajo de cada actividad van sus tareas del día a día.'
           : 'Diligencia aquí toda la data: se guarda al salir de cada casilla. El estado sale solo del % de avance.'}</span>
+        ${planView==='hoja'?`<button class="fchip ${hojaTareas?'on':''}" onclick="toggleHojaTareas()" title="Mostrar u ocultar las tareas debajo de cada actividad">↳ Tareas</button>`:''}
         <div class="toggle">
+          <button class="${planView==='hoja'?'on':''}" onclick="setPlanView('hoja')">📋 Hoja de trabajo</button>
           <button class="${planView==='gantt'?'on':''}" onclick="setPlanView('gantt')">📊 Gantt</button>
           <button class="${planView==='tabla'?'on':''}" onclick="setPlanView('tabla')">▤ Tabla</button>
         </div>
@@ -1708,6 +1792,7 @@
     </div>`;
   }
   function planBodyHtml(d){
+    if(planView==='hoja')return hojaHtml(d);
     return planView==='gantt'?ganttHtml(d)+legendHtml():planTableHtml(d);
   }
   // Repinta solo lo que cambia con una edición: indicadores y plan. Sin recargar nada.
@@ -1719,11 +1804,14 @@
     $('p-signals').innerHTML=planVsRealHtml(d.summary)+critHtml(d.summary);
     const sc=$('gantt-scroll'),keepG=sc?sc.scrollLeft:0;
     const tb=document.querySelector('.ptable-wrap'),keepT=tb?tb.scrollLeft:0;
+    const hj=document.querySelector('.hoja-wrap'),keepH=hj?[hj.scrollLeft,hj.scrollTop]:null;
     $('plan-head-wrap').innerHTML=planHeadHtml();
     $('plan-body').innerHTML=planBodyHtml(d);
     if(planView==='gantt'){
       const n=$('gantt-scroll');if(n&&keepG)n.scrollLeft=keepG;
       requestAnimationFrame(drawDepLinks);
+    }else if(planView==='hoja'){
+      const n=document.querySelector('.hoja-wrap');if(n&&keepH){n.scrollLeft=keepH[0];n.scrollTop=keepH[1];}
     }else{
       const n=document.querySelector('.ptable-wrap');if(n&&keepT)n.scrollLeft=keepT;
     }
@@ -1744,6 +1832,7 @@
       <div class="panel-h">
         <div><div class="nm">${esc(d.name)} ${badge}</div><div class="meta">👤 ${d.responsable?esc(d.responsable):'sin responsable'} <button class="btn btn-ghost btn-sm" style="padding:1px 7px" onclick="editResponsable()">✎</button>${d.descripcion?' · '+esc(d.descripcion):''}</div></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-soft btn-sm" onclick="openTplModal()" title="Cargar un plan de trabajo prediseñado en este proyecto">📥 Plantilla de plan</button>
           <button class="btn btn-soft btn-sm" onclick="openShareModal()">🔗 Compartir Gantt</button>
           <button class="btn btn-soft btn-sm" onclick="openProjectModal('${d.id}')">✎ Editar proyecto</button>
         </div>
@@ -2201,7 +2290,7 @@
     const groups=secs.map(s=>({id:s.id,name:s.name,sec:s,acts:acts.filter(a=>a.sectionId===s.id)}));
     const orphans=acts.filter(a=>!a.sectionId||!secs.some(s=>s.id===a.sectionId));
     if(orphans.length)groups.push({id:null,name:'Otras',sec:null,acts:orphans});
-    const cols=11;
+    const cols=12;
     const rows=groups.map(g=>{
       if(g.sec&&g.sec.enabled===false){
         return `<tr class="sec off"><td colspan="${cols}">${esc(g.name)} · no aplica <button class="pt-del" onclick="toggleSection('${g.id}',true)" title="Volver a activar">☑ activar</button></td></tr>`;
@@ -2215,7 +2304,7 @@
     }).join('');
     const addSec=`<tr class="addrow"><td colspan="${cols}"><input placeholder="＋ Nueva fase (Enter)" onkeydown="if(event.key==='Enter')addSectionInline(this)"></td></tr>`;
     return `<div class="ptable-wrap"><table class="ptable">
-      <thead><tr><th style="width:52px"></th><th style="min-width:250px">Actividad</th><th style="min-width:150px">Fase</th><th style="min-width:170px">Responsables</th><th style="min-width:142px">Inicio</th><th style="min-width:142px">Fin</th><th style="min-width:126px">Estado</th><th style="width:66px">%</th><th style="min-width:190px">Depende de</th><th style="min-width:170px">Notas</th><th style="width:34px"></th></tr></thead>
+      <thead><tr><th style="width:52px"></th><th style="min-width:250px">Actividad</th><th style="min-width:150px">Fase</th><th style="min-width:170px">Responsables</th><th style="min-width:142px">Inicio</th><th style="min-width:142px">Fin</th><th style="min-width:126px">Estado</th><th style="width:66px">%</th><th style="min-width:190px">Depende de</th><th style="min-width:190px">Entregable</th><th style="min-width:170px">Notas</th><th style="width:34px"></th></tr></thead>
       <tbody>${rows}${addSec}</tbody></table></div>`;
   }
   function ptRow(a,secs){
@@ -2234,6 +2323,7 @@
       <td><span class="st-badge" title="El estado sale del % de avance"><span class="g-sdot" style="background:${stCol}"></span>${AS[a.estadoEfectivo]||a.status}</span></td>
       <td><input type="number" min="0" max="100" step="5" class="pt-in pct" data-cell="${a.id}:pct" value="${a.pctComplete}" title="0% pendiente · 1-99% en curso · 100% completada" onchange="patchActivity('${a.id}',{pctComplete:Number(this.value)})"></td>
       <td>${depCellHtml(a)}</td>
+      <td><input class="pt-in" data-cell="${a.id}:ent" value="${esc(a.entregable||'')}" placeholder="—" onchange="patchActivity('${a.id}',{entregable:this.value.trim()})"></td>
       <td><input class="pt-in" data-cell="${a.id}:notes" value="${esc(a.notes||'')}" placeholder="—" onchange="patchActivity('${a.id}',{notes:this.value})"></td>
       <td><button class="pt-del" onclick="removeActivity('${a.id}')" title="Eliminar actividad">🗑</button></td>
     </tr>`;
@@ -2268,6 +2358,232 @@
       toast('Eliminada');
     }catch(e){d.activities=respaldo;recomputeLocal(false);renderPlan();toast('⚠ '+e.message,false);}
     finally{marcarGuardando(-1);}
+  }
+
+  // ---------- HOJA DE PLAN DE TRABAJO (formato Excel) ----------
+  // ID · Actividad · Responsable · Entregable · Inicio · Fin · Días hábiles ·
+  // % Avance · Estado · Depende de · cronograma semanal. Las tareas del día a
+  // día van debajo de su actividad; las que no tienen actividad, al final.
+  const MESES=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+  const festivosCache={};
+  function festivosCO(y){
+    if(festivosCache[y])return festivosCache[y];
+    const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3);
+    const h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451);
+    const pas=`${y}-${String(Math.floor((h+l-7*m+114)/31)).padStart(2,'0')}-${String((h+l-7*m+114)%31+1).padStart(2,'0')}`;
+    const lunes=iso=>{const dow=new Date(iso+'T12:00:00Z').getUTCDay();return dow===1?iso:addDays(iso,(8-dow)%7);};
+    const f2=(mm,dd)=>`${y}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}`;
+    festivosCache[y]=new Set([f2(1,1),f2(5,1),f2(7,20),f2(8,7),f2(12,8),f2(12,25),addDays(pas,-3),addDays(pas,-2),
+      lunes(f2(1,6)),lunes(f2(3,19)),lunes(f2(6,29)),lunes(f2(8,15)),lunes(f2(10,12)),lunes(f2(11,1)),lunes(f2(11,11)),
+      lunes(addDays(pas,39)),lunes(addDays(pas,60)),lunes(addDays(pas,68))]);
+    return festivosCache[y];
+  }
+  function esHabil(iso){const dow=new Date(iso+'T12:00:00Z').getUTCDay();return dow!==0&&dow!==6&&!festivosCO(Number(iso.slice(0,4))).has(iso);}
+  function habilDesde(iso){let x=iso;while(!esHabil(x))x=addDays(x,1);return x;}
+  // Equivalente a NETWORKDAYS del Excel (con festivos de Colombia)
+  function diasHabiles(ini,fin){
+    if(!ini||!fin||fin<ini)return null;
+    let n=0;for(let x=ini;x<=fin;x=addDays(x,1))if(esHabil(x))n++;
+    return n;
+  }
+  // Misma regla del Excel: Completada · Atrasada · En curso · Por iniciar
+  function estadoHoja(ini,fin,pct,today){
+    if(pct>=100)return 'Completada';
+    if(fin&&today>fin)return 'Atrasada';
+    if(ini&&today>=ini)return 'En curso';
+    if(!ini&&!fin&&pct>0)return 'En curso';
+    return 'Por iniciar';
+  }
+  function estHtml(e){return `<span class="est ${e.replace(' ','-')}">${e}</span>`;}
+  function lunesDe(iso){const dow=new Date(iso+'T12:00:00Z').getUTCDay();return addDays(iso,dow===0?-6:1-dow);}
+  function fmtCorto(iso){return new Date(iso+'T12:00:00').toLocaleDateString('es-CO',{day:'2-digit',month:'short'}).replace('.','');}
+  function toggleHojaTareas(){hojaTareas=!hojaTareas;try{localStorage.setItem('hojaTareasV1',hojaTareas?'1':'0');}catch{}renderPlan();}
+
+  // Celda semanal: barra clara = planeado · barra oscura = avance · ◆ = hito
+  function hojaCeldas(semanas,ini,fin,pct,estado,esFase,hoySem){
+    return semanas.map(w=>{
+      const wEnd=addDays(w,6),now=w===hoySem?' now':'';
+      if(!ini)return `<td class="wk${now}"></td>`;
+      const plan=ini<=wEnd&&fin>=w;
+      let real=false;
+      if(pct>0){const finReal=addDays(ini,Math.max(1,Math.round((dayDiff(ini,fin)+1)*pct/100))-1);real=ini<=wEnd&&finReal>=w;}
+      const hito=ini===fin&&plan&&!esFase;
+      const cls=esFase?' fase':'',rc=pct>=100?' hecha':estado==='Atrasada'?' tarde':'';
+      return `<td class="wk${now}">${plan&&!hito?`<div class="hj-plan${cls}"></div>`:''}${real&&!hito?`<div class="hj-real${cls}${rc}"></div>`:''}${hito?`<div class="hj-ms" style="${pct>=100?'color:var(--good)':estado==='Atrasada'?'color:var(--crit)':''}">◆</div>`:''}</td>`;
+    }).join('');
+  }
+  function hojaHtml(d){
+    const today=(d.summary&&d.summary.today)||todayISO();
+    const secs=[...(d.sections||[])].sort((a,b)=>a.position-b.position);
+    const acts=orderedActs(d);
+    const groups=secs.map(s=>({id:s.id,name:s.name,sec:s,acts:acts.filter(a=>a.sectionId===s.id)}));
+    const orphans=acts.filter(a=>!a.sectionId||!secs.some(s=>s.id===a.sectionId));
+    if(orphans.length)groups.push({id:null,name:'Otras',sec:null,acts:orphans});
+    const tareas=d.tasks||[];
+    const tareasDe=id=>tareas.filter(t=>t.activityId===id).sort((x,y)=>(x.kanbanStatus==='done')-(y.kanbanStatus==='done')||(x.dueDate||'9').localeCompare(y.dueDate||'9'));
+
+    // Códigos tipo Excel: 1, 1.1, 1.2…
+    const codigo={};let nf=0;const codFase={};
+    groups.forEach(g=>{if(g.sec&&g.sec.enabled===false)return;nf++;codFase[g.id||'_']=String(nf);g.acts.forEach((a,i)=>{codigo[a.id]=`${nf}.${i+1}`;});});
+
+    // Semanas del cronograma
+    const fechas=[today];
+    acts.forEach(a=>{if(a.startDate)fechas.push(a.startDate);if(a.deadline)fechas.push(a.deadline);});
+    if(hojaTareas)tareas.forEach(t=>{if(t.activityId&&t.dueDate)fechas.push(t.dueDate);});
+    fechas.sort();
+    const w0=lunesDe(fechas[0]);let wN=lunesDe(fechas[fechas.length-1]);
+    if(dayDiff(w0,wN)<7*11)wN=addDays(w0,7*11);
+    const semanas=[];for(let w=w0;w<=wN&&semanas.length<80;w=addDays(w,7))semanas.push(w);
+    const hoySem=lunesDe(today);
+    const variosAnios=semanas[0].slice(0,4)!==semanas[semanas.length-1].slice(0,4);
+    const meses=[];semanas.forEach(w=>{const k=w.slice(0,7);const u=meses[meses.length-1];if(u&&u.k===k)u.n++;else meses.push({k,n:1});});
+    const nW=semanas.length,FIJAS=10,COLS=FIJAS+nW;
+
+    const head=`<thead>
+      <tr>
+        <th class="stk c-id" rowspan="3">ID</th><th class="stk c-act" rowspan="3">Actividad</th>
+        <th rowspan="3">Responsable</th><th rowspan="3">Entregable / resultado</th><th rowspan="3">Inicio</th><th rowspan="3">Fin</th>
+        <th rowspan="3" title="Días hábiles, sin fines de semana ni festivos de Colombia">Días háb.</th><th rowspan="3">% Avance</th><th rowspan="3">Estado</th><th rowspan="3">Depende de</th>
+        ${meses.map(m=>`<th class="mes" colspan="${m.n}">${MESES[Number(m.k.slice(5,7))-1]}${variosAnios?' '+m.k.slice(2,4):''}</th>`).join('')}
+      </tr>
+      <tr>${semanas.map((w,i)=>`<th class="wk${w===hoySem?' now':''}" title="Semana del ${fmtDate(w)}">S${i+1}</th>`).join('')}</tr>
+      <tr>${semanas.map(w=>`<th class="wk${w===hoySem?' now':''}" title="Lunes ${fmtDate(w)}">${Number(w.slice(8,10))}</th>`).join('')}</tr>
+    </thead>`;
+
+    const vacias=semanas.map(w=>`<td class="wk${w===hoySem?' now':''}"></td>`).join('');
+    const filas=groups.map(g=>{
+      if(g.sec&&g.sec.enabled===false){
+        return `<tr class="fase off"><td class="stk c-id"></td><td class="stk c-act">${esc(g.name)} · no aplica <button class="pt-del" onclick="toggleSection('${g.id}',true)" title="Volver a activar">☑ activar</button></td><td colspan="${FIJAS-2}"></td>${vacias}</tr>`;
+      }
+      const cf=codFase[g.id||'_'];
+      const fs=[];g.acts.forEach(a=>{if(a.startDate)fs.push(a.startDate);if(a.deadline)fs.push(a.deadline);});fs.sort();
+      const fIni=fs[0]||null,fFin=fs[fs.length-1]||null;
+      const avg=g.acts.length?Math.round(g.acts.reduce((s,a)=>s+a.pctComplete,0)/g.acts.length):0;
+      const estF=g.acts.length?estadoHoja(fIni,fFin,avg,today):'';
+      const dh=diasHabiles(fIni,fFin);
+      const tools=g.id?` <button class="pt-del" onclick="renameSection('${g.id}')" title="Renombrar fase">✎</button> <button class="pt-del" onclick="toggleSection('${g.id}',false)" title="Esta fase no aplica">◻</button>${g.acts.length?'':` <button class="pt-del" onclick="removeSection('${g.id}')" title="Eliminar fase vacía">🗑</button>`}`:'';
+      const faseRow=`<tr class="fase"><td class="stk c-id">${cf}</td><td class="stk c-act">${esc(g.name)}${tools}</td><td></td><td></td>
+        <td class="num">${fIni?fmtCorto(fIni):''}</td><td class="num">${fFin?fmtCorto(fFin):''}</td><td class="num">${dh!=null?dh:''}</td>
+        <td class="num">${g.acts.length?avg+'%':''}</td><td>${estF?estHtml(estF):''}</td><td></td>
+        ${hojaCeldas(semanas,fIni,fFin,avg,estF,true,hoySem)}</tr>`;
+      const actRows=g.acts.map(a=>{
+        const ini=a.startDate||a.deadline,fin=a.deadline||a.startDate;
+        const est=estadoHoja(a.startDate,a.deadline,a.pctComplete,today);
+        const resp=(a.responsables&&a.responsables.length)?a.responsables.join(', '):(a.responsable||'');
+        const deps=(a.dependsOnIds||[]).map(id=>codigo[id]).filter(Boolean).join(', ');
+        const dh2=diasHabiles(a.startDate,a.deadline);
+        const cp=a.critical?`style="color:${a.criticaEnRiesgo?'var(--cp-late-ink)':'var(--cp-ink)'}" title="Ruta crítica · abrir detalle"`:'title="Abrir detalle (dependencias, notas)"';
+        let row=`<tr class="act">
+          <td class="stk c-id"><button class="pt-del" style="font-size:11.5px;font-weight:700;color:inherit" ${cp} onclick="openActivityModal('${a.id}')">${codigo[a.id]||''}</button></td>
+          <td class="stk c-act"><input class="pt-in nm" data-cell="${a.id}:hname" value="${esc(a.name)}" title="${esc(a.name)}" onchange="patchActivity('${a.id}',{name:this.value.trim()})"></td>
+          <td><input class="pt-in rsp" data-cell="${a.id}:hresp" value="${esc(resp)}" placeholder="—" title="Separa varios con coma" onchange="patchActivity('${a.id}',{responsables:this.value})"></td>
+          <td><input class="pt-in ent" data-cell="${a.id}:hent" value="${esc(a.entregable||'')}" placeholder="—" title="${esc(a.entregable||'')}" onchange="patchActivity('${a.id}',{entregable:this.value.trim()})"></td>
+          <td><input type="date" class="pt-in fecha" data-cell="${a.id}:hstart" value="${a.startDate||''}" onchange="patchActivity('${a.id}',{startDate:this.value||null})"></td>
+          <td><input type="date" class="pt-in fecha" data-cell="${a.id}:hend" value="${a.deadline||''}"${est==='Atrasada'?' style="color:var(--crit);font-weight:700"':''} onchange="patchActivity('${a.id}',{deadline:this.value||null})"></td>
+          <td class="num">${dh2!=null?dh2:''}</td>
+          <td><div class="pctbox"><input type="number" min="0" max="100" step="5" class="pt-in pct" data-cell="${a.id}:hpct" value="${a.pctComplete}" onchange="patchActivity('${a.id}',{pctComplete:Number(this.value)})">%</div></td>
+          <td>${estHtml(est)}</td>
+          <td class="deps">${deps||'—'}</td>
+          ${hojaCeldas(semanas,ini,fin,a.pctComplete,est,false,hoySem)}
+        </tr>`;
+        if(hojaTareas)row+=tareasDe(a.id).map(t=>hojaTareaRow(t,semanas,hoySem,today)).join('');
+        return row;
+      }).join('');
+      const add=`<tr class="addrow"><td class="stk c-id"></td><td class="stk c-act" colspan="1"><input placeholder="＋ Actividad en ${esc(g.name)} (Enter)" onkeydown="if(event.key==='Enter')addActivityInline('${g.id||''}',this)"></td><td colspan="${COLS-2}"></td></tr>`;
+      return faseRow+actRows+add;
+    }).join('');
+    const addSec=`<tr class="addrow"><td class="stk c-id"></td><td class="stk c-act"><input placeholder="＋ Nueva fase (Enter)" onkeydown="if(event.key==='Enter')addSectionInline(this)"></td><td colspan="${COLS-2}"></td></tr>`;
+
+    const vacio=acts.length?'':`<div class="hj-empty">Este proyecto aún no tiene plan de trabajo.<br><br><button class="btn btn-primary btn-sm" onclick="openTplModal()">📥 Cargar plantilla de plan</button> <span style="margin:0 6px;color:var(--faint)">o</span> escribe las actividades abajo, fase por fase.</div>`;
+    return `${vacio}<div class="hoja-wrap"><table class="hoja">${head}<tbody>${filas}${addSec}</tbody></table></div>
+      <div class="hj-legend">
+        <span><span class="sw" style="background:var(--accent-soft);box-shadow:inset 0 0 0 1px rgba(138,106,0,.25)"></span>Planeado</span>
+        <span><span class="sw" style="background:var(--accent-ink)"></span>Avance</span>
+        <span><span class="sw" style="background:var(--good)"></span>Completado</span>
+        <span><span class="sw" style="background:var(--crit)"></span>Atrasado</span>
+        <span>◆ Hito (inicio = fin)</span>
+        <span><span class="sw" style="background:var(--crit);width:10px"></span>Semana actual</span>
+        <span>● Tarea (en su fecha límite)</span>
+        <span>Días háb. sin fines de semana ni festivos de Colombia · ID morado = ruta crítica</span>
+      </div>
+      ${hojaSueltasHtml(d,acts,codigo)}`;
+  }
+  function hojaTareaRow(t,semanas,hoySem,today){
+    const hecha=t.kanbanStatus==='done',vencida=!hecha&&t.dueDate&&t.dueDate<today;
+    const est=hecha?'<span class="est Completada">Hecha</span>':vencida?'<span class="est Atrasada">Vencida</span>':t.kanbanStatus==='doing'?'<span class="est En-curso">En curso</span>':'<span class="est Por-iniciar">Por hacer</span>';
+    const dot=hecha?'hecha':vencida?'tarde':t.kanbanStatus==='doing'?'curso':'';
+    const celdas=semanas.map(w=>{const now=w===hoySem?' now':'';const aqui=t.dueDate&&t.dueDate>=w&&t.dueDate<=addDays(w,6);return `<td class="wk${now}">${aqui?`<span class="hj-dot ${dot}" title="${esc(t.title)} · ${fmtDate(t.dueDate)}"></span>`:''}</td>`;}).join('');
+    return `<tr class="tarea ${hecha?'hecha':''}">
+      <td class="stk c-id"><button class="pt-del" title="${hecha?'Reabrir':'Marcar hecha'}" onclick="${hecha?`quickStatus('${t.id}','todo')`:`quickDone('${t.id}',event)`}">${hecha?'☑':'☐'}</button></td>
+      <td class="stk c-act"><span class="tt" onclick="openTaskModal('${t.id}')" title="${esc(t.title)}">↳ ${esc(t.title)}</span></td>
+      <td>${t.tipoGestion&&t.tipoGestion!=='Propia'?esc(t.tipoGestion):''}</td><td></td><td></td>
+      <td class="num">${t.dueDate?fmtCorto(t.dueDate):''}</td><td></td><td></td><td>${est}</td><td></td>${celdas}</tr>`;
+  }
+  // Tareas del proyecto que aún no cuelgan de ninguna actividad del plan
+  function hojaSueltasHtml(d,acts,codigo){
+    const sueltas=(d.tasks||[]).filter(t=>!t.activityId&&t.kanbanStatus!=='done');
+    if(!sueltas.length||!acts.length)return '';
+    const opts='<option value="">Ubicar en…</option>'+acts.map(a=>`<option value="${a.id}">${codigo[a.id]?codigo[a.id]+' · ':''}${esc(a.name)}</option>`).join('');
+    return `<div class="hj-sueltas">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+        <div class="subhead" style="margin:0">Tareas sin ubicar en el plan · ${sueltas.length}</div>
+        <button class="btn btn-soft btn-sm" onclick="ubicarTareasAuto()" title="Busca la actividad que corresponde a cada tarea según sus palabras">🔗 Ubicar automáticamente</button>
+      </div>
+      ${sueltas.map(t=>`<div class="row"><span class="tt" onclick="openTaskModal('${t.id}')">${esc(t.title)}${t.dueDate?` <span style="color:var(--faint);font-size:11px">· ${fmtDate(t.dueDate)}</span>`:''}</span><select class="pt-in" style="width:auto;border-color:var(--line-2)" onchange="if(this.value)ubicarTarea('${t.id}',this.value)">${opts}</select></div>`).join('')}
+    </div>`;
+  }
+  async function ubicarTarea(taskId,activityId){
+    const d=currentProjectDetail;if(!d)return;
+    const t=(d.tasks||[]).find(x=>x.id===taskId),a=(d.activities||[]).find(x=>x.id===activityId);
+    const antes=t?{activityId:t.activityId,activityName:t.activityName}:null;
+    if(t){t.activityId=activityId;t.activityName=a?a.name:null;}
+    renderPlan();renderMicro();
+    try{await api('/api/tasks/'+taskId,'PATCH',{activityId});toast('✓ Tarea ubicada');loadData();}
+    catch(e){if(t&&antes)Object.assign(t,antes);renderPlan();renderMicro();toast('⚠ '+e.message,false);}
+  }
+  async function ubicarTareasAuto(){
+    const d=currentProjectDetail;if(!d)return;
+    try{
+      const r=await api(`/api/projects/${d.id}?res=ubicar`,'POST');
+      toast(r.ubicadas?`✓ ${r.ubicadas} tarea${r.ubicadas===1?'':'s'} ubicada${r.ubicadas===1?'':'s'}`:'No encontré a qué actividad corresponde ninguna: ubícalas a mano');
+      if(r.ubicadas){await refreshProjectDetail();loadData();}
+    }catch(e){toast('⚠ '+e.message,false);}
+  }
+
+  // ---------- PLANTILLAS DE PLAN ----------
+  let plantillasCache=null;
+  async function openTplModal(){
+    const d=currentProjectDetail;if(!d)return;
+    $('tpl-proj').textContent=d.name;
+    $('tpl-inicio').value=habilDesde(addDays(todayISO(),1));
+    $('tpl-go').disabled=false;
+    openModal('m-tpl');
+    try{
+      if(!plantillasCache)plantillasCache=(await api(`/api/projects/${d.id}?res=plantilla`)).plantillas;
+      $('tpl-key').innerHTML=plantillasCache.map(p=>`<option value="${p.key}">${esc(p.nombre)}</option>`).join('');
+      renderTplInfo();
+    }catch(e){$('tpl-info').innerHTML=`<div class="q-empty">⚠ ${esc(e.message)}</div>`;}
+  }
+  function renderTplInfo(){
+    const p=(plantillasCache||[]).find(x=>x.key===$('tpl-key').value);
+    $('tpl-info').innerHTML=p?`<div style="font-size:12px;color:var(--muted);margin-bottom:12px">${esc(p.descripcion)}<ol style="margin:8px 0 0 18px;padding:0;line-height:1.7">${p.fases.map(f=>`<li>${esc(f)}</li>`).join('')}</ol><div style="margin-top:6px;font-weight:650;color:var(--ink)">${p.fases.length} fases · ${p.actividades} actividades con responsable, entregable y dependencias</div></div>`:'';
+  }
+  async function cargarPlantilla(){
+    const d=currentProjectDetail;if(!d)return;
+    const key=$('tpl-key').value,inicio=$('tpl-inicio').value||null;
+    if(!key)return;
+    $('tpl-go').disabled=true;
+    try{
+      const {resultado:r}=await api(`/api/projects/${d.id}?res=plantilla`,'POST',{key,inicio});
+      closeModal('m-tpl');
+      const partes=[`${r.creadas} actividades`];
+      if(r.omitidas)partes.push(`${r.omitidas} ya existían`);
+      if(r.tareasUbicadas)partes.push(`${r.tareasUbicadas} tareas ubicadas`);
+      toast('✓ Plan cargado · '+partes.join(' · '));
+      planView='hoja';try{localStorage.setItem('planViewV1','hoja');}catch{}
+      await refreshProjectDetail();
+      loadData();
+    }catch(e){toast('⚠ '+e.message,false);$('tpl-go').disabled=false;}
   }
 
   // ---------- MICROTAREAS DEL PROYECTO ----------
@@ -2411,7 +2727,7 @@
     $('am-name').value=a?a.name:'';$('am-resp').value=a?((a.responsables&&a.responsables.length)?a.responsables.join(', '):(a.responsable||'')):'';
     $('am-start').value=a&&a.startDate?a.startDate:'';$('am-deadline').value=a&&a.deadline?a.deadline:'';
     $('am-pct').value=a?a.pctComplete:0;onPctInput($('am-pct').value);
-    $('am-notes').value=a&&a.notes?a.notes:'';$('am-del').style.display=a?'':'none';
+    $('am-notes').value=a&&a.notes?a.notes:'';$('am-ent').value=a&&a.entregable?a.entregable:'';$('am-del').style.display=a?'':'none';
     const secs=[...d.sections].sort((x,y)=>x.position-y.position);
     $('am-section').innerHTML='<option value="">— Sin fase —</option>'+secs.map(s=>`<option value="${s.id}">${esc(s.name)}${s.enabled===false?' (no aplica)':''}</option>`).join('');
     $('am-section').value=a&&a.sectionId?a.sectionId:'';
@@ -2427,6 +2743,9 @@
     const dependsOnIds=[...document.querySelectorAll('.am-dep-ck')].filter(c=>c.checked).map(c=>c.value);
     const body={name:$('am-name').value.trim(),sectionId:$('am-section').value||null,responsables:$('am-resp').value,startDate:$('am-start').value||null,deadline:$('am-deadline').value||null,pctComplete:Number($('am-pct').value),dependsOnIds,notes:$('am-notes').value.trim()||null};
     if(!body.name){toast('⚠ El nombre es obligatorio',false);return;}
+    // El entregable solo viaja si cambió (así nada se cae si falta la migración de octubre)
+    const ent=$('am-ent').value.trim(),previa=editingActivityId?(currentProjectDetail.activities.find(x=>x.id===editingActivityId)||{}).entregable||'':'';
+    if(ent!==previa)body.entregable=ent;
     if(editingActivityId){
       closeModal('m-act');
       applyActivity(editingActivityId,body);

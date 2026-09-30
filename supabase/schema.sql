@@ -53,6 +53,7 @@ create table if not exists activities (
   depends_on   uuid references activities(id) on delete set null,  -- espejo: primera dependencia
   depends_on_ids uuid[] not null default '{}', -- varias dependencias (ruta crítica)
   notes        text,
+  entregable   text,                          -- entregable / resultado (hoja de plan de trabajo)
   position     int not null default 0,
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
