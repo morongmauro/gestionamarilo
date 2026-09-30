@@ -38,3 +38,12 @@ QUÉ CAMBIÓ EN ESTA VERSIÓN
 
 6. Agrupar por etapa o por área responsable (Jurídica, Tecnología…), cada
    una con su tono de color.
+
+7. Estilo tipo Monday: estado como celda de color, columna «Cronograma» con
+   la píldora de fechas (se llena con el tiempo transcurrido), batería de
+   estados por grupo, barras gruesas con el nombre y la línea de hoy en azul.
+
+8. Ronda de estimación: en el enlace, «⏱ Estimar duraciones de tu área».
+   Cada área elige su nombre, escribe los días hábiles de sus actividades y
+   envía todo junto. Te llegan como propuestas: «Aplicar todas» las aplica
+   en el orden del plan (con la cascada de fechas).

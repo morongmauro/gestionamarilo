@@ -19,8 +19,8 @@ module.exports = async (req, res) => {
     if (req.method === 'POST') {
       // Ajuste a una actividad existente: queda como propuesta para el dueño
       if ((req.body || {}).tipo === 'ajuste') {
-        await db.shareProponerAjuste(token, req.body);
-        return res.status(201).json({ success: true });
+        const enviadas = await db.shareProponerAjuste(token, req.body);
+        return res.status(201).json({ success: true, enviadas });
       }
       const activity = await db.shareCreateActivity(token, req.body || {});
       return res.status(201).json({ activity });
@@ -29,7 +29,7 @@ module.exports = async (req, res) => {
   } catch (err) {
     console.error(err);
     const msg = err.message || 'Error';
-    const code = /no válido|revocado/.test(msg) ? 404 : /solo lectura|no se editan/.test(msg) ? 403 : /no encontrada|no válida|Escribe/.test(msg) ? 400 : 500;
+    const code = /no válido|revocado/.test(msg) ? 404 : /solo lectura|no se editan/.test(msg) ? 403 : /no encontrada|no válid|Escribe|duración|Demasiados|nada que/.test(msg) ? 400 : 500;
     res.status(code).json({ error: msg });
   }
 };
