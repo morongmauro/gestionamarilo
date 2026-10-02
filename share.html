@@ -45,7 +45,7 @@
   @media(max-width:600px){body{padding:12px 16px 32px}}
   .container{max-width:1500px;margin:0 auto}
   button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
-  .header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 12px;margin-bottom:22px;border-radius:999px;background:var(--card);box-shadow:0 2px 18px rgba(28,26,23,.06)}
+  .header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 12px;margin-bottom:14px;border-radius:999px;background:var(--card);box-shadow:0 2px 18px rgba(28,26,23,.06)}
   @media(max-width:600px){.header{border-radius:24px}}
   .brand{display:flex;align-items:center;gap:12px;min-width:0}
   .logo{width:36px;height:36px;border-radius:50%;background:var(--accent);color:#1C1A17;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;flex-shrink:0}
@@ -58,6 +58,32 @@
   .kg{background:var(--card);border-radius:22px;padding:12px 18px 14px;flex:1 1 auto;min-width:200px;box-shadow:0 1px 2px rgba(28,26,23,.03),0 6px 20px rgba(28,26,23,.04)}
   .kg-t{font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
   .kg-r{display:flex;gap:24px;flex-wrap:wrap}
+  /* Franja ejecutiva */
+  .exec{background:var(--card);border-radius:24px;padding:14px 18px;margin-bottom:14px;box-shadow:0 1px 2px rgba(28,26,23,.03),0 6px 20px rgba(28,26,23,.04)}
+  .ex-top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 30px}
+  .ex-sem{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:800;padding:7px 16px;border-radius:999px;color:#fff}
+  .ex-sem i{width:8px;height:8px;border-radius:50%;background:#fff;opacity:.9}
+  .ex-sem.verde{background:#00C875}.ex-sem.ambar{background:#FDAB3D}.ex-sem.rojo{background:#E2445C}
+  .ex-m{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .ex-l{font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+  .ex-v{font-size:19px;font-weight:800;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+  .ex-s{font-size:11.5px;color:var(--muted);font-weight:500}
+  .ex-s b{font-weight:800}.ex-s b.late,.ex-k.late{color:var(--crit)}.ex-s b.ok{color:var(--good)}
+  .ex-bar{position:relative;display:inline-block;width:90px;height:6px;border-radius:999px;background:var(--sunk);align-self:center}
+  .ex-bar i{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:var(--ink)}
+  .ex-bar u{position:absolute;top:-3px;bottom:-3px;width:2px;border-radius:2px;background:#9B5DE5}
+  .ex-sub{margin-top:10px;padding-top:10px;background:linear-gradient(90deg,color-mix(in srgb,var(--ink) 9%,transparent),transparent) top/100% 1px no-repeat;display:flex;flex-direction:column;gap:5px}
+  .ex-row{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;font-size:12px}
+  .ex-k{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);min-width:96px}
+  .ex-i b{font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
+  .ex-i em{font-style:normal;color:var(--faint)}
+  .ex-mas{font-size:11px;color:var(--faint);font-weight:700}
+  /* Bloque del equipo (abajo, discreto) */
+  .equipo{margin-top:30px;padding-top:18px;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--ink) 10%,transparent) 8%,color-mix(in srgb,var(--ink) 10%,transparent) 92%,transparent) top/100% 1px no-repeat}
+  .eq-h{font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:0 6px 4px}
+  .eq-h span{text-transform:none;letter-spacing:0;font-weight:500;color:var(--faint);margin-left:6px}
+  .equipo .ajuste{margin-top:8px;padding:0 20px;box-shadow:none;background:color-mix(in srgb,var(--card) 70%,transparent)}
+  .equipo .ajuste summary{font-size:12px;padding:11px 0}
   .sep-s{height:1px;margin:26px 0 4px;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--ink) 11%,transparent) 8%,color-mix(in srgb,var(--ink) 11%,transparent) 92%,transparent)}
   .kpis .v{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.05;font-variant-numeric:tabular-nums}
   .kpis .s{font-size:17px;font-weight:800;line-height:1.5}
@@ -129,12 +155,11 @@
     </div>
     <span class="role view" id="p-role">…</span>
   </div>
-  <div class="kpis" id="kpis"></div>
-  <div class="planbar" id="planbar"></div>
-  <div class="hint" id="hint"></div>
+  <div class="exec" id="exec"></div>
   <div id="plan"><div class="q-empty">Cargando plan…</div></div>
 
-  <div class="sep-s"></div>
+  <section class="equipo" id="equipo" style="display:none">
+  <div class="eq-h">Para el equipo del proyecto <span>¿Falta algo o una fecha no cuadra? Propónlo: quien lleva el plan lo revisa.</span></div>
   <details class="ajuste" id="addbox" style="display:none">
     <summary id="add-title">¿Falta algo? Propón una actividad</summary>
     <div class="body">
@@ -185,6 +210,7 @@
       <div class="addfoot"><span class="note" id="aj-note"></span><button class="btn btn-soft" id="a-go" onclick="proponerAjuste()">Enviar propuesta</button></div>
     </div>
   </details>
+  </section>
 </div>
 <datalist id="dl-personas"></datalist>
 <div class="toast" id="toast"></div>
@@ -194,14 +220,18 @@
   const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const token=location.pathname.split('/').filter(Boolean).pop();
   const API='/api/share/'+encodeURIComponent(token);
-  const LS='planShareOptsV1';
+  const LS='planShareOptsV2';
   let DATA=null;
   let toastT=null;
   function toast(msg,ok=true){const el=$('toast');el.textContent=msg;el.classList.toggle('err',!ok);el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),2800);}
   const todayISO=()=>new Date().toLocaleDateString('en-CA');
   function fmtDate(iso){if(!iso)return '—';return new Date(iso+'T12:00:00').toLocaleDateString('es-CO',{day:'numeric',month:'short'});}
   // El enlace ve el plan y propone; no cambia lo que ya está asentado
-  const opts=Plan.opciones(LS,{owner:false,editable:false,panel:true});
+  // Para directivos: el Gantt es el protagonista; panel y opciones quedan a un clic
+  const opts=Plan.opciones(LS,{owner:false,editable:false,panel:false,compacto:true,zoom:'ajustar'});
+  opts.compacto=true;
+  // Ancho del cronograma en «Todo»: lo que queda al lado de las columnas
+  function anchoCronograma(){const c=document.querySelector('.container');const w=(c?c.clientWidth:window.innerWidth)-(opts.panel?240:0);return Math.max(360,w-(window.innerWidth<700?260:820));}
   opts.editable=false;
   let nombre='';try{nombre=localStorage.getItem('planShareNombre')||'';}catch(e){}
   function recordarNombre(v){nombre=String(v||'').trim();try{localStorage.setItem('planShareNombre',nombre);}catch(e){}['n-quien','a-quien','e-nombre'].forEach(id=>{if($(id)&&!$(id).value)$(id).value=nombre;});}
@@ -228,32 +258,37 @@
     $('p-sub').textContent=(p.responsable?'Responsable: '+p.responsable+' · ':'')+'Plan de trabajo compartido'+(DATA.label?' con '+DATA.label:'');
     const r=$('p-role');r.className='role view';r.textContent='👁 Ver y proponer';
     document.title=p.name+' · Plan de trabajo';
-    const meta=p.fechaMeta,dif=meta&&s.fechaFinal?Plan.cal.difHabiles(meta,s.fechaFinal):null;
-    $('kpis').innerHTML=`
-      <div class="kg"><div class="kg-t">Avance</div><div class="kg-r">
-        <div><div class="v">${s.avance}%</div><div class="l">Ejecutado</div></div>
-        <div><div class="v">${s.avanceEsperado!=null?s.avanceEsperado+'%':'—'}</div><div class="l">Plan a hoy</div></div>
-        <div><div class="v">${s.completadas}/${s.totalActividades}</div><div class="l">Actividades listas</div></div>
-      </div></div>
-      <div class="kg"><div class="kg-t">Fechas</div><div class="kg-r">
-        <div><div class="s">${fmtDate(s.fechaFinal)}</div><div class="l">Fin del plan</div></div>
-        ${meta?`<div><div class="s">${fmtDate(meta)}</div><div class="l">Fecha meta${dif!=null?` · <strong style="color:${dif>0?'var(--crit)':'var(--good)'}">${dif>0?'se pasa '+dif+' días háb.':dif<0?'sobran '+(-dif)+' días háb.':'justo a tiempo'}</strong>`:''}</div></div>`:''}
-      </div></div>
-      <div class="kg"><div class="kg-t">Alertas</div><div class="kg-r">
-        <div><div class="v" style="color:${s.retrasos?'var(--crit)':'var(--good)'}">${s.retrasos}</div><div class="l">Atrasadas</div></div>
-        <div><div class="v" style="color:${s.proximas?'var(--warn)':'var(--ink)'}">${s.proximas}</div><div class="l">Vencen en 7 días</div></div>
-      </div></div>`;
-    if(s.avanceEsperado!=null){
-      const delta=s.avance-s.avanceEsperado,col=delta<-10?'var(--crit)':delta<0?'var(--warn)':'var(--good)';
-      $('planbar').innerHTML=`<div class="row"><span>Ejecutado <strong>${s.avance}%</strong> vs plan a hoy <strong>${s.avanceEsperado}%</strong></span><span style="color:${col}">${delta>=0?'▲ al día':'▼ '+Math.abs(delta)+' pts por detrás'}</span></div>
-        <div class="track"><div class="fill" style="width:${s.avance}%;background:${col}"></div><div class="mark" style="left:${s.avanceEsperado}%"></div></div>`;
-    }else $('planbar').innerHTML='';
-    $('hint').textContent='Elige tu etapa o tu área arriba (o tu nombre en «Involucrados») para ir directo a lo tuyo. Si falta una actividad o una fecha no cuadra, propónlo abajo: quien lleva el plan lo revisa.'+(p.lineaBaseAt?' La barra gris delgada es la línea base (lo pactado); la de color, lo proyectado.':'');
+    $('exec').innerHTML=franjaEjecutiva();
     renderPlan();
     renderAddBox();
   }
+  // ---------- Franja ejecutiva: cómo vamos, si llegamos, qué está en riesgo y qué viene ----------
+  function franjaEjecutiva(){
+    const s=DATA.summary,p=DATA.project,today=s.today||todayISO();
+    const meta=p.fechaMeta,dif=meta&&s.fechaFinal?Plan.cal.difHabiles(meta,s.fechaFinal):null;
+    const ritmo=s.avanceEsperado!=null?s.avance-s.avanceEsperado:0;
+    const nivel=(dif!=null&&dif>5)||ritmo<-15?'rojo':(s.retrasos||(dif!=null&&dif>0)||ritmo<-5)?'ambar':'verde';
+    const etiqueta={rojo:'Atrasado',ambar:'En riesgo',verde:'Al día'}[nivel];
+    Plan.etapas(modelo());
+    const acts=(DATA.activities||[]).filter(a=>!a.propuesta);
+    const atrasadas=acts.filter(a=>Plan.estado(a,today)==='Atrasada').sort((x,y)=>(x.deadline||'').localeCompare(y.deadline||''));
+    const proximos=acts.filter(a=>a.deadline&&a.deadline>=today&&Plan.estado(a,today)!=='Completada').sort((x,y)=>x.deadline.localeCompare(y.deadline)).slice(0,3);
+    const item=(a,f)=>`<span class="ex-i"><b>${a._cod||''}</b> ${esc(a.name)} <em>· ${f}</em></span>`;
+    return `<div class="ex-top">
+        <span class="ex-sem ${nivel}"><i></i>${etiqueta}</span>
+        <div class="ex-m"><span class="ex-l">Avance</span><span class="ex-v">${s.avance}%</span>${s.avanceEsperado!=null?`<span class="ex-s">plan a hoy ${s.avanceEsperado}%</span>`:''}
+          <span class="ex-bar"><i style="width:${s.avance}%"></i>${s.avanceEsperado!=null?`<u style="left:${s.avanceEsperado}%"></u>`:''}</span></div>
+        <div class="ex-m"><span class="ex-l">Fin previsto</span><span class="ex-v">${fmtDate(s.fechaFinal)}</span>${meta?`<span class="ex-s">meta ${fmtDate(meta)} · <b class="${dif>0?'late':'ok'}">${dif>0?'se pasa '+dif+' días háb.':dif<0?'llega con '+(-dif)+' días de holgura':'justo a tiempo'}</b></span>`:''}</div>
+        <div class="ex-m"><span class="ex-l">Actividades</span><span class="ex-v">${s.completadas}/${s.totalActividades}</span><span class="ex-s">listas${s.retrasos?` · <b class="late">${s.retrasos} atrasada${s.retrasos>1?'s':''}</b>`:''}</span></div>
+      </div>
+      ${atrasadas.length||proximos.length?`<div class="ex-sub">
+        ${atrasadas.length?`<div class="ex-row"><span class="ex-k late">⚠ Atrasado</span>${atrasadas.slice(0,3).map(a=>item(a,'vencía '+fmtDate(a.deadline))).join('')}${atrasadas.length>3?`<span class="ex-mas">+${atrasadas.length-3} más</span>`:''}</div>`:''}
+        ${proximos.length?`<div class="ex-row"><span class="ex-k">→ Lo que viene</span>${proximos.map(a=>item(a,fmtDate(a.deadline))).join('')}</div>`:''}
+      </div>`:''}`;
+  }
   function renderPlan(){
     const w=$('pl-wrap'),keep=w?[w.scrollLeft,w.scrollTop]:null;
+    opts.anchoTL=anchoCronograma();
     $('plan').innerHTML=Plan.render(modelo(),opts);
     requestAnimationFrame(()=>Plan.dibujarLineas());
     const n=$('pl-wrap');if(n&&keep){n.scrollLeft=keep[0];n.scrollTop=keep[1];}
@@ -264,7 +299,7 @@
     const sel=$('n-area'),prev=sel.value;
     sel.innerHTML=secs.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')||'<option value="">— Sin áreas —</option>';
     if(prev&&secs.some(s=>s.id===prev))sel.value=prev;else if(opts.grupo&&secs.some(s=>s.id===opts.grupo))sel.value=opts.grupo;
-    $('addbox').style.display='';
+    $('addbox').style.display='';$('equipo').style.display='';
     $('add-title').textContent='➕ ¿Falta algo? Propón una actividad';
     $('add-sub').textContent='Queda marcada como «Propuesta» en el plan hasta que quien lo lleva la acepte. Con la duración en días hábiles se calcula la fecha de fin (sin fines de semana ni festivos).';
     ['n-quien','a-quien'].forEach(id=>{if(!$(id).value)$(id).value=nombre;});
@@ -365,7 +400,8 @@
     finally{$('n-go').disabled=false;}
   }
 
-  window.addEventListener('resize',()=>{if(DATA)Plan.dibujarLineas();});
+  let reTimer=null;
+  window.addEventListener('resize',()=>{if(!DATA)return;clearTimeout(reTimer);reTimer=setTimeout(()=>{if(opts.zoom==='ajustar')renderPlan();else Plan.dibujarLineas();},150);});
   load();
 </script>
 </body>

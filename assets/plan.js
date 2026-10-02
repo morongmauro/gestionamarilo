@@ -127,17 +127,25 @@
   // ---------- Escala del cronograma ----------
   const ZOOM = { dia: 26, semana: 9, mes: 2.4 };
   const lunesDe = iso => { const dow = new Date(iso + 'T12:00:00Z').getUTCDay(); return addDays(iso, dow === 0 ? -6 : 1 - dow); };
-  function escala(fechas, today, zoom) {
-    const ppd = ZOOM[zoom] || ZOOM.semana;
+  // «ajustar»: todo el cronograma cabe en el ancho disponible (sin moverse a los lados)
+  function escala(fechas, today, zoom, ancho) {
     const orden = [...fechas, today].filter(Boolean).sort();
     let ini = orden[0], fin = orden[orden.length - 1];
+    if (zoom === 'ajustar') {
+      ini = lunesDe(addDays(ini, -2)); fin = addDays(fin, 6);
+      const dias = dayDiff(ini, fin) + 1;
+      const ppd = Math.max(1.2, (ancho || 700) / dias);
+      return { ini, fin, ppd, dias, W: Math.round(dias * ppd), x: iso => (dayDiff(ini, iso)) * ppd, modo: ppd * 7 >= 30 ? 'semana' : 'mes' };
+    }
+    const ppd = ZOOM[zoom] || ZOOM.semana;
     if (zoom === 'mes') { ini = ini.slice(0, 8) + '01'; const f = new Date(fin.slice(0, 8) + '01T12:00:00Z'); f.setUTCMonth(f.getUTCMonth() + 1); fin = addDays(f.toISOString().slice(0, 10), -1); }
     else { ini = lunesDe(addDays(ini, -3)); fin = addDays(lunesDe(fin), 13); }
     if (dayDiff(ini, fin) < 7 * 12) fin = addDays(ini, 7 * 12 - 1);
     const dias = dayDiff(ini, fin) + 1;
-    return { ini, fin, ppd, dias, W: Math.round(dias * ppd), x: iso => (dayDiff(ini, iso)) * ppd };
+    return { ini, fin, ppd, dias, W: Math.round(dias * ppd), x: iso => (dayDiff(ini, iso)) * ppd, modo: zoom };
   }
-  function escalaHead(E, today, zoom) {
+  function escalaHead(E, today, zoomPedido) {
+    const zoom = E.modo || zoomPedido;
     let top = '', bot = '';
     // Meses (arriba) o años (en zoom mes)
     for (let d = E.ini; d <= E.fin;) {
@@ -168,7 +176,8 @@
     return `<div class="pl-scale" style="width:${E.W}px">${top}${bot}<span class="pl-sc-hoy" style="left:${E.x(today) + E.ppd / 2}px" title="Hoy">${Number(today.slice(8, 10))}</span></div>`;
   }
   // Fondo de cada carril: franjas suaves por semana (o fin de semana en zoom día) + hoy
-  function carrilFondo(E, today, zoom) {
+  function carrilFondo(E, today, zoomPedido) {
+    const zoom = E.modo || zoomPedido;
     let bg = '';
     if (zoom === 'semana') bg = `background-image:repeating-linear-gradient(90deg,transparent 0 ${7 * E.ppd}px,var(--pl-shade) ${7 * E.ppd}px ${14 * E.ppd}px)`;
     else if (zoom === 'dia') bg = `background-image:repeating-linear-gradient(90deg,transparent 0 ${5 * E.ppd}px,var(--pl-shade) ${5 * E.ppd}px ${7 * E.ppd}px)`;
@@ -259,13 +268,13 @@
     // Interruptor con nombre claro de lo que muestra u oculta
     const sw = (on, accion, l, tip) => `<button class="pl-sw${on ? ' on' : ''}" onclick="${accion}" title="${tip}"><i></i>${l}</button>`;
     const full = opts.vista === 'tabla';
-    return `<div class="pl-opts">
+    const opciones = `<div class="pl-opts">
         <div class="pl-og"><span class="pl-ol">Vista</span>
           <div class="pl-seg">${seg('vista', 'gantt', '📊 Gantt', opts.vista || 'gantt', 'Lo esencial y el cronograma a la vista')}${seg('vista', 'tabla', '▤ Tabla completa', opts.vista || 'gantt', 'Todas las columnas: área, entregable, fechas reales, dependencias…')}</div></div>
         <div class="pl-og"><span class="pl-ol">Agrupar por</span>
           <div class="pl-seg">${seg('agrupar', 'etapa', 'Etapa', agr, 'Etapas del plan (1, 2, 3…)')}${seg('agrupar', 'area', 'Área responsable', agr, 'Área de cada responsable (según los involucrados)')}</div></div>
         <div class="pl-og"><span class="pl-ol">Escala del cronograma</span>
-          <div class="pl-seg">${seg('zoom', 'dia', 'Día', opts.zoom)}${seg('zoom', 'semana', 'Semana', opts.zoom)}${seg('zoom', 'mes', 'Mes', opts.zoom)}</div></div>
+          <div class="pl-seg">${seg('zoom', 'ajustar', 'Todo', opts.zoom, 'Todo el cronograma en el ancho de la pantalla')}${seg('zoom', 'dia', 'Día', opts.zoom)}${seg('zoom', 'semana', 'Semana', opts.zoom)}${seg('zoom', 'mes', 'Mes', opts.zoom)}</div></div>
         <div class="pl-og pl-og-sw"><span class="pl-ol">Mostrar</span>
           <div class="pl-sws">
             ${sw(opts.lineas !== false, `planSetOpt('lineas',${opts.lineas === false})`, 'Líneas de relación', 'Flechas entre actividades que dependen una de otra')}
@@ -273,8 +282,8 @@
             ${opts.owner ? sw(!!opts.tareas, `planSetOpt('tareas',${!opts.tareas})`, 'Tareas del día a día', 'Las microtareas vinculadas, debajo de cada actividad') : ''}
             ${full ? sw(!!opts.cols.entregable, "planSetOpt('col','entregable')", 'Entregable', 'Columna de entregable / resultado') + sw(!!opts.cols.real, "planSetOpt('col','real')", 'Fechas reales', 'Columnas de inicio y fin reales') + sw(!!opts.cols.deps, "planSetOpt('col','deps')", 'Depende de', 'Columna con los IDs de las que la condicionan') : ''}
           </div></div>
-      </div>
-      <div class="pl-filt">
+      </div>`;
+    const filtro = `<div class="pl-filt">
         <span class="pl-ol">Filtrar</span>
         <select class="pl-sel" onchange="planSetOpt('resp',this.value)" title="Ver solo lo de un responsable">
           <option value="">👤 Todos los responsables</option>
@@ -285,6 +294,20 @@
           ${vivas.map(chip).join('')}
         </div>
       </div>`;
+    if (!opts.compacto) return opciones + filtro;
+    // Modo compacto (enlace para directivos): una barra delgada y las opciones escondidas
+    const solo = opts.plegadas === '*';
+    return `<div class="pl-bar-c">
+        <div class="pl-areas pl-areas-c">
+          <button class="pl-chip todas${opts.grupo ? '' : ' on'}" onclick="planSetOpt('grupo',null)">${agr === 'area' ? 'Todas las áreas' : 'Todas las etapas'}</button>
+          ${vivas.map(chip).join('')}
+        </div>
+        <div class="pl-bar-r">
+          <button class="pl-optbtn${solo ? ' on' : ''}" onclick="planSetOpt('soloEtapas',${!solo})" title="Ver solo el resumen de cada etapa (vista macro)">${solo ? '▸ Ver actividades' : '▾ Solo etapas'}</button>
+          <button class="pl-optbtn${opts.verOpciones ? ' on' : ''}" onclick="planSetOpt('verOpciones',${!opts.verOpciones})" title="Vista, agrupación, escala, filtros y qué mostrar">⚙ Opciones de vista</button>
+        </div>
+      </div>
+      ${opts.verOpciones ? `<div class="pl-opts-c">${opciones}${filtro}</div>` : ''}`;
   }
 
   function celdaFecha(a, campo, editable, extra) {
@@ -383,6 +406,7 @@
 
   // Duración editable: fin = inicio + N días hábiles (sin inicio, arranca el próximo día hábil)
   let ultimoModelo = null;
+  let ultimasClaves = [];
   function cambiarDuracion(id, valor) {
     const n = Math.round(Number(valor));
     if (!(n >= 1 && n <= 365) || !ultimoModelo) return;
@@ -427,13 +451,14 @@
     const gsEt = etapas(model);
     const agr = opts.agrupar === 'area' ? 'area' : 'etapa';
     const gs = agr === 'area' ? porArea(model, gsEt) : gsEt;
+    ultimasClaves = gs.map(g => g.key);
     if (opts.grupo && !gs.some(g => g.key === opts.grupo)) opts.grupo = null;
     const editable = !!opts.editable;
     const base = !!model.lineaBase;
     // Vista «gantt»: lo esencial y el cronograma a la vista. «tabla»: todas las columnas.
     const full = opts.vista === 'tabla';
     const c0 = opts.cols || {};
-    const cols = { entregable: full && c0.entregable, real: full && c0.real, deps: full && c0.deps, dias: true, area: full, base: full && base, desvio: full && base, full };
+    const cols = { entregable: full && c0.entregable, real: full && c0.real, deps: full && c0.deps, dias: editable || full, area: full, base: full && base, desvio: full && base, full };
     ultimoModelo = model;
     const tareas = opts.owner && opts.tareas ? (model.tasks || []) : [];
     const tareasDe = id => tareas.filter(t => t.activityId === id)
@@ -445,7 +470,7 @@
     (model.activities || []).forEach(a => ['startDate', 'deadline', 'realStart', 'realEnd', 'baselineStart', 'baselineEnd'].forEach(k => { if (a[k]) fechas.push(a[k]); }));
     tareas.forEach(t => { if (t.activityId && t.dueDate) fechas.push(t.dueDate); });
     const zoom = opts.zoom || 'semana';
-    const E = escala(fechas, today, zoom);
+    const E = escala(fechas, today, zoom, opts.anchoTL);
     const fondo = carrilFondo(E, today, zoom);
     const meta = model.fechaMeta || null;
     if (meta && meta >= E.ini && meta <= E.fin) fondo.capas += `<span class="pl-meta" style="left:${E.x(addDays(meta, 1))}px" title="Fecha meta: ${fCorta(meta)}"></span>`;
@@ -471,6 +496,7 @@
 
     const filas = gs.map(g => {
       if (opts.grupo && g.key !== opts.grupo) return '';
+      const plegada = opts.plegadas === '*' || (Array.isArray(opts.plegadas) && opts.plegadas.includes(g.key));
       if (g.sec && g.sec.enabled === false) {
         if (!opts.owner || agr !== 'etapa') return '';
         return `<tr class="pl-area off"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><span class="pl-an">${esc(g.name)}</span> <span class="pl-mut">no aplica</span> <button class="pl-mini" onclick="planOnSection('on','${g.id}')">activar</button></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>`;
@@ -488,7 +514,7 @@
       const dvMax = dvs.length ? Math.max(...dvs) : null;
       const areaRow = `<tr class="pl-area" style="--c:${g.color}">
         <td class="pl-sk pl-c-id"><span class="pl-acod">${g.area ? esc(g.name.slice(0, 1).toUpperCase()) : (g.cod || '')}</span></td>
-        <td class="pl-sk pl-c-nm"><span class="pl-an">${esc(g.name)}</span><span class="pl-mut">${hechas}/${acts.length} · ${avg}%</span>${tools}</td>
+        <td class="pl-sk pl-c-nm"><button class="pl-fold" onclick="planSetOpt('plegar','${esc(g.key)}')" title="${plegada ? 'Ver sus actividades' : 'Contraer esta etapa'}">${plegada ? '▸' : '▾'}</button><span class="pl-an">${esc(g.name)}</span><span class="pl-mut">${hechas}/${acts.length} · ${avg}%</span>${tools}</td>
         <td></td>${cols.area ? '<td></td>' : ''}${cols.entregable ? '<td></td>' : ''}${cols.base ? '<td></td>' : ''}
         ${full ? `<td class="pl-d b">${fCorta(fI)}</td><td class="pl-d b">${fCorta(fF)}</td>`
           : `<td class="pl-tlc">${fI ? pildoraRango(fI, fF, today, estA, g.color) : ''}${base && dvMax != null && dvMax > 0 ? ' ' + desvioHtml(dvMax) : ''}</td>`}${cols.real ? '<td></td><td></td>' : ''}
@@ -498,9 +524,9 @@
         <td class="pl-stc">${acts.length ? bateria(acts, today) : ''}</td>${cols.deps ? '<td></td>' : ''}
         ${carril(sum)}
       </tr>`;
-      const actRows = acts.map(a => filaActividad(a, g, today, E, carril, editable, opts, cols, codigo, base) +
+      const actRows = plegada ? '' : acts.map(a => filaActividad(a, g, today, E, carril, editable, opts, cols, codigo, base) +
         tareasDe(a.id).map(t => filaTarea(t, today, E, carril, nCols)).join('')).join('');
-      const add = opts.owner && editable && agr === 'etapa' ? `<tr class="pl-add"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><input placeholder="＋ Actividad en ${esc(g.name)}" onkeydown="if(event.key==='Enter')planOnAdd('${g.id || ''}',this)"></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>` : '';
+      const add = !plegada && opts.owner && editable && agr === 'etapa' ? `<tr class="pl-add"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><input placeholder="＋ Actividad en ${esc(g.name)}" onkeydown="if(event.key==='Enter')planOnAdd('${g.id || ''}',this)"></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>` : '';
       return areaRow + actRows + add;
     }).join('');
     const addArea = opts.owner && editable && agr === 'etapa' && !opts.grupo && !opts.resp ? `<tr class="pl-add"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><input placeholder="＋ Nueva etapa" onkeydown="if(event.key==='Enter')planOnAdd('__area__',this)"></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>` : '';
@@ -538,7 +564,7 @@
       const click = has('planOnOpen') && opts.owner ? ` onclick="planOnOpen('${a.id}')"` : '';
       barra += ini === fin
         ? `<span class="pl-ms${cls}" data-id="${a.id}" style="left:${x0 + E.ppd / 2}px;--c:${g.color}" title="${tip}"${click}></span>`
-        : `<span class="pl-b${cls}" data-id="${a.id}" style="left:${x0}px;width:${w}px;--c:${g.color}" title="${tip}"${click}><i style="width:${pct}%"></i></span>`;
+        : `<span class="pl-b${cls}${w < 34 ? ' mini' : ''}" data-id="${a.id}" style="left:${x0}px;width:${w}px;--c:${g.color}" title="${tip}"${click}><i style="width:${pct}%"></i></span>`;
     }
     if (a.realStart) {
       const rf = a.realEnd || today;
@@ -647,7 +673,14 @@
     guardar(clave, o) { try { localStorage.setItem(clave, JSON.stringify({ vista: o.vista, zoom: o.zoom, agrupar: o.agrupar, panel: o.panel, lineas: o.lineas, tareas: o.tareas, cols: o.cols })); } catch (e) {} },
     cambiar(o, k, v) {
       if (k === 'col') o.cols[v] = !o.cols[v];
-      else if (k === 'agrupar') { o.agrupar = v; o.grupo = null; }
+      else if (k === 'agrupar') { o.agrupar = v; o.grupo = null; o.plegadas = []; }
+      else if (k === 'soloEtapas') o.plegadas = v ? '*' : [];
+      else if (k === 'plegar') {
+        // Contraer / expandir una etapa (si estaban todas contraídas, se abre solo esa)
+        let l = o.plegadas === '*' ? ultimasClaves.slice() : (Array.isArray(o.plegadas) ? o.plegadas.slice() : []);
+        l = l.includes(v) ? l.filter(x => x !== v) : [...l, v];
+        o.plegadas = l;
+      }
       else o[k] = v;
       return o;
     },

@@ -343,3 +343,18 @@
 .pl-nb:hover{background:var(--accent-soft);color:var(--accent-ink)}
 .pl-nb.vacio{display:none;background:transparent;color:var(--faint);font-weight:600}
 .pl tr.pl-act:hover .pl-nb.vacio{display:inline-flex}
+
+/* Modo compacto (enlace para directivos): barra delgada, opciones escondidas */
+.pl-bar-c{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.pl-areas-c{flex:1;min-width:0;flex-wrap:nowrap;overflow-x:auto;margin:0;padding:2px 0 4px;scrollbar-width:thin}
+.pl-areas-c .pl-chip{padding:5px 12px;font-size:11.5px}
+.pl-bar-r{display:flex;gap:6px;flex-shrink:0}
+.pl-optbtn{font-size:11.5px;font-weight:700;color:var(--muted);background:var(--sunk);padding:6px 13px;border-radius:999px;white-space:nowrap}
+.pl-optbtn:hover{color:var(--ink)}
+.pl-optbtn.on{background:var(--ink);color:var(--paper)}
+.pl-opts-c{margin-bottom:12px}
+/* Contraer / expandir etapas */
+.pl-fold{width:20px;height:20px;border-radius:50%;font-size:10px;color:var(--muted);margin-right:4px;vertical-align:middle}
+.pl-fold:hover{background:var(--card);color:var(--ink)}
+@media(max-width:700px){.pl-bar-c{flex-direction:column;align-items:stretch}.pl-bar-r{justify-content:flex-end}}
+.pl-b.mini::after{display:none}
