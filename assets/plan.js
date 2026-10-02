@@ -132,7 +132,7 @@
     const orden = [...fechas, today].filter(Boolean).sort();
     let ini = orden[0], fin = orden[orden.length - 1];
     if (zoom === 'ajustar') {
-      ini = lunesDe(addDays(ini, -2)); fin = addDays(fin, 6);
+      ini = lunesDe(addDays(ini, -2)); // el fin ya trae el mes siguiente a la meta completo
       const dias = dayDiff(ini, fin) + 1;
       const ppd = Math.max(1.2, (ancho || 700) / dias);
       return { ini, fin, ppd, dias, W: Math.round(dias * ppd), x: iso => (dayDiff(ini, iso)) * ppd, modo: ppd * 7 >= 30 ? 'semana' : 'mes' };
@@ -415,6 +415,63 @@
     window.planOnPatch(id, { startDate: ini, deadline: finHabil(ini, n) });
   }
 
+  // ---------- Ancho de la columna «Actividad» (lo elige cada persona) ----------
+  const NM_DEF = 300, NM_MIN = 160, NM_MAX = 900, NM_KEY = 'planNmW';
+  let anchoNm = null;
+  try { const g = Number(localStorage.getItem(NM_KEY)); if (g >= NM_MIN && g <= NM_MAX) anchoNm = g; } catch (e) {}
+  function fijarAnchoNm(w, guardarlo) {
+    anchoNm = w == null ? null : Math.round(Math.min(NM_MAX, Math.max(NM_MIN, w)));
+    const html = document.documentElement;
+    if (anchoNm == null) { html.classList.remove('pl-nmv'); html.style.removeProperty('--pl-nm'); }
+    else { html.classList.add('pl-nmv'); html.style.setProperty('--pl-nm', anchoNm + 'px'); }
+    if (guardarlo) try { anchoNm == null ? localStorage.removeItem(NM_KEY) : localStorage.setItem(NM_KEY, String(anchoNm)); } catch (e) {}
+  }
+  if (anchoNm != null) fijarAnchoNm(anchoNm, false);
+  const alTerminarAncho = () => { dibujarLineas(); if (has('planOnAncho')) window.planOnAncho(); };
+  document.addEventListener('mousedown', ev => {
+    const h = ev.target.closest && ev.target.closest('.pl-resz');
+    if (!h) return;
+    ev.preventDefault();
+    const th = h.parentElement, x0 = ev.clientX, w0 = th.getBoundingClientRect().width;
+    document.body.classList.add('pl-resizing');
+    let movio = false;
+    const mover = e => { if (Math.abs(e.clientX - x0) > 2) movio = true; if (movio) fijarAnchoNm(w0 + e.clientX - x0, false); };
+    const soltar = () => {
+      document.removeEventListener('mousemove', mover); document.removeEventListener('mouseup', soltar);
+      document.body.classList.remove('pl-resizing');
+      // Un clic sin arrastrar no redibuja (así el doble clic sí llega)
+      if (movio) { fijarAnchoNm(anchoNm, true); alTerminarAncho(); }
+    };
+    document.addEventListener('mousemove', mover); document.addEventListener('mouseup', soltar);
+  });
+  document.addEventListener('dblclick', ev => {
+    const h = ev.target.closest && ev.target.closest('.pl-resz');
+    if (!h) return;
+    const tabla = h.closest('table');
+    if (anchoNm != null && anchoNm > NM_DEF) { fijarAnchoNm(null, true); alTerminarAncho(); return; } // segundo doble clic: vuelve al normal
+    // Mide el nombre más largo (sin recortar) y ajusta la columna a él
+    const med = document.createElement('span');
+    med.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;font:650 12px Montserrat,sans-serif';
+    document.body.appendChild(med);
+    let max = 0;
+    tabla.querySelectorAll('td.pl-c-nm').forEach(td => {
+      const el = td.querySelector('.pl-in.nm,.pl-tx.nm,.pl-an'); if (!el) return;
+      med.textContent = el.value || el.textContent || '';
+      max = Math.max(max, med.getBoundingClientRect().width + (td.querySelector('.pl-an') ? 60 : 0));
+    });
+    med.remove();
+    fijarAnchoNm(Math.min(600, max + 56), true); alTerminarAncho(); // más ancho: arrastrando
+  });
+  // Toque en celular: también se puede arrastrar
+  document.addEventListener('touchstart', ev => {
+    const h = ev.target.closest && ev.target.closest('.pl-resz');
+    if (!h) return;
+    const th = h.parentElement, x0 = ev.touches[0].clientX, w0 = th.getBoundingClientRect().width;
+    const mover = e => { e.preventDefault(); fijarAnchoNm(w0 + e.touches[0].clientX - x0, false); };
+    const soltar = () => { h.removeEventListener('touchmove', mover); h.removeEventListener('touchend', soltar); fijarAnchoNm(anchoNm, true); alTerminarAncho(); };
+    h.addEventListener('touchmove', mover, { passive: false }); h.addEventListener('touchend', soltar);
+  }, { passive: true });
+
   // ---------- Líneas de relación (dependencias) sobre el cronograma ----------
   function dibujarLineas(raiz) {
     const cont = raiz || document;
@@ -469,6 +526,13 @@
     const fechas = [];
     (model.activities || []).forEach(a => ['startDate', 'deadline', 'realStart', 'realEnd', 'baselineStart', 'baselineEnd'].forEach(k => { if (a[k]) fechas.push(a[k]); }));
     tareas.forEach(t => { if (t.activityId && t.dueDate) fechas.push(t.dueDate); });
+    // La escala llega hasta el fin del mes siguiente a la fecha meta (o al último fin si no hay meta):
+    // meta a finales de noviembre → se ve diciembre completo
+    const ref = model.fechaMeta || fechas.slice().sort().pop();
+    if (ref) {
+      const [y, m] = ref.split('-').map(Number);
+      fechas.push(ref, addDays(`${m >= 11 ? y + 1 : y}-${String(m >= 11 ? m - 10 : m + 2).padStart(2, '0')}-01`, -1));
+    }
     const zoom = opts.zoom || 'semana';
     const E = escala(fechas, today, zoom, opts.anchoTL);
     const fondo = carrilFondo(E, today, zoom);
@@ -479,7 +543,7 @@
     const nCols = (full ? 7 : 6) + (cols.dias ? 1 : 0) + (cols.area ? 1 : 0) + (cols.entregable ? 1 : 0) + (cols.base ? 1 : 0) + (cols.real ? 2 : 0) + (cols.desvio ? 1 : 0) + (cols.deps ? 1 : 0);
     const lbI = base ? 'Inicio proy.' : 'Inicio', lbF = base ? 'Fin proy.' : 'Fin';
     const head = `<thead><tr>
-      <th class="pl-sk pl-c-id">ID</th><th class="pl-sk pl-c-nm">Actividad</th><th class="pl-c-rs">Responsable</th>
+      <th class="pl-sk pl-c-id">ID</th><th class="pl-sk pl-c-nm">Actividad<span class="pl-resz" title="Arrastra para ensanchar o angostar la columna · doble clic: ajustar a los nombres (otro doble clic: volver al ancho normal)"></span></th><th class="pl-c-rs">Responsable</th>
       ${cols.area ? '<th class="pl-c-ar" title="Sale sola del área de cada responsable registrado en «Involucrados»">Área responsable</th>' : ''}
       ${cols.entregable ? '<th class="pl-c-en">Entregable / resultado</th>' : ''}
       ${cols.base ? '<th class="pl-c-lb" title="Fechas congeladas al fijar la línea base: no se mueven">🔒 Línea base</th>' : ''}
@@ -662,6 +726,8 @@
   window.Plan = {
     render, estado, pickDate, aplicarLocal, adelantar, cascada, colorDe, respDe, norm, fCorta, dibujarLineas, cambiarDuracion, areasActividad,
     etapas,
+    // Ancho extra que tomó la columna «Actividad» (para que la escala «Todo» siga cabiendo)
+    extraNombre: () => (anchoNm == null ? 0 : anchoNm - NM_DEF),
     cal: { esHabil, habilDesde, finHabil, diasHabiles, sumarHabiles, difHabiles, moverRango },
     colores: AREA_COLORS,
     // Preferencias por persona (se guardan en el navegador)

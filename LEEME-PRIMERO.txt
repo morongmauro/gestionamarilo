@@ -1,29 +1,41 @@
-ENLACE PARA DIRECTIVOS: EL GANTT DE PROTAGONISTA · qué hacer
-=============================================================
+NUEVA SAS CON LOS CAPÍTULOS DE LA FOTO · qué hacer
+==================================================
 
 No hay nada que correr en Supabase en esta versión.
 
 
-QUÉ CAMBIÓ EN ESTA VERSIÓN (enlace compartido)
+PASO A PASO (para dejar Nueva SAS como la foto)
 -----------------------------------------------
-1. Franja ejecutiva arriba, en una sola tarjeta:
-   - Semáforo: Al día / En riesgo / Atrasado (según atrasos, ritmo de avance
-     contra el plan y si el fin previsto se pasa de la fecha meta).
-   - Avance vs plan a hoy · Fin previsto vs fecha meta · Actividades listas.
-   - «⚠ Atrasado» (hasta 3) y «→ Lo que viene» (los 3 próximos vencimientos).
+1. Abre el proyecto Nueva SAS → «📥 Plantilla de plan».
+2. Plantilla: «Nueva SAS (capítulos Sociedad)».
+3. Inicio del plan: 28/09/2026.
+4. Marca «Reemplazar la estructura actual» → «Reemplazar y cargar».
 
-2. El Gantt es el protagonista:
-   - Escala «Todo» por defecto: el cronograma completo cabe en la pantalla,
-     con la línea de la fecha meta.
-   - «Solo etapas»: vista macro con una fila por etapa; cada etapa se abre o
-     se contrae con ▸ / ▾.
-   - Columnas para directivos: actividad, responsable, cronograma, avance y
-     estado (sin columnas operativas).
-   - «⚙ Opciones de vista» guarda todo lo demás (vista, agrupación, escala,
-     filtros y qué mostrar). El panel de involucrados queda apagado.
+Qué hace el reemplazo:
+- El plan queda con las etapas exactas de la foto, en su orden, y con sus
+  actividades dentro: 0 · Arranque del proyecto (kick off y cronograma),
+  Constitución Legal (11), Obligación de llevar contabilidad, Responsabilidades
+  Tributarias (9), Facturación de los ingresos, Recaudo de los ingresos,
+  Reconocimiento de los gastos y retención de impuestos, Gastos de nómina,
+  Giro de recursos a Socios o Fideicomitentes, Estados Financieros y Toma de
+  decisiones y aprobación de EEFF.
+- Las actividades que ya existían con el mismo nombre (kick off, cronograma)
+  se conservan con sus fechas reales, avance y notas.
+- Lo que no está en la foto (lo que yo había agregado de más) se borra.
+- Las propuestas del equipo y tus tareas no se tocan.
+- Las fechas planeadas quedan del 28 sep al 30 nov (fin de noviembre),
+  encadenadas por dependencias. Las fechas reales NO se llenan: esas las
+  pones tú.
 
-3. «Para el equipo del proyecto»: proponer actividad, estimar duraciones y
-   proponer ajustes quedan juntos al final, plegados.
+Duraciones y dependencias son una propuesta: cámbialas en la columna «Días» o
+con la cajita de ajuste; lo que depende se corre en cascada.
 
-En tu vista de editor: las etapas también se contraen con ▸ / ▾ y la escala
-tiene la opción «Todo».
+
+OTROS CAMBIOS
+-------------
+- El Gantt llega hasta el final del mes siguiente a la fecha meta: con meta
+  a finales de noviembre se ve diciembre completo.
+- La columna «Actividad» se ensancha: arrastra el borde derecho de su título.
+  Doble clic en ese borde la ajusta para leer los nombres; otro doble clic la
+  devuelve al ancho normal. Cada persona guarda su ancho (también en el
+  enlace compartido).
