@@ -1,7 +1,13 @@
 NUEVA SAS CON LOS CAPÍTULOS DE LA FOTO · qué hacer
 ==================================================
 
-No hay nada que correr en Supabase en esta versión.
+PRIMERO, EN SUPABASE (una sola vez)
+-----------------------------------
+Si te sale «column ... does not exist» (por ejemplo activities.propuesta):
+abre supabase/TODAS-octubre-2026.sql, copia TODO su contenido y pégalo en
+Supabase → SQL Editor → New query → Run. Trae todas las migraciones de
+octubre juntas; se puede correr aunque ya hayas corrido alguna (no borra nada).
+Luego recarga la app con Ctrl + F5.
 
 
 PASO A PASO (para dejar Nueva SAS como la foto)
