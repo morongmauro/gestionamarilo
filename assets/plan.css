@@ -358,3 +358,12 @@
 .pl-fold:hover{background:var(--card);color:var(--ink)}
 @media(max-width:700px){.pl-bar-c{flex-direction:column;align-items:stretch}.pl-bar-r{justify-content:flex-end}}
 .pl-b.mini::after{display:none}
+
+/* Columna «Actividad» con ancho a elección (se arrastra el borde del título) */
+.pl th.pl-c-nm{position:sticky;overflow:visible}
+.pl-resz{position:absolute;top:8px;right:-4px;bottom:8px;width:9px;cursor:col-resize;z-index:5;border-radius:999px}
+.pl-resz::after{content:"";position:absolute;left:4px;top:6px;bottom:6px;width:2px;border-radius:2px;background:color-mix(in srgb,var(--ink) 14%,transparent);transition:background .15s}
+.pl-resz:hover::after,body.pl-resizing .pl-resz::after{background:var(--accent,#3D7BF7)}
+body.pl-resizing{cursor:col-resize;user-select:none}
+html.pl-nmv .pl .pl-c-nm{width:var(--pl-nm);min-width:var(--pl-nm);max-width:var(--pl-nm)}
+.pl th.pl-c-id{padding-bottom:9px}

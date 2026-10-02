@@ -48,8 +48,8 @@ module.exports = async (req, res) => {
     if (sub === 'plantilla') {
       if (req.method === 'GET') return res.status(200).json({ plantillas: db.listarPlantillas() });
       if (req.method === 'POST') {
-        const { key, inicio } = req.body || {};
-        const resultado = await db.aplicarPlantilla(id, key, { inicio });
+        const { key, inicio, reemplazar } = req.body || {};
+        const resultado = await db.aplicarPlantilla(id, key, { inicio, reemplazar: !!reemplazar });
         return res.status(200).json({ resultado });
       }
       return res.status(405).json({ error: 'Method not allowed' });

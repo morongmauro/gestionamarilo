@@ -231,7 +231,7 @@
   const opts=Plan.opciones(LS,{owner:false,editable:false,panel:false,compacto:true,zoom:'ajustar'});
   opts.compacto=true;
   // Ancho del cronograma en «Todo»: lo que queda al lado de las columnas
-  function anchoCronograma(){const c=document.querySelector('.container');const w=(c?c.clientWidth:window.innerWidth)-(opts.panel?240:0);return Math.max(360,w-(window.innerWidth<700?260:820));}
+  function anchoCronograma(){const c=document.querySelector('.container');const w=(c?c.clientWidth:window.innerWidth)-(opts.panel?240:0);return Math.max(360,w-(window.innerWidth<700?260:820)-Plan.extraNombre());}
   opts.editable=false;
   let nombre='';try{nombre=localStorage.getItem('planShareNombre')||'';}catch(e){}
   function recordarNombre(v){nombre=String(v||'').trim();try{localStorage.setItem('planShareNombre',nombre);}catch(e){}['n-quien','a-quien','e-nombre'].forEach(id=>{if($(id)&&!$(id).value)$(id).value=nombre;});}
@@ -323,6 +323,8 @@
   }
 
   // ---------- Manejadores de la hoja (assets/plan.js) ----------
+  // Al ensanchar la columna «Actividad», la escala «Todo» se recalcula para seguir cabiendo
+  function planOnAncho(){if(opts.zoom==='ajustar')renderPlan();}
   function planSetOpt(k,v){Plan.cambiar(opts,k,v);Plan.guardar(LS,opts);renderPlan();if(k==='grupo'&&v&&DATA.sections.some(s=>s.id===v))$('n-area').value=v;}
   // ---------- Ronda de estimación de duraciones ----------
   function renderEstimacion(){

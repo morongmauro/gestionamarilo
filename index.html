@@ -690,6 +690,8 @@
   .modal-f{padding:0 24px 22px}
   .field input,.field select,.field textarea{border-radius:14px;box-shadow:none}
   .hintbox{background:var(--sunk);border-radius:16px}
+  .tpl-reemp{display:flex;gap:10px;align-items:flex-start;background:var(--sunk);border-radius:16px;padding:10px 12px;margin-bottom:10px;font-size:12px;cursor:pointer}
+  .tpl-reemp input{margin-top:3px;accent-color:var(--accent,#3D7BF7)}
   .menu{border-radius:18px}
   .micro-add{border-radius:999px;padding:6px 8px 6px 18px}
   .micro-add select,.micro-add input[type=date]{border-radius:999px;background:var(--card)}
@@ -1184,7 +1186,8 @@
       <div class="field"><label>Plantilla</label><select id="tpl-key" onchange="renderTplInfo()"></select></div>
       <div class="field"><label>Inicio del plan</label><input type="date" id="tpl-inicio"><div class="hint" style="font-size:10px;color:var(--faint);margin-top:4px">Las fechas se proponen en días hábiles (sin festivos de Colombia) desde aquí, respetando las dependencias. Son una propuesta: ajústalas en la hoja.</div></div>
       <div id="tpl-info"></div>
-      <div class="hintbox">Se carga en <strong id="tpl-proj"></strong>. No duplica nada: si una fase o actividad ya existe con el mismo nombre, se respeta. Las fases por defecto que estén vacías se reemplazan. Tus tareas no se tocan: las vinculas tú a una actividad cuando quieras.</div>
+      <label class="tpl-reemp"><input type="checkbox" id="tpl-reemp" onchange="renderTplAviso()"> <span><strong>Reemplazar la estructura actual</strong><br><span style="font-size:11px;color:var(--muted)">El proyecto queda con las etapas y actividades exactas de la plantilla. Las actividades que ya existen con el mismo nombre se conservan (con sus fechas reales, avance y notas) y toman las fechas planeadas de la plantilla; las demás se borran (con sus notas). Las propuestas del equipo y tus tareas no se tocan.</span></span></label>
+      <div class="hintbox" id="tpl-aviso">Se carga en <strong id="tpl-proj"></strong>. No duplica nada: si una fase o actividad ya existe con el mismo nombre, se respeta. Las fases por defecto que estén vacías se reemplazan. Tus tareas no se tocan: las vinculas tú a una actividad cuando quieras.</div>
     </div>
     <div class="modal-f">
       <span></span>
@@ -2047,7 +2050,7 @@
   function planBodyHtml(d){
     if(planView==='hoja'){
       // Escala «Todo»: el cronograma ocupa lo que queda al lado de las columnas
-      const ancho=(($('p-detail')||document.body).clientWidth||1200)-(planOpts.vista==='tabla'?1500:900)-(planOpts.panel?240:0);
+      const ancho=(($('p-detail')||document.body).clientWidth||1200)-(planOpts.vista==='tabla'?1500:900)-(planOpts.panel?240:0)-Plan.extraNombre();
       planOpts.anchoTL=Math.max(360,ancho);
       return Plan.render(planModel(d),planOpts);
     }
@@ -2633,6 +2636,8 @@
   function planModel(d){
     return {sections:d.sections,activities:d.activities,tasks:d.tasks,notas:d.notas||[],miembros:d.miembros||[],lineaBase:d.lineaBaseAt||null,fechaMeta:d.fechaMeta||null,today:(d.summary&&d.summary.today)||todayISO()};
   }
+  // Al ensanchar la columna «Actividad», la escala «Todo» se recalcula para seguir cabiendo
+  function planOnAncho(){if(planOpts.zoom==='ajustar')renderPlan();}
   function planSetOpt(k,v){Plan.cambiar(planOpts,k,v);Plan.guardar(LS_PLAN,planOpts);renderPlan();}
   function planOnPatch(id,cambios){patchActivity(id,cambios);}
   function planOnOpen(id){openActivityModal(id);}
@@ -2955,8 +2960,10 @@
   let plantillasCache=null;
   async function openTplModal(){
     const d=currentProjectDetail;if(!d)return;
-    $('tpl-proj').textContent=d.name;
-    $('tpl-inicio').value=Plan.cal.habilDesde(addDays(todayISO(),1));
+    // Inicio sugerido: donde arranca hoy el plan del proyecto (si ya tiene actividades)
+    const inis=(d.activities||[]).map(a=>a.startDate).filter(Boolean).sort();
+    $('tpl-inicio').value=inis[0]||Plan.cal.habilDesde(addDays(todayISO(),1));
+    $('tpl-reemp').checked=false;renderTplAviso();
     $('tpl-go').disabled=false;
     openModal('m-tpl');
     try{
@@ -2969,16 +2976,26 @@
     const p=(plantillasCache||[]).find(x=>x.key===$('tpl-key').value);
     $('tpl-info').innerHTML=p?`<div style="font-size:12px;color:var(--muted);margin-bottom:12px">${esc(p.descripcion)}<ol style="margin:8px 0 0 18px;padding:0;line-height:1.7">${p.fases.map(f=>`<li>${esc(f)}</li>`).join('')}</ol><div style="margin-top:6px;font-weight:650;color:var(--ink)">${p.fases.length} fases · ${p.actividades} actividades con responsable, entregable y dependencias</div></div>`:'';
   }
+  function renderTplAviso(){
+    const r=$('tpl-reemp').checked;
+    $('tpl-aviso').innerHTML=r
+      ?'⚠ Se carga en <strong>'+esc((currentProjectDetail||{}).name||'')+'</strong> reemplazando su estructura: lo que no esté en la plantilla se borra.'
+      :'Se carga en <strong>'+esc((currentProjectDetail||{}).name||'')+'</strong>. No duplica nada: si una fase o actividad ya existe con el mismo nombre, se respeta. Las fases por defecto que estén vacías se reemplazan. Tus tareas no se tocan: las vinculas tú a una actividad cuando quieras.';
+    $('tpl-go').textContent=r?'Reemplazar y cargar':'Cargar plan';
+  }
   async function cargarPlantilla(){
     const d=currentProjectDetail;if(!d)return;
     const key=$('tpl-key').value,inicio=$('tpl-inicio').value||null;
     if(!key)return;
+    const reemplazar=$('tpl-reemp').checked;
+    if(reemplazar&&!confirm('¿Reemplazar la estructura de «'+d.name+'» por la de la plantilla? Las actividades que no estén en ella se borran.'))return;
     $('tpl-go').disabled=true;
     try{
-      const {resultado:r}=await api(`/api/projects/${d.id}?res=plantilla`,'POST',{key,inicio});
+      const {resultado:r}=await api(`/api/projects/${d.id}?res=plantilla`,'POST',{key,inicio,reemplazar});
       closeModal('m-tpl');
-      const partes=[`${r.creadas} actividades`];
-      if(r.omitidas)partes.push(`${r.omitidas} ya existían`);
+      const partes=[`${r.creadas} actividades nuevas`];
+      if(r.omitidas)partes.push(`${r.omitidas} se conservaron`);
+      if(r.borradas)partes.push(`${r.borradas} borradas`);
       toast('✓ Plan cargado · '+partes.join(' · '));
       planView='hoja';try{localStorage.setItem('planViewV1','hoja');}catch{}
       await refreshProjectDetail();
