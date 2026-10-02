@@ -367,3 +367,69 @@
 body.pl-resizing{cursor:col-resize;user-select:none}
 html.pl-nmv .pl .pl-c-nm{width:var(--pl-nm);min-width:var(--pl-nm);max-width:var(--pl-nm)}
 .pl th.pl-c-id{padding-bottom:9px}
+
+/* ============================================================
+   Densidad compacta: más actividades a la vista (editor y enlace)
+   ============================================================ */
+:root{--pl-row:27px}
+.pl{font-size:11px}
+.pl th{height:38px;padding-bottom:7px;font-size:9px}
+.pl th.pl-c-id{padding-bottom:7px}
+.pl td{padding:0 6px}
+.pl .pl-c-id{width:40px;min-width:40px}
+.pl .pl-c-nm{left:40px}
+.pl-in{font-size:11px;padding:3px 6px}
+.pl-in.nm,.pl-tx.nm{font-size:11.5px;font-weight:600}
+.pl .pl-cod{font-size:10px;padding:2px 4px}
+/* Etapas */
+.pl tr.pl-area td{height:30px}
+.pl tr.pl-area .pl-lane{height:30px}
+.pl .pl-an{font-size:12px}
+.pl .pl-acod{min-width:20px;height:20px;font-size:10px}
+.pl tr.pl-task .pl-lane{height:22px}
+.pl tr.pl-task td{height:22px}
+/* Columnas más angostas (el nombre completo sale al pasar el mouse) */
+.pl .pl-c-rs,.pl .pl-c-rs.corta,.pl-layout .pl .pl-c-rs,.pl-layout .pl .pl-c-rs.corta{min-width:118px;width:118px;max-width:150px}
+.pl .pl-rs .pl-tx.rs,.pl-layout .pl .pl-rs .pl-tx.rs{max-width:88px;font-size:11px}
+.pl-av{width:18px;height:18px;font-size:8px}
+.pl .pl-c-tl{min-width:104px}
+.pl-tlp{min-width:96px;height:19px;padding:0 8px;font-size:10px}
+.pl tr.pl-area .pl-tlp{min-width:104px}
+.pl .pl-c-e{min-width:76px}
+.pl td.pl-stc{padding:2px 3px}
+.pl td.pl-stc .pl-est{min-width:76px;height:21px;border-radius:8px;font-size:10px;padding:0 6px}
+.pl-bat{min-width:76px;height:10px}
+.pl .pl-c-p{min-width:96px}
+.pl .pl-c-p.corta,.pl td.pl-p.corta{min-width:48px;width:48px}
+.pl .pl-c-n{min-width:34px}
+.pl .pl-c-en{min-width:150px}
+.pl .pl-c-d{min-width:56px}
+.pl-b{height:16px;margin-top:-8px}
+.pl-b em{font-size:9.5px}
+
+/* Texto completo al pasar el mouse por una celda recortada */
+.pl-tip{position:fixed;z-index:9999;max-width:min(520px,calc(100vw - 24px));padding:7px 11px;border-radius:12px;background:#1C1A17;color:#fff;font:600 11.5px/1.4 Montserrat,system-ui,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.22);pointer-events:none;white-space:normal;opacity:0;transform:translateY(2px);transition:opacity .12s,transform .12s}
+.pl-tip.on{opacity:1;transform:none}
+.pl-tip small{display:block;font-weight:500;color:rgba(255,255,255,.7);margin-top:2px}
+
+/* ============================================================
+   Edición tipo Excel
+   ============================================================ */
+.pl-drag{display:inline-flex;align-items:center;justify-content:center;width:12px;margin-right:1px;color:var(--faint);font-size:12px;line-height:1;cursor:grab;user-select:none;opacity:0;transition:opacity .12s;vertical-align:middle}
+.pl tr.pl-act:hover .pl-drag{opacity:1}
+.pl-drag:hover{color:var(--ink)}
+.pl tr.pl-act .pl-c-id{white-space:nowrap}
+body.pl-arrastrando,body.pl-arrastrando *{cursor:grabbing!important;user-select:none}
+tr.pl-moviendo td{opacity:.45}
+tr.pl-drop-antes td{box-shadow:inset 0 3px 0 var(--accent,#3D7BF7)!important}
+tr.pl-drop-despues td{box-shadow:inset 0 -3px 0 var(--accent,#3D7BF7)!important}
+tr.pl-drop-dentro td{box-shadow:inset 0 -3px 0 var(--accent,#3D7BF7)!important;filter:brightness(.97)}
+/* Celda activa: como la de Excel */
+.pl .pl-in:focus,.ptable .pt-in:focus{background:var(--card);box-shadow:0 0 0 2px var(--accent,#3D7BF7);border-radius:6px}
+/* Menú de clic derecho */
+.pl-menu{position:fixed;z-index:9999;min-width:230px;padding:6px;border-radius:14px;background:var(--card,#fff);box-shadow:0 12px 36px rgba(28,26,23,.2),0 0 0 1px rgba(28,26,23,.05);font-family:Montserrat,system-ui,sans-serif}
+.pl-menu button{display:flex;width:100%;align-items:center;justify-content:space-between;gap:16px;padding:7px 10px;border-radius:9px;font:600 12px Montserrat,system-ui,sans-serif;color:var(--ink,#1C1A17);text-align:left;background:none;border:none;cursor:pointer}
+.pl-menu button:hover{background:var(--sunk,#F2F0EB)}
+.pl-menu button.peligro{color:#E2445C}
+.pl-menu kbd{font:600 10px Montserrat,system-ui,sans-serif;color:var(--faint,#9A9384);background:var(--sunk,#F2F0EB);padding:2px 6px;border-radius:6px}
+.pl-menu hr{border:none;height:1px;background:var(--sunk,#F2F0EB);margin:4px 6px}

@@ -231,7 +231,7 @@
   const opts=Plan.opciones(LS,{owner:false,editable:false,panel:false,compacto:true,zoom:'ajustar'});
   opts.compacto=true;
   // Ancho del cronograma en «Todo»: lo que queda al lado de las columnas
-  function anchoCronograma(){const c=document.querySelector('.container');const w=(c?c.clientWidth:window.innerWidth)-(opts.panel?240:0);return Math.max(360,w-(window.innerWidth<700?260:820)-Plan.extraNombre());}
+  function anchoCronograma(){const c=document.querySelector('.container');const w=(c?c.clientWidth:window.innerWidth)-(opts.panel?240:0);return Plan.anchoAjuste(w,(window.innerWidth<700?260:680)+Plan.extraNombre());}
   opts.editable=false;
   let nombre='';try{nombre=localStorage.getItem('planShareNombre')||'';}catch(e){}
   function recordarNombre(v){nombre=String(v||'').trim();try{localStorage.setItem('planShareNombre',nombre);}catch(e){}['n-quien','a-quien','e-nombre'].forEach(id=>{if($(id)&&!$(id).value)$(id).value=nombre;});}
@@ -290,6 +290,8 @@
     const w=$('pl-wrap'),keep=w?[w.scrollLeft,w.scrollTop]:null;
     opts.anchoTL=anchoCronograma();
     $('plan').innerHTML=Plan.render(modelo(),opts);
+    // La escala «Todo» se corrige con lo que de verdad ocupan las columnas
+    if(opts.zoom==='ajustar'){const a=Plan.medirAjuste($('plan'));if(a&&Math.abs(a-opts.anchoTL)>3){opts.anchoTL=a;$('plan').innerHTML=Plan.render(modelo(),opts);}}
     requestAnimationFrame(()=>Plan.dibujarLineas());
     const n=$('pl-wrap');if(n&&keep){n.scrollLeft=keep[0];n.scrollTop=keep[1];}
   }
