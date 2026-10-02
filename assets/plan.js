@@ -165,7 +165,7 @@
       const hoyL = lunesDe(today);
       let n = 1;
       for (let w = E.ini; w <= E.fin; w = addDays(w, 7), n++) {
-        bot += `<span class="pl-sc-b${w === hoyL ? ' now' : ''}" style="left:${E.x(w)}px;width:${7 * E.ppd}px" title="Semana ${n} · lunes ${fCorta(w)}">${Number(w.slice(8, 10))}</span>`;
+        bot += `<span class="pl-sc-b${w === hoyL ? ' now' : ''}" style="left:${E.x(w)}px;width:${Math.min(7 * E.ppd, E.W - E.x(w))}px" title="Semana ${n} · lunes ${fCorta(w)}">${Number(w.slice(8, 10))}</span>`;
       }
     } else {
       for (let d = E.ini; d <= E.fin; d = addDays(d, 1)) {
@@ -472,6 +472,217 @@
     h.addEventListener('touchmove', mover, { passive: false }); h.addEventListener('touchend', soltar);
   }, { passive: true });
 
+  // ============================================================
+  // EDICIÓN TIPO EXCEL (editor: vista Gantt y vista Tabla)
+  //   ↑ ↓ / Enter / Shift+Enter: moverse entre filas · Esc: deshacer la celda
+  //   Alt+↑ / Alt+↓: mover la fila · Ctrl+Enter: insertar fila debajo
+  //   Clic derecho: insertar, duplicar, mover, eliminar · ⠿: arrastrar la fila
+  //   Pegar varias líneas: llena hacia abajo (o crea filas en «＋ Actividad»)
+  // Las páginas responden con window.planOnRow(accion, id, extra) y window.planOnPegarFilas(secId, filas).
+  // ============================================================
+  const GRID = '.pl, .ptable';
+  const partir = key => { const i = key.indexOf(':'); return [key.slice(0, i), key.slice(i + 1)]; };
+  function filasDe(grid) { return [...grid.querySelectorAll('tr[data-row]')]; }
+  function celdaVecina(el, paso) {
+    const grid = el.closest(GRID); if (!grid) return null;
+    const [id, campo] = partir(el.dataset.cell);
+    const filas = filasDe(grid);
+    let i = filas.findIndex(f => f.dataset.row === id);
+    for (i += paso; i >= 0 && i < filas.length; i += paso) {
+      const c = filas[i].querySelector(`[data-cell="${filas[i].dataset.row}:${campo}"]`);
+      if (c) return c.dataset.cell;
+    }
+    return null;
+  }
+  function enfocar(key, seleccionar) {
+    const el = key && document.querySelector(`[data-cell="${key}"]`);
+    if (!el) return;
+    el.focus();
+    if (seleccionar && el.select && el.type !== 'date') try { el.select(); } catch (e) {}
+    el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+  // Guarda lo escrito en la celda antes de moverse (la hoja se repinta al guardar)
+  function confirmar(el) {
+    if (el.tagName !== 'SELECT' && el.value !== el.dataset.orig) {
+      el.dataset.orig = el.value;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+  document.addEventListener('focusin', ev => {
+    const el = ev.target;
+    if (el && el.dataset && el.dataset.cell && el.closest(GRID)) el.dataset.orig = el.value;
+  });
+  document.addEventListener('keydown', ev => {
+    const el = ev.target;
+    if (!el || !el.dataset || !el.dataset.cell || !el.closest(GRID)) return;
+    const [id] = partir(el.dataset.cell);
+    const k = ev.key;
+    if (ev.altKey && (k === 'ArrowUp' || k === 'ArrowDown')) {
+      if (!has('planOnRow') || !el.closest('tr[data-row]')) return;
+      ev.preventDefault();
+      const key = el.dataset.cell;
+      confirmar(el);
+      window.planOnRow(k === 'ArrowUp' ? 'subir' : 'bajar', id);
+      setTimeout(() => enfocar(key, false), 0);
+      return;
+    }
+    if (k === 'Enter' && (ev.ctrlKey || ev.metaKey)) {
+      if (!has('planOnRow')) return;
+      ev.preventDefault(); confirmar(el);
+      window.planOnRow('insertar-debajo', id);
+      return;
+    }
+    if (k === 'Escape') {
+      if (el.dataset.orig != null && el.tagName !== 'SELECT') el.value = el.dataset.orig;
+      el.blur(); ev.stopPropagation();
+      return;
+    }
+    const vertical = k === 'Enter' || ((k === 'ArrowUp' || k === 'ArrowDown') && el.tagName !== 'SELECT' && el.type !== 'date');
+    if (!vertical) return;
+    ev.preventDefault();
+    const paso = k === 'ArrowUp' || (k === 'Enter' && ev.shiftKey) ? -1 : 1;
+    const destino = celdaVecina(el, paso);
+    confirmar(el);
+    if (destino) enfocar(destino, true);
+    else if (k === 'Enter') el.blur();
+  });
+  // Pegar desde Excel
+  const lineas = txt => txt.replace(/\r/g, '').split('\n').map(l => l.replace(/\s+$/, '')).filter(l => l.trim() !== '');
+  document.addEventListener('paste', ev => {
+    const el = ev.target;
+    if (!el || el.tagName !== 'INPUT') return;
+    const txt = (ev.clipboardData || window.clipboardData).getData('text') || '';
+    const ls = lineas(txt);
+    // En «＋ Actividad…»: cada línea es una actividad nueva (Nombre · Responsable · Días)
+    if (el.dataset.secAdd !== undefined && has('planOnPegarFilas') && (ls.length > 1 || txt.includes('\t'))) {
+      ev.preventDefault();
+      window.planOnPegarFilas(el.dataset.secAdd || null, ls.map(l => l.split('\t').map(x => x.trim())));
+      return;
+    }
+    // En una celda: varias líneas llenan hacia abajo, como en Excel
+    if (!el.dataset.cell || !el.closest(GRID) || ls.length < 2) return;
+    ev.preventDefault();
+    const claves = [el.dataset.cell];
+    let k = el.dataset.cell;
+    for (let i = 1; i < ls.length; i++) { k = celdaVecina(document.querySelector(`[data-cell="${k}"]`), 1); if (!k) break; claves.push(k); }
+    claves.forEach((c, i) => {
+      const x = document.querySelector(`[data-cell="${c}"]`);
+      if (!x) return;
+      x.value = ls[i].split('\t')[0].trim();
+      x.dataset.orig = x.value;
+      x.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    if (claves.length < ls.length) aviso(`Se pegaron ${claves.length} de ${ls.length} líneas: no hay más filas debajo`);
+  });
+  function aviso(t) { if (has('toast')) window.toast(t, false); }
+
+  // Arrastrar una fila por su asa ⠿ (a otra fila o al título de una etapa)
+  document.addEventListener('mousedown', ev => {
+    const h = ev.target.closest && ev.target.closest('.pl-drag');
+    if (!h || ev.button !== 0 || !has('planOnRow')) return;
+    const fila = h.closest('tr[data-row]'), grid = h.closest(GRID);
+    if (!fila || !grid) return;
+    ev.preventDefault();
+    const id = fila.dataset.row;
+    let marca = null, destino = null;
+    fila.classList.add('pl-moviendo');
+    document.body.classList.add('pl-arrastrando');
+    const limpiar = () => { if (marca) marca.classList.remove('pl-drop-antes', 'pl-drop-despues', 'pl-drop-dentro'); marca = null; };
+    const mover = e => {
+      limpiar(); destino = null;
+      const bajo = document.elementFromPoint(e.clientX, e.clientY);
+      const tr = bajo && bajo.closest && bajo.closest('tr[data-row], tr[data-sec]');
+      if (!tr || !grid.contains(tr) || tr === fila) return;
+      const r = tr.getBoundingClientRect();
+      if (tr.dataset.sec) { marca = tr; tr.classList.add('pl-drop-dentro'); destino = { sec: tr.dataset.sec }; return; }
+      const despues = e.clientY > r.top + r.height / 2;
+      marca = tr; tr.classList.add(despues ? 'pl-drop-despues' : 'pl-drop-antes');
+      destino = { destino: tr.dataset.row, despues };
+    };
+    const soltar = () => {
+      document.removeEventListener('mousemove', mover); document.removeEventListener('mouseup', soltar);
+      limpiar(); fila.classList.remove('pl-moviendo'); document.body.classList.remove('pl-arrastrando');
+      if (destino) window.planOnRow('mover', id, destino);
+    };
+    document.addEventListener('mousemove', mover); document.addEventListener('mouseup', soltar);
+  });
+
+  // Clic derecho sobre una fila: menú de acciones
+  let menu = null;
+  const cerrarMenu = () => { if (menu) { menu.remove(); menu = null; } };
+  document.addEventListener('contextmenu', ev => {
+    const fila = ev.target.closest && ev.target.closest('tr[data-row]');
+    if (!fila || !fila.closest(GRID) || !has('planOnRow')) return;
+    ev.preventDefault(); cerrarMenu();
+    const id = fila.dataset.row;
+    const it = (acc, txt, atajo, cls) => `<button data-acc="${acc}" class="${cls || ''}"><span>${txt}</span>${atajo ? `<kbd>${atajo}</kbd>` : ''}</button>`;
+    menu = document.createElement('div');
+    menu.className = 'pl-menu';
+    menu.innerHTML = it('insertar-arriba', '↥ Insertar fila arriba') + it('insertar-debajo', '↧ Insertar fila debajo', 'Ctrl+Enter') + it('duplicar', '⧉ Duplicar fila') +
+      '<hr>' + it('subir', '▲ Subir', 'Alt+↑') + it('bajar', '▼ Bajar', 'Alt+↓') +
+      '<hr>' + it('detalle', '☰ Notas y tareas') + it('eliminar', '🗑 Eliminar fila', '', 'peligro');
+    document.body.appendChild(menu);
+    const w = menu.offsetWidth, h = menu.offsetHeight;
+    menu.style.left = Math.min(ev.clientX, window.innerWidth - w - 8) + 'px';
+    menu.style.top = Math.min(ev.clientY, window.innerHeight - h - 8) + 'px';
+    menu.addEventListener('click', e => {
+      const b = e.target.closest('button[data-acc]'); if (!b) return;
+      cerrarMenu(); window.planOnRow(b.dataset.acc, id);
+    });
+  });
+  document.addEventListener('click', e => { if (menu && !menu.contains(e.target)) cerrarMenu(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarMenu(); });
+  window.addEventListener('blur', cerrarMenu);
+
+  // ---------- Escala «Todo»: mide lo que ocupan las columnas para que el cronograma quepa exacto ----------
+  let fijoMedido = null;
+  function medirAjuste(raiz) {
+    const w = (raiz || document).querySelector('.pl-wrap');
+    const t = w && w.querySelector('table.pl'), lane = t && t.querySelector('.pl-lane');
+    if (!lane) return null;
+    fijoMedido = t.offsetWidth - lane.offsetWidth;
+    return Math.max(360, w.clientWidth - fijoMedido - 2);
+  }
+  // Ancho para el cronograma antes de dibujar: con la medida anterior si la hay
+  function anchoAjuste(anchoWrap, estimadoFijo) {
+    const w = document.querySelector('.pl-wrap');
+    const total = w ? w.clientWidth : anchoWrap;
+    return Math.max(360, total - (fijoMedido != null ? fijoMedido + 2 : estimadoFijo));
+  }
+
+  // ---------- Texto completo al pasar el mouse por una celda recortada ----------
+  let tip = null, tipEl = null, sinTitulo = [];
+  const SEL_TIP = '.pl .pl-in, .pl .pl-tx, .pl .pl-tt, .pl .pl-an';
+  function quitarTip() {
+    if (tip) tip.classList.remove('on');
+    sinTitulo.forEach(([x, t]) => x.setAttribute('title', t)); // devuelve el globo nativo
+    sinTitulo = []; tipEl = null;
+  }
+  document.addEventListener('mouseover', ev => {
+    const el = ev.target.closest && ev.target.closest(SEL_TIP);
+    if (el === tipEl) return;
+    quitarTip();
+    if (!el || el.type === 'number' || el.type === 'date') return;
+    const texto = (el.tagName === 'INPUT' ? el.value : el.textContent || '').trim();
+    if (!texto || el.scrollWidth <= el.clientWidth + 1) return; // cabe completo: no hace falta
+    if (!tip) { tip = document.createElement('div'); tip.className = 'pl-tip'; document.body.appendChild(tip); }
+    // El nombre lleva también el entregable, si lo tiene
+    const wrap = el.closest('.pl-nmw');
+    const tw = wrap ? wrap.getAttribute('title') || '' : '';
+    const extra = tw.includes(' → ') ? tw.split(' → ').slice(1).join(' → ').split(' · ')[0] : '';
+    tip.innerHTML = `${esc(texto)}${extra ? `<small>Entregable: ${esc(extra)}</small>` : ''}`;
+    // Sin el globo nativo encima mientras se ve este
+    [el, wrap].forEach(x => { if (x && x.hasAttribute('title')) { sinTitulo.push([x, x.getAttribute('title')]); x.removeAttribute('title'); } });
+    tipEl = el;
+    const r = el.getBoundingClientRect();
+    tip.style.left = Math.max(12, Math.min(r.left, window.innerWidth - tip.offsetWidth - 12)) + 'px';
+    const arriba = r.bottom + tip.offsetHeight + 10 > window.innerHeight;
+    tip.style.top = (arriba ? r.top - tip.offsetHeight - 6 : r.bottom + 6) + 'px';
+    tip.classList.add('on');
+  });
+  document.addEventListener('scroll', quitarTip, true);
+  document.addEventListener('focusin', quitarTip);
+
   // ---------- Líneas de relación (dependencias) sobre el cronograma ----------
   function dibujarLineas(raiz) {
     const cont = raiz || document;
@@ -576,7 +787,7 @@
       const sum = fI ? `<span class="pl-sum" style="left:${E.x(fI)}px;width:${Math.max(6, E.x(addDays(fF, 1)) - E.x(fI))}px;--c:${g.color}"><i style="width:${avg}%"></i></span>` : '';
       const dvs = acts.map(desvio).filter(d => d != null);
       const dvMax = dvs.length ? Math.max(...dvs) : null;
-      const areaRow = `<tr class="pl-area" style="--c:${g.color}">
+      const areaRow = `<tr class="pl-area" style="--c:${g.color}"${editable && opts.owner && agr === 'etapa' && g.id ? ` data-sec="${g.id}"` : ''}>
         <td class="pl-sk pl-c-id"><span class="pl-acod">${g.area ? esc(g.name.slice(0, 1).toUpperCase()) : (g.cod || '')}</span></td>
         <td class="pl-sk pl-c-nm"><button class="pl-fold" onclick="planSetOpt('plegar','${esc(g.key)}')" title="${plegada ? 'Ver sus actividades' : 'Contraer esta etapa'}">${plegada ? '▸' : '▾'}</button><span class="pl-an">${esc(g.name)}</span><span class="pl-mut">${hechas}/${acts.length} · ${avg}%</span>${tools}</td>
         <td></td>${cols.area ? '<td></td>' : ''}${cols.entregable ? '<td></td>' : ''}${cols.base ? '<td></td>' : ''}
@@ -590,7 +801,7 @@
       </tr>`;
       const actRows = plegada ? '' : acts.map(a => filaActividad(a, g, today, E, carril, editable, opts, cols, codigo, base) +
         tareasDe(a.id).map(t => filaTarea(t, today, E, carril, nCols)).join('')).join('');
-      const add = !plegada && opts.owner && editable && agr === 'etapa' ? `<tr class="pl-add"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><input placeholder="＋ Actividad en ${esc(g.name)}" onkeydown="if(event.key==='Enter')planOnAdd('${g.id || ''}',this)"></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>` : '';
+      const add = !plegada && opts.owner && editable && agr === 'etapa' ? `<tr class="pl-add"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><input placeholder="＋ Actividad en ${esc(g.name)} · o pega filas de Excel" data-sec-add="${g.id || ''}" onkeydown="if(event.key==='Enter')planOnAdd('${g.id || ''}',this)"></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>` : '';
       return areaRow + actRows + add;
     }).join('');
     const addArea = opts.owner && editable && agr === 'etapa' && !opts.grupo && !opts.resp ? `<tr class="pl-add"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><input placeholder="＋ Nueva etapa" onkeydown="if(event.key==='Enter')planOnAdd('__area__',this)"></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>` : '';
@@ -657,8 +868,9 @@
     const lb = a.baselineStart || a.baselineEnd ? `${fCorta(a.baselineStart)} → ${fCorta(a.baselineEnd)}` : '<span class="pl-mut">nueva</span>';
     // En la vista Gantt el desvío acompaña al fin; en la tabla tiene su columna
     const dvChip = !cols.full && dv ? ` ${desvioHtml(dv)}` : '';
-    return `<tr class="pl-act${a.propuesta ? ' prop' : ''}" style="--c:${g.color}">
-      <td class="pl-sk pl-c-id">${idCell}</td>
+    const mueve = editable && opts.owner && opts.agrupar !== 'area';
+    return `<tr class="pl-act${a.propuesta ? ' prop' : ''}" style="--c:${g.color}"${editable && opts.owner ? ` data-row="${a.id}"` : ''}>
+      <td class="pl-sk pl-c-id">${mueve ? '<span class="pl-drag" title="Arrastra para mover la fila · clic derecho: más opciones">⠿</span>' : ''}${idCell}</td>
       <td class="pl-sk pl-c-nm"><div class="pl-nmw" title="${esc(a.name + (a.entregable ? ' → ' + a.entregable : '') + (opts.agrupar === 'area' && a._etapa ? ' · ' + a._etapa : ''))}">${inp('name', a.name, 'Actividad', 'nm')}${opts.owner && has('planOnDetalle') ? notasTareasBtn(a) : ''}</div></td>
       <td class="pl-rs">${avatares(respDe(a))}${cols.full ? inp('responsables', resp, '—', 'rs') : `<span class="pl-tx rs" title="${esc(resp)}">${esc(resp) || '<span class="pl-mut">—</span>'}</span>`}</td>
       ${cols.area ? `<td class="pl-arc">${areasActividad(a, ultimoModelo && ultimoModelo.miembros).map(x => `<span class="pl-arp" style="--c:${colorDe(x)}">${esc(x)}</span>`).join('') || '<span class="pl-mut" title="Registra al responsable en «Involucrados» con su área">—</span>'}</td>` : ''}
@@ -725,7 +937,7 @@
 
   window.Plan = {
     render, estado, pickDate, aplicarLocal, adelantar, cascada, colorDe, respDe, norm, fCorta, dibujarLineas, cambiarDuracion, areasActividad,
-    etapas,
+    etapas, medirAjuste, anchoAjuste, enfocar,
     // Ancho extra que tomó la columna «Actividad» (para que la escala «Todo» siga cabiendo)
     extraNombre: () => (anchoNm == null ? 0 : anchoNm - NM_DEF),
     cal: { esHabil, habilDesde, finHabil, diasHabiles, sumarHabiles, difHabiles, moverRango },

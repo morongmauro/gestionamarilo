@@ -1,47 +1,49 @@
-NUEVA SAS CON LOS CAPÍTULOS DE LA FOTO · qué hacer
-==================================================
+CRONOGRAMA MÁS PRÁCTICO (TIPO EXCEL) · qué hacer
+================================================
 
-PRIMERO, EN SUPABASE (una sola vez)
------------------------------------
-Si te sale «column ... does not exist» (por ejemplo activities.propuesta):
-abre supabase/TODAS-octubre-2026.sql, copia TODO su contenido y pégalo en
-Supabase → SQL Editor → New query → Run. Trae todas las migraciones de
-octubre juntas; se puede correr aunque ya hayas corrido alguna (no borra nada).
-Luego recarga la app con Ctrl + F5.
+No hay nada nuevo que correr en Supabase. (Si alguna vez sale «column ...
+does not exist», corre supabase/TODAS-octubre-2026.sql: trae todo junto.)
+Recarga la app con Ctrl + F5.
 
 
-PASO A PASO (para dejar Nueva SAS como la foto)
------------------------------------------------
-1. Abre el proyecto Nueva SAS → «📥 Plantilla de plan».
-2. Plantilla: «Nueva SAS (capítulos Sociedad)».
-3. Inicio del plan: 28/09/2026.
-4. Marca «Reemplazar la estructura actual» → «Reemplazar y cargar».
-
-Qué hace el reemplazo:
-- El plan queda con las etapas exactas de la foto, en su orden, y con sus
-  actividades dentro: 0 · Arranque del proyecto (kick off y cronograma),
-  Constitución Legal (11), Obligación de llevar contabilidad, Responsabilidades
-  Tributarias (9), Facturación de los ingresos, Recaudo de los ingresos,
-  Reconocimiento de los gastos y retención de impuestos, Gastos de nómina,
-  Giro de recursos a Socios o Fideicomitentes, Estados Financieros y Toma de
-  decisiones y aprobación de EEFF.
-- Las actividades que ya existían con el mismo nombre (kick off, cronograma)
-  se conservan con sus fechas reales, avance y notas.
-- Lo que no está en la foto (lo que yo había agregado de más) se borra.
-- Las propuestas del equipo y tus tareas no se tocan.
-- Las fechas planeadas quedan del 28 sep al 30 nov (fin de noviembre),
-  encadenadas por dependencias. Las fechas reales NO se llenan: esas las
-  pones tú.
-
-Duraciones y dependencias son una propuesta: cámbialas en la columna «Días» o
-con la cajita de ajuste; lo que depende se corre en cascada.
+EDITAR COMO EN EXCEL (vista Plan de trabajo y vista Tabla)
+----------------------------------------------------------
+- ↑ / ↓ o Enter: pasas a la celda de arriba o de abajo (lo escrito se guarda).
+  Shift + Enter sube. Esc deshace lo que escribiste en la celda.
+- Alt + ↑ / Alt + ↓: sube o baja la fila.
+- Ctrl + Enter: inserta una fila nueva debajo, con el cursor en su nombre.
+- ⠿ (aparece al pasar el mouse por el ID): arrastra la fila a donde quieras,
+  incluso a otra etapa (suéltala sobre el título de la etapa para dejarla
+  de primera).
+- Clic derecho sobre una fila: insertar arriba / debajo, duplicar, subir,
+  bajar, notas y tareas, eliminar.
+- Pegar desde Excel:
+  · En «＋ Actividad en …» pega varias filas y se crea una actividad por
+    fila. Columnas: Nombre · Responsable · Días hábiles (las dos últimas
+    son opcionales).
+  · En una celda, pegar varias líneas llena hacia abajo (como en Excel).
 
 
-OTROS CAMBIOS
--------------
-- El Gantt llega hasta el final del mes siguiente a la fecha meta: con meta
-  a finales de noviembre se ve diciembre completo.
-- La columna «Actividad» se ensancha: arrastra el borde derecho de su título.
-  Doble clic en ese borde la ajusta para leer los nombres; otro doble clic la
-  devuelve al ancho normal. Cada persona guarda su ancho (también en el
-  enlace compartido).
+MÁS CRONOGRAMA A LA VISTA
+-------------------------
+- Filas más bajitas y letra un poco más pequeña: caben más actividades.
+- Columnas más angostas (responsable, cronograma, estado, avance).
+- Pasa el mouse por un nombre recortado y lo ves completo al instante
+  (con su entregable). Sirve en tu editor y en el enlace compartido.
+- La columna «Actividad» se sigue ensanchando arrastrando el borde de su
+  título.
+- La escala «Todo» ahora cabe exacta en la pantalla.
+
+TU VISTA DE EDICIÓN, COMPACTA
+-----------------------------
+- Las opciones de vista (vista, agrupación, escala, filtros) quedan en
+  «⚙ Opciones de vista»; arriba solo quedan las etapas y «Solo etapas».
+- ⛶ Mesa de trabajo (junto a las vistas): esconde la barra lateral, los
+  indicadores grandes y las microtareas, y deja el cronograma a pantalla
+  completa con un resumen de una línea (avance, fin vs meta, atrasadas).
+  Sales con «✕ Salir de mesa» o con Esc.
+
+VISTA TABLA
+-----------
+- Cada capítulo con su color y su número, igual que en el Gantt; cada
+  actividad muestra su ID (1.1, 1.2…).
