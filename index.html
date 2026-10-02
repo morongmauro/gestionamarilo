@@ -2045,7 +2045,12 @@
     </div>`;
   }
   function planBodyHtml(d){
-    if(planView==='hoja')return Plan.render(planModel(d),planOpts);
+    if(planView==='hoja'){
+      // Escala «Todo»: el cronograma ocupa lo que queda al lado de las columnas
+      const ancho=(($('p-detail')||document.body).clientWidth||1200)-(planOpts.vista==='tabla'?1500:900)-(planOpts.panel?240:0);
+      planOpts.anchoTL=Math.max(360,ancho);
+      return Plan.render(planModel(d),planOpts);
+    }
     return planView==='gantt'?ganttHtml(d)+legendHtml():planTableHtml(d);
   }
   // Repinta solo lo que cambia con una edición: indicadores y plan. Sin recargar nada.

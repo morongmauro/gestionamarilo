@@ -1,28 +1,29 @@
-NOTAS Y TAREAS POR ACTIVIDAD · qué hacer
-=========================================
+ENLACE PARA DIRECTIVOS: EL GANTT DE PROTAGONISTA · qué hacer
+=============================================================
 
-PASO 1 · Supabase (una sola vez)
---------------------------------
-Supabase -> SQL Editor -> New query -> pega TODO el contenido de
-   supabase/migracion-2026-10-notas.sql
-y dale Run. Es seguro correrlo más de una vez.
-(Si te faltan las anteriores: fecha-meta, involucrados, linea-base,
- fechas-reales — ver SETUP-SUPABASE.md.)
+No hay nada que correr en Supabase en esta versión.
 
 
-QUÉ CAMBIÓ EN ESTA VERSIÓN
----------------------------
-1. Cada actividad del plan tiene un indicador «💬 notas · ☑ hechas/total»
-   (o «＋ nota / tarea» al pasar el mouse). Al tocarlo se abre el panel de la
-   actividad, a la derecha:
-   - Nota general: la descripción fija de la actividad.
-   - Bitácora: notas con fecha y hora de lo que va pasando (Ctrl+Enter
-     guarda). Son privadas: no salen en el enlace compartido.
-   - Tareas: crea tareas de esa actividad (con fecha límite opcional),
-     márcalas hechas, ábrelas, desvincúlalas o vincula una que ya existía.
-   Esc o × lo cierra.
+QUÉ CAMBIÓ EN ESTA VERSIÓN (enlace compartido)
+-----------------------------------------------
+1. Franja ejecutiva arriba, en una sola tarjeta:
+   - Semáforo: Al día / En riesgo / Atrasado (según atrasos, ritmo de avance
+     contra el plan y si el fin previsto se pasa de la fecha meta).
+   - Avance vs plan a hoy · Fin previsto vs fecha meta · Actividades listas.
+   - «⚠ Atrasado» (hasta 3) y «→ Lo que viene» (los 3 próximos vencimientos).
 
-2. En la cajita de ajustes:
-     2.3 nota: la notaría pidió el certificado actualizado
-     2.3 tarea: llamar a la notaría para viernes
-   («para …» al final pone la fecha límite de la tarea)
+2. El Gantt es el protagonista:
+   - Escala «Todo» por defecto: el cronograma completo cabe en la pantalla,
+     con la línea de la fecha meta.
+   - «Solo etapas»: vista macro con una fila por etapa; cada etapa se abre o
+     se contrae con ▸ / ▾.
+   - Columnas para directivos: actividad, responsable, cronograma, avance y
+     estado (sin columnas operativas).
+   - «⚙ Opciones de vista» guarda todo lo demás (vista, agrupación, escala,
+     filtros y qué mostrar). El panel de involucrados queda apagado.
+
+3. «Para el equipo del proyecto»: proponer actividad, estimar duraciones y
+   proponer ajustes quedan juntos al final, plegados.
+
+En tu vista de editor: las etapas también se contraen con ▸ / ▾ y la escala
+tiene la opción «Todo».
