@@ -433,3 +433,6 @@ tr.pl-drop-dentro td{box-shadow:inset 0 -3px 0 var(--accent,#3D7BF7)!important;f
 .pl-menu button.peligro{color:#E2445C}
 .pl-menu kbd{font:600 10px Montserrat,system-ui,sans-serif;color:var(--faint,#9A9384);background:var(--sunk,#F2F0EB);padding:2px 6px;border-radius:6px}
 .pl-menu hr{border:none;height:1px;background:var(--sunk,#F2F0EB);margin:4px 6px}
+/* Menos aire entre la barra de etapas y el cronograma */
+.pl-bar-c{margin-bottom:6px}
+.pl-bar-c + .pl-div,.pl-opts-c + .pl-div{margin:2px 4px 8px}

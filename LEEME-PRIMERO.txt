@@ -36,6 +36,13 @@ MÁS CRONOGRAMA A LA VISTA
 
 TU VISTA DE EDICIÓN, COMPACTA
 -----------------------------
+- Los indicadores del proyecto quedan en una sola franja: avance vs plan
+  (con barrita), fin vs meta, atrasadas / vencen / ruta crítica,
+  microtareas y la fecha crítica más urgente. «▾ Detalle» abre los
+  indicadores grandes y todas las fechas críticas (y «▴ Menos» los cierra).
+- La cajita de ajuste rápido está en la misma fila de «Fijar línea base» y
+  de las vistas.
+- Encabezado del proyecto, aviso del portafolio y pestañas más delgados.
 - Las opciones de vista (vista, agrupación, escala, filtros) quedan en
   «⚙ Opciones de vista»; arriba solo quedan las etapas y «Solo etapas».
 - ⛶ Mesa de trabajo (junto a las vistas): esconde la barra lateral, los
