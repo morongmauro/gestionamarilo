@@ -894,6 +894,45 @@
   html.mesa .panel-h{margin-bottom:8px}
   html.mesa .pl-wrap{max-height:calc(100vh - 175px)}
   html.mesa .plan-head{margin-bottom:6px}
+  /* ---------- Zona superior del proyecto, compacta ---------- */
+  .kstrip{display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;font-size:11.5px;color:var(--muted)}
+  .kstrip b{color:var(--ink);font-weight:800;font-variant-numeric:tabular-nums}
+  .ks-g{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;background:var(--sunk);padding:5px 12px;border-radius:999px;white-space:nowrap}
+  .ks-i{display:inline-flex;gap:4px;margin-right:6px}.ks-i:last-child{margin-right:0}
+  .ks-sep{width:1px;height:12px;background:color-mix(in srgb,var(--ink) 15%,transparent);margin:0 2px}
+  .ks-bar{position:relative;display:inline-block;width:70px;height:6px;border-radius:999px;background:color-mix(in srgb,var(--ink) 9%,transparent)}
+  .ks-bar i{position:absolute;left:0;top:0;bottom:0;border-radius:999px}
+  .ks-bar em{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;border-radius:2px;background:var(--ink);opacity:.6}
+  .ks-crit{display:inline-flex;align-items:center;gap:4px;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:5px 12px;border-radius:999px;font-weight:600;cursor:pointer;background:color-mix(in srgb,var(--warn) 18%,var(--card));color:color-mix(in srgb,var(--warn) 55%,var(--ink))}
+  .ks-crit.retraso{background:color-mix(in srgb,var(--crit) 14%,var(--card));color:var(--crit)}
+  .ks-crit em{font-style:normal;font-weight:800;opacity:.75}
+  .ks-more{margin-left:auto;font-size:11px;font-weight:700;color:var(--muted);padding:5px 12px;border-radius:999px;background:transparent}
+  .ks-more:hover{background:var(--sunk);color:var(--ink)}
+  #p-kpis.pk{margin-bottom:10px;gap:8px}
+  .pk-full{display:flex;flex-wrap:wrap;gap:12px;width:100%;margin-top:4px}
+  #p-signals>div{margin-bottom:10px!important}
+  /* Encabezado del proyecto más delgado */
+  #p-detail .panel{padding:16px 20px;margin-top:10px}
+  #p-detail .panel-h{margin-bottom:10px;align-items:center}
+  #p-detail .panel-h .nm{font-size:18px}
+  #p-detail .panel-h>div:first-child{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  #p-detail .panel-h .meta{margin-top:0}
+  #p-detail .panel-h .btn-sm{padding:5px 11px;font-size:11.5px}
+  #p-detail .panel .sep{margin:10px 0}
+  /* Barra del plan: ajuste rápido y vistas en una sola fila */
+  .plan-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+  .plan-top #plan-head-wrap,.plan-top .plan-head{display:contents}
+  .plan-top .plan-head-l{order:0;min-height:38px;position:relative}
+  .plan-top .saving-dot{position:absolute;left:12px;top:-13px;white-space:nowrap}
+  .plan-top #asist-wrap{order:1;flex:1 1 320px;min-width:260px}
+  .plan-top .plan-head-r{order:2;min-height:38px}
+  .plan-top .asist{margin:0}
+  .plan-top .asist-in{padding:3px 4px 3px 14px}
+  .plan-top .asist-in input{font-size:12px;padding:5px 0}
+  /* Aviso del portafolio y pestañas de proyectos, más delgados */
+  #p-alerts .banner{padding:6px 14px;margin-bottom:8px;font-size:11.5px;border-radius:999px}
+  #v-proyectos .p-top{margin-bottom:8px}
+  #v-proyectos .ptabs{padding-bottom:6px;margin-bottom:0}
   /* Tabla más compacta */
   .ptable td{padding:2px 5px}
   .ptable .pt-in{padding:4px 6px;font-size:11.5px}
@@ -2025,7 +2064,40 @@
     const txt=dif>0?`se pasa ${dif} día${dif===1?'':'s'} háb.`:dif<0?`sobran ${-dif} día${dif===-1?'':'s'} háb.`:'justo a tiempo';
     return `<div class="b"><div class="s">${fmtDate(d.fechaMeta)}</div><div class="l">Fecha meta · <strong style="color:${dif>0?'var(--crit)':'var(--good)'}">${txt}</strong></div></div>`;
   }
+  // Indicadores en una sola franja (el detalle grande se abre con «▾ Detalle»)
+  let kpiDetalle=false;try{kpiDetalle=localStorage.getItem('kpiDetalleV1')==='1';}catch{}
+  function toggleKpis(){kpiDetalle=!kpiDetalle;try{localStorage.setItem('kpiDetalleV1',kpiDetalle?'1':'0');}catch{}renderPlan();}
+  function kstripHtml(d){
+    const s=d.summary;
+    const plan=s.avanceEsperado,delta=plan!=null?s.avance-plan:null;
+    const col=delta==null?'var(--ink)':delta<-10?'var(--crit)':delta<0?'var(--warn)':'var(--good)';
+    const dif=d.fechaMeta&&s.fechaFinal?Plan.cal.difHabiles(d.fechaMeta,s.fechaFinal):null;
+    const fc=s.fechasCriticas||[];
+    const c0=fc[0];
+    const n=(v,c,l,tip)=>`<span class="ks-i"${tip?` title="${esc(tip)}"`:''}><b style="color:${c}">${v}</b> ${l}</span>`;
+    return `<div class="kstrip">
+      <span class="ks-g" title="Ejecutado vs lo que debería llevar hoy según el plan">
+        <b>${s.avance}%</b> ejecutado${plan!=null?` · plan <b>${plan}%</b>`:''}
+        ${plan!=null?`<span class="ks-bar"><i style="width:${s.avance}%;background:${col}"></i><em style="left:${plan}%"></em></span><span style="color:${col};font-weight:700">${delta>=0?'▲ al día':`▼ ${Math.abs(delta)} pts`}</span>`:''}
+        <span class="ks-sep"></span><b>${s.completadas}/${s.totalActividades}</b> listas
+      </span>
+      <span class="ks-g">Fin <b>${fmtDate(s.fechaFinal)}</b> · meta ${d.fechaMeta?`<b>${fmtDate(d.fechaMeta)}</b>${dif!=null?` <span style="color:${dif>0?'var(--crit)':'var(--good)'};font-weight:700">${dif>0?`+${dif} háb.`:dif<0?`${-dif} háb. de holgura`:'justo'}</span>`:''}`:`<button class="kg-link" onclick="openProjectModal('${d.id}')">poner</button>`}</span>
+      <span class="ks-g">
+        ${n(s.retrasos,s.retrasos?'var(--crit)':'var(--good)','atrasadas')}
+        ${n(s.proximas,s.proximas?'var(--warn)':'var(--ink)','vencen en 7 d')}
+        ${n(s.rutaCritica||0,s.rutaCriticaEnRiesgo?'var(--cp-late-ink)':s.rutaCritica?'var(--cp-ink)':'var(--faint)','ruta crítica',`Actividades sin holgura${s.rutaCriticaEnRiesgo?` · ${s.rutaCriticaEnRiesgo} en riesgo`:''}`)}
+      </span>
+      <span class="ks-g">${n(s.tareasActivas,'var(--ink)','microtareas')}${d.ice!=null?n(d.ice,'var(--accent-ink)','ICE'):''}</span>
+      ${c0?`<span class="ks-crit ${c0.alerta}" onclick="openActivityModal('${c0.id}')" title="${esc(fc.map(c=>`${c.name} · ${fmtDate(c.deadline)}`).join('\n'))}">${c0.alerta==='retraso'?'⏰':'⚠'} ${esc(c0.name)} · ${fmtDate(c0.deadline)}${fc.length>1?` <em>+${fc.length-1}</em>`:''}</span>`:''}
+      <button class="ks-more" onclick="toggleKpis()" title="${kpiDetalle?'Ocultar el detalle de indicadores':'Ver los indicadores en grande y las fechas críticas'}">${kpiDetalle?'▴ Menos':'▾ Detalle'}</button>
+    </div>`;
+  }
   function kpisHtml(d){
+    if(!kpiDetalle)return kstripHtml(d);
+    return kstripHtml(d)+`<div class="pk-full">${kpisGrandesHtml(d)}</div>`;
+  }
+  function senalesHtml(s){return kpiDetalle?planVsRealHtml(s)+critHtml(s):'';}
+  function kpisGrandesHtml(d){
     const s=d.summary;
     const rcCol=s.rutaCriticaEnRiesgo?'var(--cp-late-ink)':s.rutaCritica?'var(--cp-ink)':'var(--faint)';
     return `
@@ -2065,11 +2137,11 @@
   }
   function planHeadHtml(){
     return `<div class="plan-head">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <div class="subhead" style="margin:0;display:flex;align-items:center;gap:8px">Plan de trabajo <span id="plan-saving" class="saving-dot">guardando…</span></div>
+      <div class="plan-head-l" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span id="plan-saving" class="saving-dot">guardando…</span>
         ${lineaBaseHtml()}
       </div>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <div class="plan-head-r" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         ${mesa?mesaKpisHtml():''}
         <span class="plan-info" title="${esc(planView==='gantt'
           ? 'El % manda: al ponerlo, la actividad pasa a «en curso», y al llegar a 100% queda completada. Arrastra ⠿ para reordenar y el punto del borde de una barra hasta otra fila para conectarlas.'
@@ -2128,7 +2200,7 @@
     if(!d||!$('plan-body'))return;
     hideReqCard();
     $('p-kpis').innerHTML=kpisHtml(d);
-    $('p-signals').innerHTML=planVsRealHtml(d.summary)+critHtml(d.summary);
+    $('p-signals').innerHTML=senalesHtml(d.summary);
     const sc=$('gantt-scroll'),keepG=sc?sc.scrollLeft:0;
     const tb=document.querySelector('.ptable-wrap'),keepT=tb?tb.scrollLeft:0;
     const hj=$('pl-wrap'),keepH=hj?[hj.scrollLeft,hj.scrollTop]:null;
@@ -2169,12 +2241,11 @@
         </div>
       </div>
       <div class="pk" id="p-kpis">${kpisHtml(d)}</div>
-      <div id="p-signals">${planVsRealHtml(s)}${critHtml(s)}</div>
+      <div id="p-signals">${senalesHtml(s)}</div>
       <div id="prop-wrap">${propuestasHtml(d)}</div>
       <div class="sep"></div>
       <div>
-        <div id="plan-head-wrap">${planHeadHtml()}</div>
-        <div id="asist-wrap">${asistHtml()}</div>
+        <div class="plan-top"><div id="plan-head-wrap">${planHeadHtml()}</div><div id="asist-wrap">${asistHtml()}</div></div>
         <div id="plan-body">${planBodyHtml(d)}</div>
       </div>
       <div class="sep"></div>
@@ -2953,7 +3024,7 @@
     return `<div class="asist">
       <div class="asist-in">
         <span class="asist-ic">✦</span>
-        <input id="asist-txt" placeholder="Ajuste rápido: «${ej[0]}», «${ej[1]}», «${ej[2]}»…  (varios con ;)" onkeydown="if(event.key==='Enter'){event.preventDefault();asistInterpretar();}" oninput="if(!this.value)asistCancelar()">
+        <input id="asist-txt" placeholder="Ajuste rápido: «${ej[0]}», «${ej[1]}»…  (varios con ;)" onkeydown="if(event.key==='Enter'){event.preventDefault();asistInterpretar();}" oninput="if(!this.value)asistCancelar()">
         <button class="btn btn-soft btn-sm" onclick="asistInterpretar()">Revisar</button>
         <button class="asist-help" onclick="asistAyuda()" title="Qué frases entiende">?</button>
       </div>
