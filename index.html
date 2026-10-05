@@ -942,6 +942,10 @@
   .pt-nmw .pt-in{flex:1 1 auto}
   .ptable .dep-cell{flex-wrap:nowrap}
   .ptable .pt-in.pct{min-width:54px;text-align:right}
+  .ptable tr.act:hover .pl-ra{display:inline-flex}
+  .pt-nmw{min-width:250px}
+  .ptable tr.act:hover .pl-cmt.vacio{display:inline-flex}
+  .dt-atarea{font-size:10.5px!important;font-weight:700;color:#5B4BD6!important;background:color-mix(in srgb,#7C6CF2 14%,var(--card))!important;border-radius:999px!important;padding:1px 8px!important;width:auto!important;margin-right:4px}
 </style>
 </head>
 <body>
@@ -2701,7 +2705,8 @@
     const orphans=acts.filter(a=>!a.sectionId||!secs.some(s=>s.id===a.sectionId));
     if(orphans.length)groups.push({id:null,name:'Otras',sec:null,acts:orphans});
     // Mismos colores y números de capítulo que en el plan de trabajo
-    const et=Plan.etapas(planModel(d)),info={},codAct={};
+    const modeloT=planModel(d);Plan.usarModelo(modeloT);
+    const et=Plan.etapas(modeloT),info={},codAct={};
     et.forEach(g=>{info[g.id||'_otras']=g;g.acts.forEach(a=>{codAct[a.id]=a._cod;});});
     const cols=13;
     const rows=groups.map(g=>{
@@ -2729,7 +2734,7 @@
     const atraso=a.alerta==='retraso'?' style="color:var(--crit);font-weight:700"':'';
     return `<tr class="act ${cp}" style="--c:${color||'#9A9384'}" data-row="${a.id}">
       <td class="pt-ord"><span class="pl-drag" title="Arrastra para mover la fila · clic derecho: más opciones">⠿</span><span class="pt-acod">${cod||''}</span><button onclick="moveActivity('${a.id}',-1)" title="Subir">▲</button><button onclick="moveActivity('${a.id}',1)" title="Bajar">▼</button></td>
-      <td><div class="pt-nmw"><input class="pt-in nm" data-cell="${a.id}:name" value="${esc(a.name)}" title="${esc(a.name)}" onchange="patchActivity('${a.id}',{name:this.value.trim()})">${a.critical?`<span class="cp-chip ${a.criticaEnRiesgo?'late':''}" title="Ruta crítica">RC</span>`:''}</div></td>
+      <td><div class="pt-nmw"><input class="pt-in nm" data-cell="${a.id}:name" value="${esc(a.name)}" title="${esc(a.name)}" onchange="patchActivity('${a.id}',{name:this.value.trim()})">${a.critical?`<span class="cp-chip ${a.criticaEnRiesgo?'late':''}" title="Ruta crítica">RC</span>`:''}${(()=>{const nC=((currentProjectDetail&&currentProjectDetail.notas)||[]).filter(n=>n.activityId===a.id).length;return `<button class="pl-cmt${nC?'':' vacio'}" data-cmt="${a.id}" title="Comentarios">${nC||'＋'}</button>`;})()}<span class="pl-ra"><button onclick="planOnRow('insertar-debajo','${a.id}')" title="Insertar una fila debajo (Ctrl+Enter)">＋</button><button onclick="planOnRow('eliminar','${a.id}')" title="Eliminar esta fila">🗑</button></span></div></td>
       <td><select class="pt-in" data-cell="${a.id}:sec" onchange="patchActivity('${a.id}',{sectionId:this.value||null})">${secOpts}</select></td>
       <td><input class="pt-in" data-cell="${a.id}:resp" value="${esc(resp)}" list="dl-personas" placeholder="Diana, Camilo…" title="Separa varios con coma" onchange="patchActivity('${a.id}',{responsables:this.value})"></td>
       <td>${Plan.areasActividad(a,(currentProjectDetail&&currentProjectDetail.miembros)||[]).map(x=>`<span class="pl-arp" style="--c:${Plan.colorDe(x)}">${esc(x)}</span>`).join('')||'<span style="color:var(--faint)" title="Registra al responsable en «Involucrados» con su área">—</span>'}</td>
@@ -2740,7 +2745,7 @@
       <td>${depCellHtml(a)}</td>
       <td><input class="pt-in" data-cell="${a.id}:ent" value="${esc(a.entregable||'')}" placeholder="—" onchange="patchActivity('${a.id}',{entregable:this.value.trim()})"></td>
       <td><input class="pt-in" data-cell="${a.id}:notes" value="${esc(a.notes||'')}" placeholder="—" onchange="patchActivity('${a.id}',{notes:this.value})"></td>
-      <td><button class="pt-del" onclick="removeActivity('${a.id}')" title="Eliminar actividad">🗑</button></td>
+      <td><button class="pt-del" onclick="removeActivity('${a.id}')" title="Eliminar esta fila">🗑</button></td>
     </tr>`;
   }
   function depCellHtml(a){
@@ -2783,6 +2788,30 @@
   function planOnAncho(){if(planOpts.zoom==='ajustar')renderPlan();}
   function planSetOpt(k,v){Plan.cambiar(planOpts,k,v);Plan.guardar(LS_PLAN,planOpts);renderPlan();}
   function planOnPatch(id,cambios){patchActivity(id,cambios);}
+  // ---------- COMENTARIOS (nubecita): agregar, borrar y convertir en tarea ----------
+  async function planOnComentario(acc,actId,x){
+    const d=currentProjectDetail;if(!d)return;
+    try{
+      if(acc==='agregar'){
+        const r=await api(`/api/activities/${actId}?res=notas`,'POST',{texto:x.texto,fecha:x.fecha||null});
+        d.notas=[r.nota,...(d.notas||[])];
+        toast('✓ Comentario guardado');
+      }else if(acc==='borrar'){
+        if(!confirm('¿Borrar este comentario?'))return;
+        await api(`/api/activities/${actId}?res=notas&noteId=${x.noteId}`,'DELETE');
+        d.notas=(d.notas||[]).filter(n=>n.id!==x.noteId);
+      }else if(acc==='tarea'){
+        const n=(d.notas||[]).find(y=>y.id===x.noteId);if(!n)return;
+        await api('/api/tasks','POST',{description:n.texto,projectId:d.id,activityId:actId});
+        const fresco=await api('/api/projects/'+d.id);
+        if(fresco&&fresco.project&&fresco.project.tasks)d.tasks=fresco.project.tasks;
+        loadData();
+        toast('✓ Comentario convertido en tarea de la actividad');
+      }
+    }catch(e){toast('⚠ '+e.message,false);}
+    renderPlan();
+    if(detalleId===actId)renderDetalle();
+  }
   // ---------- EDICIÓN TIPO EXCEL: acciones sobre filas (menú, atajos y arrastre) ----------
   function planOnRow(acc,id,x){
     if(acc==='subir')return moveActivity(id,-1);
@@ -3105,7 +3134,7 @@
           <textarea id="dt-nota-new" rows="2" placeholder="Escribe una nota… (Ctrl+Enter para guardar)" onkeydown="if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){event.preventDefault();agregarNota();}"></textarea>
           <button class="btn btn-primary btn-sm" onclick="agregarNota()">＋ Nota</button>
         </div>
-        ${notas.length?notas.map(n=>`<div class="dt-nota"><div class="dt-nota-f">${fechaHora(n.createdAt)}<button onclick="borrarNota('${n.id}')" title="Borrar nota">×</button></div><div class="dt-nota-t">${esc(n.texto).replace(/\n/g,'<br>')}</div></div>`).join('')
+        ${notas.length?notas.map(n=>`<div class="dt-nota"><div class="dt-nota-f">${fechaHora(n.createdAt)}<span><button class="dt-atarea" onclick="planOnComentario('tarea','${a.id}',{noteId:'${n.id}'})" title="Crear una tarea de esta actividad con este texto">→ Tarea</button><button onclick="borrarNota('${n.id}')" title="Borrar nota">×</button></span></div><div class="dt-nota-t">${esc(n.texto).replace(/\n/g,'<br>')}</div></div>`).join('')
           :'<div class="dt-vacio">Aún no hay notas en la bitácora.</div>'}
       </div>
       <div class="sep" style="margin:14px 0"></div>

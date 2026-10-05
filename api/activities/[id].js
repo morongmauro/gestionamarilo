@@ -5,7 +5,7 @@ module.exports = async (req, res) => {
   try {
     // Bitácora de notas de la actividad: POST crea { texto }, DELETE ?res=notas&noteId=…
     if (req.query.res === 'notas') {
-      if (req.method === 'POST') return res.status(201).json({ nota: await db.crearNota(id, (req.body || {}).texto) });
+      if (req.method === 'POST') return res.status(201).json({ nota: await db.crearNota(id, (req.body || {}).texto, (req.body || {}).fecha) });
       if (req.method === 'DELETE') {
         if (!req.query.noteId) return res.status(400).json({ error: 'noteId es obligatorio' });
         await db.borrarNota(id, req.query.noteId);

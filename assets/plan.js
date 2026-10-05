@@ -395,14 +395,19 @@
   }
 
   // Indicador de notas y tareas de una actividad (abre su panel)
+  // Nubecita de comentarios + tareas + acciones de fila (solo en el editor)
   function notasTareasBtn(a) {
     const m = ultimoModelo || {};
-    const nN = (m.notas || []).filter(n => n.activityId === a.id).length + (a.notes ? 1 : 0);
+    const nC = (m.notas || []).filter(n => n.activityId === a.id).length;
     const ts = (m.tasks || []).filter(t => t.activityId === a.id);
-    const nT = ts.filter(t => t.kanbanStatus !== 'done').length, nH = ts.length - nT;
-    const vacio = !nN && !ts.length;
-    return `<button class="pl-nb${vacio ? ' vacio' : ''}" onclick="planOnDetalle('${a.id}')" title="Notas y tareas de esta actividad">${vacio ? '＋ nota / tarea' : `${nN ? `💬 ${nN}` : ''}${ts.length ? ` ☑ ${nH}/${ts.length}` : ''}`}</button>`;
+    const nH = ts.filter(t => t.kanbanStatus === 'done').length;
+    const cmt = `<button class="pl-cmt${nC ? '' : ' vacio'}" data-cmt="${a.id}" title="Comentarios de esta actividad">${nC || '＋'}</button>`;
+    const tar = ts.length ? `<button class="pl-nb" onclick="planOnDetalle('${a.id}')" title="Tareas de esta actividad">☑ ${nH}/${ts.length}</button>` : '';
+    const acc = has('planOnRow') ? `<span class="pl-ra"><button onclick="planOnRow('insertar-debajo','${a.id}')" title="Insertar una fila debajo (Ctrl+Enter)">＋</button><button onclick="planOnRow('eliminar','${a.id}')" title="Eliminar esta fila">🗑</button></span>` : '';
+    return cmt + tar + acc;
   }
+  // Día (en Bogotá) de un comentario
+  const diaDe = iso => { const d = iso ? new Date(iso) : new Date(); try { return (isNaN(d) ? new Date() : d).toLocaleDateString('en-CA', { timeZone: 'America/Bogota' }); } catch (e) { return String(iso || '').slice(0, 10); } };
 
   // Duración editable: fin = inicio + N días hábiles (sin inicio, arranca el próximo día hábil)
   let ultimoModelo = null;
@@ -634,6 +639,110 @@
   document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarMenu(); });
   window.addEventListener('blur', cerrarMenu);
 
+  // ============================================================
+  // COMENTARIOS: nubecita en la fila y en el cronograma
+  //   Pasar el mouse: historial · Clic: lo deja abierto para comentar
+  //   Cada comentario se puede convertir en tarea de la actividad.
+  // La página responde con window.planOnComentario(accion, actividadId, datos) → Promise
+  // ============================================================
+  let pop = null, popId = null, popFijo = false, popT = null;
+  const hoyBog = () => diaDe(new Date().toISOString());
+  const fechaCmt = iso => {
+    const d = new Date(iso); if (isNaN(d)) return 'recién';
+    const f = d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', timeZone: 'America/Bogota' });
+    const h = d.toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Bogota' });
+    return /^12:00/.test(h) ? f : `${f} · ${h}`; // los de fecha elegida no llevan hora
+  };
+  function esTarea(n, tareas) {
+    const t0 = norm(n.texto).slice(0, 60);
+    return tareas.some(t => norm(t.title || '').slice(0, 60) === t0);
+  }
+  function pintarPop() {
+    if (!pop || !popId) return;
+    const m = ultimoModelo || {};
+    const a = (m.activities || []).find(x => x.id === popId);
+    if (!a) { cerrarPop(); return; }
+    const cs = (m.notas || []).filter(n => n.activityId === popId).sort((x, y) => String(y.createdAt).localeCompare(String(x.createdAt)));
+    const ts = (m.tasks || []).filter(t => t.activityId === popId);
+    const borrador = pop.querySelector('textarea') ? pop.querySelector('textarea').value : '';
+    pop.innerHTML = `<div class="pl-pop-h"><div><span class="pl-pop-cod">${a._cod || ''}</span>${esc(a.name)}</div><button data-acc="cerrar" title="Cerrar">×</button></div>
+      <div class="pl-pop-l">${cs.length ? cs.map(n => `<div class="pl-pc">
+          <div class="pl-pc-f"><span>📅 ${fechaCmt(n.createdAt)}</span><span class="pl-pc-a">${esTarea(n, ts) ? '<em>✓ ya es tarea</em>' : `<button data-acc="tarea" data-n="${n.id}" title="Crear una tarea de esta actividad con este texto">→ Tarea</button>`}<button data-acc="borrar" data-n="${n.id}" title="Borrar comentario">×</button></span></div>
+          <div class="pl-pc-t">${esc(n.texto).replace(/\n/g, '<br>')}</div></div>`).join('')
+        : '<div class="pl-pop-v">Sin comentarios todavía. Escribe el primero 👇</div>'}</div>
+      <div class="pl-pop-add">
+        <textarea rows="2" placeholder="Escribe un comentario… (Enter guarda · Shift+Enter: otra línea)">${esc(borrador)}</textarea>
+        <div class="pl-pop-r"><input type="date" value="${hoyBog()}" title="Fecha del comentario (por defecto hoy)"><button data-acc="agregar" class="ok">Comentar</button></div>
+      </div>
+      <div class="pl-pop-f"><span>${ts.length ? `☑ ${ts.filter(t => t.kanbanStatus === 'done').length}/${ts.length} tareas` : ''}</span><button data-acc="detalle">Abrir bitácora y tareas →</button></div>`;
+  }
+  function abrirPop(id, ancla, fijo) {
+    clearTimeout(popT);
+    if (!pop) {
+      pop = document.createElement('div'); pop.className = 'pl-pop';
+      document.body.appendChild(pop);
+      pop.addEventListener('mouseenter', () => clearTimeout(popT));
+      pop.addEventListener('mouseleave', () => { if (!popFijo) popT = setTimeout(cerrarPop, 250); });
+      pop.addEventListener('focusin', () => { popFijo = true; pop.classList.add('fijo'); });
+      pop.addEventListener('click', ev => {
+        const b = ev.target.closest('button[data-acc]'); if (!b) return;
+        const acc = b.dataset.acc;
+        if (acc === 'cerrar') return cerrarPop();
+        if (acc === 'detalle') { const i = popId; cerrarPop(); return window.planOnDetalle && window.planOnDetalle(i); }
+        if (acc === 'agregar') return enviarCmt();
+        accionCmt(acc, { noteId: b.dataset.n }, b);
+      });
+      pop.addEventListener('keydown', ev => {
+        if (ev.key === 'Enter' && !ev.shiftKey && ev.target.tagName === 'TEXTAREA') { ev.preventDefault(); enviarCmt(); }
+        if (ev.key === 'Escape') cerrarPop();
+      });
+    }
+    if (popId !== id) { pop.innerHTML = ''; }
+    popId = id; popFijo = !!fijo;
+    pop.classList.toggle('fijo', popFijo);
+    pintarPop();
+    const r = ancla.getBoundingClientRect();
+    pop.style.visibility = 'hidden'; pop.classList.add('on');
+    const w = pop.offsetWidth, h = pop.offsetHeight;
+    let x = r.left, y = r.bottom + 6;
+    if (x + w > window.innerWidth - 10) x = window.innerWidth - w - 10;
+    if (y + h > window.innerHeight - 10) y = Math.max(10, r.top - h - 6);
+    pop.style.left = Math.max(10, x) + 'px'; pop.style.top = y + 'px'; pop.style.visibility = '';
+    if (fijo) setTimeout(() => { const t = pop.querySelector('textarea'); if (t) t.focus(); }, 30);
+  }
+  function cerrarPop() { clearTimeout(popT); if (pop) { pop.classList.remove('on', 'fijo'); pop.innerHTML = ''; } popId = null; popFijo = false; }
+  async function accionCmt(acc, datos, boton) {
+    if (!has('planOnComentario') || !popId) return;
+    if (boton) boton.disabled = true;
+    try { await window.planOnComentario(acc, popId, datos); } catch (e) {}
+    pintarPop();
+  }
+  function enviarCmt() {
+    const t = pop && pop.querySelector('textarea'), f = pop && pop.querySelector('input[type=date]');
+    const texto = t ? t.value.trim() : '';
+    if (!texto) { if (t) t.focus(); return; }
+    t.value = '';
+    accionCmt('agregar', { texto, fecha: f && f.value || null }).then(() => { const n = pop && pop.querySelector('textarea'); if (n) n.focus(); });
+  }
+  document.addEventListener('mouseover', ev => {
+    const b = ev.target.closest && ev.target.closest('[data-cmt]');
+    if (!b || popFijo) return;
+    clearTimeout(popT);
+    popT = setTimeout(() => abrirPop(b.dataset.cmt, b, false), 280);
+  });
+  document.addEventListener('mouseout', ev => {
+    const b = ev.target.closest && ev.target.closest('[data-cmt]');
+    if (!b || popFijo) return;
+    if (pop && pop.contains(ev.relatedTarget)) return;
+    clearTimeout(popT);
+    popT = setTimeout(() => { if (!popFijo) cerrarPop(); }, 250);
+  });
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest && ev.target.closest('[data-cmt]');
+    if (b) { ev.preventDefault(); abrirPop(b.dataset.cmt, b, true); return; }
+    if (pop && popId && !pop.contains(ev.target) && !(ev.target.closest && ev.target.closest('.pl-menu'))) cerrarPop();
+  });
+
   // ---------- Escala «Todo»: mide lo que ocupan las columnas para que el cronograma quepa exacto ----------
   let fijoMedido = null;
   function medirAjuste(raiz) {
@@ -845,6 +954,14 @@
       const rf = a.realEnd || today;
       if (rf >= a.realStart) barra += `<span class="pl-real${a.realEnd ? '' : ' abierta'}" style="left:${E.x(a.realStart)}px;width:${Math.max(E.ppd, E.x(addDays(rf, 1)) - E.x(a.realStart))}px" title="Real: ${fCorta(a.realStart)} → ${a.realEnd ? fCorta(a.realEnd) : 'en curso'}"></span>`;
     }
+    if (opts.owner && has('planOnComentario')) {
+      const porDia = {};
+      ((ultimoModelo && ultimoModelo.notas) || []).filter(n => n.activityId === a.id).forEach(n => { const d = diaDe(n.createdAt); porDia[d] = (porDia[d] || 0) + 1; });
+      Object.keys(porDia).forEach(d => {
+        if (d < E.ini || d > E.fin) return;
+        barra += `<span class="pl-nube" data-cmt="${a.id}" style="left:${E.x(d) + E.ppd / 2}px" title="${porDia[d]} comentario${porDia[d] > 1 ? 's' : ''} · ${fCorta(d)}">${porDia[d] > 1 ? porDia[d] : ''}</span>`;
+      });
+    }
     const cp = opts.owner && a.critical ? ` style="color:${a.criticaEnRiesgo ? 'var(--cp-late-ink)' : 'var(--cp-ink)'}"` : '';
     const idCell = has('planOnOpen') && opts.owner
       ? `<button class="pl-cod"${cp} onclick="planOnOpen('${a.id}')" title="Abrir detalle (dependencias, notas)">${a._cod}</button>`
@@ -937,7 +1054,9 @@
 
   window.Plan = {
     render, estado, pickDate, aplicarLocal, adelantar, cascada, colorDe, respDe, norm, fCorta, dibujarLineas, cambiarDuracion, areasActividad,
-    etapas, medirAjuste, anchoAjuste, enfocar,
+    etapas, medirAjuste, anchoAjuste, enfocar, pintarComentarios: pintarPop,
+    // La vista Tabla del editor no pasa por render(): le presta su modelo a la nubecita
+    usarModelo(m) { ultimoModelo = m; },
     // Ancho extra que tomó la columna «Actividad» (para que la escala «Todo» siga cabiendo)
     extraNombre: () => (anchoNm == null ? 0 : anchoNm - NM_DEF),
     cal: { esHabil, habilDesde, finHabil, diasHabiles, sumarHabiles, difHabiles, moverRango },
