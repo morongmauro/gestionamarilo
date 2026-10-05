@@ -168,9 +168,10 @@
       const x = resto.match(/(\d{1,3})\s*(dias?|semanas?)?/);
       if (!x) return { error: 'Dime la duración: «4.1 dura 8 días».' };
       const dur = Number(x[1]) * (x[2] && x[2].startsWith('semana') ? 5 : 1);
-      const ini = act.startDate || Plan.cal.habilDesde(addDays(today, 1));
-      const fin = Plan.cal.finHabil(ini, dur);
-      return { accion: { tipo: 'patch', id: act.id, cambios: { startDate: ini, deadline: fin }, desc: `${etiqueta} · dura ${dur} días hábiles: ${fc(ini)} → ${fc(fin)}` } };
+      // La duración manda: con inicio el fin sale solo; sin inicio queda la duración
+      // (y se programa al terminar sus precedentes)
+      const fin = act.startDate ? Plan.cal.finHabil(act.startDate, dur) : null;
+      return { accion: { tipo: 'patch', id: act.id, cambios: { duracion: dur }, desc: `${etiqueta} · dura ${dur} días hábiles${fin ? `: ${fc(act.startDate)} → ${fc(fin)}` : ' (sin fechas aún)'}` } };
     }
     if (regla.campo === 'pct') {
       const x = n.slice(m.index).match(/(\d{1,3})/);

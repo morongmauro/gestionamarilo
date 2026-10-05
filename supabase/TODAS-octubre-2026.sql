@@ -61,3 +61,6 @@ alter table activity_notes enable row level security;
 
 -- ---------- area ----------
 alter table activities add column if not exists area text;
+
+-- ---------- duracion ----------
+alter table activities add column if not exists duracion integer;

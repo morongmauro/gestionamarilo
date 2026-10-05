@@ -896,6 +896,21 @@
   html.mesa .panel-h{margin-bottom:8px}
   html.mesa .pl-wrap{max-height:calc(100vh - 175px)}
   html.mesa .plan-head{margin-bottom:6px}
+  /* Vista Dependencias: número y color de etapa, ficha de precedentes discreta */
+  .g-sec{background:color-mix(in srgb,var(--c,#9A9384) 12%,var(--card))!important;box-shadow:inset 5px 0 0 var(--c,#9A9384)}
+  .g-sec .nm{color:color-mix(in srgb,var(--c,#9A9384) 70%,var(--ink))!important;text-transform:none!important;font-size:12px!important}
+  .g-scod{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;border-radius:999px;background:var(--c);color:#fff;font-size:10.5px;font-weight:800;margin-right:8px;flex-shrink:0}
+  .g-secrow{display:flex;align-items:center}
+  .g-act .g-left{box-shadow:inset 5px 0 0 color-mix(in srgb,var(--c,#9A9384) 45%,var(--card))}
+  .g-cod{flex-shrink:0;min-width:26px;font-size:10.5px;font-weight:800;color:color-mix(in srgb,var(--c,#9A9384) 70%,var(--ink));font-variant-numeric:tabular-nums}
+  .reqcard{width:300px;padding:10px 0 0;border-radius:14px}
+  .req-h{padding:0 12px 6px}
+  .req-t{font-size:11.5px;font-weight:700}
+  .req-s{font-size:10px}
+  .req-row{padding:4px 12px 4px 6px;font-size:11px}
+  .req-list{padding:2px 0;max-height:32vh}
+  .req-foot{font-size:10px!important;padding:6px 12px 9px!important}
+  .req-cod{font-weight:800;margin-right:5px;color:var(--muted)}
   #mesa-exit{display:none;position:fixed;left:14px;bottom:14px;z-index:300;font:700 12px Montserrat,system-ui,sans-serif;color:var(--paper);background:var(--ink);padding:8px 16px;border-radius:999px;box-shadow:0 6px 20px rgba(28,26,23,.25)}
   html.mesa #mesa-exit{display:inline-flex}
   /* ---------- Zona superior del proyecto, compacta ---------- */
@@ -2300,12 +2315,16 @@
     const orphans=acts.filter(a=>!a.sectionId||!secs.some(s=>s.id===a.sectionId));
     const groups=secs.map(s=>({id:s.id,name:s.name,sec:s,acts:acts.filter(a=>a.sectionId===s.id)}));
     if(orphans.length)groups.push({id:null,name:'Otras',sec:null,acts:orphans});
+    // Mismos números (1, 1.1…) y colores de etapa que en el plan de trabajo
+    const et=Plan.etapas(planModel(d)),infoEt={};
+    et.forEach(g=>{infoEt[g.id||'_otras']=g;});
+    groups.forEach(g=>{const e=infoEt[g.id||'_otras']||{};g.color=e.color||'#9A9384';g.cod=e.cod;g.nombre=e.name||g.name;});
     const rows=groups.map(g=>{
       // Fase desactivada: fila delgada, sin actividades, con opción de reactivar
       if(g.sec&&g.sec.enabled===false){
         return `<div class="g-row g-sec off"><div class="g-left"><div class="g-secrow"><span class="nm">${esc(g.name)}</span><span class="mt">no aplica</span><span class="tools" style="opacity:1"><button onclick="toggleSection('${g.id}',true)" title="Volver a activar esta fase">☑ activar</button></span></div></div><div class="g-tl" style="min-height:26px">${ticks}${todayLine}</div></div>`;
       }
-      return gSecRow(g,pct,ticks,todayLine)+g.acts.map(a=>gActRow(a,pct,total,today,d)).join('')+
+      return gSecRow(g,pct,ticks,todayLine)+g.acts.map(a=>gActRow(a,pct,total,today,d,g.color)).join('')+
         `<div class="g-row g-add"><div class="g-left"><input placeholder="＋ Actividad en ${esc(g.name)} (Enter) · o pega filas de Excel" data-sec-add="${g.id||''}" onkeydown="if(event.key==='Enter')addActivityInline('${g.id||''}',this)"></div><div class="g-tl" style="min-height:30px">${ticks}${todayLine}</div></div>`;
     }).join('');
     const addSec=`<div class="g-row g-add"><div class="g-left"><input placeholder="＋ Nueva fase (Enter)" onkeydown="if(event.key==='Enter')addSectionInline(this)"></div><div class="g-tl" style="min-height:30px">${ticks}${todayLine}</div></div>`;
@@ -2330,13 +2349,13 @@
     const fechas=[];g.acts.forEach(a=>{if(a.startDate)fechas.push(a.startDate);if(a.deadline)fechas.push(a.deadline);});fechas.sort();
     const roll=fechas.length?(()=>{const l=pct(fechas[0]),w=Math.max(1,pct(addDays(fechas[fechas.length-1],1))-l);
       return `<div class="g-roll" style="left:${l}%;width:${w}%" title="${esc(g.name)}: ${fmtDate(fechas[0])} → ${fmtDate(fechas[fechas.length-1])} · ${avg}%"><i style="width:${avg}%"></i></div>`;})():'';
-    return `<div class="g-row g-sec" data-sec-id="${g.id||''}"><div class="g-left">
-      <div class="g-secrow"><span class="nm">${esc(g.name)}</span>${g.acts.length?`<span class="g-secpct" style="color:${col}">${avg}%</span>`:''}${tools}</div>
+    return `<div class="g-row g-sec" data-sec-id="${g.id||''}" style="--c:${g.color}"><div class="g-left">
+      <div class="g-secrow">${g.cod!=null?`<span class="g-scod">${g.cod}</span>`:''}<span class="nm">${esc(g.nombre||g.name)}</span>${g.acts.length?`<span class="g-secpct" style="color:${col}">${avg}%</span>`:''}${tools}</div>
       ${bar}<span class="mt">${meta}</span>
     </div><div class="g-tl" style="min-height:38px">${ticks}${todayLine}${roll}</div></div>`;
   }
   function gRowTicks(total){let t='';for(let i=0;i<=total;i+=7)t+=`<div class="g-tick" style="left:${i/total*100}%;opacity:.6"></div>`;return t;}
-  function gActRow(a,pct,total,today,d){
+  function gActRow(a,pct,total,today,d,color){
     const col=GC[a.estadoEfectivo]||GC.pendiente,warn=a.alerta==='proximidad'?'ring':'';
     const done=a.estadoEfectivo==='completada';
     // La ruta crítica manda el color de la barra: morada si va bien, rojo suave si está en riesgo
@@ -2360,7 +2379,7 @@
     if(a.startDate&&a.deadline&&a.deadline>=a.startDate){
       const l=pct(a.startDate),w=Math.max(1.4,pct(addDays(a.deadline,1))-l),fin=l+w;
       const expMark=(a.pctEsperado!=null&&!done)?`<div class="g-exp" style="left:${a.pctEsperado}%" title="Plan a hoy: ${a.pctEsperado}%"></div>`:'';
-      bar=`<div class="g-bar ${warn} ${cpCls}" data-act="${a.id}" style="left:${l}%;width:${w}%;background:${barCol}" onclick="openActivityModal('${a.id}')" title="${esc(tip)}"><div class="g-fill" style="width:${a.pctComplete}%"></div>${expMark}</div>`;
+      bar=`<div class="g-bar ${warn} ${cpCls}" data-act="${a.id}" style="left:${l}%;width:${w}%;background:${barCol}" onclick="openActivityModal('${a.id}')" onmouseenter="scheduleReqCard(event,'${a.id}')" onmouseleave="cancelReqCard()"><div class="g-fill" style="width:${a.pctComplete}%"></div>${expMark}</div>`;
       if(done)tag=doneTag(fin);
       handle=`<span class="g-linkh" style="left:${fin}%" onmousedown="startLink(event,'${a.id}')" title="Arrastra hasta otra actividad: esta va antes que ella"></span>`;
     }else if(a.startDate||a.deadline){
@@ -2372,8 +2391,8 @@
       bar=`<button class="g-nod" data-act="${a.id}" onclick="openActivityModal('${a.id}')">＋ agregar fechas</button>${done?'<span class="g-done inline" style="position:absolute;left:150px;top:50%;transform:translateY(-50%)">✓ Completado</span>':''}`;
     }
     const nDeps=(a.dependsOnIds||[]).length;
-    return `<div class="g-row g-act ${rowCls}" data-row-act="${a.id}" onmouseenter="scheduleReqCard(event,'${a.id}')" onmouseleave="cancelReqCard()"><div class="g-left">
-      <div class="g-anm" onclick="openActivityModal('${a.id}')" title="${esc(a.name)}"><span class="g-sdot" style="background:${col}"></span><span class="nmtxt">${esc(a.name)}</span>${nDeps?`<span class="req-badge" title="Depende de ${nDeps} actividad(es) — pasa el mouse para ver la cadena">⛓${nDeps}</span>`:''}${a.critical?`<span class="cp-chip ${a.criticaEnRiesgo?'late':''}">crítica</span>`:''}</div>
+    return `<div class="g-row g-act ${rowCls}" data-row-act="${a.id}" style="--c:${color||'#9A9384'}"><div class="g-left">
+      <div class="g-anm" onclick="openActivityModal('${a.id}')" onmouseenter="scheduleReqCard(event,'${a.id}')" onmouseleave="cancelReqCard()"><span class="g-cod">${a._cod||''}</span><span class="g-sdot" style="background:${col}" title="${AS[a.estadoEfectivo]||''}"></span><span class="nmtxt">${esc(a.name)}</span>${nDeps?`<span class="req-badge" title="Depende de ${nDeps} actividad(es) — pasa el mouse para ver la cadena">⛓${nDeps}</span>`:''}${a.critical?`<span class="cp-chip ${a.criticaEnRiesgo?'late':''}">crítica</span>`:''}</div>
       <div class="g-amt">${meta.join(' · ')}</div>
       <span class="g-tools-act">
         <button class="g-grip" onmousedown="startRowDrag(event,'${a.id}')" title="Arrastra para mover la actividad de lugar">⠿</button>
@@ -2528,8 +2547,8 @@
   function scheduleReqCard(ev,id){
     clearTimeout(reqTimer);
     if(rowDrag||linking)return;   // mientras arrastras, la ficha estorba
-    const fila=ev.currentTarget.closest('.g-act');
-    reqTimer=setTimeout(()=>showReqCard(id,fila),320);
+    const fila=ev.currentTarget.closest('.g-act'),ancla=ev.currentTarget;
+    reqTimer=setTimeout(()=>showReqCard(id,fila,ancla),380);
   }
   function cancelReqCard(){
     clearTimeout(reqTimer);
@@ -2543,11 +2562,12 @@
     document.querySelectorAll('#g-links path.up').forEach(e=>e.classList.remove('up'));
     const g=$('gantt');if(g)g.classList.remove('focusing');
   }
-  function showReqCard(id,fila){
+  function showReqCard(id,fila,ancla){
     const d=currentProjectDetail;if(!d||!fila)return;
     const a=d.activities.find(x=>x.id===id);if(!a)return;
     reqAbierta=id;
     const cadena=upstreamDe(id);
+    if(!cadena.length){hideReqCard();return;} // sin precedentes: no hay nada que mostrar
     const pendientes=cadena.filter(x=>x.act.estadoEfectivo!=='completada');
     const directas=new Set(a.dependsOnIds||[]);
     // Resaltar la cadena en el Gantt
@@ -2573,7 +2593,7 @@
       return `<div class="req-row ${listo?'ok':act.alerta==='retraso'?'late':''}" style="padding-left:${10+nivel*13}px" onclick="openActivityModal('${act.id}')">
         <span class="req-mark">${listo?'✓':act.alerta==='retraso'?'⏰':'○'}</span>
         <span class="req-body">
-          <span class="req-nm"><span class="req-dot" style="background:${col}"></span>${nivel?'↳ ':''}${esc(act.name)}${directas.has(act.id)?'<span class="req-direct">directa</span>':''}</span>
+          <span class="req-nm"><span class="req-dot" style="background:${col}"></span>${nivel?'↳ ':''}${act._cod?`<b class="req-cod">${act._cod}</b>`:''}${esc(act.name)}${directas.has(act.id)?'<span class="req-direct">directa</span>':''}</span>
           <span class="req-meta">${esc(meta.join(' · '))}</span>
         </span>
       </div>`;
@@ -2585,17 +2605,15 @@
       : `<div class="req-empty">No depende de nada. Puede arrancar cuando quieras.</div>`;
     const card=$('reqcard');
     card.innerHTML=`<div class="req-h">
-        <div class="req-t">Para que «${esc(a.name)}» pase, primero:</div>
+        <div class="req-t">${a._cod?`<b class="req-cod">${a._cod}</b>`:''}${esc(a.name)} · necesita antes:</div>
         <div class="req-s">${cadena.length?`${pendientes.length} pendiente${pendientes.length===1?'':'s'} en la cadena`:'sin prerrequisitos'}${a.critical?' · está en la ruta crítica':''}</div>
       </div>${cuerpo}`;
     card.classList.add('show');
-    // Ubicarla junto a la fila, sin salirse de la pantalla
-    const izq=fila.querySelector('.g-left')||fila;
-    const r=izq.getBoundingClientRect(),cr=card.getBoundingClientRect();
-    let top=r.top+r.height/2-cr.height/2;
-    top=Math.max(12,Math.min(window.innerHeight-cr.height-12,top));
-    let left=r.right+12;
-    if(left+cr.width>window.innerWidth-12)left=Math.max(12,r.left-cr.width-12);
+    // Justo debajo del nombre o de la barra (arriba si no cabe), sin salirse de la pantalla
+    const r=(ancla||fila.querySelector('.g-left')||fila).getBoundingClientRect(),cr=card.getBoundingClientRect();
+    let top=r.bottom+6;
+    if(top+cr.height>window.innerHeight-12)top=Math.max(12,r.top-cr.height-6);
+    const left=Math.max(12,Math.min(window.innerWidth-cr.width-12,r.left));
     card.style.top=top+'px';card.style.left=left+'px';
   }
 
@@ -2718,7 +2736,7 @@
     const modeloT=planModel(d);Plan.usarModelo(modeloT);
     const et=Plan.etapas(modeloT),info={},codAct={};
     et.forEach(g=>{info[g.id||'_otras']=g;g.acts.forEach(a=>{codAct[a.id]=a._cod;});});
-    const cols=13;
+    const cols=14;
     const rows=groups.map(g=>{
       const e=info[g.id||'_otras']||{color:'#9A9384'};
       if(g.sec&&g.sec.enabled===false){
@@ -2733,7 +2751,7 @@
     }).join('');
     const addSec=`<tr class="addrow"><td colspan="${cols}"><input placeholder="＋ Nueva fase (Enter)" onkeydown="if(event.key==='Enter')addSectionInline(this)"></td></tr>`;
     return `<div class="ptable-wrap"><table class="ptable">
-      <thead><tr><th style="width:74px">ID</th><th style="min-width:250px">Actividad</th><th style="min-width:150px">Fase</th><th style="min-width:170px">Responsables</th><th style="min-width:140px" title="Elígela de la lista de áreas de «Involucrados»; si la dejas automática, sale del área de cada responsable">Área responsable</th><th style="min-width:142px">Inicio</th><th style="min-width:142px">Fin</th><th style="min-width:126px">Estado</th><th style="width:66px">%</th><th style="min-width:190px">Depende de</th><th style="min-width:190px">Entregable</th><th style="min-width:170px">Notas</th><th style="width:34px"></th></tr></thead>
+      <thead><tr><th style="width:74px">ID</th><th style="min-width:250px">Actividad</th><th style="min-width:150px">Fase</th><th style="min-width:170px">Responsables</th><th style="min-width:140px" title="Elígela de la lista de áreas de «Involucrados»; si la dejas automática, sale del área de cada responsable">Área responsable</th><th style="min-width:142px">Inicio</th><th style="min-width:142px">Fin</th><th style="width:70px" title="Duración en días hábiles">Duración</th><th style="min-width:126px">Estado</th><th style="width:66px">%</th><th style="min-width:190px">Depende de</th><th style="min-width:190px">Entregable</th><th style="min-width:170px">Notas</th><th style="width:34px"></th></tr></thead>
       <tbody>${rows}${addSec}</tbody></table></div>`;
   }
   function ptRow(a,secs,color,cod){
@@ -2750,6 +2768,7 @@
       <td class="pl-pick pt-pick" tabindex="0" data-pick="area" data-act="${a.id}" title="${a.area?'Área elegida a mano':'Automática: sale del área de los responsables. Clic para elegirla a mano'}">${Plan.areasActividad(a,(currentProjectDetail&&currentProjectDetail.miembros)||[]).map(x=>`<span class="pl-arp${a.area?'':' auto'}" style="--c:${Plan.colorDe(x)}">${esc(x)}</span>`).join('')||'<span style="color:var(--faint)">Elegir…</span>'}<i class="pl-caret">▾</i></td>
       <td><input type="date" class="pt-in" data-cell="${a.id}:start" value="${a.startDate||''}" onchange="patchActivity('${a.id}',{startDate:this.value||null})"></td>
       <td><input type="date" class="pt-in" data-cell="${a.id}:end" value="${a.deadline||''}"${atraso} onchange="patchActivity('${a.id}',{deadline:this.value||null})"></td>
+      <td><input type="number" min="1" max="999" class="pt-in pct" data-cell="${a.id}:dur" value="${Plan.duracionDe(a)||''}" placeholder="—" title="Duración en días hábiles. Con inicio, el fin sale solo; sin fechas, se programa al terminar sus precedentes" onchange="patchActivity('${a.id}',{duracion:this.value===''?null:Number(this.value)})"></td>
       <td><span class="st-badge" title="El estado sale del % de avance"><span class="g-sdot" style="background:${stCol}"></span>${AS[a.estadoEfectivo]||a.status}</span></td>
       <td><input type="number" min="0" max="100" step="5" class="pt-in pct" data-cell="${a.id}:pct" value="${a.pctComplete}" title="0% pendiente · 1-99% en curso · 100% completada" onchange="patchActivity('${a.id}',{pctComplete:Number(this.value)})"></td>
       <td>${depCellHtml(a)}</td>
@@ -2795,7 +2814,7 @@
     return {sections:d.sections,activities:d.activities,tasks:d.tasks,notas:d.notas||[],miembros:d.miembros||[],lineaBase:d.lineaBaseAt||null,fechaMeta:d.fechaMeta||null,today:(d.summary&&d.summary.today)||todayISO()};
   }
   // Al ensanchar la columna «Actividad», la escala «Todo» se recalcula para seguir cabiendo
-  function planOnAncho(){if(planOpts.zoom==='ajustar')renderPlan();}
+  function planOnAncho(forzar){if(forzar||planOpts.zoom==='ajustar')renderPlan();}
   function planSetOpt(k,v){Plan.cambiar(planOpts,k,v);Plan.guardar(LS_PLAN,planOpts);renderPlan();}
   function planOnPatch(id,cambios){patchActivity(id,cambios);}
   // ---------- COMENTARIOS (nubecita): agregar, borrar y convertir en tarea ----------

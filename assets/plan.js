@@ -86,7 +86,10 @@
         if (f) { const s = habilDesde(addDays(f, 1)); if (!min || s > min) min = s; }
       });
       const ini = a.startDate || a.deadline;
-      if (min && ini && ini < min && !terminada(a)) {
+      // Solo duración (sin fechas): arranca al terminar lo que la condiciona
+      if (min && !ini && a.duracion > 0 && !terminada(a)) {
+        a.startDate = min; a.deadline = finHabil(min, a.duracion); n++;
+      } else if (min && ini && ini < min && !terminada(a)) {
         const r = moverRango(a.startDate, a.deadline, difHabiles(habilDesde(ini), min));
         a.startDate = r.ini; a.deadline = r.fin; n++;
       }
@@ -101,12 +104,34 @@
   function amarrarReal(a, cambios) {
     if (cambios.realEnd && cambios.pctComplete === undefined) { a.pctComplete = 100; a.status = 'completada'; }
   }
+  // Duración en días hábiles: la guardada o la que dan las fechas
+  const duracionDe = a => a.duracion || (a.startDate && a.deadline ? diasHabiles(a.startDate, a.deadline) : null);
+  // Misma regla del servidor: con duración, el inicio deja el fin como consecuencia;
+  // cambiar la duración recalcula el fin; poner el fin a mano actualiza la duración.
+  function reglaDuracion(a, cambios, durAntes) {
+    let nueva;
+    if (cambios.duracion !== undefined) {
+      const n = Math.round(Number(cambios.duracion));
+      nueva = n >= 1 && n <= 999 ? n : null;
+      a.duracion = nueva;
+    }
+    const dur = nueva !== undefined ? nueva : durAntes;
+    const ponenFin = cambios.deadline !== undefined;
+    if (dur && !ponenFin && (cambios.startDate !== undefined || nueva !== undefined) && a.startDate) {
+      a.startDate = habilDesde(a.startDate);
+      a.deadline = finHabil(a.startDate, dur);
+    }
+    if (ponenFin && a.deadline && a.startDate && nueva === undefined) a.duracion = diasHabiles(a.startDate, a.deadline);
+    if (cambios.startDate === null && !ponenFin && nueva === undefined && dur) { a.deadline = null; a.duracion = dur; }
+  }
   function aplicarLocal(acts, id, cambios, today) {
     const a = acts.find(x => x.id === id); if (!a) return 0;
     const antes = finEf(a);
+    const durAntes = duracionDe(a);
     Object.assign(a, cambios);
+    reglaDuracion(a, cambios, durAntes);
     amarrarReal(a, cambios);
-    const toca = ['startDate', 'deadline', 'realStart', 'realEnd', 'dependsOnIds', 'pctComplete'].some(k => cambios[k] !== undefined);
+    const toca = ['startDate', 'deadline', 'realStart', 'realEnd', 'dependsOnIds', 'pctComplete', 'duracion'].some(k => cambios[k] !== undefined);
     if (!toca) return 0;
     const despues = finEf(a);
     const n = (antes && despues) ? cascada(acts, id, difHabiles(antes, despues)) : 0;
@@ -365,7 +390,21 @@
     return `<span class="pl-avs">${vis}${nombres.length > 3 ? `<span class="pl-av mas">+${nombres.length - 3}</span>` : ''}</span>`;
   }
 
-  function filtrosHtml(model, opts, gs) {
+  // Menú «Columnas»: mostrar u ocultar cada una (se recuerda por vista y por navegador)
+  function columnasHtml(opts, cols, base) {
+    if (!cols) return '';
+    const full = opts.vista === 'tabla';
+    const lista = [['rs', 'Responsable', cols.rs], ['ar', 'Área', cols.area], ['en', 'Entregable', cols.entregable],
+      ['fechas', full ? 'Inicio y fin' : 'Cronograma (fechas)', cols.fechas], ['real', 'Fechas reales', cols.real],
+      ['dias', 'Duración', cols.dias], ['p', 'Avance', cols.p], ['e', 'Estado', cols.e], ['dp', 'Depende de', cols.deps]];
+    if (base) lista.push(['lb', 'Línea base', cols.base], ['dv', 'Desvío', cols.desvio]);
+    const hay = Object.keys(anchosCol).length;
+    return `<div class="pl-colsmenu"><span class="pl-ol">Columnas · ${full ? 'tabla completa' : 'vista Gantt'}</span>
+      ${lista.map(([k, l, on]) => `<button class="pl-colchip${on ? ' on' : ''}" onclick="planSetOpt('colvis','${k}:${on ? 0 : 1}')" title="${on ? 'Ocultar' : 'Mostrar'} «${l}»"><i></i>${l}</button>`).join('')}
+      ${hay ? `<button class="pl-optbtn" onclick="planSetOpt('anchosReset',1)" title="Volver al ancho normal de todas las columnas">↺ Anchos originales</button>` : ''}
+      <span class="pl-mut">Para ensanchar o angostar una columna, arrastra el borde derecho de su título.</span></div>`;
+  }
+  function filtrosHtml(model, opts, gs, cols, base) {
     const today = model.today;
     const agr = opts.agrupar === 'area' ? 'area' : 'etapa';
     const vivas = gs.filter(g => !(g.sec && g.sec.enabled === false));
@@ -394,7 +433,6 @@
             ${sw(opts.lineas !== false, `planSetOpt('lineas',${opts.lineas === false})`, 'Líneas de relación', 'Flechas entre actividades que dependen una de otra')}
             ${sw(!!opts.panel, `planSetOpt('panel',${!opts.panel})`, 'Panel de involucrados', 'Lista lateral de personas y áreas con lo que tiene cada una')}
             ${opts.owner ? sw(!!opts.tareas, `planSetOpt('tareas',${!opts.tareas})`, 'Tareas del día a día', 'Las microtareas vinculadas, debajo de cada actividad') : ''}
-            ${full ? sw(!!opts.cols.entregable, "planSetOpt('col','entregable')", 'Entregable', 'Columna de entregable / resultado') + sw(!!opts.cols.real, "planSetOpt('col','real')", 'Fechas reales', 'Columnas de inicio y fin reales') + sw(!!opts.cols.deps, "planSetOpt('col','deps')", 'Depende de', 'Columna con los IDs de las que la condicionan') : ''}
           </div></div>
       </div>`;
     const filtro = `<div class="pl-filt">
@@ -408,7 +446,8 @@
           ${vivas.map(chip).join('')}
         </div>
       </div>`;
-    if (!opts.compacto) return opciones + filtro;
+    const colsBtn = `<button class="pl-optbtn${opts.verCols ? ' on' : ''}" onclick="planSetOpt('verCols',${!opts.verCols})" title="Mostrar u ocultar columnas">▤ Columnas</button>`;
+    if (!opts.compacto) return opciones + `<div class="pl-bar-r" style="margin:0 0 8px">${colsBtn}</div>` + (opts.verCols ? columnasHtml(opts, cols, base) : '') + filtro;
     // Modo compacto (enlace para directivos): una barra delgada y las opciones escondidas
     const solo = opts.plegadas === '*';
     return `<div class="pl-bar-c">
@@ -418,9 +457,11 @@
         </div>
         <div class="pl-bar-r">
           <button class="pl-optbtn${solo ? ' on' : ''}" onclick="planSetOpt('soloEtapas',${!solo})" title="Ver solo el resumen de cada etapa (vista macro)">${solo ? '▸ Ver actividades' : '▾ Solo etapas'}</button>
+          ${colsBtn}
           <button class="pl-optbtn${opts.verOpciones ? ' on' : ''}" onclick="planSetOpt('verOpciones',${!opts.verOpciones})" title="Vista, agrupación, escala, filtros y qué mostrar">⚙ Opciones de vista</button>
         </div>
       </div>
+      ${opts.verCols ? columnasHtml(opts, cols, base) : ''}
       ${opts.verOpciones ? `<div class="pl-opts-c">${opciones}${filtro}</div>` : ''}`;
   }
 
@@ -526,13 +567,55 @@
   // Duración editable: fin = inicio + N días hábiles (sin inicio, arranca el próximo día hábil)
   let ultimoModelo = null;
   let ultimasClaves = [];
+  // Duración: se guarda aunque no haya fechas. Con inicio, el fin sale solo;
+  // sin inicio, se programa al terminar sus precedentes (si los tiene).
   function cambiarDuracion(id, valor) {
     const n = Math.round(Number(valor));
-    if (!(n >= 1 && n <= 365) || !ultimoModelo) return;
-    const a = (ultimoModelo.activities || []).find(x => x.id === id); if (!a) return;
-    const ini = a.startDate || habilDesde(addDays(ultimoModelo.today, 1));
-    window.planOnPatch(id, { startDate: ini, deadline: finHabil(ini, n) });
+    if (!ultimoModelo) return;
+    if (String(valor).trim() !== '' && !(n >= 1 && n <= 999)) return;
+    window.planOnPatch(id, { duracion: String(valor).trim() === '' ? null : n });
   }
+
+  // ---------- Ancho de cada columna (lo elige cada persona; se guarda en el navegador) ----------
+  const CW_KEY = 'planColWV1';
+  let anchosCol = {};
+  try { anchosCol = JSON.parse(localStorage.getItem(CW_KEY) || '{}') || {}; } catch (e) { anchosCol = {}; }
+  const guardarAnchos = () => { try { localStorage.setItem(CW_KEY, JSON.stringify(anchosCol)); } catch (e) {} };
+  const selCol = (n, suf) => [`.pl thead th:nth-child(${n})`, `.pl tr.pl-act>td:nth-child(${n})`, `.pl tr.pl-area:not(.off)>td:nth-child(${n})`].map(x => x + (suf || '')).join(',');
+  const anchoCss = (n, w) => `${selCol(n)}{width:${w}px;min-width:${w}px;max-width:${w}px;overflow:hidden;text-overflow:ellipsis}` +
+    `${selCol(n, ' .pl-tlp')},${selCol(n, ' .pl-est')},${selCol(n, ' .pl-bat')},${selCol(n, ' .pl-tx')}{min-width:0!important;max-width:100%}`;
+  // Repinta la hoja (la página decide cómo) y redibuja las flechas
+  const rehacer = () => { if (has('planOnAncho')) window.planOnAncho(true); dibujarLineas(); };
+  document.addEventListener('mousedown', ev => {
+    const h = ev.target.closest && ev.target.closest('.pl-cw');
+    if (!h || ev.button !== 0) return;
+    ev.preventDefault(); ev.stopPropagation();
+    const th = h.parentElement, n = [...th.parentElement.children].indexOf(th) + 1, k = h.dataset.col;
+    const x0 = ev.clientX, w0 = th.getBoundingClientRect().width;
+    let live = document.getElementById('pl-colw-live');
+    if (!live) { live = document.createElement('style'); live.id = 'pl-colw-live'; document.head.appendChild(live); }
+    document.body.classList.add('pl-resizing');
+    let w = Math.round(w0), movio = false;
+    const mover = e => {
+      if (Math.abs(e.clientX - x0) > 2) movio = true;
+      if (!movio) return;
+      w = Math.max(30, Math.min(700, Math.round(w0 + e.clientX - x0)));
+      live.textContent = anchoCss(n, w);
+    };
+    const soltar = () => {
+      document.removeEventListener('mousemove', mover); document.removeEventListener('mouseup', soltar);
+      document.body.classList.remove('pl-resizing');
+      if (!movio) return;
+      anchosCol[k] = w; guardarAnchos();
+      rehacer(); live.textContent = '';
+    };
+    document.addEventListener('mousemove', mover); document.addEventListener('mouseup', soltar);
+  });
+  document.addEventListener('dblclick', ev => {
+    const h = ev.target.closest && ev.target.closest('.pl-cw');
+    if (!h) return;
+    delete anchosCol[h.dataset.col]; guardarAnchos(); rehacer();
+  });
 
   // ---------- Ancho de la columna «Actividad» (lo elige cada persona) ----------
   const NM_DEF = 300, NM_MIN = 160, NM_MAX = 900, NM_KEY = 'planNmW';
@@ -949,7 +1032,16 @@
     // Vista «gantt»: lo esencial y el cronograma a la vista. «tabla»: todas las columnas.
     const full = opts.vista === 'tabla';
     const c0 = opts.cols || {};
-    const cols = { entregable: full && c0.entregable, real: full && c0.real, deps: full && c0.deps, dias: editable || full, area: full || (editable && !!opts.owner), base: full && base, desvio: full && base, full };
+    // Columnas a la vista: cada persona elige cuáles ver en cada vista (menú «Columnas»)
+    const vk = full ? 'tabla' : 'gantt';
+    const cv = (opts.colsVis && opts.colsVis[vk]) || {};
+    const vis = (k, def) => cv[k] !== undefined ? !!cv[k] : !!def;
+    const own = editable && !!opts.owner;
+    const cols = {
+      entregable: vis('en', full && c0.entregable), real: vis('real', full && c0.real), deps: vis('dp', full && c0.deps),
+      dias: vis('dias', editable || full), area: vis('ar', full || own), base: base && vis('lb', full), desvio: base && vis('dv', full), full,
+      rs: vis('rs', true), fechas: vis('fechas', true), p: vis('p', true), e: vis('e', true),
+    };
     ultimoModelo = model;
     const tareas = opts.owner && opts.tareas ? (model.tasks || []) : [];
     const tareasDe = id => tareas.filter(t => t.activityId === id)
@@ -974,23 +1066,35 @@
     if (meta && meta >= E.ini && meta <= E.fin) fondo.capas += `<span class="pl-meta" style="left:${E.x(addDays(meta, 1))}px" title="Fecha meta: ${fCorta(meta)}"></span>`;
     const carril = contenido => `<td class="pl-tl"><div class="pl-lane" style="width:${E.W}px;${fondo.style}">${fondo.capas}${contenido}</div></td>`;
 
-    const nCols = (full ? 7 : 6) + (cols.dias ? 1 : 0) + (cols.area ? 1 : 0) + (cols.entregable ? 1 : 0) + (cols.base ? 1 : 0) + (cols.real ? 2 : 0) + (cols.desvio ? 1 : 0) + (cols.deps ? 1 : 0);
+    const nCols0 = (full ? 7 : 6) + (cols.dias ? 1 : 0) + (cols.area ? 1 : 0) + (cols.entregable ? 1 : 0) + (cols.base ? 1 : 0) + (cols.real ? 2 : 0) + (cols.desvio ? 1 : 0) + (cols.deps ? 1 : 0);
+    // Responsable, fechas, avance y estado siempre se pintan; si están ocultas, las esconde el estilo
+    const nCols = Math.max(3, nCols0 - (cols.rs ? 0 : 1) - (cols.fechas ? 0 : (full ? 2 : 1)) - (cols.p ? 0 : 1) - (cols.e ? 0 : 1));
     const lbI = base ? 'Inicio proy.' : 'Inicio', lbF = base ? 'Fin proy.' : 'Fin';
     const head = `<thead><tr>
-      <th class="pl-sk pl-c-id">ID</th><th class="pl-sk pl-c-nm">Actividad<span class="pl-resz" title="Arrastra para ensanchar o angostar la columna · doble clic: ajustar a los nombres (otro doble clic: volver al ancho normal)"></span></th><th class="pl-c-rs">Responsable</th>
-      ${cols.area ? `<th class="pl-c-ar" title="Elígela de la lista de áreas de «Involucrados». Si la dejas en automática, sale del área de cada responsable">${full ? 'Área responsable' : 'Área'}</th>` : ''}
-      ${cols.entregable ? '<th class="pl-c-en">Entregable / resultado</th>' : ''}
-      ${cols.base ? '<th class="pl-c-lb" title="Fechas congeladas al fijar la línea base: no se mueven">🔒 Línea base</th>' : ''}
-      ${full ? `<th class="pl-c-d" title="${base ? 'Inicio proyectado: se recalcula solo con las fechas reales y las dependencias' : 'Inicio planeado'}">${lbI}</th>
-      <th class="pl-c-d" title="${base ? 'Fin proyectado: se recalcula solo con las fechas reales y las dependencias' : 'Fin planeado'}">${lbF}</th>`
-      : `<th class="pl-c-tl" title="${base ? 'Fechas proyectadas (se recalculan con lo real y las dependencias)' : 'Fechas planeadas'}">${base ? 'Cronograma proy.' : 'Cronograma'}</th>`}
-      ${cols.real ? '<th class="pl-c-d real" title="Cuándo empezó de verdad">Inicio real</th><th class="pl-c-d real" title="Cuándo terminó de verdad (la da por completada)">Fin real</th>' : ''}
-      ${cols.dias ? `<th class="pl-c-n" title="Duración en días hábiles (sin fines de semana ni festivos de Colombia)${editable ? '. Cámbiala aquí: el fin se recalcula y lo que depende se corre en cascada' : ''}">Días</th>` : ''}
-      ${cols.desvio ? '<th class="pl-c-dv" title="Días hábiles de diferencia entre el fin (real o proyectado) y la línea base">Desvío</th>' : ''}
-      <th class="pl-c-p${full ? '' : ' corta'}">Avance</th><th class="pl-c-e">Estado</th>
-      ${cols.deps ? '<th class="pl-c-dp">Depende de</th>' : ''}
+      <th class="pl-sk pl-c-id" data-col="id">ID</th><th class="pl-sk pl-c-nm" data-col="nm">Actividad<span class="pl-resz" title="Arrastra para ensanchar o angostar la columna · doble clic: ajustar a los nombres (otro doble clic: volver al ancho normal)"></span></th><th class="pl-c-rs" data-col="rs">Responsable</th>
+      ${cols.area ? `<th class="pl-c-ar" data-col="ar" title="Elígela de la lista de áreas de «Involucrados». Si la dejas en automática, sale del área de cada responsable">${full ? 'Área responsable' : 'Área'}</th>` : ''}
+      ${cols.entregable ? '<th class="pl-c-en" data-col="en">Entregable / resultado</th>' : ''}
+      ${cols.base ? '<th class="pl-c-lb" data-col="lb" title="Fechas congeladas al fijar la línea base: no se mueven">🔒 Línea base</th>' : ''}
+      ${full ? `<th class="pl-c-d" data-col="ini" title="${base ? 'Inicio proyectado: se recalcula solo con las fechas reales y las dependencias' : 'Inicio planeado'}">${lbI}</th>
+      <th class="pl-c-d" data-col="fin" title="${base ? 'Fin proyectado: se recalcula solo con las fechas reales y las dependencias' : 'Fin planeado'}">${lbF}</th>`
+      : `<th class="pl-c-tl" data-col="tl" title="${base ? 'Fechas proyectadas (se recalculan con lo real y las dependencias)' : 'Fechas planeadas'}">${base ? 'Cronograma proy.' : 'Cronograma'}</th>`}
+      ${cols.real ? '<th class="pl-c-d real" data-col="rini" title="Cuándo empezó de verdad">Inicio real</th><th class="pl-c-d real" data-col="rfin" title="Cuándo terminó de verdad (la da por completada)">Fin real</th>' : ''}
+      ${cols.dias ? `<th class="pl-c-n" data-col="dias" title="Duración en días hábiles (sin fines de semana ni festivos de Colombia)${editable ? '. Ponla aunque no haya fechas: con inicio, el fin sale solo y lo que depende se corre en cascada' : ''}">Duración</th>` : ''}
+      ${cols.desvio ? '<th class="pl-c-dv" data-col="dv" title="Días hábiles de diferencia entre el fin (real o proyectado) y la línea base">Desvío</th>' : ''}
+      <th class="pl-c-p${full ? '' : ' corta'}" data-col="p">Avance</th><th class="pl-c-e" data-col="e">Estado</th>
+      ${cols.deps ? '<th class="pl-c-dp" data-col="dp">Depende de</th>' : ''}
       <th class="pl-tl-h">${escalaHead(E, today, zoom).replace(/<\/div>$/, meta && meta >= E.ini && meta <= E.fin ? `<span class="pl-sc-meta" style="left:${E.x(addDays(meta, 1))}px">Meta ${fCorta(meta)}</span></div>` : '</div>')}</th>
     </tr></thead>`;
+    // Asa para cambiar el ancho de cada columna (menos ID y Actividad, que tiene la suya)
+    const headF = head.replace(/(<th\b[^>]*data-col="(?!id"|nm")([a-z]+)"[^>]*>)([\s\S]*?)<\/th>/g,
+      (m0, abre, k, cont) => `${abre}${cont}<span class="pl-cw" data-col="${k}" title="Arrastra para ensanchar o angostar · doble clic: ancho normal"></span></th>`);
+    // Estilo de columnas: ocultas y anchos elegidos (por posición en la tabla)
+    const ocultasK = new Set([...(cols.rs ? [] : ['rs']), ...(cols.fechas ? [] : ['ini', 'fin', 'tl']), ...(cols.p ? [] : ['p']), ...(cols.e ? [] : ['e'])]);
+    let cssCols = '';
+    [...head.matchAll(/<th\b[^>]*?data-col="([a-z]+)"/g)].map(x => x[1]).forEach((k, i) => {
+      if (ocultasK.has(k)) cssCols += `${selCol(i + 1)}{display:none}`;
+      else if (k !== 'id' && k !== 'nm' && anchosCol[k]) cssCols += anchoCss(i + 1, anchosCol[k]);
+    });
 
     const filas = gs.map(g => {
       if (opts.grupo && g.key !== opts.grupo) return '';
@@ -1037,9 +1141,9 @@
     </div>`;
     const deps = [];
     if (opts.lineas !== false) (model.activities || []).forEach(a => (a.dependsOnIds || []).forEach(p => deps.push([p, a.id])));
-    const tabla = `<div class="pl-wrap" id="pl-wrap"><div class="pl-canvas"><table class="pl">${head}<tbody>${filas}${addArea}</tbody></table><svg class="pl-links" data-deps='${esc(JSON.stringify(deps))}'></svg></div></div>`;
+    const tabla = `<style id="pl-colstyle">${cssCols}</style><div class="pl-wrap" id="pl-wrap"><div class="pl-canvas"><table class="pl">${headF}<tbody>${filas}${addArea}</tbody></table><svg class="pl-links" data-deps='${esc(JSON.stringify(deps))}'></svg></div></div>`;
     const panel = opts.panel ? involucradosHtml(model, opts) : '';
-    return `${filtrosHtml(model, opts, gs)}<div class="pl-div"></div>${vacio}
+    return `${filtrosHtml(model, opts, gs, cols, base)}<div class="pl-div"></div>${vacio}
       ${panel ? `<div class="pl-layout"><div class="pl-main">${tabla}</div>${panel}</div>` : tabla}
       ${leyenda}${opts.owner ? sueltasHtml(model, gsEt) : ''}`;
   }
@@ -1084,7 +1188,7 @@
       ? `<input class="pl-in ${cls || ''}" data-cell="${a.id}:${campo}" value="${esc(valor)}" placeholder="${ph}" title="${esc(valor)}"${campo === 'responsables' ? ' list="dl-personas"' : ''} onchange="planOnPatch('${a.id}',{${campo}:this.value.trim()})">`
       : `<span class="pl-tx ${cls || ''}" title="${esc(valor)}">${esc(valor) || '<span class="pl-mut">—</span>'}</span>`;
     const deps = (a.dependsOnIds || []).map(id => codigo[id]).filter(Boolean).join(', ');
-    const dias = a.startDate && a.deadline ? diasHabiles(a.startDate, a.deadline) : '';
+    const dias = duracionDe(a) || '';
     const pctCell = !cols.full
       ? (editable
         ? `<td class="pl-p corta"><input type="number" min="0" max="100" step="5" class="pl-in pct" data-cell="${a.id}:pct" value="${pct}" onchange="planOnPatch('${a.id}',{pctComplete:Number(this.value)})"><span class="pl-mut">%</span></td>`
@@ -1098,7 +1202,7 @@
       : `<td class="pl-stc">${estHtml(est)}</td>`;
     const lb = a.baselineStart || a.baselineEnd ? `${fCorta(a.baselineStart)} → ${fCorta(a.baselineEnd)}` : '<span class="pl-mut">nueva</span>';
     // En la vista Gantt el desvío acompaña al fin; en la tabla tiene su columna
-    const dvChip = !cols.full && dv ? ` ${desvioHtml(dv)}` : '';
+    const dvChip = !cols.desvio && dv ? ` ${desvioHtml(dv)}` : '';
     const mueve = editable && opts.owner && opts.agrupar !== 'area';
     return `<tr class="pl-act${a.propuesta ? ' prop' : ''}" style="--c:${g.color}"${editable && opts.owner ? ` data-row="${a.id}"` : ''}>
       <td class="pl-sk pl-c-id">${mueve ? '<span class="pl-drag" title="Arrastra para mover la fila · clic derecho: más opciones">⠿</span>' : ''}${idCell}</td>
@@ -1110,10 +1214,10 @@
       ${cols.entregable ? `<td>${inp('entregable', a.entregable || '', '—', 'en')}</td>` : ''}
       ${cols.base ? `<td class="pl-lbc" title="Congelada: no se mueve">${lb}</td>` : ''}
       ${cols.full ? celdaFecha(a, 'startDate', editable) + celdaFecha(a, 'deadline', editable, est === 'Atrasada' ? ' late' : '')
-        : `<td class="pl-tlc">${pildoraRango(a.startDate, a.deadline, today, est, g.color, has('planOnOpen') && opts.owner ? ` onclick="planOnOpen('${a.id}')" role="button"` : '')}${dvChip}${ultimoModelo && ultimoModelo.fechaMeta && a.deadline && a.deadline > ultimoModelo.fechaMeta && est !== 'Completada' ? `<span class="pl-pasa" title="Termina después de la fecha meta (${fCorta(ultimoModelo.fechaMeta)})">⚑</span>` : ''}</td>`}
+        : `<td class="pl-tlc">${!a.startDate && !a.deadline && a.duracion ? `<span class="pl-mut" title="Tiene duración pero aún no fechas: ponle inicio, o una precedencia con fecha, y se programa sola">⏱ ${a.duracion} d · sin fechas</span>` : pildoraRango(a.startDate, a.deadline, today, est, g.color, has('planOnOpen') && opts.owner ? ` onclick="planOnOpen('${a.id}')" role="button"` : '')}${dvChip}${ultimoModelo && ultimoModelo.fechaMeta && a.deadline && a.deadline > ultimoModelo.fechaMeta && est !== 'Completada' ? `<span class="pl-pasa" title="Termina después de la fecha meta (${fCorta(ultimoModelo.fechaMeta)})">⚑</span>` : ''}</td>`}
       ${cols.real ? celdaFecha(a, 'realStart', editable, ' real') + celdaFecha(a, 'realEnd', editable, ' real') : ''}
       ${cols.dias ? (editable
-        ? `<td class="pl-n"><input type="number" min="1" max="365" class="pl-in pct dur" data-cell="${a.id}:dur" value="${dias}" placeholder="—" title="Días hábiles: al cambiarla se recalcula el fin" onchange="Plan.cambiarDuracion('${a.id}',this.value)"></td>`
+        ? `<td class="pl-n"><input type="number" min="1" max="999" class="pl-in pct dur" data-cell="${a.id}:dur" value="${dias}" placeholder="—" title="Duración en días hábiles. Con inicio, el fin sale solo; sin fechas, queda la duración y se programa al terminar sus precedentes" onchange="Plan.cambiarDuracion('${a.id}',this.value)"></td>`
         : `<td class="pl-n">${dias}</td>`) : ''}
       ${cols.desvio ? `<td>${desvioHtml(dv)}</td>` : ''}
       ${pctCell}
@@ -1169,7 +1273,7 @@
   }
 
   window.Plan = {
-    render, estado, pickDate, aplicarLocal, adelantar, cascada, colorDe, respDe, norm, fCorta, dibujarLineas, cambiarDuracion, areasActividad,
+    render, estado, pickDate, duracionDe, aplicarLocal, adelantar, cascada, colorDe, respDe, norm, fCorta, dibujarLineas, cambiarDuracion, areasActividad,
     etapas, medirAjuste, anchoAjuste, enfocar, pintarComentarios: pintarPop,
     // La vista Tabla del editor no pasa por render(): le presta su modelo a la nubecita
     usarModelo(m) { ultimoModelo = m; },
@@ -1183,9 +1287,14 @@
       try { const g = JSON.parse(localStorage.getItem(clave) || 'null'); if (g) { o = Object.assign(o, g, { cols: Object.assign({}, o.cols, g.cols || {}) }); } } catch (e) {}
       return o;
     },
-    guardar(clave, o) { try { localStorage.setItem(clave, JSON.stringify({ vista: o.vista, zoom: o.zoom, agrupar: o.agrupar, panel: o.panel, lineas: o.lineas, tareas: o.tareas, cols: o.cols })); } catch (e) {} },
+    guardar(clave, o) { try { localStorage.setItem(clave, JSON.stringify({ vista: o.vista, zoom: o.zoom, agrupar: o.agrupar, panel: o.panel, lineas: o.lineas, tareas: o.tareas, cols: o.cols, colsVis: o.colsVis })); } catch (e) {} },
     cambiar(o, k, v) {
       if (k === 'col') o.cols[v] = !o.cols[v];
+      else if (k === 'colvis') {
+        const [ck, on] = String(v).split(':'), vk = o.vista === 'tabla' ? 'tabla' : 'gantt';
+        o.colsVis = o.colsVis || {}; o.colsVis[vk] = Object.assign({}, o.colsVis[vk], { [ck]: on === '1' });
+      }
+      else if (k === 'anchosReset') { anchosCol = {}; guardarAnchos(); }
       else if (k === 'agrupar') { o.agrupar = v; o.grupo = null; o.plegadas = []; }
       else if (k === 'soloEtapas') o.plegadas = v ? '*' : [];
       else if (k === 'plegar') {

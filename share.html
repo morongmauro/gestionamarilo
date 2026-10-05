@@ -326,7 +326,7 @@
 
   // ---------- Manejadores de la hoja (assets/plan.js) ----------
   // Al ensanchar la columna «Actividad», la escala «Todo» se recalcula para seguir cabiendo
-  function planOnAncho(){if(opts.zoom==='ajustar')renderPlan();}
+  function planOnAncho(forzar){if(forzar||opts.zoom==='ajustar')renderPlan();}
   function planSetOpt(k,v){Plan.cambiar(opts,k,v);Plan.guardar(LS,opts);renderPlan();if(k==='grupo'&&v&&DATA.sections.some(s=>s.id===v))$('n-area').value=v;}
   // ---------- Ronda de estimación de duraciones ----------
   function renderEstimacion(){

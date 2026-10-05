@@ -1,3 +1,37 @@
+DURACIONES, COLUMNAS A TU GUSTO Y VISTA DEPENDENCIAS · qué hacer
+================================================================
+
+1. EN SUPABASE (una sola vez): corre supabase/migracion-2026-10-duracion.sql
+   (o supabase/TODAS-octubre-2026.sql, que ya trae todo). Agrega la columna
+   «duracion». Sin ella, la duración solo se puede usar con fechas.
+2. Recarga la app con Ctrl + F5.
+
+DURACIÓN (columna «Duración», en Plan de trabajo y en Tabla)
+- Pon la duración en días hábiles aunque la actividad no tenga fechas: se
+  ve «⏱ 4 d · sin fechas».
+- Si tiene precedentes con fecha, se programa sola: arranca el día hábil
+  siguiente a que terminen y el fin sale de la duración.
+- Con duración, poner o mover el INICIO deja el FIN como consecuencia.
+- Cambiar la duración recalcula el fin. Poner el fin a mano actualiza la
+  duración.
+- Todo lo que depende se corre en cascada (sin fines de semana ni festivos).
+- La cajita también: «4.1 dura 8 días».
+
+COLUMNAS (vista Plan de trabajo, también en el enlace compartido)
+- «▤ Columnas» (junto a «Solo etapas»): marca o desmarca cada columna
+  (Responsable, Área, Entregable, Cronograma, Fechas reales, Duración,
+  Avance, Estado, Depende de…). Se recuerda por vista y por navegador.
+- Ancho: pasa el mouse por el borde derecho del título de una columna y
+  arrastra la rayita. Doble clic en ella = ancho normal.
+  «↺ Anchos originales» los devuelve todos.
+
+VISTA DEPENDENCIAS
+- Cada actividad muestra su número (1.1, 2.3…) y cada etapa su color y su
+  número, igual que en el plan de trabajo.
+- La ficha de precedentes es más pequeña y solo sale si pasas el mouse por
+  el NOMBRE de la actividad o por su BARRA (no por toda la fila), y solo si
+  tiene precedentes.
+
 RESPONSABLE Y ÁREA CON LISTA DESPLEGABLE · qué hacer
 ====================================================
 
