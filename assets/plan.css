@@ -552,3 +552,26 @@ tr:hover .pl-caret,.pl-pick:focus .pl-caret{opacity:1}
 .pl-sdel{margin-left:6px;width:22px;height:22px;border-radius:7px;font-size:11px;color:var(--faint);opacity:0;transition:opacity .12s;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle}
 .pl tr.pl-area:hover .pl-sdel{opacity:1}
 .pl-sdel:hover{background:color-mix(in srgb,#E2445C 14%,var(--card));color:#E2445C}
+
+/* ============================================================
+   Vista Dependencias: la cadena de precedentes resaltada
+   ============================================================ */
+table.pl-foco tr.pl-act:not(.pl-up):not(.pl-self) td{opacity:.32;transition:opacity .15s}
+table.pl-foco tr.pl-area td{opacity:.55}
+tr.pl-self td{background:color-mix(in srgb,var(--c) 16%,var(--card))!important}
+tr.pl-up td{background:color-mix(in srgb,var(--c) 8%,var(--card))!important}
+svg.pl-links path.up{stroke:#7C6CF2!important;stroke-width:2.2!important;opacity:1!important}
+table.pl-deps .pl-nmw,table.pl-deps .pl-b,table.pl-deps .pl-tlp{cursor:help}
+.pl-reqcard{position:fixed;z-index:9997;width:290px;max-width:calc(100vw - 20px);max-height:min(360px,calc(100vh - 20px));display:none;flex-direction:column;background:var(--card,#fff);border-radius:14px;box-shadow:0 12px 34px rgba(28,26,23,.2),0 0 0 1px rgba(28,26,23,.05);font-family:Montserrat,system-ui,sans-serif;overflow:hidden;pointer-events:none}
+.pl-reqcard.on{display:flex}
+.pl-rq-h{padding:10px 12px 6px;font-size:11.5px;font-weight:700;color:var(--ink);line-height:1.35}
+.pl-rq-h b{color:var(--muted);margin-right:3px}
+.pl-rq-l{overflow:auto;padding:0 0 4px}
+.pl-rq-r{display:flex;align-items:center;gap:6px;padding:3px 12px;font-size:11px;color:var(--ink);white-space:nowrap}
+.pl-rq-r i{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:#C4C4C4}
+.pl-rq-r.Completada i{background:#00C875}.pl-rq-r.En-curso i{background:#FDAB3D}.pl-rq-r.Atrasada i{background:#E2445C}
+.pl-rq-r.Completada span{text-decoration:line-through;color:var(--muted)}
+.pl-rq-r b{color:var(--muted);font-weight:800;font-variant-numeric:tabular-nums}
+.pl-rq-r span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.pl-rq-r em{font-style:normal;color:var(--faint);font-size:10px}
+.pl-rq-f{padding:6px 12px 9px;font-size:10px;font-weight:600;color:var(--muted);background:var(--sunk)}
