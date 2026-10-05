@@ -106,7 +106,7 @@ create table if not exists project_shares (
   project_id uuid not null references projects(id) on delete cascade,
   token      text not null unique,
   label      text,
-  role       text not null default 'view' check (role in ('view','edit')),
+  role       text not null default 'view' check (role in ('view','edit','editor')),
   created_at timestamptz not null default now()
 );
 
@@ -191,3 +191,20 @@ alter table project_shares enable row level security;
 alter table propuestas_cambio enable row level security;
 alter table project_members enable row level security;
 alter table activity_notes enable row level security;
+
+-- ------------------------------------------------------------
+-- HISTORIAL DE CAMBIOS (quién cambió qué y cuándo) + subcapítulos
+-- ------------------------------------------------------------
+alter table project_sections add column if not exists parent_id uuid references project_sections(id) on delete set null;
+create table if not exists historial_cambios (
+  id          uuid primary key default gen_random_uuid(),
+  project_id  uuid not null references projects(id) on delete cascade,
+  activity_id uuid,
+  autor       text,
+  accion      text not null,
+  objeto      text,
+  detalle     text,
+  created_at  timestamptz not null default now()
+);
+create index if not exists idx_historial_project on historial_cambios(project_id, created_at desc);
+alter table historial_cambios enable row level security;

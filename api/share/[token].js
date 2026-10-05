@@ -1,5 +1,6 @@
 // Endpoint público del plan compartido. El token del enlace es la llave:
 // se lee el plan y se PROPONEN actividades o ajustes; el dueño decide.
+// Un enlace de EDITOR (con nombre) además edita el cronograma (tipo: 'editar').
 // Nunca expone las tareas (micromanagement) del proyecto.
 const db = require('../../lib/db');
 
@@ -17,6 +18,11 @@ module.exports = async (req, res) => {
       return res.status(200).json({ activity });
     }
     if (req.method === 'POST') {
+      // Enlace de editor (con nombre): cambia el cronograma de verdad y queda en el historial
+      if ((req.body || {}).tipo === 'editar') {
+        const data = await db.shareEditar(token, req.body);
+        return res.status(200).json(data);
+      }
       // Ajuste a una actividad existente: queda como propuesta para el dueño
       if ((req.body || {}).tipo === 'ajuste') {
         const enviadas = await db.shareProponerAjuste(token, req.body);
@@ -29,7 +35,7 @@ module.exports = async (req, res) => {
   } catch (err) {
     console.error(err);
     const msg = err.message || 'Error';
-    const code = /no válido|revocado/.test(msg) ? 404 : /solo lectura|no se editan/.test(msg) ? 403 : /no encontrada|no válid|Escribe|duración|Demasiados|nada que/.test(msg) ? 400 : 500;
+    const code = /no válido|revocado/.test(msg) ? 404 : /solo lectura|no se editan/.test(msg) ? 403 : /Operación no válida|Elige otro|subcapítulos|capítulo principal|ciclo/.test(msg) ? 400 : /no encontrada|no válid|Escribe|duración|Demasiados|nada que/.test(msg) ? 400 : 500;
     res.status(code).json({ error: msg });
   }
 };

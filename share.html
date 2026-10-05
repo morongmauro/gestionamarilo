@@ -256,12 +256,18 @@
     const s=DATA.summary,p=DATA.project;
     $('p-name').textContent=p.name;
     $('p-sub').textContent=(p.responsable?'Responsable: '+p.responsable+' · ':'')+'Plan de trabajo compartido'+(DATA.label?' con '+DATA.label:'');
-    const r=$('p-role');r.className='role view';r.textContent='👁 Ver y proponer';
+    const r=$('p-role');
+    if(esEditor()){
+      // Enlace de editor con nombre: edita el cronograma de verdad (todo queda en el historial a su nombre)
+      r.className='role edit';r.textContent='✎ Editor · '+(DATA.label||'');
+      opts.editable=true;opts.owner=true;opts.tareas=false;
+    }else{r.className='role view';r.textContent='👁 Ver y proponer';}
     document.title=p.name+' · Plan de trabajo';
     $('exec').innerHTML=franjaEjecutiva();
     renderPlan();
-    renderAddBox();
+    if(esEditor()){$('equipo').style.display='none';}else renderAddBox();
   }
+  const esEditor=()=>!!(DATA&&DATA.role==='editor');
   // ---------- Franja ejecutiva: cómo vamos, si llegamos, qué está en riesgo y qué viene ----------
   function franjaEjecutiva(){
     const s=DATA.summary,p=DATA.project,today=s.today||todayISO();
@@ -322,6 +328,115 @@
     if(!$('e-nombre').value)$('e-nombre').value=nombre;
     $('estbox').style.display=(DATA.activities||[]).length?'':'none';
     renderEstimacion();
+  }
+
+  // ---------- EDITOR CON NOMBRE: los cambios van directo al cronograma ----------
+  // (cada uno queda en el historial a nombre de quien tiene el enlace)
+  const planConFoco=()=>{const el=document.activeElement;return !!(el&&el.closest&&el.closest('#plan')&&/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName));};
+  let enVuelo=0;
+  async function editar(op,datos){
+    enVuelo++;
+    try{
+      const r=await api('POST',Object.assign({tipo:'editar',op},datos||{}));
+      DATA=r;
+      if(planConFoco()){$('exec').innerHTML=franjaEjecutiva();}else render();
+      return r;
+    }catch(e){
+      toast('⚠ '+e.message,false);
+      try{DATA=await api('GET');render();}catch(_){}
+      return null;
+    }finally{enVuelo--;}
+  }
+  function normalizar(c){
+    const o={...c};
+    if(typeof o.responsables==='string')o.responsables=o.responsables.split(',').map(x=>x.trim()).filter(Boolean);
+    if(o.pctComplete!==undefined)o.pctComplete=Math.max(0,Math.min(100,Number(o.pctComplete)||0));
+    return o;
+  }
+  function planOnPatch(id,cambios){
+    if(!esEditor())return;
+    const a=DATA.activities.find(x=>x.id===id);if(!a)return;
+    if(cambios.name!==undefined&&!String(cambios.name).trim()){toast('⚠ El nombre no puede quedar vacío',false);renderPlan();return;}
+    Plan.aplicarLocal(DATA.activities,id,normalizar(cambios),(DATA.summary&&DATA.summary.today)||todayISO());
+    if(!planConFoco())renderPlan();
+    editar('patch',{activityId:id,cambios});
+  }
+  function planOnAdd(sectionId,inp){
+    if(!esEditor())return;
+    const name=inp.value.trim();if(!name)return;
+    inp.disabled=true;
+    if(sectionId==='__area__')editar('seccion-crear',{name});
+    else editar('crear',{datos:{name,sectionId:sectionId||null}}).then(()=>toast('✓ Actividad agregada'));
+  }
+  function ordenActs(){
+    const secs=Plan.ordenSecciones(DATA.sections),pos=(a,b)=>(a.position||0)-(b.position||0),out=[];
+    secs.forEach(x=>DATA.activities.filter(a=>a.sectionId===x.id).sort(pos).forEach(a=>out.push(a)));
+    DATA.activities.filter(a=>!a.sectionId||!secs.some(x=>x.id===a.sectionId)).sort(pos).forEach(a=>out.push(a));
+    return out;
+  }
+  function guardarOrden(lista,cambio){
+    lista.forEach((a,i)=>{a.position=i;if(cambio&&cambio.id===a.id)a.sectionId=cambio.sectionId;});
+    renderPlan();
+    return editar('orden',{reorder:lista.map((a,i)=>Object.assign({id:a.id,position:i},cambio&&cambio.id===a.id?{sectionId:cambio.sectionId}:{}))});
+  }
+  async function planOnRow(acc,id,x){
+    if(!esEditor())return;
+    const lista=ordenActs(),a=lista.find(y=>y.id===id);if(!a)return;
+    if(acc==='subir'||acc==='bajar'){
+      const herm=lista.filter(y=>(y.sectionId||'')===(a.sectionId||'')),i=herm.indexOf(a),j=i+(acc==='subir'?-1:1);
+      if(j<0||j>=herm.length){toast(acc==='subir'?'Ya es la primera de su capítulo':'Ya es la última de su capítulo',false);return;}
+      [herm[i],herm[j]]=[herm[j],herm[i]];let k=0;
+      return guardarOrden(lista.map(y=>(y.sectionId||'')===(a.sectionId||'')?herm[k++]:y));
+    }
+    if(acc==='mover'){
+      const resto=lista.filter(y=>y.id!==id);let idx,sectionId;
+      if(x&&x.destino){const t=resto.findIndex(y=>y.id===x.destino);if(t<0)return;idx=t+(x.despues?1:0);sectionId=resto[t].sectionId||null;}
+      else if(x&&x.sec){sectionId=x.sec;idx=resto.findIndex(y=>y.sectionId===sectionId);if(idx<0)idx=resto.length;}
+      else return;
+      resto.splice(idx,0,a);
+      return guardarOrden(resto,(a.sectionId||null)!==sectionId?{id,sectionId}:null);
+    }
+    if(acc==='eliminar'){
+      if(!confirm(`¿Eliminar la actividad «${a.name}»?`))return;
+      DATA.activities=DATA.activities.filter(y=>y.id!==id);renderPlan();
+      return editar('eliminar',{activityId:id});
+    }
+    if(acc==='insertar-arriba'||acc==='insertar-debajo'||acc==='duplicar'){
+      const debajo=acc!=='insertar-arriba',dup=acc==='duplicar';
+      const datos={name:dup?a.name+' (copia)':'Nueva actividad',sectionId:a.sectionId||null};
+      if(dup)Object.assign(datos,{responsables:a.responsables||[],entregable:a.entregable||'',startDate:a.startDate,deadline:a.deadline,dependsOnIds:a.dependsOnIds||[]});
+      else if(a.startDate||a.deadline){datos.startDate=debajo?Plan.cal.sumarHabiles(a.deadline||a.startDate,1):(a.startDate||a.deadline);datos.duracion=1;}
+      const r=await editar('crear',{datos});if(!r||!r.creada)return;
+      const l2=ordenActs(),n=l2.find(y=>y.id===r.creada),resto=l2.filter(y=>y.id!==r.creada),t=resto.findIndex(y=>y.id===id);
+      if(n&&t>=0){resto.splice(debajo?t+1:t,0,n);await guardarOrden(resto);}
+      setTimeout(()=>Plan.enfocar(`${r.creada}:name`,true),30);
+    }
+  }
+  async function planOnSection(acc,id,extra){
+    if(!esEditor())return;
+    const sc=(DATA.sections||[]).find(x=>x.id===id);if(!sc)return;
+    if(acc==='rename'){const n=prompt('Nombre del capítulo:',sc.name);if(n&&n.trim()&&n.trim()!==sc.name)editar('seccion-editar',{id,name:n.trim()});}
+    else if(acc==='off'||acc==='on')editar('seccion-editar',{id,enabled:acc==='on'});
+    else if(acc==='remove'){
+      const hijos=(DATA.sections||[]).filter(x=>x.parentId===id).map(x=>x.id);
+      const n=(DATA.activities||[]).filter(a=>a.sectionId===id||hijos.includes(a.sectionId)).length;
+      if(confirm(`¿Eliminar «${sc.name}»${n?` y sus ${n} actividad${n===1?'':'es'}`:''}?`))editar('seccion-eliminar',{id});
+    }
+    else if(acc==='sacar')editar('seccion-sacar',{id});
+    else if(acc==='anidar'){
+      const pa=(DATA.sections||[]).find(x=>x.id===extra);if(!pa)return;
+      const sueltas=(DATA.activities||[]).filter(a=>a.sectionId===extra).length;
+      if(!confirm(`¿Meter «${sc.name}» como subcapítulo de «${pa.name}»?${sueltas?`\n\nLas ${sueltas} actividades que ya tiene quedan juntas en un subcapítulo nuevo (le pones nombre ahora).`:''}`))return;
+      const r=await editar('seccion-anidar',{id,padreId:extra});
+      if(r&&r.nuevoGrupo){const n=prompt(`Nombre del subcapítulo con las actividades que ya tenía «${pa.name}»:`,'');if(n&&n.trim())editar('seccion-editar',{id:r.nuevoGrupo.id,name:n.trim()});}
+    }
+  }
+  async function planOnPegarFilas(sectionId,filas){
+    if(!esEditor())return;
+    const validas=filas.filter(f=>f[0]);if(!validas.length)return;
+    if(validas.length>1&&!confirm(`¿Crear ${validas.length} actividades con lo que pegaste?`))return;
+    for(const f of validas){const datos={name:f[0],sectionId:sectionId||null};if(f[1])datos.responsables=f[1];const dd=parseInt(f[2],10);if(dd>0)datos.duracion=dd;await editar('crear',{datos});}
+    toast(`✓ ${validas.length} actividad${validas.length===1?'':'es'} pegada${validas.length===1?'':'s'}`);
   }
 
   // ---------- Manejadores de la hoja (assets/plan.js) ----------

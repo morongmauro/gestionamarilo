@@ -45,6 +45,11 @@ module.exports = async (req, res) => {
       }
       return res.status(405).json({ error: 'Method not allowed' });
     }
+    // Historial de cambios del cronograma (quién cambió qué y cuándo)
+    if (sub === 'historial') {
+      if (req.method === 'GET') return res.status(200).json(await db.listHistorial(id, req.query.limite));
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
     if (sub === 'plantilla') {
       if (req.method === 'GET') return res.status(200).json({ plantillas: db.listarPlantillas() });
       if (req.method === 'POST') {
