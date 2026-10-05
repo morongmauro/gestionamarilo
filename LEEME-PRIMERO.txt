@@ -70,7 +70,9 @@ TU VISTA DE EDICIÓN, COMPACTA
 - ⛶ Mesa de trabajo (junto a las vistas): esconde la barra lateral, los
   indicadores grandes y las microtareas, y deja el cronograma a pantalla
   completa con un resumen de una línea (avance, fin vs meta, atrasadas).
-  Sales con «✕ Salir de mesa» o con Esc.
+  Sales con «✕ Salir de mesa», con el botón negro de abajo a la izquierda
+  o con Esc. Ya no queda guardada: al recargar o cambiar de pestaña vuelve
+  la barra lateral.
 
 VISTA TABLA
 -----------
