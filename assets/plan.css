@@ -575,3 +575,18 @@ table.pl-deps .pl-nmw,table.pl-deps .pl-b,table.pl-deps .pl-tlp{cursor:help}
 .pl-rq-r span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .pl-rq-r em{font-style:normal;color:var(--faint);font-size:10px}
 .pl-rq-f{padding:6px 12px 9px;font-size:10px;font-weight:600;color:var(--muted);background:var(--sunk)}
+
+/* ============================================================
+   Dependencias editables: punto para conectar, flechas que se quitan
+   ============================================================ */
+.pl-lk{position:absolute;top:50%;width:11px;height:11px;margin-top:-5.5px;border-radius:50%;background:var(--card,#fff);box-shadow:0 0 0 2px #7C6CF2;cursor:crosshair;z-index:4;opacity:0;transition:opacity .12s,transform .12s}
+.pl tr.pl-act:hover .pl-lk{opacity:1}
+.pl-lk:hover{transform:scale(1.3);background:#7C6CF2}
+body.pl-conectando,body.pl-conectando *{cursor:crosshair!important;user-select:none}
+.pl-lk-tmp{position:fixed;left:0;top:0;width:100vw;height:100vh;pointer-events:none;z-index:9999}
+.pl-lk-tmp line{stroke:#7C6CF2;stroke-width:2.2;stroke-dasharray:5 4}
+.pl-lk-tmp circle{fill:#7C6CF2}
+tr.pl-lk-dest td{background:color-mix(in srgb,#7C6CF2 14%,var(--card))!important}
+svg.pl-links.editable path.hit{stroke:transparent!important;stroke-width:11!important;pointer-events:stroke;cursor:pointer;fill:none}
+svg.pl-links.editable path.hit:hover{stroke:color-mix(in srgb,#E2445C 35%,transparent)!important}
+.pl td.pl-dp.pl-pick{min-width:90px;white-space:nowrap}

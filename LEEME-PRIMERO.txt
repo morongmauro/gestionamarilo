@@ -1,3 +1,20 @@
+PRECEDENCIAS EDITABLES EN LA VISTA DEPENDENCIAS · qué hacer
+============================================================
+No hay nada que correr en Supabase. Recarga con Ctrl + F5.
+
+En «⛓ Dependencias» (enlace de editor y también tu editor):
+- CREAR: pasa el mouse por una fila; al final de su barra sale un puntico
+  morado. Arrástralo hasta otra actividad y suelta: esa otra queda
+  dependiendo de la primera (sus fechas se corren solas si hace falta).
+- AJUSTAR: clic en la celda «Depende de» → lista con todas las actividades
+  (número, nombre y cuándo terminan), con buscador. Marca o desmarca y
+  «Listo». No deja elegir las que crearían un ciclo.
+- QUITAR: pasa el mouse por una flecha (se pone roja) y clic → confirma.
+- La ficha de «necesita antes» ahora solo sale si te paras sobre el NOMBRE
+  de la actividad; sobre el cronograma no aparece, para que no estorbe al
+  crear o quitar precedencias.
+- Todo queda en el 🕘 Historial a nombre de quien lo hizo.
+
 ENLACES COMPARTIDOS: GANTT, DEPENDENCIAS Y TABLA, EN MESA DE TRABAJO
 ==================================================================
 No hay nada que correr en Supabase. Recarga con Ctrl + F5.
