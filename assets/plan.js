@@ -314,6 +314,18 @@
     const m = ultimoModelo || {}, mi = m.miembros || [];
     const out = [];
     const add = (valor, sub, grupo) => { if (valor && !out.some(o => norm(o.valor) === norm(valor))) out.push({ valor, sub, grupo }); };
+    if (tipo === 'deps') {
+      // Todas las actividades menos ella misma y las que dependen de ella (crearían un ciclo)
+      const acts = m.activities || [], hijos = new Map(acts.map(x => [x.id, []]));
+      acts.forEach(x => (x.dependsOnIds || []).forEach(p => { if (hijos.has(p)) hijos.get(p).push(x.id); }));
+      const prohibidas = new Set([a.id]), cola = [a.id];
+      while (cola.length) (hijos.get(cola.shift()) || []).forEach(h => { if (!prohibidas.has(h)) { prohibidas.add(h); cola.push(h); } });
+      etapas(m).forEach(g => g.acts.forEach(x => {
+        if (prohibidas.has(x.id)) return;
+        out.push({ valor: x.id, etiqueta: `${x._cod || ''} · ${x.name}`, sub: x.deadline ? `termina ${fCorta(x.deadline)}` : 'sin fechas', grupo: `${g.cod != null ? g.cod + ' · ' : ''}${g.name}` });
+      }));
+      return out;
+    }
     if (tipo === 'resp') {
       mi.forEach(x => add(x.nombre, [x.area, x.rol].filter(Boolean).join(' · '), 'Involucrados'));
       // Áreas como responsable (p. ej. «Jurídica») y nombres ya usados en el plan
@@ -329,40 +341,44 @@
     if (!sel || !selCtx) return;
     const { tipo, a, elegidos } = selCtx;
     const q = norm(sel.querySelector('input.pl-sel-q') ? sel.querySelector('input.pl-sel-q').value : '');
-    const ops = opcionesPick(tipo, a).filter(o => !q || norm(o.valor).includes(q) || norm(o.sub || '').includes(q));
-    elegidos.forEach(v => { if (!ops.some(o => norm(o.valor) === norm(v)) && (!q || norm(v).includes(q))) ops.unshift({ valor: v, sub: 'elegido', grupo: 'Elegidos' }); });
+    const todas = opcionesPick(tipo, a);
+    const etq = v => { const o = todas.find(x => x.valor === v); return o ? (o.etiqueta || o.valor) : v; };
+    const ops = todas.filter(o => !q || norm(o.etiqueta || o.valor).includes(q) || norm(o.sub || '').includes(q));
+    if (tipo !== 'deps') elegidos.forEach(v => { if (!ops.some(o => norm(o.valor) === norm(v)) && (!q || norm(v).includes(q))) ops.unshift({ valor: v, sub: 'elegido', grupo: 'Elegidos' }); });
     let grupo = null, html = '';
     ops.forEach((o, i) => {
       if (o.grupo !== grupo) { grupo = o.grupo; html += `<div class="pl-sel-g">${esc(grupo)}</div>`; }
       const on = elegidos.some(v => norm(v) === norm(o.valor));
-      html += `<button class="pl-sel-o${on ? ' on' : ''}" data-v="${esc(o.valor)}"><i></i><span><b>${esc(o.valor)}</b>${o.sub ? `<em>${esc(o.sub)}</em>` : ''}</span></button>`;
+      html += `<button class="pl-sel-o${on ? ' on' : ''}" data-v="${esc(o.valor)}"><i></i><span><b>${esc(o.etiqueta || o.valor)}</b>${o.sub ? `<em>${esc(o.sub)}</em>` : ''}</span></button>`;
     });
     const qOrig = sel.querySelector('input.pl-sel-q') ? sel.querySelector('input.pl-sel-q').value.trim() : '';
-    const nuevo = qOrig && !ops.some(o => norm(o.valor) === norm(qOrig)) ? `<button class="pl-sel-o nuevo" data-v="${esc(qOrig)}"><i>＋</i><span><b>Agregar «${esc(qOrig)}»</b><em>${tipo === 'resp' ? 'nombre que no está en Involucrados' : 'área nueva'}</em></span></button>` : '';
+    const nuevo = tipo !== 'deps' && qOrig && !ops.some(o => norm(o.valor) === norm(qOrig)) ? `<button class="pl-sel-o nuevo" data-v="${esc(qOrig)}"><i>＋</i><span><b>Agregar «${esc(qOrig)}»</b><em>${tipo === 'resp' ? 'nombre que no está en Involucrados' : 'área nueva'}</em></span></button>` : '';
     sel.querySelector('.pl-sel-l').innerHTML = (html || nuevo ? html + nuevo : `<div class="pl-sel-v">${(ultimoModelo && (ultimoModelo.miembros || []).length) ? 'Nada coincide' : 'Aún no hay involucrados: regístralos en «👥 Involucrados» o escribe un nombre'}</div>`);
     sel.querySelector('.pl-sel-chips').innerHTML = elegidos.length
-      ? elegidos.map(v => `<span class="pl-sel-chip">${esc(v)}<button data-quitar="${esc(v)}" title="Quitar">×</button></span>`).join('')
-      : `<span class="pl-mut">${tipo === 'area' ? 'Automática (según los responsables)' : 'Sin responsable'}</span>`;
+      ? elegidos.map(v => `<span class="pl-sel-chip">${esc(tipo === 'deps' ? etq(v).split(' · ')[0] : v)}<button data-quitar="${esc(v)}" title="Quitar">×</button></span>`).join('')
+      : `<span class="pl-mut">${tipo === 'area' ? 'Automática (según los responsables)' : tipo === 'deps' ? 'No depende de ninguna: puede arrancar cuando quiera' : 'Sin responsable'}</span>`;
   }
   function abrirSel(celda) {
     const m = ultimoModelo || {};
     const a = (m.activities || []).find(x => x.id === celda.dataset.act); if (!a) return;
     const tipo = celda.dataset.pick;
     cerrarSel(false);
-    const actuales = tipo === 'resp' ? respDe(a) : listaNombres(a.area);
+    const actuales = tipo === 'resp' ? respDe(a) : tipo === 'deps' ? [...(a.dependsOnIds || [])] : listaNombres(a.area);
     selCtx = { tipo, a, elegidos: [...actuales], inicial: JSON.stringify(actuales) };
     sel = document.createElement('div'); sel.className = 'pl-selpop';
-    sel.innerHTML = `<div class="pl-sel-h">${tipo === 'resp' ? 'Responsables' : 'Área responsable'} · <span>${esc(a._cod || '')} ${esc(a.name)}</span></div>
+    sel.innerHTML = `<div class="pl-sel-h">${tipo === 'resp' ? 'Responsables' : tipo === 'deps' ? 'Depende de (deben terminar antes)' : 'Área responsable'} · <span>${esc(a._cod || '')} ${esc(a.name)}</span></div>
       <div class="pl-sel-chips"></div>
-      <input class="pl-sel-q" placeholder="${tipo === 'resp' ? 'Buscar o escribir un nombre…' : 'Buscar o escribir un área…'}">
+      <input class="pl-sel-q" placeholder="${tipo === 'resp' ? 'Buscar o escribir un nombre…' : tipo === 'deps' ? 'Buscar por número o nombre…' : 'Buscar o escribir un área…'}">
       <div class="pl-sel-l"></div>
-      <div class="pl-sel-f">${tipo === 'area' ? '<button data-auto="1" title="Volver a sacarla de los responsables">↺ Automática</button>' : '<span class="pl-mut">Puedes elegir varios</span>'}<button class="ok" data-listo="1">Listo</button></div>`;
+      <div class="pl-sel-f">${tipo === 'area' ? '<button data-auto="1" title="Volver a sacarla de los responsables">↺ Automática</button>' : tipo === 'deps' ? '<span class="pl-mut">Arranca al terminar las marcadas</span>' : '<span class="pl-mut">Puedes elegir varios</span>'}<button class="ok" data-listo="1">Listo</button></div>`;
     document.body.appendChild(sel);
+    pintarSel(); // primero se llena, luego se ubica (si no, la lista larga se sale de la pantalla)
     const r = celda.getBoundingClientRect();
     const w = sel.offsetWidth, h = sel.offsetHeight;
     sel.style.left = Math.max(10, Math.min(r.left, window.innerWidth - w - 10)) + 'px';
-    sel.style.top = (r.bottom + h + 8 > window.innerHeight ? Math.max(10, r.top - h - 4) : r.bottom + 4) + 'px';
-    pintarSel();
+    const abajo = window.innerHeight - r.bottom - 8, arriba = r.top - 8;
+    sel.style.top = (h <= abajo || abajo >= arriba ? r.bottom + 4 : Math.max(10, r.top - h - 4)) + 'px';
+    if (h > Math.max(abajo, arriba)) sel.style.maxHeight = Math.max(240, Math.max(abajo, arriba)) + 'px';
     const q = sel.querySelector('input.pl-sel-q');
     q.addEventListener('input', pintarSel);
     q.addEventListener('keydown', ev => {
@@ -394,7 +410,7 @@
     const ctx = selCtx;
     sel.remove(); sel = null; selCtx = null;
     if (!guardar || !ctx || JSON.stringify(ctx.elegidos) === ctx.inicial || !has('planOnPatch')) return;
-    window.planOnPatch(ctx.a.id, ctx.tipo === 'resp' ? { responsables: ctx.elegidos.join(', ') } : { area: ctx.elegidos.join(', ') || null });
+    window.planOnPatch(ctx.a.id, ctx.tipo === 'resp' ? { responsables: ctx.elegidos.join(', ') } : ctx.tipo === 'deps' ? { dependsOnIds: ctx.elegidos.slice() } : { area: ctx.elegidos.join(', ') || null });
   }
   document.addEventListener('click', ev => {
     const c = ev.target.closest && ev.target.closest('.pl-pick[data-pick]');
@@ -1040,7 +1056,8 @@
     reqCard.style.left = Math.max(10, Math.min(window.innerWidth - w - 10, r.left)) + 'px';
     reqCard.style.top = top + 'px';
   }
-  const SEL_CADENA = 'table.pl-deps tr.pl-act .pl-nmw, table.pl-deps tr.pl-act .pl-b, table.pl-deps tr.pl-act .pl-tlp';
+  // Solo sobre el NOMBRE: en el cronograma no estorba al crear o quitar precedencias
+  const SEL_CADENA = 'table.pl-deps tr.pl-act .pl-nmw';
   document.addEventListener('mouseover', ev => {
     const t = ev.target.closest && ev.target.closest(SEL_CADENA);
     if (!t) return;
@@ -1057,6 +1074,55 @@
     clearTimeout(reqT); reqT = setTimeout(ocultarCadena, 200);
   });
   document.addEventListener('scroll', () => { if (reqId) ocultarCadena(); }, true);
+
+  // ---------- Vista Dependencias (editando): crear precedencias arrastrando y quitarlas con clic ----------
+  document.addEventListener('mousedown', ev => {
+    const h = ev.target.closest && ev.target.closest('.pl-lk[data-src]');
+    if (!h || ev.button !== 0 || !has('planOnPatch')) return;
+    ev.preventDefault(); ev.stopPropagation(); ocultarCadena();
+    const src = h.dataset.src, r0 = h.getBoundingClientRect(), x0 = r0.left + r0.width / 2, y0 = r0.top + r0.height / 2;
+    const linea = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    linea.setAttribute('class', 'pl-lk-tmp');
+    linea.innerHTML = '<line /><circle r="5" />';
+    document.body.appendChild(linea);
+    const ln = linea.querySelector('line'), ci = linea.querySelector('circle');
+    let marca = null, destino = null;
+    document.body.classList.add('pl-conectando');
+    const limpiar = () => { if (marca) marca.classList.remove('pl-lk-dest'); marca = null; };
+    const mover = e => {
+      ln.setAttribute('x1', x0); ln.setAttribute('y1', y0); ln.setAttribute('x2', e.clientX); ln.setAttribute('y2', e.clientY);
+      ci.setAttribute('cx', e.clientX); ci.setAttribute('cy', e.clientY);
+      limpiar(); destino = null;
+      const bajo = document.elementFromPoint(e.clientX, e.clientY);
+      const tr = bajo && bajo.closest && bajo.closest('tr.pl-act[data-a]');
+      if (tr && tr.dataset.a !== src) { marca = tr; tr.classList.add('pl-lk-dest'); destino = tr.dataset.a; }
+    };
+    const soltar = () => {
+      document.removeEventListener('mousemove', mover); document.removeEventListener('mouseup', soltar);
+      limpiar(); linea.remove(); document.body.classList.remove('pl-conectando');
+      if (!destino) return;
+      const acts = (ultimoModelo && ultimoModelo.activities) || [];
+      const b = acts.find(x => x.id === destino), a = acts.find(x => x.id === src);
+      if (!b || !a) return;
+      if ((b.dependsOnIds || []).includes(src)) { aviso(`«${b._cod || b.name}» ya depende de «${a._cod || a.name}»`); return; }
+      // ¿crearía un ciclo? (si «a» ya depende, directa o indirectamente, de «b»)
+      const byId = new Map(acts.map(x => [x.id, x])), vistos = new Set(), pila = [src];
+      while (pila.length) { const id = pila.pop(); if (id === destino) { aviso('Esa precedencia crearía un ciclo'); return; } if (vistos.has(id)) continue; vistos.add(id); ((byId.get(id) || {}).dependsOnIds || []).forEach(p => pila.push(p)); }
+      window.planOnPatch(destino, { dependsOnIds: [...(b.dependsOnIds || []), src] });
+      if (has('toast')) window.toast(`✓ ${b._cod || ''} ahora depende de ${a._cod || ''}`);
+    };
+    document.addEventListener('mousemove', mover); document.addEventListener('mouseup', soltar);
+    mover(ev);
+  });
+  document.addEventListener('click', ev => {
+    const pth = ev.target.closest && ev.target.closest('svg.pl-links.editable path.hit');
+    if (!pth || !has('planOnPatch')) return;
+    const acts = (ultimoModelo && ultimoModelo.activities) || [];
+    const b = acts.find(x => x.id === pth.dataset.a), a = acts.find(x => x.id === pth.dataset.de);
+    if (!a || !b) return;
+    if (!confirm(`¿Quitar la precedencia «${a._cod || ''} ${a.name}» → «${b._cod || ''} ${b.name}»?`)) return;
+    window.planOnPatch(b.id, { dependsOnIds: (b.dependsOnIds || []).filter(x => x !== a.id) });
+  });
 
   // ---------- Escala «Todo»: mide lo que ocupan las columnas para que el cronograma quepa exacto ----------
   let fijoMedido = null;
@@ -1123,7 +1189,7 @@
         const r = el.getBoundingClientRect();
         return { l: r.left - cr.left, r: r.right - cr.left, y: r.top - cr.top + r.height / 2 };
       };
-      let paths = '';
+      let paths = '', golpes = '';
       deps.forEach(([de, a]) => {
         const p = caja(de), q = caja(a);
         if (!p || !q) return;
@@ -1133,8 +1199,12 @@
           ? `M${x1},${y1} H${codo} V${y2} H${x2}`
           : `M${x1},${y1} H${x1 + 8} V${(y1 + y2) / 2} H${x2 - 10} V${y2} H${x2}`;
         paths += `<path data-de="${de}" data-a="${a}" d="${d}" />`;
+        if (svg.classList.contains('editable')) {
+          const cod = id => { const x = ((ultimoModelo && ultimoModelo.activities) || []).find(y => y.id === id); return x ? (x._cod || x.name) : ''; };
+          golpes += `<path class="hit" data-de="${de}" data-a="${a}" d="${d}"><title>${esc(cod(de))} → ${esc(cod(a))} · clic para quitar esta precedencia</title></path>`;
+        }
       });
-      svg.innerHTML = `<defs><marker id="pl-flecha" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="pl-flecha"/></marker></defs>${paths.replace(/<path d="/g, '<path marker-end="url(#pl-flecha)" d="')}`;
+      svg.innerHTML = `<defs><marker id="pl-flecha" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="pl-flecha"/></marker></defs>${paths.replace(/<path /g, '<path marker-end="url(#pl-flecha)" ')}${golpes}`;
     });
   }
 
@@ -1160,7 +1230,7 @@
     const cols = {
       entregable: vis('en', full && c0.entregable), real: vis('real', full && c0.real), deps: vis('dp', esDeps || (full && c0.deps)),
       dias: vis('dias', editable || full || esDeps), area: vis('ar', !esDeps && (full || own)), base: base && vis('lb', full), desvio: base && vis('dv', full), full,
-      rs: vis('rs', true), fechas: vis('fechas', true), p: vis('p', !esDeps), e: vis('e', true),
+      rs: vis('rs', true), fechas: vis('fechas', true), p: vis('p', !esDeps), e: vis('e', true), esDeps,
     };
     ultimoModelo = model;
     const tareas = opts.owner && opts.tareas ? (model.tasks || []) : [];
@@ -1266,7 +1336,7 @@
     </div>`;
     const deps = [];
     if (opts.lineas !== false || esDeps) (model.activities || []).forEach(a => (a.dependsOnIds || []).forEach(p => deps.push([p, a.id])));
-    const tabla = `<style id="pl-colstyle">${cssCols}</style><div class="pl-wrap" id="pl-wrap"><div class="pl-canvas"><table class="pl${esDeps ? ' pl-deps' : ''}">${headF}<tbody>${filas}${addArea}</tbody></table><svg class="pl-links" data-deps='${esc(JSON.stringify(deps))}'></svg></div></div>`;
+    const tabla = `<style id="pl-colstyle">${cssCols}</style><div class="pl-wrap" id="pl-wrap"><div class="pl-canvas"><table class="pl${esDeps ? ' pl-deps' : ''}">${headF}<tbody>${filas}${addArea}</tbody></table><svg class="pl-links${editable && opts.owner && has('planOnPatch') && esDeps ? ' editable' : ''}" data-deps='${esc(JSON.stringify(deps))}'></svg></div></div>`;
     const panel = opts.panel ? involucradosHtml(model, opts) : '';
     return `${filtrosHtml(model, opts, gs, cols, base)}<div class="pl-div"></div>${vacio}
       ${panel ? `<div class="pl-layout"><div class="pl-main">${tabla}</div>${panel}</div>` : tabla}
@@ -1292,6 +1362,9 @@
       barra += ini === fin
         ? `<span class="pl-ms${cls}" data-id="${a.id}" style="left:${x0 + E.ppd / 2}px;--c:${g.color}" title="${tip}"${click}></span>`
         : `<span class="pl-b${cls}${w < 34 ? ' mini' : ''}" data-id="${a.id}" style="left:${x0}px;width:${w}px;--c:${g.color}" title="${tip}"${click}><i style="width:${pct}%"></i></span>`;
+      if (cols.esDeps && editable && opts.owner && has('planOnPatch')) {
+        barra += `<span class="pl-lk" data-src="${a.id}" style="left:${ini === fin ? x0 + E.ppd / 2 + 8 : x0 + w + 2}px" title="Arrastra hasta otra actividad: «${esc(a.name)}» debe terminar antes de que ella empiece"></span>`;
+      }
     }
     if (a.realStart) {
       const rf = a.realEnd || today;
@@ -1347,7 +1420,9 @@
       ${cols.desvio ? `<td>${desvioHtml(dv)}</td>` : ''}
       ${pctCell}
       ${estCell}
-      ${cols.deps ? `<td class="pl-dp">${deps || '<span class="pl-mut">—</span>'}</td>` : ''}
+      ${cols.deps ? (editable && opts.owner && has('planOnPatch')
+        ? `<td class="pl-dp pl-pick" tabindex="0" data-pick="deps" data-act="${a.id}" title="Elegir de qué actividades depende (deben terminar antes)">${deps || '<span class="pl-mut">Elegir…</span>'}<i class="pl-caret">▾</i></td>`
+        : `<td class="pl-dp">${deps || '<span class="pl-mut">—</span>'}</td>`) : ''}
       ${carril(barra)}
     </tr>`;
   }
