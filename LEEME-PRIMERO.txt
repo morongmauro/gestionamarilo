@@ -1,3 +1,20 @@
+ENLACES COMPARTIDOS: GANTT, DEPENDENCIAS Y TABLA, EN MESA DE TRABAJO
+==================================================================
+No hay nada que correr en Supabase. Recarga con Ctrl + F5.
+
+- Todo enlace (👁 ver y proponer, o ✎ editor con nombre) tiene arriba las
+  tres vistas: 📊 Gantt · ⛓ Dependencias · ▤ Tabla.
+  · Dependencias: número y color de cada actividad, flechas entre ellas, y
+    al pasar el mouse por el NOMBRE o la BARRA se resalta la cadena de lo
+    que necesita antes, con una ficha pequeña.
+  · Tabla: todas las columnas (responsable, área, entregable, inicio, fin,
+    fechas reales, duración, avance, estado, depende de). El editor puede
+    editar ahí también.
+- El enlace abre en MESA DE TRABAJO: todo el ancho y el alto de la pantalla
+  para el cronograma, con la franja de resumen en una línea. Quien lo abre
+  puede pasar a «Vista normal» (y volver con «⛶ Mesa de trabajo»).
+- En tu editor, ⚙ Opciones de vista → Vista también tiene «⛓ Dependencias».
+
 EDITORES CON NOMBRE, HISTORIAL, DESHACER, BORRAR CAPÍTULOS Y SUBCAPÍTULOS
 =========================================================================
 
