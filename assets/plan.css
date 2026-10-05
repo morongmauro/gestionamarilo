@@ -482,3 +482,41 @@ tr.pl-drop-dentro td{box-shadow:inset 0 -3px 0 var(--accent,#3D7BF7)!important;f
 .pl-pop-r .ok{font:800 11.5px Montserrat,system-ui,sans-serif;color:#fff;background:#7C6CF2;border-radius:999px;padding:5px 14px}
 .pl-pop-f{display:flex;justify-content:space-between;align-items:center;padding:6px 14px 10px;font-size:11px;color:var(--muted)}
 .pl-pop-f button{font:700 11px Montserrat,system-ui,sans-serif;color:var(--accent-ink,#5B4BD6)}
+
+/* ============================================================
+   Lista desplegable: responsables y área responsable
+   ============================================================ */
+.pl-pick{cursor:pointer;position:relative;padding-right:18px!important;outline:none}
+.pl-pick:hover,.pl-pick:focus{background:color-mix(in srgb,var(--accent,#3D7BF7) 7%,var(--card))!important}
+.pl-pick:focus{box-shadow:inset 0 0 0 2px var(--accent,#3D7BF7)}
+.pl-caret{position:absolute;right:5px;top:50%;transform:translateY(-50%);font-style:normal;font-size:9px;color:var(--faint);opacity:0;transition:opacity .12s}
+tr:hover .pl-caret,.pl-pick:focus .pl-caret{opacity:1}
+.pl .pl-c-ar{min-width:96px}
+.pl td.pl-arc{max-width:150px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.pl-arp.auto{opacity:.6;font-style:italic}
+.pl-selpop{position:fixed;z-index:9999;width:300px;max-width:calc(100vw - 20px);display:flex;flex-direction:column;max-height:min(420px,calc(100vh - 20px));background:var(--card,#fff);border-radius:16px;box-shadow:0 14px 40px rgba(28,26,23,.22),0 0 0 1px rgba(28,26,23,.05);font-family:Montserrat,system-ui,sans-serif;overflow:hidden}
+.pl-sel-h{padding:11px 14px 6px;font-size:11px;font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-sel-h span{font-weight:500;color:var(--muted)}
+.pl-sel-chips{display:flex;flex-wrap:wrap;gap:4px;padding:0 14px 6px;font-size:11px}
+.pl-sel-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 4px 3px 10px;border-radius:999px;background:var(--accent-soft,#E8F0FF);color:var(--accent-ink,#1E4FB8)}
+.pl-sel-chip button{width:16px;height:16px;border-radius:50%;font-size:11px;line-height:1;color:inherit}
+.pl-sel-chip button:hover{background:rgba(0,0,0,.08)}
+.pl-sel-q{margin:0 14px 6px;font:500 12px Montserrat,system-ui,sans-serif;color:var(--ink);background:var(--sunk);border:none;border-radius:999px;padding:7px 12px;outline:none}
+.pl-sel-q:focus{box-shadow:0 0 0 2px var(--accent,#3D7BF7)}
+.pl-sel-l{overflow:auto;padding:0 8px 6px;flex:1 1 auto}
+.pl-sel-g{font-size:9.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);padding:8px 6px 3px}
+.pl-sel-o{display:flex;width:100%;align-items:center;gap:9px;padding:6px 8px;border-radius:9px;text-align:left;background:none;border:none;cursor:pointer;font-family:inherit}
+.pl-sel-o:hover{background:var(--sunk)}
+.pl-sel-o i{flex-shrink:0;width:15px;height:15px;border-radius:5px;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--ink) 25%,transparent);font-style:normal;font-size:11px;line-height:15px;text-align:center;color:var(--muted)}
+.pl-sel-o.on i{background:var(--accent,#3D7BF7);box-shadow:none}
+.pl-sel-o.on i::after{content:"✓";color:#fff;font-weight:800}
+.pl-sel-o.nuevo i{box-shadow:none}
+.pl-sel-o span{display:flex;flex-direction:column;min-width:0}
+.pl-sel-o b{font-size:12px;font-weight:650;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-sel-o em{font-style:normal;font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-sel-v{font-size:11.5px;color:var(--faint);padding:10px 8px}
+.pl-sel-f{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 14px 11px;border-top:1px solid color-mix(in srgb,var(--ink) 7%,transparent);font-size:11px}
+.pl-sel-f button{font:700 11.5px Montserrat,system-ui,sans-serif;color:var(--muted);padding:5px 10px;border-radius:999px}
+.pl-sel-f button:hover{background:var(--sunk)}
+.pl-sel-f .ok{background:var(--ink);color:var(--paper,#fff);padding:6px 16px}
+.pl-sel-f .ok:hover{background:var(--ink);filter:brightness(1.2)}

@@ -12,6 +12,9 @@ La app ya no usa Notion para nada. Todo (tareas, proyectos, fases y actividades 
 > 6. [`supabase/migracion-2026-10-involucrados.sql`](supabase/migracion-2026-10-involucrados.sql) — **involucrados** del proyecto (nombre + área).
 > 7. [`supabase/migracion-2026-10-fecha-meta.sql`](supabase/migracion-2026-10-fecha-meta.sql) — **fecha meta** del proyecto.
 > 8. [`supabase/migracion-2026-10-notas.sql`](supabase/migracion-2026-10-notas.sql) — **bitácora de notas** por actividad.
+> 9. [`supabase/migracion-2026-10-area.sql`](supabase/migracion-2026-10-area.sql) — **área responsable** elegida a mano en cada actividad.
+>
+> Atajo: [`supabase/TODAS-octubre-2026.sql`](supabase/TODAS-octubre-2026.sql) trae todas las de octubre juntas (se puede correr aunque ya hayas corrido alguna).
 
 ## 1. Crear el proyecto en Supabase
 
