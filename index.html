@@ -947,6 +947,8 @@
   .ptable .dep-cell{flex-wrap:nowrap}
   .ptable .pt-in.pct{min-width:54px;text-align:right}
   .ptable tr.act:hover .pl-ra{display:inline-flex}
+  .pt-pick{white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis}
+  .pt-pv{font-size:11.5px;color:var(--ink)}
   .pt-nmw{min-width:250px}
   .ptable tr.act:hover .pl-cmt.vacio{display:inline-flex}
   .dt-atarea{font-size:10.5px!important;font-weight:700;color:#5B4BD6!important;background:color-mix(in srgb,#7C6CF2 14%,var(--card))!important;border-radius:999px!important;padding:1px 8px!important;width:auto!important;margin-right:4px}
@@ -2731,7 +2733,7 @@
     }).join('');
     const addSec=`<tr class="addrow"><td colspan="${cols}"><input placeholder="＋ Nueva fase (Enter)" onkeydown="if(event.key==='Enter')addSectionInline(this)"></td></tr>`;
     return `<div class="ptable-wrap"><table class="ptable">
-      <thead><tr><th style="width:74px">ID</th><th style="min-width:250px">Actividad</th><th style="min-width:150px">Fase</th><th style="min-width:170px">Responsables</th><th style="min-width:140px" title="Sale sola del área de cada responsable registrado en «Involucrados»">Área responsable</th><th style="min-width:142px">Inicio</th><th style="min-width:142px">Fin</th><th style="min-width:126px">Estado</th><th style="width:66px">%</th><th style="min-width:190px">Depende de</th><th style="min-width:190px">Entregable</th><th style="min-width:170px">Notas</th><th style="width:34px"></th></tr></thead>
+      <thead><tr><th style="width:74px">ID</th><th style="min-width:250px">Actividad</th><th style="min-width:150px">Fase</th><th style="min-width:170px">Responsables</th><th style="min-width:140px" title="Elígela de la lista de áreas de «Involucrados»; si la dejas automática, sale del área de cada responsable">Área responsable</th><th style="min-width:142px">Inicio</th><th style="min-width:142px">Fin</th><th style="min-width:126px">Estado</th><th style="width:66px">%</th><th style="min-width:190px">Depende de</th><th style="min-width:190px">Entregable</th><th style="min-width:170px">Notas</th><th style="width:34px"></th></tr></thead>
       <tbody>${rows}${addSec}</tbody></table></div>`;
   }
   function ptRow(a,secs,color,cod){
@@ -2744,8 +2746,8 @@
       <td class="pt-ord"><span class="pl-drag" title="Arrastra para mover la fila · clic derecho: más opciones">⠿</span><span class="pt-acod">${cod||''}</span><button onclick="moveActivity('${a.id}',-1)" title="Subir">▲</button><button onclick="moveActivity('${a.id}',1)" title="Bajar">▼</button></td>
       <td><div class="pt-nmw"><input class="pt-in nm" data-cell="${a.id}:name" value="${esc(a.name)}" title="${esc(a.name)}" onchange="patchActivity('${a.id}',{name:this.value.trim()})">${a.critical?`<span class="cp-chip ${a.criticaEnRiesgo?'late':''}" title="Ruta crítica">RC</span>`:''}${(()=>{const nC=((currentProjectDetail&&currentProjectDetail.notas)||[]).filter(n=>n.activityId===a.id).length;return `<button class="pl-cmt${nC?'':' vacio'}" data-cmt="${a.id}" title="Comentarios">${nC||'＋'}</button>`;})()}<span class="pl-ra"><button onclick="planOnRow('insertar-debajo','${a.id}')" title="Insertar una fila debajo (Ctrl+Enter)">＋</button><button onclick="planOnRow('eliminar','${a.id}')" title="Eliminar esta fila">🗑</button></span></div></td>
       <td><select class="pt-in" data-cell="${a.id}:sec" onchange="patchActivity('${a.id}',{sectionId:this.value||null})">${secOpts}</select></td>
-      <td><input class="pt-in" data-cell="${a.id}:resp" value="${esc(resp)}" list="dl-personas" placeholder="Diana, Camilo…" title="Separa varios con coma" onchange="patchActivity('${a.id}',{responsables:this.value})"></td>
-      <td>${Plan.areasActividad(a,(currentProjectDetail&&currentProjectDetail.miembros)||[]).map(x=>`<span class="pl-arp" style="--c:${Plan.colorDe(x)}">${esc(x)}</span>`).join('')||'<span style="color:var(--faint)" title="Registra al responsable en «Involucrados» con su área">—</span>'}</td>
+      <td class="pl-pick pt-pick" tabindex="0" data-pick="resp" data-act="${a.id}" title="Elegir responsables de la lista de involucrados"><span class="pt-pv">${esc(resp)||'<span style="color:var(--faint)">Elegir…</span>'}</span><i class="pl-caret">▾</i></td>
+      <td class="pl-pick pt-pick" tabindex="0" data-pick="area" data-act="${a.id}" title="${a.area?'Área elegida a mano':'Automática: sale del área de los responsables. Clic para elegirla a mano'}">${Plan.areasActividad(a,(currentProjectDetail&&currentProjectDetail.miembros)||[]).map(x=>`<span class="pl-arp${a.area?'':' auto'}" style="--c:${Plan.colorDe(x)}">${esc(x)}</span>`).join('')||'<span style="color:var(--faint)">Elegir…</span>'}<i class="pl-caret">▾</i></td>
       <td><input type="date" class="pt-in" data-cell="${a.id}:start" value="${a.startDate||''}" onchange="patchActivity('${a.id}',{startDate:this.value||null})"></td>
       <td><input type="date" class="pt-in" data-cell="${a.id}:end" value="${a.deadline||''}"${atraso} onchange="patchActivity('${a.id}',{deadline:this.value||null})"></td>
       <td><span class="st-badge" title="El estado sale del % de avance"><span class="g-sdot" style="background:${stCol}"></span>${AS[a.estadoEfectivo]||a.status}</span></td>

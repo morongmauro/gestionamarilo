@@ -216,7 +216,9 @@
   }
   // Área de un nombre: si es un involucrado del proyecto, su área; si no, el nombre mismo (p. ej. «Jurídica»)
   // Áreas de los responsables de una actividad (sin repetir)
+  const listaNombres = v => (Array.isArray(v) ? v : String(v || '').split(',')).map(x => String(x || '').trim()).filter(Boolean);
   function areasActividad(a, miembros) {
+    if (a.area) return listaNombres(a.area); // elegida a mano
     const out = [];
     respDe(a).forEach(r => {
       const m = (miembros || []).find(x => norm(x.nombre) === norm(r));
@@ -235,13 +237,125 @@
     const mapa = new Map();
     orden.forEach(a => {
       const r0 = respDe(a)[0];
-      const nombre = r0 ? areaDe(r0, model.miembros) : 'Sin responsable';
+      const nombre = a.area ? listaNombres(a.area)[0] : r0 ? areaDe(r0, model.miembros) : 'Sin responsable';
       const k = 'a:' + norm(nombre);
       if (!mapa.has(k)) mapa.set(k, { key: k, id: null, name: nombre, sec: null, area: true, color: nombre === 'Sin responsable' ? '#9A9384' : colorDe(nombre), acts: [] });
       mapa.get(k).acts.push(a);
     });
     return [...mapa.values()].sort((x, y) => (x.name === 'Sin responsable') - (y.name === 'Sin responsable') || x.name.localeCompare(y.name));
   }
+
+  // Área responsable: la elegida a mano va sólida; la automática (de los involucrados), tenue
+  function celdaArea(a, editable) {
+    const mi = ultimoModelo && ultimoModelo.miembros;
+    const manual = !!a.area;
+    const ar = areasActividad(a, mi);
+    const chips = ar.map(x => `<span class="pl-arp${manual ? '' : ' auto'}" style="--c:${colorDe(x)}">${esc(x)}</span>`).join('');
+    const vacio = `<span class="pl-mut">${editable ? 'Elegir…' : '—'}</span>`;
+    return editable
+      ? `<td class="pl-arc pl-pick" tabindex="0" data-pick="area" data-act="${a.id}" title="${manual ? 'Área elegida a mano' : ar.length ? 'Automática: sale del área de los responsables. Clic para elegirla a mano' : 'Elegir de la lista de áreas de los involucrados'}">${chips || vacio}<i class="pl-caret">▾</i></td>`
+      : `<td class="pl-arc">${chips || vacio}</td>`;
+  }
+
+  // ---------- Lista desplegable para responsables y áreas (involucrados del proyecto) ----------
+  let sel = null, selCtx = null;
+  function opcionesPick(tipo, a) {
+    const m = ultimoModelo || {}, mi = m.miembros || [];
+    const out = [];
+    const add = (valor, sub, grupo) => { if (valor && !out.some(o => norm(o.valor) === norm(valor))) out.push({ valor, sub, grupo }); };
+    if (tipo === 'resp') {
+      mi.forEach(x => add(x.nombre, [x.area, x.rol].filter(Boolean).join(' · '), 'Involucrados'));
+      // Áreas como responsable (p. ej. «Jurídica») y nombres ya usados en el plan
+      [...new Set(mi.map(x => x.area).filter(Boolean))].forEach(ar => add(ar, 'Área', 'Áreas'));
+      (m.activities || []).forEach(y => respDe(y).forEach(r => add(r, 'ya usado en el plan', 'Otros')));
+    } else {
+      mi.forEach(x => add(x.area, mi.filter(y => norm(y.area) === norm(x.area)).map(y => y.nombre).join(', '), 'Áreas de los involucrados'));
+      (m.activities || []).forEach(y => listaNombres(y.area).forEach(r => add(r, 'ya usada en el plan', 'Otras')));
+    }
+    return out;
+  }
+  function pintarSel() {
+    if (!sel || !selCtx) return;
+    const { tipo, a, elegidos } = selCtx;
+    const q = norm(sel.querySelector('input.pl-sel-q') ? sel.querySelector('input.pl-sel-q').value : '');
+    const ops = opcionesPick(tipo, a).filter(o => !q || norm(o.valor).includes(q) || norm(o.sub || '').includes(q));
+    elegidos.forEach(v => { if (!ops.some(o => norm(o.valor) === norm(v)) && (!q || norm(v).includes(q))) ops.unshift({ valor: v, sub: 'elegido', grupo: 'Elegidos' }); });
+    let grupo = null, html = '';
+    ops.forEach((o, i) => {
+      if (o.grupo !== grupo) { grupo = o.grupo; html += `<div class="pl-sel-g">${esc(grupo)}</div>`; }
+      const on = elegidos.some(v => norm(v) === norm(o.valor));
+      html += `<button class="pl-sel-o${on ? ' on' : ''}" data-v="${esc(o.valor)}"><i></i><span><b>${esc(o.valor)}</b>${o.sub ? `<em>${esc(o.sub)}</em>` : ''}</span></button>`;
+    });
+    const qOrig = sel.querySelector('input.pl-sel-q') ? sel.querySelector('input.pl-sel-q').value.trim() : '';
+    const nuevo = qOrig && !ops.some(o => norm(o.valor) === norm(qOrig)) ? `<button class="pl-sel-o nuevo" data-v="${esc(qOrig)}"><i>＋</i><span><b>Agregar «${esc(qOrig)}»</b><em>${tipo === 'resp' ? 'nombre que no está en Involucrados' : 'área nueva'}</em></span></button>` : '';
+    sel.querySelector('.pl-sel-l').innerHTML = (html || nuevo ? html + nuevo : `<div class="pl-sel-v">${(ultimoModelo && (ultimoModelo.miembros || []).length) ? 'Nada coincide' : 'Aún no hay involucrados: regístralos en «👥 Involucrados» o escribe un nombre'}</div>`);
+    sel.querySelector('.pl-sel-chips').innerHTML = elegidos.length
+      ? elegidos.map(v => `<span class="pl-sel-chip">${esc(v)}<button data-quitar="${esc(v)}" title="Quitar">×</button></span>`).join('')
+      : `<span class="pl-mut">${tipo === 'area' ? 'Automática (según los responsables)' : 'Sin responsable'}</span>`;
+  }
+  function abrirSel(celda) {
+    const m = ultimoModelo || {};
+    const a = (m.activities || []).find(x => x.id === celda.dataset.act); if (!a) return;
+    const tipo = celda.dataset.pick;
+    cerrarSel(false);
+    const actuales = tipo === 'resp' ? respDe(a) : listaNombres(a.area);
+    selCtx = { tipo, a, elegidos: [...actuales], inicial: JSON.stringify(actuales) };
+    sel = document.createElement('div'); sel.className = 'pl-selpop';
+    sel.innerHTML = `<div class="pl-sel-h">${tipo === 'resp' ? 'Responsables' : 'Área responsable'} · <span>${esc(a._cod || '')} ${esc(a.name)}</span></div>
+      <div class="pl-sel-chips"></div>
+      <input class="pl-sel-q" placeholder="${tipo === 'resp' ? 'Buscar o escribir un nombre…' : 'Buscar o escribir un área…'}">
+      <div class="pl-sel-l"></div>
+      <div class="pl-sel-f">${tipo === 'area' ? '<button data-auto="1" title="Volver a sacarla de los responsables">↺ Automática</button>' : '<span class="pl-mut">Puedes elegir varios</span>'}<button class="ok" data-listo="1">Listo</button></div>`;
+    document.body.appendChild(sel);
+    const r = celda.getBoundingClientRect();
+    const w = sel.offsetWidth, h = sel.offsetHeight;
+    sel.style.left = Math.max(10, Math.min(r.left, window.innerWidth - w - 10)) + 'px';
+    sel.style.top = (r.bottom + h + 8 > window.innerHeight ? Math.max(10, r.top - h - 4) : r.bottom + 4) + 'px';
+    pintarSel();
+    const q = sel.querySelector('input.pl-sel-q');
+    q.addEventListener('input', pintarSel);
+    q.addEventListener('keydown', ev => {
+      if (ev.key === 'Enter') {
+        ev.preventDefault();
+        const prim = sel.querySelector('.pl-sel-o');
+        if (q.value.trim() && prim) prim.click(); else cerrarSel(true);
+      }
+      if (ev.key === 'Escape') { ev.stopPropagation(); cerrarSel(false); }
+      if (ev.key === 'Backspace' && !q.value && selCtx.elegidos.length) { selCtx.elegidos.pop(); pintarSel(); }
+    });
+    sel.addEventListener('mousedown', ev => { if (ev.target !== q) ev.preventDefault(); });
+    sel.addEventListener('click', ev => {
+      const o = ev.target.closest('.pl-sel-o'), qu = ev.target.closest('[data-quitar]');
+      if (o) {
+        const v = o.dataset.v, i = selCtx.elegidos.findIndex(x => norm(x) === norm(v));
+        if (i >= 0) selCtx.elegidos.splice(i, 1); else selCtx.elegidos.push(v);
+        q.value = ''; pintarSel(); q.focus();
+      } else if (qu) {
+        selCtx.elegidos = selCtx.elegidos.filter(x => norm(x) !== norm(qu.dataset.quitar)); pintarSel(); q.focus();
+      } else if (ev.target.closest('[data-auto]')) { selCtx.elegidos = []; cerrarSel(true); }
+      else if (ev.target.closest('[data-listo]')) cerrarSel(true);
+    });
+    setTimeout(() => q.focus(), 20);
+  }
+  // Al cerrar se guarda (si cambió): la hoja se repinta sola
+  function cerrarSel(guardar) {
+    if (!sel) return;
+    const ctx = selCtx;
+    sel.remove(); sel = null; selCtx = null;
+    if (!guardar || !ctx || JSON.stringify(ctx.elegidos) === ctx.inicial || !has('planOnPatch')) return;
+    window.planOnPatch(ctx.a.id, ctx.tipo === 'resp' ? { responsables: ctx.elegidos.join(', ') } : { area: ctx.elegidos.join(', ') || null });
+  }
+  document.addEventListener('click', ev => {
+    const c = ev.target.closest && ev.target.closest('.pl-pick[data-pick]');
+    if (c) { abrirSel(c); return; }
+    // (la lista se repinta al elegir: el botón pulsado ya no está dentro, por eso se mira el recorrido del clic)
+    if (sel && !ev.composedPath().includes(sel)) cerrarSel(true);
+  });
+  document.addEventListener('keydown', ev => {
+    // Enter o espacio sobre la celda también abre la lista
+    const c = ev.target.closest && ev.target.closest('.pl-pick[data-pick]');
+    if (c && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); abrirSel(c); }
+  });
 
   // Avatares con iniciales; en la columna de responsable van también los nombres
   function avatares(nombres) {
@@ -740,7 +854,7 @@
   document.addEventListener('click', ev => {
     const b = ev.target.closest && ev.target.closest('[data-cmt]');
     if (b) { ev.preventDefault(); abrirPop(b.dataset.cmt, b, true); return; }
-    if (pop && popId && !pop.contains(ev.target) && !(ev.target.closest && ev.target.closest('.pl-menu'))) cerrarPop();
+    if (pop && popId && !ev.composedPath().includes(pop) && !(ev.target.closest && ev.target.closest('.pl-menu'))) cerrarPop();
   });
 
   // ---------- Escala «Todo»: mide lo que ocupan las columnas para que el cronograma quepa exacto ----------
@@ -835,7 +949,7 @@
     // Vista «gantt»: lo esencial y el cronograma a la vista. «tabla»: todas las columnas.
     const full = opts.vista === 'tabla';
     const c0 = opts.cols || {};
-    const cols = { entregable: full && c0.entregable, real: full && c0.real, deps: full && c0.deps, dias: editable || full, area: full, base: full && base, desvio: full && base, full };
+    const cols = { entregable: full && c0.entregable, real: full && c0.real, deps: full && c0.deps, dias: editable || full, area: full || (editable && !!opts.owner), base: full && base, desvio: full && base, full };
     ultimoModelo = model;
     const tareas = opts.owner && opts.tareas ? (model.tasks || []) : [];
     const tareasDe = id => tareas.filter(t => t.activityId === id)
@@ -864,7 +978,7 @@
     const lbI = base ? 'Inicio proy.' : 'Inicio', lbF = base ? 'Fin proy.' : 'Fin';
     const head = `<thead><tr>
       <th class="pl-sk pl-c-id">ID</th><th class="pl-sk pl-c-nm">Actividad<span class="pl-resz" title="Arrastra para ensanchar o angostar la columna · doble clic: ajustar a los nombres (otro doble clic: volver al ancho normal)"></span></th><th class="pl-c-rs">Responsable</th>
-      ${cols.area ? '<th class="pl-c-ar" title="Sale sola del área de cada responsable registrado en «Involucrados»">Área responsable</th>' : ''}
+      ${cols.area ? `<th class="pl-c-ar" title="Elígela de la lista de áreas de «Involucrados». Si la dejas en automática, sale del área de cada responsable">${full ? 'Área responsable' : 'Área'}</th>` : ''}
       ${cols.entregable ? '<th class="pl-c-en">Entregable / resultado</th>' : ''}
       ${cols.base ? '<th class="pl-c-lb" title="Fechas congeladas al fijar la línea base: no se mueven">🔒 Línea base</th>' : ''}
       ${full ? `<th class="pl-c-d" title="${base ? 'Inicio proyectado: se recalcula solo con las fechas reales y las dependencias' : 'Inicio planeado'}">${lbI}</th>
@@ -989,8 +1103,10 @@
     return `<tr class="pl-act${a.propuesta ? ' prop' : ''}" style="--c:${g.color}"${editable && opts.owner ? ` data-row="${a.id}"` : ''}>
       <td class="pl-sk pl-c-id">${mueve ? '<span class="pl-drag" title="Arrastra para mover la fila · clic derecho: más opciones">⠿</span>' : ''}${idCell}</td>
       <td class="pl-sk pl-c-nm"><div class="pl-nmw" title="${esc(a.name + (a.entregable ? ' → ' + a.entregable : '') + (opts.agrupar === 'area' && a._etapa ? ' · ' + a._etapa : ''))}">${inp('name', a.name, 'Actividad', 'nm')}${opts.owner && has('planOnDetalle') ? notasTareasBtn(a) : ''}</div></td>
-      <td class="pl-rs">${avatares(respDe(a))}${cols.full ? inp('responsables', resp, '—', 'rs') : `<span class="pl-tx rs" title="${esc(resp)}">${esc(resp) || '<span class="pl-mut">—</span>'}</span>`}</td>
-      ${cols.area ? `<td class="pl-arc">${areasActividad(a, ultimoModelo && ultimoModelo.miembros).map(x => `<span class="pl-arp" style="--c:${colorDe(x)}">${esc(x)}</span>`).join('') || '<span class="pl-mut" title="Registra al responsable en «Involucrados» con su área">—</span>'}</td>` : ''}
+      ${editable && opts.owner
+        ? `<td class="pl-rs pl-pick" tabindex="0" data-pick="resp" data-act="${a.id}" title="Elegir responsables de la lista de involucrados">${avatares(respDe(a))}<span class="pl-tx rs">${esc(resp) || '<span class="pl-mut">Elegir…</span>'}</span><i class="pl-caret">▾</i></td>`
+        : `<td class="pl-rs">${avatares(respDe(a))}<span class="pl-tx rs" title="${esc(resp)}">${esc(resp) || '<span class="pl-mut">—</span>'}</span></td>`}
+      ${cols.area ? celdaArea(a, editable && opts.owner) : ''}
       ${cols.entregable ? `<td>${inp('entregable', a.entregable || '', '—', 'en')}</td>` : ''}
       ${cols.base ? `<td class="pl-lbc" title="Congelada: no se mueve">${lb}</td>` : ''}
       ${cols.full ? celdaFecha(a, 'startDate', editable) + celdaFecha(a, 'deadline', editable, est === 'Atrasada' ? ' late' : '')

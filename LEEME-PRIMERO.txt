@@ -1,3 +1,23 @@
+RESPONSABLE Y ÁREA CON LISTA DESPLEGABLE · qué hacer
+====================================================
+
+1. EN SUPABASE (una sola vez): corre supabase/migracion-2026-10-area.sql
+   (o supabase/TODAS-octubre-2026.sql, que ya la trae). Agrega la columna
+   «area» a las actividades. Sin esto, elegir un área muestra un aviso.
+2. Recarga la app con Ctrl + F5.
+
+CÓMO SE USA (vista Plan de trabajo y vista Tabla)
+- Clic en la celda «Responsable»: sale la lista de tus Involucrados (con
+  su área y rol), las áreas y los nombres ya usados. Marca uno o varios;
+  escribe para buscar, o escribe un nombre nuevo y Enter para agregarlo.
+  «Listo» (o clic afuera) guarda. Esc cancela.
+- Clic en la celda «Área»: lista de las áreas registradas en Involucrados.
+  Puedes elegir una o varias. «↺ Automática» vuelve a sacarla del área de
+  cada responsable (se ve en cursiva, más tenue). Elegida a mano se ve
+  sólida.
+- La agrupación «Área responsable» y el enlace compartido usan el área
+  elegida a mano cuando la hay.
+
 CRONOGRAMA MÁS PRÁCTICO (TIPO EXCEL) · qué hacer
 ================================================
 

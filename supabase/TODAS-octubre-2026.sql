@@ -58,3 +58,6 @@ create table if not exists activity_notes (
 create index if not exists idx_notes_activity on activity_notes(activity_id);
 create index if not exists idx_notes_project on activity_notes(project_id);
 alter table activity_notes enable row level security;
+
+-- ---------- area ----------
+alter table activities add column if not exists area text;
