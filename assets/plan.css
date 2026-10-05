@@ -520,3 +520,20 @@ tr:hover .pl-caret,.pl-pick:focus .pl-caret{opacity:1}
 .pl-sel-f button:hover{background:var(--sunk)}
 .pl-sel-f .ok{background:var(--ink);color:var(--paper,#fff);padding:6px 16px}
 .pl-sel-f .ok:hover{background:var(--ink);filter:brightness(1.2)}
+
+/* ============================================================
+   Columnas: ancho a elección (asa en el borde del título) y menú
+   ============================================================ */
+.pl th[data-col]{position:sticky}
+.pl-cw{position:absolute;top:6px;right:0;bottom:6px;width:9px;cursor:col-resize;z-index:5}
+.pl-cw::after{content:"";position:absolute;left:4px;top:8px;bottom:4px;width:2px;border-radius:2px;background:transparent;transition:background .15s}
+.pl thead:hover .pl-cw::after{background:color-mix(in srgb,var(--ink) 12%,transparent)}
+.pl-cw:hover::after{background:var(--accent,#3D7BF7)!important}
+.pl-colsmenu{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px;padding:10px 12px;border-radius:16px;background:var(--sunk)}
+.pl-colsmenu .pl-ol{margin-right:4px}
+.pl-colsmenu .pl-mut{flex-basis:100%;font-size:10.5px;margin:2px 0 0}
+.pl-colchip{display:inline-flex;align-items:center;gap:6px;font:600 11.5px Montserrat,system-ui,sans-serif;color:var(--muted);background:var(--card);padding:5px 12px;border-radius:999px}
+.pl-colchip i{width:13px;height:13px;border-radius:4px;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--ink) 25%,transparent);display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-size:9px}
+.pl-colchip.on{color:var(--ink)}
+.pl-colchip.on i{background:var(--accent,#3D7BF7);box-shadow:none}
+.pl-colchip.on i::after{content:"✓";color:#fff;font-weight:800}
