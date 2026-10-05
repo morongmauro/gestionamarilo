@@ -668,7 +668,9 @@
   .qtitle{font-weight:550}
   .kcard,.ptask{box-shadow:0 1px 3px rgba(28,26,23,.06);border-radius:16px}
   .kcard:hover,.ptask:hover{box-shadow:0 6px 18px rgba(28,26,23,.09)}
-  .pcol{background:linear-gradient(180deg,color-mix(in srgb,var(--tint,var(--sunk)) 16%,var(--card)),var(--card) 90px)}
+  /* Tarjetas de proyecto sin degradado: fondo plano y el color del proyecto solo en el encabezado */
+  .pcol{background:var(--card)}
+  .pcol-h{background:color-mix(in srgb,var(--tint,var(--sunk)) 14%,var(--card));border-radius:10px;padding:7px 9px}
   .pcol-add,.kadd{background:var(--sunk);border-radius:999px;text-align:center}
   .pcol-add:hover,.kadd:hover{background:var(--accent-soft);color:var(--accent-ink)}
   .ptabs{padding:4px 2px 12px}
