@@ -896,6 +896,24 @@
   html.mesa .panel-h{margin-bottom:8px}
   html.mesa .pl-wrap{max-height:calc(100vh - 175px)}
   html.mesa .plan-head{margin-bottom:6px}
+  .ptable tr.sec.sub td{padding-left:34px!important;box-shadow:inset 5px 0 0 color-mix(in srgb,var(--c) 55%,var(--card))}
+  .g-sec.sub .g-left{padding-left:26px}
+  .sh-tipos{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+  .sh-tipo{display:flex;flex-direction:column;gap:3px;text-align:left;padding:10px 12px;border-radius:14px;background:var(--sunk);font-family:inherit;cursor:pointer;box-shadow:inset 0 0 0 2px transparent}
+  .sh-tipo b{font-size:12.5px;color:var(--ink)}.sh-tipo span{font-size:10.5px;color:var(--muted);line-height:1.35}
+  .sh-tipo.on{background:var(--card);box-shadow:inset 0 0 0 2px var(--accent)}
+  .undo-btn em{font-style:normal;font-size:10px;font-weight:800;background:var(--card);border-radius:999px;padding:0 6px;margin-left:2px}
+  .undo-btn:disabled{opacity:.45;cursor:default}
+  .hs-dia{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin:14px 0 6px}
+  .hs-dia:first-of-type{margin-top:2px}
+  .hs-it{display:flex;gap:10px;align-items:flex-start;padding:8px 8px;border-radius:12px}
+  .hs-it.link{cursor:pointer}.hs-it.link:hover{background:var(--sunk)}
+  .hs-av{flex-shrink:0;width:26px;height:26px;border-radius:50%;color:#fff;font-size:9.5px;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
+  .hs-tx{flex:1;min-width:0;font-size:12px;line-height:1.4;color:var(--muted)}
+  .hs-tx b{color:var(--ink)}
+  .hs-obj{color:var(--ink);font-weight:600}
+  .hs-det{font-size:11px;color:var(--muted);margin-top:2px;word-break:break-word}
+  .hs-h{flex-shrink:0;font-size:10.5px;color:var(--faint);font-weight:600}
   /* Vista Dependencias: número y color de etapa, ficha de precedentes discreta */
   .g-sec{background:color-mix(in srgb,var(--c,#9A9384) 12%,var(--card))!important;box-shadow:inset 5px 0 0 var(--c,#9A9384)}
   .g-sec .nm{color:color-mix(in srgb,var(--c,#9A9384) 70%,var(--ink))!important;text-transform:none!important;font-size:12px!important}
@@ -1271,6 +1289,10 @@
   </div>
 </div>
 <!-- PANEL LATERAL DE LA ACTIVIDAD (notas y tareas) -->
+<aside class="act-drawer" id="hist-drawer">
+  <div class="act-drawer-h"><div style="min-width:0"><div class="dt-cod">Cronograma</div><div class="dt-nm">🕘 Historial de cambios</div><div class="dt-meta" id="hist-sub">Quién cambió qué y cuándo</div></div><button class="x-close" onclick="cerrarHistorial()">×</button></div>
+  <div class="act-drawer-b" id="hist-b"></div>
+</aside>
 <aside class="act-drawer" id="act-drawer">
   <div class="act-drawer-h" id="act-drawer-h"></div>
   <div class="act-drawer-b" id="act-drawer-b"></div>
@@ -1301,8 +1323,12 @@
   <div class="modal">
     <div class="modal-h"><h3 id="sh-title">Compartir plan</h3><button class="x-close" onclick="closeModal('m-share')">×</button></div>
     <div class="modal-b">
-      <div class="hintbox">Quien reciba el enlace ve <strong>el plan de trabajo</strong> de este proyecto (tus tareas del día a día <strong>nunca</strong> se muestran). No puede cambiar lo que ya está asentado: <strong>propone</strong> actividades nuevas o ajustes, y tú los aceptas o descartas.</div>
-      <div class="field"><label>Persona o área</label><input id="sh-label" placeholder="Ej: Jurídica · Diana"></div>
+      <div class="sh-tipos">
+        <button class="sh-tipo on" data-r="view" onclick="tipoShare('view')"><b>👁 Ver y proponer</b><span>Ve el plan y propone actividades o ajustes; tú los aceptas.</span></button>
+        <button class="sh-tipo" data-r="editor" onclick="tipoShare('editor')"><b>✎ Editor con nombre</b><span>Edita el cronograma de verdad: crea, mueve, elimina, fechas y capítulos. Todo queda en el historial a su nombre.</span></button>
+      </div>
+      <div class="hintbox" id="sh-hint">Tus tareas del día a día <strong>nunca</strong> se muestran en ningún enlace.</div>
+      <div class="field"><label id="sh-label-t">Persona o área</label><input id="sh-label" placeholder="Ej: Jurídica · Diana"></div>
       <input type="hidden" id="sh-role" value="view">
       <button class="btn btn-primary" onclick="createShare()">＋ Generar enlace</button>
       <div class="field"><label>Enlaces activos</label><div id="sh-list" style="display:flex;flex-direction:column;gap:8px"></div></div>
@@ -2023,6 +2049,127 @@
     return movidas;
   }
 
+  // ---------- HISTORIAL DE CAMBIOS ----------
+  let histAbierto=false,histDatos=null,histFiltro='';
+  function abrirHistorial(){histAbierto=true;$('hist-drawer').classList.add('open');cargarHistorial();}
+  function cerrarHistorial(){histAbierto=false;$('hist-drawer').classList.remove('open');}
+  async function cargarHistorial(){
+    const d=currentProjectDetail;if(!d)return;
+    if(!histDatos)$('hist-b').innerHTML='<div class="dt-vacio">Cargando…</div>';
+    try{histDatos=await api(`/api/projects/${d.id}?res=historial`);pintarHistorial();}
+    catch(e){$('hist-b').innerHTML=`<div class="dt-vacio">⚠ ${esc(e.message)}</div>`;}
+  }
+  function pintarHistorial(){
+    const el=$('hist-b');if(!el||!histDatos)return;
+    if(histDatos.falta){el.innerHTML='<div class="dt-vacio">Para guardar el historial falta correr en Supabase <b>supabase/migracion-2026-10-edicion.sql</b> (o TODAS-octubre-2026.sql).</div>';return;}
+    const cs=histDatos.cambios||[];
+    const quien=c=>c.autor||'Tú';
+    const personas=[...new Set(cs.map(quien))];
+    const lista=cs.filter(c=>!histFiltro||quien(c)===histFiltro);
+    const ini=n=>n.split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+    let dia='',html='';
+    lista.forEach(c=>{
+      const f=new Date(c.createdAt),dd=isNaN(f)?'':f.toLocaleDateString('es-CO',{weekday:'long',day:'numeric',month:'long'});
+      if(dd!==dia){dia=dd;html+=`<div class="hs-dia">${esc(dd)}</div>`;}
+      const existe=c.activityId&&(currentProjectDetail.activities||[]).some(a=>a.id===c.activityId);
+      html+=`<div class="hs-it${existe?' link':''}"${existe?` onclick="planOnDetalle('${c.activityId}')" title="Abrir la actividad"`:''}>
+        <span class="hs-av" style="background:${Plan.colorDe(quien(c))}">${esc(ini(quien(c)))}</span>
+        <div class="hs-tx"><div><b>${esc(quien(c))}</b> ${esc(c.accion)} ${c.objeto?`<span class="hs-obj">«${esc(c.objeto)}»</span>`:''}</div>
+        ${c.detalle?`<div class="hs-det">${esc(c.detalle)}</div>`:''}</div>
+        <span class="hs-h">${isNaN(f)?'':f.toLocaleTimeString('es-CO',{hour:'numeric',minute:'2-digit'})}</span>
+      </div>`;
+    });
+    $('hist-sub').textContent=`${cs.length} cambio${cs.length===1?'':'s'} registrados${personas.length?` · ${personas.length} persona${personas.length===1?'':'s'}`:''}`;
+    el.innerHTML=`${personas.length>1?`<select class="pl-sel" style="margin-bottom:10px" onchange="histFiltro=this.value;pintarHistorial()"><option value="">👥 Todas las personas</option>${personas.map(p=>`<option${p===histFiltro?' selected':''}>${esc(p)}</option>`).join('')}</select>`:''}
+      ${html||'<div class="dt-vacio">Aún no hay cambios registrados. Desde ahora, todo lo que cambies tú o los editores queda aquí.</div>'}`;
+  }
+
+  // ---------- DESHACER (cambio por cambio) ----------
+  // Antes de cada cambio se guarda una foto del cronograma (actividades y capítulos).
+  // Deshacer compara esa foto con lo que hay en el servidor y devuelve todo a como
+  // estaba: fechas, duraciones, responsables, orden, filas y capítulos borrados o creados.
+  const pilaDeshacer=[];let undoSuspendido=0,deshaciendo=false;
+  function pushUndo(desc){
+    const d=currentProjectDetail;if(!d||undoSuspendido||deshaciendo)return;
+    pilaDeshacer.push({desc,pid:d.id,acts:JSON.parse(JSON.stringify(d.activities||[])),secs:JSON.parse(JSON.stringify(d.sections||[]))});
+    if(pilaDeshacer.length>40)pilaDeshacer.shift();
+    pintarDeshacer();
+  }
+  function pintarDeshacer(){
+    const b=$('btn-undo');if(!b)return;
+    const e=pilaDeshacer[pilaDeshacer.length-1],ok=!!(e&&currentProjectDetail&&e.pid===currentProjectDetail.id);
+    b.disabled=!ok||deshaciendo;
+    b.title=ok?`Deshacer: ${e.desc} (Ctrl+Z)`:'Nada que deshacer';
+    const n=pilaDeshacer.filter(x=>currentProjectDetail&&x.pid===currentProjectDetail.id).length;
+    b.innerHTML=`↶ Deshacer${n?` <em>${n}</em>`:''}`;
+  }
+  async function deshacer(){
+    const d=currentProjectDetail;if(!d||deshaciendo)return;
+    const e=pilaDeshacer[pilaDeshacer.length-1];
+    if(!e||e.pid!==d.id){toast('No hay cambios para deshacer en este proyecto',false);return;}
+    pilaDeshacer.pop();deshaciendo=true;pintarDeshacer();marcarGuardando(1);
+    try{await restaurarFoto(e);toast('↶ Deshecho: '+e.desc);}
+    catch(err){toast('⚠ No se pudo deshacer del todo: '+err.message,false);}
+    finally{deshaciendo=false;marcarGuardando(-1);await refreshProjectDetail();pintarDeshacer();}
+  }
+  async function restaurarFoto(e){
+    const d=currentProjectDetail;
+    const fr=(await api('/api/projects/'+d.id)).project;
+    const actsAhora=fr.activities||[],secsAhora=fr.sections||[];
+    const mapaSec={},mapaAct={};
+    const igual=(x,y)=>JSON.stringify(x??null)===JSON.stringify(y??null);
+    // 1) Capítulos que se borraron: vuelven
+    for(const sc of e.secs){if(!secsAhora.some(x=>x.id===sc.id)){const r=await api('/api/sections','POST',{projectId:d.id,name:sc.name});mapaSec[sc.id]=r.section.id;}}
+    const S=id=>id?(mapaSec[id]||id):null;
+    for(const sc of e.secs){
+      const id=S(sc.id),ya=secsAhora.find(x=>x.id===id)||{},f={};
+      if(ya.name!==undefined&&ya.name!==sc.name)f.name=sc.name;
+      if(ya.id&&(ya.enabled!==false)!==(sc.enabled!==false))f.enabled=sc.enabled!==false;
+      if(ya.position!==sc.position)f.position=sc.position;
+      if((ya.parentId||null)!==S(sc.parentId))f.parentId=S(sc.parentId);
+      if(Object.keys(f).length)await api('/api/sections?id='+id,'PATCH',f);
+    }
+    // 2) Actividades que se borraron: vuelven
+    for(const a of e.acts){
+      if(actsAhora.some(x=>x.id===a.id))continue;
+      const r=await api('/api/activities','POST',{projectId:d.id,sectionId:S(a.sectionId),name:a.name,responsables:a.responsables||[],startDate:a.startDate||null,deadline:a.deadline||null,duracion:(!a.startDate&&a.duracion)?a.duracion:undefined,entregable:a.entregable||'',notes:a.notes||null,pctComplete:a.pctComplete||0});
+      mapaAct[a.id]=r.activity.id;
+    }
+    const A=id=>mapaAct[id]||id;
+    // 3) Actividades que creó el cambio: se van
+    for(const x of actsAhora){if(!e.acts.some(a=>a.id===x.id))await api(`/api/activities/${x.id}?projectId=${d.id}`,'DELETE');}
+    // 4) Lo demás de cada actividad (sin fechas)
+    for(const a of e.acts){
+      const id=A(a.id),nueva=!!mapaAct[a.id],x=actsAhora.find(y=>y.id===id)||{};
+      const f={};
+      const cmp=(k,v1,v2)=>{if(!igual(v1,v2))f[k]=v1;};
+      if(!nueva){
+        cmp('name',a.name,x.name);cmp('sectionId',S(a.sectionId),x.sectionId||null);
+        cmp('responsables',a.responsables||[],x.responsables||[]);cmp('entregable',a.entregable||null,x.entregable||null);
+        cmp('notes',a.notes||null,x.notes||null);cmp('pctComplete',a.pctComplete||0,x.pctComplete||0);
+      }
+      cmp('area',a.area||null,nueva?null:(x.area||null));
+      cmp('realStart',a.realStart||null,nueva?null:(x.realStart||null));cmp('realEnd',a.realEnd||null,nueva?null:(x.realEnd||null));
+      const deps=(a.dependsOnIds||[]).map(A);
+      if(!igual([...deps].sort(),[...(nueva?[]:(x.dependsOnIds||[]))].sort()))f.dependsOnIds=deps;
+      if(Object.keys(f).length)await api('/api/activities/'+id,'PATCH',f);
+    }
+    // 5) Fechas y duraciones exactamente como estaban (de una, sin cascadas)
+    const fechas=e.acts.map(a=>({id:A(a.id),startDate:a.startDate||null,deadline:a.deadline||null,duracion:a.duracion||null}));
+    if(fechas.length)await api('/api/activities','PATCH',{projectId:d.id,fechas});
+    // 6) Orden de las filas
+    const reorder=[...e.acts].sort((x,y)=>(x.position||0)-(y.position||0)).map(a=>({id:A(a.id),position:a.position||0,sectionId:S(a.sectionId)}));
+    if(reorder.length)await api('/api/activities','PATCH',{projectId:d.id,reorder,registrar:false});
+    // 7) Capítulos que creó el cambio: se van (ya sin actividades)
+    for(const sc of secsAhora){if(!e.secs.some(x=>x.id===sc.id))await api('/api/sections?id='+sc.id,'DELETE');}
+  }
+  document.addEventListener('keydown',ev=>{
+    if(!(ev.ctrlKey||ev.metaKey)||ev.shiftKey||ev.key.toLowerCase()!=='z')return;
+    const t=ev.target;if(t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable))return; // dentro de una casilla, Ctrl+Z es de la casilla
+    if(!currentProjectDetail||!$('plan-body'))return;
+    ev.preventDefault();deshacer();
+  });
+
   // ---------- GUARDADO OPTIMISTA ----------
   // Se pinta el cambio de una vez y el PATCH viaja por detrás; si falla, se revierte.
   let guardando=0;
@@ -2041,6 +2188,7 @@
   function reconciliar(res){
     const d=currentProjectDetail;
     if(!d||!res||!res.activities)return;
+    if(histAbierto)setTimeout(cargarHistorial,300);
     d.activities=res.activities;
     recomputeLocal(false);
     if(!planConFoco())renderPlan();
@@ -2066,6 +2214,7 @@
     if(cambios.name!==undefined&&!String(cambios.name).trim()){
       toast('⚠ El nombre no puede quedar vacío',false);renderPlan();return;
     }
+    pushUndo(`cambio en «${a.name}»`);
     const respaldo=clonar(d.activities);
     const limpios=normalizarCambios(cambios);
     // Mismas reglas del servidor: si se mueve el fin, lo que depende se corre en cascada
@@ -2176,6 +2325,8 @@
           : planView==='hoja'
           ? 'Todo se edita aquí mismo y se guarda solo. Si mueves el fin de una actividad, lo que depende de ella se corre en cascada. Arrastra el borde del título «Actividad» para ensanchar la columna; pasa el mouse por un texto recortado para leerlo completo.'
           : 'Diligencia aquí toda la data: se guarda al salir de cada casilla. El estado sale solo del % de avance.')}">ⓘ</span>
+        <button class="btn btn-soft btn-sm undo-btn" id="btn-undo" onclick="deshacer()" disabled>↶ Deshacer</button>
+        <button class="btn btn-soft btn-sm" onclick="abrirHistorial()" title="Quién cambió qué y cuándo (también lo que se edita desde los enlaces de editor)">🕘 Historial</button>
         <button class="btn btn-soft btn-sm mesa-btn${mesa?' on':''}" onclick="toggleMesa()" title="${mesa?'Volver a la vista normal (Esc)':'Solo el cronograma, a pantalla completa: para mesas de trabajo de revisión'}">${mesa?'✕ Salir de mesa':'⛶ Mesa de trabajo'}</button>
         <div class="toggle">
           <button class="${planView==='hoja'?'on':''}" onclick="setPlanView('hoja')">Plan de trabajo</button>
@@ -2233,7 +2384,7 @@
     const sc=$('gantt-scroll'),keepG=sc?sc.scrollLeft:0;
     const tb=document.querySelector('.ptable-wrap'),keepT=tb?tb.scrollLeft:0;
     const hj=$('pl-wrap'),keepH=hj?[hj.scrollLeft,hj.scrollTop]:null;
-    $('plan-head-wrap').innerHTML=planHeadHtml();
+    $('plan-head-wrap').innerHTML=planHeadHtml();pintarDeshacer();
     $('plan-body').innerHTML=planBodyHtml(d);
     if(planView==='gantt'){
       const n=$('gantt-scroll');if(n&&keepG)n.scrollLeft=keepG;
@@ -2284,7 +2435,8 @@
       const n=$('gantt-scroll');if(n&&keepG)n.scrollLeft=keepG;
       requestAnimationFrame(drawDepLinks);
     }else if(planView==='hoja'){ajustarTodo(d);requestAnimationFrame(()=>Plan.dibujarLineas());}
-    renderDatalist();
+    renderDatalist();pintarDeshacer();
+    if(histAbierto)cargarHistorial();
     if(detalleId)renderDetalle();
     if(detalleId)renderDetalle();
     restoreFocus();
@@ -2293,7 +2445,7 @@
   // ---------- GANTT ----------
   // Orden visual: fases por posición y, dentro de cada una, actividades por posición
   function orderedActs(d){
-    const secs=[...(d.sections||[])].sort((a,b)=>a.position-b.position);
+    const secs=Plan.ordenSecciones(d.sections);
     const acts=d.activities||[],out=[];
     const pos=(x,y)=>(x.position||0)-(y.position||0);
     secs.forEach(s=>acts.filter(a=>a.sectionId===s.id).sort(pos).forEach(a=>out.push(a)));
@@ -2311,14 +2463,14 @@
     let ticks='';for(let i=0;i<=total;i+=7)ticks+=`<div class="g-tick" style="left:${i/total*100}%"></div>`;
     let tlab='';for(let i=0;i<=total-4;i+=pasoLab)tlab+=`<div class="g-tlab" style="left:${i/total*100}%">${fmtDate(addDays(min,i))}</div>`;
     const todayLine=`<div class="g-today" style="left:${pct(today)}%"></div>`,todayFlag=`<div class="g-flag" style="left:${pct(today)}%">HOY</div>`;
-    const secs=[...(d.sections||[])].sort((a,b)=>a.position-b.position);
+    const secs=Plan.ordenSecciones(d.sections);
     const orphans=acts.filter(a=>!a.sectionId||!secs.some(s=>s.id===a.sectionId));
     const groups=secs.map(s=>({id:s.id,name:s.name,sec:s,acts:acts.filter(a=>a.sectionId===s.id)}));
     if(orphans.length)groups.push({id:null,name:'Otras',sec:null,acts:orphans});
     // Mismos números (1, 1.1…) y colores de etapa que en el plan de trabajo
     const et=Plan.etapas(planModel(d)),infoEt={};
     et.forEach(g=>{infoEt[g.id||'_otras']=g;});
-    groups.forEach(g=>{const e=infoEt[g.id||'_otras']||{};g.color=e.color||'#9A9384';g.cod=e.cod;g.nombre=e.name||g.name;});
+    groups.forEach(g=>{const e=infoEt[g.id||'_otras']||{};g.color=e.color||'#9A9384';g.cod=e.cod;g.nombre=e.name||g.name;g.padre=e.padre;});
     const rows=groups.map(g=>{
       // Fase desactivada: fila delgada, sin actividades, con opción de reactivar
       if(g.sec&&g.sec.enabled===false){
@@ -2349,7 +2501,7 @@
     const fechas=[];g.acts.forEach(a=>{if(a.startDate)fechas.push(a.startDate);if(a.deadline)fechas.push(a.deadline);});fechas.sort();
     const roll=fechas.length?(()=>{const l=pct(fechas[0]),w=Math.max(1,pct(addDays(fechas[fechas.length-1],1))-l);
       return `<div class="g-roll" style="left:${l}%;width:${w}%" title="${esc(g.name)}: ${fmtDate(fechas[0])} → ${fmtDate(fechas[fechas.length-1])} · ${avg}%"><i style="width:${avg}%"></i></div>`;})():'';
-    return `<div class="g-row g-sec" data-sec-id="${g.id||''}" style="--c:${g.color}"><div class="g-left">
+    return `<div class="g-row g-sec${g.padre?' sub':''}" data-sec-id="${g.id||''}" style="--c:${g.color}"><div class="g-left">
       <div class="g-secrow">${g.cod!=null?`<span class="g-scod">${g.cod}</span>`:''}<span class="nm">${esc(g.nombre||g.name)}</span>${g.acts.length?`<span class="g-secpct" style="color:${col}">${avg}%</span>`:''}${tools}</div>
       ${bar}<span class="mt">${meta}</span>
     </div><div class="g-tl" style="min-height:38px">${ticks}${todayLine}${roll}</div></div>`;
@@ -2405,6 +2557,7 @@
   async function addActivityInline(sectionId,inp){
     const name=inp.value.trim(),d=currentProjectDetail;
     if(!name||!d)return;
+    pushUndo(`agregar «${name}»`);
     inp.disabled=true;marcarGuardando(1);
     try{
       const res=await api('/api/activities','POST',{projectId:d.id,sectionId:sectionId||null,name});
@@ -2444,8 +2597,9 @@
     applyOrder(lista.map(x=>key(x)===key(a)?hermanas[k++]:x));
   }
   // Guarda un orden nuevo (flechas o arrastre): se pinta al instante y se guarda por detrás
-  async function applyOrder(nuevo,cambioSeccion){
+  async function applyOrder(nuevo,cambioSeccion,op){
     const d=currentProjectDetail;if(!d)return;
+    if(!(op&&op.sinUndo))pushUndo('mover filas');
     const respaldo=clonar(d.activities);
     nuevo.forEach((x,idx)=>{
       const a=d.activities.find(y=>y.id===x.id);
@@ -2461,7 +2615,7 @@
         if(cambioSeccion&&cambioSeccion.id===x.id)item.sectionId=cambioSeccion.sectionId;
         return item;
       });
-      reconciliar(await api('/api/activities','PATCH',{projectId:d.id,reorder}));
+      reconciliar(await api('/api/activities','PATCH',{projectId:d.id,reorder,registrar:!(op&&op.registrar===false)}));
     }catch(e){d.activities=respaldo;recomputeLocal(false);renderPlan();toast('⚠ '+e.message,false);}
     finally{marcarGuardando(-1);}
   }
@@ -2727,7 +2881,7 @@
 
   // ---------- PLAN EN TABLA (se diligencia toda la data aquí mismo) ----------
   function planTableHtml(d){
-    const secs=[...(d.sections||[])].sort((a,b)=>a.position-b.position);
+    const secs=Plan.ordenSecciones(d.sections);
     const acts=orderedActs(d);
     const groups=secs.map(s=>({id:s.id,name:s.name,sec:s,acts:acts.filter(a=>a.sectionId===s.id)}));
     const orphans=acts.filter(a=>!a.sectionId||!secs.some(s=>s.id===a.sectionId));
@@ -2744,7 +2898,7 @@
       }
       const hechas=g.acts.filter(a=>a.estadoEfectivo==='completada').length;
       const avg=g.acts.length?Math.round(g.acts.reduce((s,a)=>s+a.pctComplete,0)/g.acts.length):0;
-      const head=`<tr class="sec" style="--c:${e.color}"${g.id?` data-sec="${g.id}"`:''}><td colspan="${cols}">${e.cod!=null?`<span class="pt-cod">${e.cod}</span>`:''}<span class="pt-snm">${esc(e.name||g.name)}</span>${g.acts.length?`<span class="pt-sst">${hechas}/${g.acts.length} completadas · ${avg}%</span><span class="pt-sbar"><i style="width:${avg}%"></i></span>`:''}${g.id?` <button class="pt-del" onclick="renameSection('${g.id}')" title="Renombrar">✎</button>${g.acts.length?'':` <button class="pt-del" onclick="removeSection('${g.id}')" title="Eliminar fase vacía">🗑</button>`}`:''}</td></tr>`;
+      const head=`<tr class="sec${e.padre?' sub':''}" style="--c:${e.color}"${g.id?` data-sec="${g.id}"`:''}><td colspan="${cols}">${e.cod!=null?`<span class="pt-cod">${e.cod}</span>`:''}<span class="pt-snm">${esc(e.name||g.name)}</span>${g.acts.length?`<span class="pt-sst">${hechas}/${g.acts.length} completadas · ${avg}%</span><span class="pt-sbar"><i style="width:${avg}%"></i></span>`:''}${g.id?` <button class="pt-del" onclick="renameSection('${g.id}')" title="Renombrar">✎</button>${g.acts.length?'':` <button class="pt-del" onclick="removeSection('${g.id}')" title="Eliminar fase vacía">🗑</button>`}`:''}</td></tr>`;
       const body=g.acts.map(a=>ptRow(a,secs,e.color,codAct[a.id])).join('');
       const add=`<tr class="addrow" style="--c:${e.color}"><td colspan="${cols}"><input placeholder="＋ Actividad en ${esc(g.name)} (Enter)" onkeydown="if(event.key==='Enter')addActivityInline('${g.id||''}',this)"></td></tr>`;
       return head+body+add;
@@ -2797,6 +2951,7 @@
     const d=currentProjectDetail;if(!d)return;
     const a=d.activities.find(x=>x.id===id);
     if(!confirm(`¿Eliminar la actividad «${a?a.name:''}»?`))return;
+    pushUndo(`eliminar «${a?a.name:''}»`);
     const respaldo=clonar(d.activities);
     d.activities=d.activities.filter(x=>x.id!==id);
     d.activities.forEach(x=>{x.dependsOnIds=(x.dependsOnIds||[]).filter(y=>y!==id);});
@@ -2881,6 +3036,7 @@
       body.startDate=debajo?Plan.cal.habilDesde(addDays(a.deadline||a.startDate,1)):(a.startDate||a.deadline);
       body.duracion=1;
     }
+    pushUndo(duplicar?`duplicar «${a.name}»`:'insertar fila');
     marcarGuardando(1);
     try{
       const res=await api('/api/activities','POST',body);
@@ -2891,7 +3047,7 @@
       const resto=lista.filter(y=>y.id!==nueva);
       const t=resto.findIndex(y=>y.id===id);
       resto.splice(debajo?t+1:t,0,n);
-      applyOrder(resto);
+      applyOrder(resto,null,{sinUndo:true,registrar:false});
       setTimeout(()=>Plan.enfocar(`${nueva}:name`,true),0);
       toast(duplicar?'✓ Fila duplicada':'✓ Fila insertada · escribe el nombre');
     }catch(e){toast('⚠ '+e.message,false);}
@@ -2903,6 +3059,7 @@
     const validas=filas.filter(f=>f[0]);
     if(!validas.length)return;
     if(validas.length>1&&!confirm(`¿Crear ${validas.length} actividades con lo que pegaste?\n(columnas: nombre · responsable · días hábiles)`))return;
+    pushUndo(`pegar ${validas.length} fila${validas.length===1?'':'s'}`);
     marcarGuardando(1);
     let n=0;
     try{
@@ -2935,11 +3092,34 @@
     else if(accion==='link')vincularTarea(id,extra);
     else if(accion==='unlink')vincularTarea(id,null);
   }
-  function planOnSection(accion,id){
+  function planOnSection(accion,id,extra){
     if(accion==='rename')renameSection(id);
     else if(accion==='off')toggleSection(id,false);
     else if(accion==='on')toggleSection(id,true);
     else if(accion==='remove')removeSection(id);
+    else if(accion==='anidar')anidarSeccion(id,extra);
+    else if(accion==='sacar')sacarSeccion(id);
+  }
+  // Un capítulo arrastrado sobre otro queda como su subcapítulo
+  async function anidarSeccion(id,padreId){
+    const d=currentProjectDetail;if(!d)return;
+    const sc=(d.sections||[]).find(x=>x.id===id),pa=(d.sections||[]).find(x=>x.id===padreId);if(!sc||!pa)return;
+    const sueltas=(d.activities||[]).filter(a=>a.sectionId===padreId).length;
+    if(!confirm(`¿Meter «${sc.name}» como subcapítulo de «${pa.name}»?${sueltas?`\n\nLas ${sueltas} actividades que ya tiene «${pa.name}» quedan juntas en un subcapítulo nuevo (le pones nombre ahora).`:''}`))return;
+    pushUndo(`meter «${sc.name}» en «${pa.name}»`);
+    try{
+      const r=await api('/api/sections','POST',{accion:'anidar',id,padreId});
+      await refreshProjectDetail();
+      if(r&&r.nuevoGrupo){
+        const n=prompt(`Nombre del subcapítulo con las actividades que ya tenía «${pa.name}»:`,'');
+        if(n&&n.trim()){await api('/api/sections?id='+r.nuevoGrupo.id,'PATCH',{name:n.trim()});await refreshProjectDetail();}
+      }
+      toast(`✓ «${sc.name}» ahora es subcapítulo de «${pa.name}»`);
+    }catch(e){toast('⚠ '+e.message,false);}
+  }
+  async function sacarSeccion(id){
+    pushUndo('sacar subcapítulo');
+    try{await api('/api/sections','POST',{accion:'sacar',id});toast('✓ Quedó como capítulo');await refreshProjectDetail();}catch(e){toast('⚠ '+e.message,false);}
   }
   // ---------- INVOLUCRADOS DEL PROYECTO ----------
   let editandoMiembro=null;
@@ -3111,6 +3291,8 @@
   async function asistAplicar(){
     const d=currentProjectDetail;if(!d||!asistPendiente)return;
     const acciones=asistPendiente;asistCancelar();
+    pushUndo('ajuste rápido');undoSuspendido++;
+    try{
     for(const a of acciones){
       if(a.tipo==='patch')await applyActivity(a.id,a.cambios);
       else if(a.tipo==='nota'){
@@ -3128,6 +3310,7 @@
         finally{marcarGuardando(-1);}
       }
     }
+    }finally{undoSuspendido--;}
     const i=$('asist-txt');if(i)i.value='';
     toast(`✓ ${acciones.length} ajuste${acciones.length>1?'s':''} aplicado${acciones.length>1?'s':''}`);
   }
@@ -3348,29 +3531,46 @@
   }
 
   // ---------- FASES: renombrar, activar/desactivar, agregar ----------
-  async function addSectionInline(inp){const name=inp.value.trim();if(!name||!currentProjectDetail)return;inp.disabled=true;try{await api('/api/sections','POST',{projectId:currentProjectDetail.id,name});toast('✓ Fase agregada');await refreshProjectDetail();}catch(e){toast('⚠ '+e.message,false);inp.disabled=false;}}
+  async function addSectionInline(inp){const name=inp.value.trim();if(!name||!currentProjectDetail)return;pushUndo(`crear capítulo «${name}»`);inp.disabled=true;try{await api('/api/sections','POST',{projectId:currentProjectDetail.id,name});toast('✓ Fase agregada');await refreshProjectDetail();}catch(e){toast('⚠ '+e.message,false);inp.disabled=false;}}
   async function renameSection(id){
     const sec=(currentProjectDetail&&currentProjectDetail.sections||[]).find(s=>s.id===id);if(!sec)return;
     const n=prompt('Nombre de la fase:',sec.name);if(n===null||!n.trim()||n.trim()===sec.name)return;
+    pushUndo(`renombrar «${sec.name}»`);
     try{await api('/api/sections?id='+id,'PATCH',{name:n.trim()});toast('✓ Fase renombrada');await refreshProjectDetail();}catch(e){toast('⚠ '+e.message,false);}
   }
   async function toggleSection(id,on){
     if(!currentProjectDetail)return;
     const acts=(currentProjectDetail.activities||[]).filter(a=>a.sectionId===id);
     if(!on&&acts.length&&!confirm(`Esta fase tiene ${acts.length} actividad(es). Al desactivarla se ocultan del Gantt (no se borran). ¿Continuar?`))return;
+    pushUndo(on?'activar capítulo':'marcar «no aplica»');
     try{await api('/api/sections?id='+id,'PATCH',{enabled:on});toast(on?'✓ Fase activada':'Fase marcada como «no aplica»');await refreshProjectDetail();}catch(e){toast('⚠ '+e.message,false);}
   }
+  // Eliminar un capítulo con todo: sus actividades y sus subcapítulos (se puede deshacer)
   async function removeSection(id){
-    if(!confirm('¿Eliminar esta fase vacía?'))return;
-    try{await api('/api/sections?id='+id,'DELETE');toast('Fase eliminada');await refreshProjectDetail();}catch(e){toast('⚠ '+e.message,false);}
+    const d=currentProjectDetail;if(!d)return;
+    const sc=(d.sections||[]).find(x=>x.id===id);if(!sc)return;
+    const hijos=(d.sections||[]).filter(x=>x.parentId===id).map(x=>x.id);
+    const n=(d.activities||[]).filter(a=>a.sectionId===id||hijos.includes(a.sectionId)).length;
+    if(!confirm(`¿Eliminar ${sc.parentId?'el subcapítulo':'el capítulo'} «${sc.name}»${n?` y sus ${n} actividad${n===1?'':'es'}`:''}${hijos.length?` (con ${hijos.length} subcapítulo${hijos.length===1?'':'s'})`:''}?\n\nPuedes deshacerlo con «↶ Deshacer».`))return;
+    pushUndo(`eliminar capítulo «${sc.name}»`);
+    try{await api('/api/sections?id='+id+'&conActividades=1','DELETE');toast(`🗑 Capítulo eliminado${n?` con ${n} actividad${n===1?'':'es'}`:''}`);await refreshProjectDetail();}catch(e){toast('⚠ '+e.message,false);}
   }
 
   // ---------- COMPARTIR GANTT ----------
   function openShareModal(){
     if(!currentProjectDetail)return;
     $('sh-title').textContent='Compartir Gantt · '+currentProjectDetail.name;
-    $('sh-label').value='';$('sh-role').value='view';
+    $('sh-label').value='';tipoShare('view');
     openModal('m-share');loadShares();
+  }
+  function tipoShare(r){
+    $('sh-role').value=r;
+    document.querySelectorAll('.sh-tipo').forEach(b=>b.classList.toggle('on',b.dataset.r===r));
+    $('sh-label-t').textContent=r==='editor'?'Nombre y apellido de quien va a editar':'Persona o área';
+    $('sh-label').placeholder=r==='editor'?'Ej: Yecid Cristancho':'Ej: Jurídica · Diana';
+    $('sh-hint').innerHTML=r==='editor'
+      ?'El enlace es <strong>personal</strong>: lo que se edite desde ahí queda a nombre de esa persona en el 🕘 Historial. Si deja de colaborar, revoca su enlace. Tus tareas del día a día <strong>nunca</strong> se muestran.'
+      :'Quien reciba el enlace ve el plan y <strong>propone</strong>; tú aceptas o descartas. Tus tareas del día a día <strong>nunca</strong> se muestran.';
   }
   async function loadShares(){
     $('sh-list').innerHTML='<span class="rchip">Cargando…</span>';
@@ -3380,7 +3580,7 @@
         const url=location.origin+'/share/'+s.token;
         return `<div style="display:flex;align-items:center;gap:8px;background:var(--sunk);border-radius:10px;padding:8px 10px">
           <div style="flex:1;min-width:0">
-            <div style="font-size:12.5px;font-weight:650">${esc(s.label||'Sin nombre')} · <span style="color:var(--muted)">ve y propone</span></div>
+            <div style="font-size:12.5px;font-weight:650">${esc(s.label||'Sin nombre')} · <span style="color:${s.role==='editor'?'var(--accent-ink)':'var(--muted)'}">${s.role==='editor'?'✎ editor':'ve y propone'}</span></div>
             <div style="font-size:10.5px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(url)}</div>
           </div>
           <button class="btn btn-soft btn-sm" onclick="copyShare('${url}')">Copiar</button>
@@ -3391,6 +3591,7 @@
   }
   async function createShare(){
     if(!currentProjectDetail)return;
+    if($('sh-role').value==='editor'&&!$('sh-label').value.trim()){toast('Escribe el nombre y apellido de quien va a editar',false);$('sh-label').focus();return;}
     try{
       const d=await api('/api/projects/'+currentProjectDetail.id+'?res=shares','POST',{label:$('sh-label').value.trim()||null,role:$('sh-role').value});
       $('sh-label').value='';

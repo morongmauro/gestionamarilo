@@ -1,3 +1,51 @@
+EDITORES CON NOMBRE, HISTORIAL, DESHACER, BORRAR CAPÍTULOS Y SUBCAPÍTULOS
+=========================================================================
+
+1. EN SUPABASE (una sola vez): corre supabase/migracion-2026-10-edicion.sql
+   (o supabase/TODAS-octubre-2026.sql, que ya trae todo). Crea el historial
+   de cambios, los subcapítulos y el tipo de enlace «editor».
+2. Recarga la app con Ctrl + F5.
+
+ENLACE DE EDICIÓN PARA UNA PERSONA (ej. Yecid Cristancho)
+- 🔗 Compartir plan → «✎ Editor con nombre» → escribe «Yecid Cristancho»
+  → Generar enlace (queda copiado). Se lo mandas.
+- Con ese enlace puede hacer de todo en el cronograma: crear, mover,
+  insertar y eliminar filas, cambiar fechas, duraciones, responsables,
+  área, avance, precedencias, y crear / renombrar / eliminar capítulos y
+  subcapítulos. NO ve tus tareas del día a día, ni tus comentarios.
+- Todo lo que haga queda en el 🕘 Historial a su nombre.
+- Si deja de colaborar: 🔗 Compartir plan → Revocar.
+- El enlace «👁 Ver y proponer» sigue igual (propone, tú aceptas).
+
+🕘 HISTORIAL (junto a «Deshacer», arriba del cronograma)
+- Quién cambió qué y cuándo, por día: «Yecid Cristancho editó «Suscribir el
+  acta»: fin 13 nov → 19 nov · duración 5 → 8 días», «eliminó…», «creó…»,
+  «movió… a otro capítulo», capítulos creados/renombrados/eliminados.
+- Filtra por persona. Clic en un cambio abre esa actividad.
+
+↶ DESHACER (o Ctrl + Z fuera de una casilla)
+- Deshace tus cambios uno por uno (hasta 40 en esta sesión): fechas,
+  duraciones, responsables, orden de filas, filas o capítulos borrados,
+  subcapítulos… Lo que se corrió en cascada también vuelve.
+- Lo borrado vuelve con todos sus datos (los comentarios de una actividad
+  borrada no vuelven).
+- Ojo: deshace TUS cambios; si alguien con enlace de editor cambió lo mismo
+  mientras tanto, deshacer lo devuelve a como estaba en tu foto.
+
+🗑 ELIMINAR UN CAPÍTULO CON SUS ACTIVIDADES
+- Pasa el mouse por el título del capítulo: sale 🗑 al lado. Pide
+  confirmación y se puede deshacer.
+
+SUBCAPÍTULOS
+- Pasa el mouse por el título de un capítulo: sale ⠿ a la izquierda.
+  Arrástralo sobre otro capítulo y queda como su subcapítulo (4.1, 4.2…;
+  sus actividades: 4.1.1, 4.1.2…).
+- Si el capítulo de destino ya tenía actividades, no se tocan: quedan juntas
+  en un subcapítulo nuevo y la app te pide su nombre.
+- «⇱ sacar» (en las herramientas del subcapítulo) lo vuelve capítulo.
+- El capítulo muestra el total de todos sus subcapítulos y al contraerlo
+  (▸) se contraen también.
+
 DURACIONES, COLUMNAS A TU GUSTO Y VISTA DEPENDENCIAS · qué hacer
 ================================================================
 

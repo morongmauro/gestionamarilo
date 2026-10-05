@@ -537,3 +537,18 @@ tr:hover .pl-caret,.pl-pick:focus .pl-caret{opacity:1}
 .pl-colchip.on{color:var(--ink)}
 .pl-colchip.on i{background:var(--accent,#3D7BF7);box-shadow:none}
 .pl-colchip.on i::after{content:"✓";color:#fff;font-weight:800}
+
+/* ============================================================
+   Subcapítulos, arrastre de capítulos y papelera del capítulo
+   ============================================================ */
+.pl tr.pl-area.sub td{background:color-mix(in srgb,var(--c) 5%,var(--card));height:28px}
+.pl tr.pl-area.sub .pl-lane{height:28px}
+.pl tr.pl-area.sub td.pl-c-nm{padding-left:22px}
+.pl tr.pl-area.sub .pl-an{font-size:11.5px;font-weight:750;color:color-mix(in srgb,var(--c) 75%,var(--ink))}
+.pl tr.pl-area.sub .pl-acod{min-width:28px;height:18px;font-size:9.5px;background:color-mix(in srgb,var(--c) 70%,var(--card))}
+.pl tr.pl-area.sub td.pl-c-id{box-shadow:inset 4px 0 0 color-mix(in srgb,var(--c) 55%,var(--card))}
+.pl-sdrag{display:inline-flex;width:11px;margin-right:2px;color:var(--faint);font-size:12px;cursor:grab;user-select:none;opacity:0;transition:opacity .12s;vertical-align:middle}
+.pl tr.pl-area:hover .pl-sdrag{opacity:1}
+.pl-sdel{margin-left:6px;width:22px;height:22px;border-radius:7px;font-size:11px;color:var(--faint);opacity:0;transition:opacity .12s;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle}
+.pl tr.pl-area:hover .pl-sdel{opacity:1}
+.pl-sdel:hover{background:color-mix(in srgb,#E2445C 14%,var(--card));color:#E2445C}

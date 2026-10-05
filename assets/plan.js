@@ -219,24 +219,50 @@
     return AREA_COLORS[h % AREA_COLORS.length];
   }
   // Los códigos (1, 1.1…) salen siempre de las etapas, agrupe como agrupe
+  // Capítulos en orden: cada capítulo seguido de sus subcapítulos
+  function ordenSecciones(sections) {
+    const todas = [...(sections || [])].sort((a, b) => a.position - b.position);
+    const ids = new Set(todas.map(x => x.id));
+    const esHijo = x => x.parentId && x.parentId !== x.id && ids.has(x.parentId) && !todas.find(p => p.id === x.parentId).parentId;
+    const out = [];
+    todas.filter(x => !esHijo(x)).forEach(t => { out.push(t); todas.filter(c => esHijo(c) && c.parentId === t.id).forEach(c => out.push(c)); });
+    todas.forEach(x => { if (!out.includes(x)) out.push(x); });
+    return out;
+  }
   function etapas(model) {
-    const secs = [...(model.sections || [])].sort((a, b) => a.position - b.position);
+    const secs = ordenSecciones(model.sections);
     const acts = model.activities || [];
     const orden = (a, b) => (a.position || 0) - (b.position || 0);
-    const gs = secs.map((s, i) => ({ key: s.id, id: s.id, name: s.name, sec: s, color: AREA_COLORS[i % AREA_COLORS.length], acts: acts.filter(a => a.sectionId === s.id).sort(orden) }));
-    const huerf = acts.filter(a => !a.sectionId || !secs.some(s => s.id === a.sectionId)).sort(orden);
-    if (huerf.length) gs.push({ key: '_otras', id: null, name: 'Otras', sec: null, color: '#9A9384', acts: huerf });
+    const esSub = x => !!(x.parentId && secs.some(p => p.id === x.parentId && !p.parentId));
+    const gs = secs.map(x => ({ key: x.id, id: x.id, name: x.name, sec: x, padre: esSub(x) ? x.parentId : null, acts: acts.filter(a => a.sectionId === x.id).sort(orden) }));
+    // Color: cada capítulo principal el suyo; los subcapítulos heredan el de su capítulo
+    let ci = 0;
+    gs.forEach(g => { if (!g.padre) g.color = AREA_COLORS[ci++ % AREA_COLORS.length]; });
+    gs.forEach(g => { if (g.padre) g.color = (gs.find(p => p.id === g.padre) || {}).color || '#9A9384'; });
+    const huerf = acts.filter(a => !a.sectionId || !secs.some(x => x.id === a.sectionId)).sort(orden);
+    if (huerf.length) gs.push({ key: '_otras', id: null, name: 'Otras', sec: null, padre: null, color: '#9A9384', acts: huerf });
     // Una etapa cuyo nombre empieza con «0 ·» se numera 0 (arranque); las demás siguen 1, 2, 3…
+    // Subcapítulos: 1.1, 1.2… y sus actividades 1.1.1, 1.1.2…
     let n = 0, primera = true;
     gs.forEach(g => {
       if (g.sec && g.sec.enabled === false) return;
+      if (g.padre) return;
       const cero = /^0\s*[·.:\-–]\s*/.test(g.name);
       if (cero) g.name = g.name.replace(/^0\s*[·.:\-–]\s*/, '');
       const num = cero && primera ? 0 : ++n;
       primera = false;
       g.cod = String(num);
-      g.acts.forEach((a, i) => { a._cod = `${num}.${i + 1}`; a._etapa = g.name; });
+      const hijos = gs.filter(h => h.padre === g.id && !(h.sec && h.sec.enabled === false));
+      hijos.forEach((h, k) => {
+        h.cod = `${num}.${k + 1}`;
+        h.acts.forEach((a, i) => { a._cod = `${h.cod}.${i + 1}`; a._etapa = `${g.name} › ${h.name}`; });
+      });
+      g.hijos = hijos.map(h => h.id);
+      g.acts.forEach((a, i) => { a._cod = `${num}.${hijos.length + i + 1}`; a._etapa = g.name; });
+      // Para los totales del capítulo: sus actividades y las de sus subcapítulos
+      g.todas = [...g.acts, ...hijos.reduce((l, h) => l.concat(h.acts), [])];
     });
+    gs.forEach(g => { if (!g.todas) g.todas = g.acts; });
     return gs;
   }
   // Área de un nombre: si es un involucrado del proyecto, su área; si no, el nombre mismo (p. ej. «Jurídica»)
@@ -407,12 +433,13 @@
   function filtrosHtml(model, opts, gs, cols, base) {
     const today = model.today;
     const agr = opts.agrupar === 'area' ? 'area' : 'etapa';
-    const vivas = gs.filter(g => !(g.sec && g.sec.enabled === false));
+    const vivas = gs.filter(g => !(g.sec && g.sec.enabled === false) && !g.padre);
     const chip = g => {
-      const avg = g.acts.length ? Math.round(g.acts.reduce((s, a) => s + (a.pctComplete || 0), 0) / g.acts.length) : 0;
-      const tarde = g.acts.filter(a => estado(a, today) === 'Atrasada').length;
+      const ac = g.todas || g.acts;
+      const avg = ac.length ? Math.round(ac.reduce((s, a) => s + (a.pctComplete || 0), 0) / ac.length) : 0;
+      const tarde = ac.filter(a => estado(a, today) === 'Atrasada').length;
       const on = opts.grupo === g.key;
-      return `<button class="pl-chip${on ? ' on' : ''}" style="--c:${g.color}" onclick="planSetOpt('grupo',${on ? 'null' : `'${esc(g.key)}'`})"><i></i>${esc(g.name)}<span class="n">${g.acts.length} · ${avg}%${tarde ? ` · <b>${tarde} atrasada${tarde > 1 ? 's' : ''}</b>` : ''}</span></button>`;
+      return `<button class="pl-chip${on ? ' on' : ''}" style="--c:${g.color}" onclick="planSetOpt('grupo',${on ? 'null' : `'${esc(g.key)}'`})"><i></i>${esc(g.name)}<span class="n">${ac.length} · ${avg}%${tarde ? ` · <b>${tarde} atrasada${tarde > 1 ? 's' : ''}</b>` : ''}</span></button>`;
     };
     const personas = [];
     (model.activities || []).forEach(a => respDe(a).forEach(r => { if (!personas.some(p => norm(p) === norm(r))) personas.push(r); }));
@@ -558,8 +585,11 @@
     const nH = ts.filter(t => t.kanbanStatus === 'done').length;
     const cmt = `<button class="pl-cmt${nC ? '' : ' vacio'}" data-cmt="${a.id}" title="Comentarios de esta actividad">${nC || '＋'}</button>`;
     const tar = ts.length ? `<button class="pl-nb" onclick="planOnDetalle('${a.id}')" title="Tareas de esta actividad">☑ ${nH}/${ts.length}</button>` : '';
-    const acc = has('planOnRow') ? `<span class="pl-ra"><button onclick="planOnRow('insertar-debajo','${a.id}')" title="Insertar una fila debajo (Ctrl+Enter)">＋</button><button onclick="planOnRow('eliminar','${a.id}')" title="Eliminar esta fila">🗑</button></span>` : '';
-    return cmt + tar + acc;
+    return cmt + tar + accionesFila(a);
+  }
+  // ＋ insertar fila debajo · 🗑 eliminar (al pasar el mouse por la fila)
+  function accionesFila(a) {
+    return has('planOnRow') ? `<span class="pl-ra"><button onclick="planOnRow('insertar-debajo','${a.id}')" title="Insertar una fila debajo (Ctrl+Enter)">＋</button><button onclick="planOnRow('eliminar','${a.id}')" title="Eliminar esta fila">🗑</button></span>` : '';
   }
   // Día (en Bogotá) de un comentario
   const diaDe = iso => { const d = iso ? new Date(iso) : new Date(); try { return (isNaN(d) ? new Date() : d).toLocaleDateString('en-CA', { timeZone: 'America/Bogota' }); } catch (e) { return String(iso || '').slice(0, 10); } };
@@ -805,6 +835,32 @@
       document.removeEventListener('mousemove', mover); document.removeEventListener('mouseup', soltar);
       limpiar(); fila.classList.remove('pl-moviendo'); document.body.classList.remove('pl-arrastrando');
       if (destino) window.planOnRow('mover', id, destino);
+    };
+    document.addEventListener('mousemove', mover); document.addEventListener('mouseup', soltar);
+  });
+
+  // Arrastrar un capítulo (⠿) sobre otro capítulo principal: queda como su subcapítulo
+  document.addEventListener('mousedown', ev => {
+    const h = ev.target.closest && ev.target.closest('.pl-sdrag');
+    if (!h || ev.button !== 0 || !has('planOnSection')) return;
+    const fila = h.closest('tr[data-sec]'), grid = h.closest(GRID);
+    if (!fila || !grid) return;
+    ev.preventDefault();
+    const id = fila.dataset.sec;
+    let marca = null, destino = null;
+    fila.classList.add('pl-moviendo'); document.body.classList.add('pl-arrastrando');
+    const limpiar = () => { if (marca) marca.classList.remove('pl-drop-dentro'); marca = null; };
+    const mover = e => {
+      limpiar(); destino = null;
+      const bajo = document.elementFromPoint(e.clientX, e.clientY);
+      const tr = bajo && bajo.closest && bajo.closest('tr[data-sec][data-nivel="0"]');
+      if (!tr || !grid.contains(tr) || tr === fila || tr.dataset.sec === id) return;
+      marca = tr; tr.classList.add('pl-drop-dentro'); destino = tr.dataset.sec;
+    };
+    const soltar = () => {
+      document.removeEventListener('mousemove', mover); document.removeEventListener('mouseup', soltar);
+      limpiar(); fila.classList.remove('pl-moviendo'); document.body.classList.remove('pl-arrastrando');
+      if (destino) window.planOnSection('anidar', id, destino);
     };
     document.addEventListener('mousemove', mover); document.addEventListener('mouseup', soltar);
   });
@@ -1096,26 +1152,31 @@
       else if (k !== 'id' && k !== 'nm' && anchosCol[k]) cssCols += anchoCss(i + 1, anchosCol[k]);
     });
 
+    const estaPlegada = k => opts.plegadas === '*' || (Array.isArray(opts.plegadas) && opts.plegadas.includes(k));
     const filas = gs.map(g => {
-      if (opts.grupo && g.key !== opts.grupo) return '';
-      const plegada = opts.plegadas === '*' || (Array.isArray(opts.plegadas) && opts.plegadas.includes(g.key));
+      if (opts.grupo && g.key !== opts.grupo && g.padre !== opts.grupo) return '';
+      if (g.padre && estaPlegada(g.padre)) return ''; // capítulo contraído: tampoco sus subcapítulos
+      const plegada = estaPlegada(g.key);
       if (g.sec && g.sec.enabled === false) {
         if (!opts.owner || agr !== 'etapa') return '';
         return `<tr class="pl-area off"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><span class="pl-an">${esc(g.name)}</span> <span class="pl-mut">no aplica</span> <button class="pl-mini" onclick="planOnSection('on','${g.id}')">activar</button></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>`;
       }
-      const acts = g.acts.filter(pasaResp);
+      const filasActs = g.acts.filter(pasaResp);
+      // Los totales del capítulo incluyen sus subcapítulos
+      const acts = (g.todas || g.acts).filter(pasaResp);
       if (opts.resp && !acts.length) return '';
       const fs = []; acts.forEach(a => { if (a.startDate) fs.push(a.startDate); if (a.deadline) fs.push(a.deadline); }); fs.sort();
       const fI = fs[0] || null, fF = fs[fs.length - 1] || null;
       const avg = acts.length ? Math.round(acts.reduce((s, a) => s + (a.pctComplete || 0), 0) / acts.length) : 0;
       const hechas = acts.filter(a => estado(a, today) === 'Completada').length;
       const estA = acts.length ? (avg >= 100 ? 'Completada' : fF && today > fF ? 'Atrasada' : fI && today >= fI ? 'En curso' : 'Por iniciar') : '';
-      const tools = opts.owner && g.id && agr === 'etapa' ? `<span class="pl-tools"><button onclick="planOnSection('rename','${g.id}')" title="Renombrar">✎</button><button onclick="planOnSection('off','${g.id}')" title="Esta etapa no aplica">no aplica</button>${g.acts.length ? '' : `<button onclick="planOnSection('remove','${g.id}')" title="Eliminar">🗑</button>`}</span>` : '';
+      const tools = opts.owner && g.id && agr === 'etapa' ? `<span class="pl-tools"><button onclick="planOnSection('rename','${g.id}')" title="Renombrar">✎</button>${g.padre ? `<button onclick="planOnSection('sacar','${g.id}')" title="Sacarlo del capítulo: queda como capítulo">⇱ sacar</button>` : ''}<button onclick="planOnSection('off','${g.id}')" title="Esta etapa no aplica">no aplica</button></span>${editable ? `<button class="pl-sdel" onclick="planOnSection('remove','${g.id}')" title="Eliminar ${g.padre ? 'el subcapítulo' : 'el capítulo'} y sus actividades">🗑</button>` : ''}` : '';
+      const sdrag = editable && opts.owner && agr === 'etapa' && g.id && !(g.hijos && g.hijos.length) ? '<span class="pl-sdrag" title="Arrastra sobre otro capítulo para volverlo su subcapítulo">⠿</span>' : '';
       const sum = fI ? `<span class="pl-sum" style="left:${E.x(fI)}px;width:${Math.max(6, E.x(addDays(fF, 1)) - E.x(fI))}px;--c:${g.color}"><i style="width:${avg}%"></i></span>` : '';
       const dvs = acts.map(desvio).filter(d => d != null);
       const dvMax = dvs.length ? Math.max(...dvs) : null;
-      const areaRow = `<tr class="pl-area" style="--c:${g.color}"${editable && opts.owner && agr === 'etapa' && g.id ? ` data-sec="${g.id}"` : ''}>
-        <td class="pl-sk pl-c-id"><span class="pl-acod">${g.area ? esc(g.name.slice(0, 1).toUpperCase()) : (g.cod || '')}</span></td>
+      const areaRow = `<tr class="pl-area${g.padre ? ' sub' : ''}" style="--c:${g.color}"${editable && opts.owner && agr === 'etapa' && g.id ? ` data-sec="${g.id}" data-nivel="${g.padre ? 1 : 0}"` : ''}>
+        <td class="pl-sk pl-c-id">${sdrag}<span class="pl-acod">${g.area ? esc(g.name.slice(0, 1).toUpperCase()) : (g.cod || '')}</span></td>
         <td class="pl-sk pl-c-nm"><button class="pl-fold" onclick="planSetOpt('plegar','${esc(g.key)}')" title="${plegada ? 'Ver sus actividades' : 'Contraer esta etapa'}">${plegada ? '▸' : '▾'}</button><span class="pl-an">${esc(g.name)}</span><span class="pl-mut">${hechas}/${acts.length} · ${avg}%</span>${tools}</td>
         <td></td>${cols.area ? '<td></td>' : ''}${cols.entregable ? '<td></td>' : ''}${cols.base ? '<td></td>' : ''}
         ${full ? `<td class="pl-d b">${fCorta(fI)}</td><td class="pl-d b">${fCorta(fF)}</td>`
@@ -1126,9 +1187,9 @@
         <td class="pl-stc">${acts.length ? bateria(acts, today) : ''}</td>${cols.deps ? '<td></td>' : ''}
         ${carril(sum)}
       </tr>`;
-      const actRows = plegada ? '' : acts.map(a => filaActividad(a, g, today, E, carril, editable, opts, cols, codigo, base) +
+      const actRows = plegada ? '' : filasActs.map(a => filaActividad(a, g, today, E, carril, editable, opts, cols, codigo, base) +
         tareasDe(a.id).map(t => filaTarea(t, today, E, carril, nCols)).join('')).join('');
-      const add = !plegada && opts.owner && editable && agr === 'etapa' ? `<tr class="pl-add"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><input placeholder="＋ Actividad en ${esc(g.name)} · o pega filas de Excel" data-sec-add="${g.id || ''}" onkeydown="if(event.key==='Enter')planOnAdd('${g.id || ''}',this)"></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>` : '';
+      const add = !plegada && opts.owner && editable && agr === 'etapa' && !(g.hijos && g.hijos.length) ? `<tr class="pl-add"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><input placeholder="＋ Actividad en ${esc(g.name)} · o pega filas de Excel" data-sec-add="${g.id || ''}" onkeydown="if(event.key==='Enter')planOnAdd('${g.id || ''}',this)"></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>` : '';
       return areaRow + actRows + add;
     }).join('');
     const addArea = opts.owner && editable && agr === 'etapa' && !opts.grupo && !opts.resp ? `<tr class="pl-add"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><input placeholder="＋ Nueva etapa" onkeydown="if(event.key==='Enter')planOnAdd('__area__',this)"></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>` : '';
@@ -1206,7 +1267,7 @@
     const mueve = editable && opts.owner && opts.agrupar !== 'area';
     return `<tr class="pl-act${a.propuesta ? ' prop' : ''}" style="--c:${g.color}"${editable && opts.owner ? ` data-row="${a.id}"` : ''}>
       <td class="pl-sk pl-c-id">${mueve ? '<span class="pl-drag" title="Arrastra para mover la fila · clic derecho: más opciones">⠿</span>' : ''}${idCell}</td>
-      <td class="pl-sk pl-c-nm"><div class="pl-nmw" title="${esc(a.name + (a.entregable ? ' → ' + a.entregable : '') + (opts.agrupar === 'area' && a._etapa ? ' · ' + a._etapa : ''))}">${inp('name', a.name, 'Actividad', 'nm')}${opts.owner && has('planOnDetalle') ? notasTareasBtn(a) : ''}</div></td>
+      <td class="pl-sk pl-c-nm"><div class="pl-nmw" title="${esc(a.name + (a.entregable ? ' → ' + a.entregable : '') + (opts.agrupar === 'area' && a._etapa ? ' · ' + a._etapa : ''))}">${inp('name', a.name, 'Actividad', 'nm')}${opts.owner && has('planOnDetalle') ? notasTareasBtn(a) : (opts.owner && editable && has('planOnRow') ? accionesFila(a) : '')}</div></td>
       ${editable && opts.owner
         ? `<td class="pl-rs pl-pick" tabindex="0" data-pick="resp" data-act="${a.id}" title="Elegir responsables de la lista de involucrados">${avatares(respDe(a))}<span class="pl-tx rs">${esc(resp) || '<span class="pl-mut">Elegir…</span>'}</span><i class="pl-caret">▾</i></td>`
         : `<td class="pl-rs">${avatares(respDe(a))}<span class="pl-tx rs" title="${esc(resp)}">${esc(resp) || '<span class="pl-mut">—</span>'}</span></td>`}
@@ -1274,7 +1335,7 @@
 
   window.Plan = {
     render, estado, pickDate, duracionDe, aplicarLocal, adelantar, cascada, colorDe, respDe, norm, fCorta, dibujarLineas, cambiarDuracion, areasActividad,
-    etapas, medirAjuste, anchoAjuste, enfocar, pintarComentarios: pintarPop,
+    etapas, ordenSecciones, medirAjuste, anchoAjuste, enfocar, pintarComentarios: pintarPop,
     // La vista Tabla del editor no pasa por render(): le presta su modelo a la nubecita
     usarModelo(m) { ultimoModelo = m; },
     // Ancho extra que tomó la columna «Actividad» (para que la escala «Todo» siga cabiendo)
