@@ -6,6 +6,28 @@ does not exist», corre supabase/TODAS-octubre-2026.sql: trae todo junto.)
 Recarga la app con Ctrl + F5.
 
 
+COMENTARIOS EN LAS ACTIVIDADES (nubecita 💬)
+--------------------------------------------
+- Pasa el mouse por una fila: junto al nombre aparece la nubecita.
+  Morada con un número = esa actividad tiene comentarios.
+- Pasa el mouse sobre la nubecita y ves el historial (con fecha). Haz clic
+  y queda abierta para escribir: Enter guarda (Shift + Enter = otra línea).
+  La fecha es hoy por defecto; puedes cambiarla (p. ej. lo que se dijo en el
+  comité del martes).
+- En el cronograma aparece una nube en el día de cada comentario; pasa el
+  mouse o haz clic y ves el historial.
+- «→ Tarea» convierte un comentario en una tarea de esa actividad (queda en
+  tus microtareas). Luego dice «✓ ya es tarea».
+- Los comentarios son tu bitácora: solo tú los ves (no salen en el enlace
+  compartido). «Abrir bitácora y tareas» abre el panel completo.
+
+AÑADIR Y ELIMINAR FILAS
+-----------------------
+- Al pasar el mouse por una fila salen ＋ (insertar fila debajo) y
+  🗑 (eliminar), en la vista Plan de trabajo y en la Tabla.
+- También: clic derecho sobre la fila, o Ctrl + Enter para insertar.
+
+
 EDITAR COMO EN EXCEL (vista Plan de trabajo y vista Tabla)
 ----------------------------------------------------------
 - ↑ / ↓ o Enter: pasas a la celda de arriba o de abajo (lo escrito se guarda).
