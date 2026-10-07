@@ -56,25 +56,70 @@
   const terminada = a => !!a.realEnd || (a.pctComplete || 0) >= 100;
   // Todo lo que depende de `id` se corre `delta` días hábiles (adelante o atrás)
   // ---------- Tipos de precedencia (igual que el servidor) ----------
-  //   FC fin → comienzo (en serie) · CC empiezan al tiempo · FF terminan al tiempo · d = desfase en días hábiles
-  const TIPOS_DEP = ['FC', 'CC', 'FF'];
-  const NOMBRE_TIPO = { FC: 'Empieza cuando termine (en serie)', CC: 'Empiezan al tiempo (en paralelo)', FF: 'Terminan al tiempo' };
+  //   FC fin → comienzo (en serie) · CC empiezan al tiempo · FF terminan al tiempo · CF termina cuando empiece la otra
+  //   d = desfase (+ después, − antes) · u = 'h' días hábiles o 'c' días corridos (calendario)
+  const TIPOS_DEP = ['FC', 'CC', 'FF', 'CF'];
+  const NOMBRE_TIPO = { FC: 'Empieza cuando termine (en serie)', CC: 'Empiezan al tiempo (en paralelo)', FF: 'Terminan al tiempo', CF: 'Termina cuando empiece la otra' };
   function tipoDep(a, pid) {
     const x = (a && a.depTipos && a.depTipos[pid]) || {};
-    return { t: TIPOS_DEP.includes(x.t) ? x.t : 'FC', d: Math.round(Number(x.d) || 0) };
+    return { t: TIPOS_DEP.includes(x.t) ? x.t : 'FC', d: Math.round(Number(x.d) || 0), u: x.u === 'c' ? 'c' : 'h' };
   }
   const iniEf = a => a.realStart || a.startDate || a.deadline || null;
+  const desplazar = (iso, n, u) => (!n ? iso : u === 'c' ? addDays(iso, n) : sumarHabiles(iso, n));
+  const habilAntes = iso => { let x = iso; while (!esHabil(x)) x = addDays(x, -1); return x; };
   function inicioMinimo(a, p, dur) {
-    const { t, d } = tipoDep(a, p.id);
-    if (t === 'CC') { const i = iniEf(p); if (!i) return null; const b = habilDesde(i); return d ? habilDesde(sumarHabiles(b, d)) : b; }
+    const { t, d, u } = tipoDep(a, p.id);
+    const n = Math.max(1, dur || 1);
+    const atras = f => habilDesde(n > 1 ? sumarHabiles(habilDesde(f), -(n - 1)) : f);
+    if (t === 'CC' || t === 'CF') {
+      const i = iniEf(p); if (!i) return null;
+      const x = desplazar(u === 'c' ? i : habilDesde(i), d, u);
+      return t === 'CC' ? habilDesde(x) : atras(x);
+    }
     const f = finEf(p); if (!f) return null;
-    if (t === 'FF') { const fo = d ? sumarHabiles(f, d) : f; const n = Math.max(1, dur || 1); return habilDesde(n > 1 ? sumarHabiles(fo, -(n - 1)) : fo); }
-    return habilDesde(sumarHabiles(f, 1 + d));
+    if (t === 'FF') return atras(desplazar(f, d, u));
+    return habilDesde(u === 'c' ? addDays(f, 1 + d) : sumarHabiles(f, 1 + d));
   }
-  // Etiqueta corta de una precedencia: «1.2», «1.3 CC», «1.4 FF+2»
+  // El desfase que deja a «a» empezando en `ini` (y terminando en `fin`) sin cambiar el tipo ni la unidad.
+  // Así se puede correr una barra a mano y la precedencia se conserva (p. ej. queda «FC+5»).
+  function desfasePara(a, p, ini, fin) {
+    const { t, u } = tipoDep(a, p.id);
+    const dif = (x, y) => (u === 'c' ? dayDiff(x, y) : difHabiles(x, y));
+    if (t === 'CC' || t === 'CF') {
+      const i = iniEf(p); if (!i) return null;
+      const base = u === 'c' ? i : habilDesde(i);
+      return t === 'CC' ? dif(base, ini) : dif(base, fin);
+    }
+    const f = finEf(p); if (!f) return null;
+    if (t === 'FF') return dif(f, fin);
+    return dif(f, ini) - 1;
+  }
+  // Etiqueta corta de una precedencia: «1.2», «1.3 CC», «1.4 FF+2», «1.5 FC+5c» (c = días corridos)
   function etiquetaDep(a, pid, cod) {
-    const { t, d } = tipoDep(a, pid);
-    return `${cod}${t !== 'FC' ? ' ' + t : ''}${d ? (d > 0 ? '+' : '') + d : ''}`;
+    const { t, d, u } = tipoDep(a, pid);
+    return `${cod}${t !== 'FC' || d ? ' ' + t : ''}${d ? (d > 0 ? '+' : '') + d + (u === 'c' ? 'c' : '') : ''}`;
+  }
+  // En palabras: «Empieza 5 días corridos después de que termine 1.2»
+  function textoDep(t, d, u, cod) {
+    const cuanto = d ? `${Math.abs(d)} día${Math.abs(d) === 1 ? '' : 's'} ${u === 'c' ? 'corrido' : 'hábil'}${Math.abs(d) === 1 ? '' : u === 'c' ? 's' : 'es'} ${d > 0 ? 'después' : 'antes'} de que` : 'cuando';
+    const quien = cod || 'la otra';
+    if (t === 'CC') return d ? `Empieza ${cuanto} empiece ${quien}` : `Empieza al tiempo con ${quien}`;
+    if (t === 'FF') return d ? `Termina ${cuanto} termine ${quien}` : `Termina al tiempo con ${quien}`;
+    if (t === 'CF') return `Termina ${cuanto} empiece ${quien}`;
+    return d ? `Empieza ${cuanto} termine ${quien}` : `Empieza cuando termine ${quien}`;
+  }
+  // Lee «1.2», «1.3 CC», «1.4 FF-2», «1.5 FC+5c» (lo que se copia de la columna de precedencias)
+  function leerDeps(txt, codigos) {
+    const ids = [], tipos = {};
+    String(txt || '').split(/[,;]+/).map(x => x.trim()).filter(Boolean).forEach(tok => {
+      const m = tok.match(/^(\S+?)(?:\s+(FC|CC|FF|CF))?\s*([+-]\s*\d+)?\s*([ch])?$/i);
+      if (!m) return;
+      const id = codigos[m[1]]; if (!id || ids.includes(id)) return;
+      ids.push(id);
+      const t = (m[2] || 'FC').toUpperCase(), d = m[3] ? Number(m[3].replace(/\s/g, '')) : 0;
+      if (t !== 'FC' || d) tipos[id] = d && (m[4] || '').toLowerCase() === 'c' ? { t, d, u: 'c' } : { t, d };
+    });
+    return { dependsOnIds: ids, depTipos: tipos };
   }
   function cascada(acts, id, delta, deltaIni) {
     if (!delta && !deltaIni) return 0;
@@ -82,7 +127,7 @@
     const suc = new Map(acts.map(a => [a.id, []]));
     acts.forEach(a => (a.dependsOnIds || []).forEach(p => { if (suc.has(p) && p !== a.id) suc.get(p).push(a); }));
     // Las que empiezan al tiempo siguen al inicio; las demás, al fin
-    const vistas = new Set([id]), cola = (suc.get(id) || []).map(a => [a, tipoDep(a, id).t === 'CC' ? dIni : delta]);
+    const vistas = new Set([id]), cola = (suc.get(id) || []).map(a => [a, ['CC', 'CF'].includes(tipoDep(a, id).t) ? dIni : delta]);
     let n = 0;
     while (cola.length) {
       const [a, d] = cola.shift();
@@ -388,11 +433,14 @@
     const rel = sel.querySelector('.pl-sel-rel');
     if (rel) {
       rel.innerHTML = elegidos.length ? `<div class="pl-rel-t">Cómo se relaciona con cada una</div>` + elegidos.map(v => {
-        const x = tipoDep({ depTipos: selCtx.tipos }, v);
-        return `<div class="pl-rel" data-id="${esc(v)}"><b title="${esc(etq(v))}">${esc(etq(v).split(' · ')[0])}</b>
-          <select title="Tipo de precedencia">${TIPOS_DEP.map(t => `<option value="${t}"${x.t === t ? ' selected' : ''}>${NOMBRE_TIPO[t]}</option>`).join('')}</select>
-          <input type="number" min="-365" max="365" value="${x.d || ''}" placeholder="0" title="Desfase en días hábiles: positivo = después, negativo = antes"><span>días</span></div>`;
-      }).join('') + '<div class="pl-rel-n">Desfase en días hábiles: «3» = tres días después; «-2» = dos días antes.</div>' : '';
+        const x = tipoDep({ depTipos: selCtx.tipos }, v), cod = etq(v).split(' · ')[0];
+        return `<div class="pl-rel" data-id="${esc(v)}" data-cod="${esc(cod)}"><b title="${esc(etq(v))}">${esc(cod)}</b>
+          <select class="pl-rlt" title="Tipo de precedencia">${TIPOS_DEP.map(t => `<option value="${t}"${x.t === t ? ' selected' : ''}>${t} · ${NOMBRE_TIPO[t]}</option>`).join('')}</select>
+          <span class="pl-rel-d"><select class="pl-rls" title="¿Después o antes?"><option value="1"${x.d >= 0 ? ' selected' : ''}>+ después</option><option value="-1"${x.d < 0 ? ' selected' : ''}>− antes</option></select>
+          <input type="number" min="0" max="730" value="${Math.abs(x.d) || ''}" placeholder="0" title="Cuántos días de desfase">
+          <select class="pl-rlu" title="Días hábiles (sin fines de semana ni festivos) o corridos (calendario)"><option value="h"${x.u !== 'c' ? ' selected' : ''}>días hábiles</option><option value="c"${x.u === 'c' ? ' selected' : ''}>días corridos</option></select></span>
+          <em class="pl-rel-x">${esc(textoDep(x.t, x.d, x.u, cod))}</em></div>`;
+      }).join('') + '<div class="pl-rel-n">Ej.: «FC + 5 días corridos» = empieza 5 días de calendario después de que termine · «FF − 2 hábiles» = termina 2 días hábiles antes. Si corres la barra en el Gantt, el desfase se ajusta solo.</div>' : '';
     }
     sel.querySelector('.pl-sel-chips').innerHTML = elegidos.length
       ? elegidos.map(v => `<span class="pl-sel-chip">${esc(tipo === 'deps' ? etq(v).split(' · ')[0] : v)}<button data-quitar="${esc(v)}" title="Quitar">×</button></span>`).join('')
@@ -434,8 +482,10 @@
     sel.addEventListener('mousedown', ev => { if (ev.target !== q && !ev.target.closest('.pl-rel')) ev.preventDefault(); });
     const leerRel = ev => {
       const fila = ev.target.closest && ev.target.closest('.pl-rel'); if (!fila || !selCtx.tipos) return;
-      const t = fila.querySelector('select').value, d = Math.round(Number(fila.querySelector('input').value) || 0);
-      selCtx.tipos[fila.dataset.id] = { t, d };
+      const t = fila.querySelector(".pl-rlt").value, u = fila.querySelector(".pl-rlu").value;
+      const d = Math.abs(Math.round(Number(fila.querySelector('input').value) || 0)) * Number(fila.querySelector(".pl-rls").value);
+      selCtx.tipos[fila.dataset.id] = { t, d, u };
+      const x = fila.querySelector('.pl-rel-x'); if (x) x.textContent = textoDep(t, d, u, fila.dataset.cod);
     };
     sel.addEventListener('change', leerRel);
     sel.addEventListener('input', leerRel);
@@ -456,7 +506,7 @@
   // Solo se guardan las que no son «en serie sin desfase»
   function tiposLimpios(tipos, ids) {
     const out = {};
-    (ids || []).forEach(id => { const x = tipoDep({ depTipos: tipos || {} }, id); if (x.t !== 'FC' || x.d) out[id] = { t: x.t, d: x.d }; });
+    (ids || []).forEach(id => { const x = tipoDep({ depTipos: tipos || {} }, id); if (x.t !== 'FC' || x.d) out[id] = x.d && x.u === 'c' ? { t: x.t, d: x.d, u: 'c' } : { t: x.t, d: x.d }; });
     return out;
   }
   function cerrarSel(guardar) {
@@ -867,6 +917,13 @@
     if (el.dataset.secAdd !== undefined && has('planOnPegarFilas') && (ls.length > 1 || txt.includes('\t'))) {
       ev.preventDefault();
       window.planOnPegarFilas(el.dataset.secAdd || null, ls.map(l => l.split('\t').map(x => x.trim())));
+      return;
+    }
+    // Un bloque con columnas (de Excel o de aquí): se pega desde esta celda hacia la derecha y abajo
+    if (el.dataset.cell && el.closest(GRID) && txt.includes('\t') && el.closest('td')) {
+      ev.preventDefault();
+      const tip = bloque && bloque.tsv.replace(/\s+$/, '') === txt.replace(/\r/g, '').replace(/\s+$/, '') ? bloque.tipados : null;
+      pegarMatriz(matrizDe(txt), el.closest('td'), tip);
       return;
     }
     // En una celda: varias líneas llenan hacia abajo, como en Excel
@@ -1296,7 +1353,9 @@
       if (esTexto && ev.target.selectionStart !== ev.target.selectionEnd) { portapapeles = null; return; } // copiar parte del texto: lo normal
       portapapeles = { campo: info.campo, valor: valorDe(info.id, info.campo), desde: info.id };
       const a = actDe(info.id);
-      try { navigator.clipboard.writeText(info.campo === 'deps' ? '' : String(Array.isArray(portapapeles.valor) ? portapapeles.valor.join(', ') : (portapapeles.valor ?? ''))); } catch (e) {}
+      const txt = textoCelda(info.td);
+      bloque = { tsv: txt, tipados: [[{ campo: info.campo, valor: portapapeles.valor }]] };
+      try { navigator.clipboard.writeText(txt); } catch (e) {}
       if (!esTexto) ev.preventDefault();
       if (has('toast')) window.toast(`Copiado: ${NOMBRE_CAMPO[info.campo] || info.campo} de «${a ? (a._cod || a.name) : ''}» · pégalo con Ctrl+V en otra fila`);
       return;
@@ -1314,6 +1373,306 @@
     const arriba = filas[filas.indexOf(info.tr) - 1];
     if (!arriba) { aviso('No hay una fila arriba de donde copiar'); return; }
     aplicarRelleno(info.campo, valorDe(arriba.dataset.row, info.campo), [info.id]);
+  });
+
+  // ============================================================
+  // SELECCIONAR CELDAS (como en Excel)
+  //   Clic y arrastrar, o clic y Shift+clic: marca un bloque de celdas.
+  //   Ctrl+C copia el bloque (se puede pegar en Excel) · Ctrl+V pega un bloque
+  //   (de aquí o de Excel) desde la primera celda marcada · Supr lo borra · Esc suelta.
+  // ============================================================
+  let rango = null, bloque = null;
+  const tdsDe = tabla => [...tabla.querySelectorAll('tr[data-row]')];
+  function puntoDe(td) {
+    const tr = td && td.closest('tr[data-row]'), tabla = tr && tr.closest(GRID);
+    if (!tabla || td.classList.contains('pl-tl')) return null;
+    return { tabla, fila: tdsDe(tabla).indexOf(tr), col: td.cellIndex };
+  }
+  function celdasRango() {
+    if (!rango || !rango.a.tabla.isConnected) return [];
+    const filas = tdsDe(rango.a.tabla), out = [];
+    const [f1, f2] = [Math.min(rango.a.fila, rango.b.fila), Math.max(rango.a.fila, rango.b.fila)];
+    const [c1, c2] = [Math.min(rango.a.col, rango.b.col), Math.max(rango.a.col, rango.b.col)];
+    for (let f = f1; f <= f2; f++) {
+      const fila = [];
+      for (let c = c1; c <= c2; c++) { const td = filas[f] && filas[f].children[c]; if (td && !td.classList.contains('pl-tl')) fila.push(td); }
+      out.push(fila);
+    }
+    return out;
+  }
+  function pintarRango() {
+    document.querySelectorAll('.pl-csel').forEach(td => td.classList.remove('pl-csel', 'pl-csel-a'));
+    const c = celdasRango();
+    if (nCeldas() > 1) c.forEach(f => f.forEach(td => td.classList.add('pl-csel')));
+    if (c[0] && c[0][0]) c[0][0].classList.add('pl-csel', 'pl-csel-a');
+  }
+  function soltarRango() { rango = null; pintarRango(); }
+  const nCeldas = () => celdasRango().reduce((n, f) => n + f.length, 0);
+  const codigosModelo = () => { const m = {}; ((ultimoModelo && ultimoModelo.activities) || []).forEach(a => { if (a._cod) m[a._cod] = a.id; }); return m; };
+  const dmy = iso => iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : '';
+  function leerFecha(t) {
+    t = String(t || '').trim().toLowerCase();
+    if (!t || t === '—' || t === '-') return null;
+    const ok = (y, m, d) => { const iso = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`; const x = new Date(iso + 'T12:00:00Z'); return !isNaN(x) && x.toISOString().slice(0, 10) === iso ? iso : undefined; };
+    let m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/); if (m) return ok(m[1], m[2], m[3]);
+    m = t.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/); if (m) return ok(m[3].length === 2 ? '20' + m[3] : m[3], m[2], m[1]);
+    m = t.match(/^(\d{1,2})\s*(?:de\s+)?([a-zé]{3})[a-zé]*\.?(?:\s*(?:de\s+)?(\d{4}))?$/);
+    if (m && MES.includes(m[2])) return ok(m[3] || String((ultimoModelo && ultimoModelo.today) || new Date().toISOString()).slice(0, 4), MES.indexOf(m[2]) + 1, m[1]);
+    return undefined;
+  }
+  // Lo que se ve/copía de una celda (texto, como en Excel)
+  function textoCelda(td) {
+    const info = celdaInfo(td);
+    if (!info) return (td.innerText || '').replace(/\s+/g, ' ').replace(/▾/g, '').trim();
+    const a = actDe(info.id); if (!a) return '';
+    const cod = id => { const x = actDe(id); return x ? x._cod || '' : ''; };
+    switch (info.campo) {
+      case 'deps': return (a.dependsOnIds || []).filter(cod).map(id => etiquetaDep(a, id, cod(id))).join(', ');
+      case 'responsables': return respDe(a).join(', ');
+      case 'duracion': return String(duracionDe(a) || '');
+      case 'startDate': case 'deadline': case 'realStart': case 'realEnd': return dmy(a[info.campo]);
+      case 'sectionId': { const sx = ((ultimoModelo && ultimoModelo.sections) || []).find(x => x.id === a.sectionId); return sx ? sx.name : ''; }
+      default: return a[info.campo] == null ? '' : String(a[info.campo]);
+    }
+  }
+  // Texto → cambio para esa columna (undefined = no se puede, se salta)
+  function cambioDesdeTexto(campo, txt, id) {
+    const t = String(txt == null ? '' : txt).trim();
+    switch (campo) {
+      case 'name': return t ? { name: t } : undefined;
+      case 'responsables': return { responsables: listaNombres(t) };
+      case 'area': return { area: t || null };
+      case 'entregable': case 'notes': return { [campo]: t };
+      case 'pctComplete': { const n = Number(t.replace('%', '').replace(',', '.')); return t && isFinite(n) ? { pctComplete: Math.max(0, Math.min(100, Math.round(n))) } : undefined; }
+      case 'duracion': { if (!t) return { duracion: null }; const n = Math.round(Number(t.replace(',', '.'))); return n >= 1 && n <= 999 ? { duracion: n } : undefined; }
+      case 'startDate': case 'deadline': case 'realStart': case 'realEnd': { const f = leerFecha(t); return f === undefined ? undefined : { [campo]: f }; }
+      case 'deps': { const r = leerDeps(t, codigosModelo()); return cambiosCon('deps', r, id); }
+      case 'sectionId': { const sx = ((ultimoModelo && ultimoModelo.sections) || []).find(x => norm(x.name) === norm(t)); return sx ? { sectionId: sx.id } : undefined; }
+    }
+    return undefined;
+  }
+  const VACIO = { responsables: [], area: null, entregable: '', notes: '', duracion: null, startDate: null, deadline: null, realStart: null, realEnd: null };
+  function guardarCeldas(porId, mensaje) {
+    let items = Object.entries(porId).filter(([, c]) => Object.keys(c).length).map(([id, cambios]) => ({ id, cambios }));
+    if (!items.length) { aviso('Nada que pegar en esas celdas'); return; }
+    // Primero las que van antes en la cadena: así una fecha pegada no empuja a otra pegada en el mismo bloque
+    const enLote = new Set(items.map(x => x.id)), nivel = {};
+    const prof = (id, vistos) => {
+      if (nivel[id] !== undefined) return nivel[id];
+      if (vistos.has(id)) return 0;
+      vistos.add(id);
+      const c = porId[id] || {}, a = actDe(id) || {};
+      const deps = (c.dependsOnIds || a.dependsOnIds || []).filter(x => enLote.has(x));
+      return (nivel[id] = deps.length ? 1 + Math.max(...deps.map(x => prof(x, vistos))) : 0);
+    };
+    items.forEach(x => prof(x.id, new Set()));
+    items = items.map((x, i) => [x, i]).sort((u, v) => nivel[u[0].id] - nivel[v[0].id] || u[1] - v[1]).map(x => x[0]);
+    if (has('planOnRelleno')) window.planOnRelleno(items, 'celdas', mensaje);
+    else if (has('planOnPatch')) items.forEach(x => window.planOnPatch(x.id, x.cambios));
+  }
+  // Pega una matriz de textos desde la celda `td` (o llena todo el bloque marcado si es un solo valor)
+  function pegarMatriz(matriz, td, tipados) {
+    const p = puntoDe(td); if (!p) return;
+    const filas = tdsDe(p.tabla), porId = {};
+    let destinos;
+    const marcadas = celdasRango();
+    if (matriz.length === 1 && matriz[0].length === 1 && nCeldas() > 1) destinos = marcadas.map(f => f.map(td2 => [td2, 0, 0]));
+    else {
+      const ini = marcadas[0] && marcadas[0][0] ? puntoDe(marcadas[0][0]) : p;
+      destinos = matriz.map((fila, i) => fila.map((_, j) => { const tr = filas[ini.fila + i]; return [tr && tr.children[ini.col + j], i, j]; }));
+    }
+    let n = 0;
+    destinos.forEach(f => f.forEach(([celda, i, j]) => {
+      const info = celda && celdaInfo(celda); if (!info) return;
+      const tip = tipados && tipados[i] && tipados[i][j];
+      const c = tip && tip.campo === info.campo ? cambiosCon(info.campo, JSON.parse(JSON.stringify(tip.valor)), info.id) : cambioDesdeTexto(info.campo, matriz[i][j], info.id);
+      if (!c) return;
+      porId[info.id] = Object.assign(porId[info.id] || {}, c); n++;
+    }));
+    // Inicio + duración con el fin vacío: el fin sale solo
+    Object.values(porId).forEach(c => { if (c.deadline === null && c.startDate && c.duracion) delete c.deadline; });
+    guardarCeldas(porId, `✓ ${n} celda${n === 1 ? '' : 's'} pegada${n === 1 ? '' : 's'}`);
+  }
+  const matrizDe = txt => { const ls = txt.replace(/\r/g, '').replace(/\n+$/, '').split('\n'); return ls.map(l => l.split('\t')); };
+  function copiarRango() {
+    const c = celdasRango(); if (!c.length) return null;
+    const textos = c.map(f => f.map(textoCelda));
+    bloque = { tsv: textos.map(f => f.join('\t')).join('\n'), tipados: c.map(f => f.map(td => { const i = celdaInfo(td); return i ? { campo: i.campo, valor: valorDe(i.id, i.campo) } : null; })) };
+    return bloque.tsv;
+  }
+  document.addEventListener('mousedown', ev => {
+    if (ev.button !== 0) return;
+    const td = ev.target.closest && ev.target.closest('td');
+    const p = td && !ev.target.closest('.pl-drag, .pl-sdrag, .pl-fh, [data-mov], .pl-lk, .pl-ra, .pl-selpop') ? puntoDe(td) : null;
+    if (!p) { if (rango && !(ev.target.closest && ev.target.closest('.pl-selpop, .pl-fh'))) soltarRango(); return; }
+    if (ev.shiftKey && rango && rango.a.tabla === p.tabla) {
+      ev.preventDefault();
+      const el = document.activeElement; if (el && el.dataset && el.dataset.cell) { confirmar(el); el.blur(); }
+      rango.b = p; pintarRango(); sinClick = true; setTimeout(() => { sinClick = false; }, 300);
+      return;
+    }
+    rango = { a: p, b: p }; pintarRango();
+    let arrastra = false;
+    const mover = e => {
+      const bajo = document.elementFromPoint(e.clientX, e.clientY);
+      const td2 = bajo && bajo.closest && bajo.closest('td'), q = td2 && puntoDe(td2);
+      if (!q || q.tabla !== p.tabla) return;
+      if (!arrastra && q.fila === p.fila && q.col === p.col) return;
+      if (!arrastra) {
+        arrastra = true; document.body.classList.add('pl-seleccionando');
+        const el = document.activeElement; if (el && el.dataset && el.dataset.cell) { confirmar(el); el.blur(); }
+      }
+      try { window.getSelection().removeAllRanges(); } catch (er) {}
+      rango.b = q; pintarRango();
+    };
+    const soltar = () => {
+      document.removeEventListener('mousemove', mover); document.removeEventListener('mouseup', soltar);
+      document.body.classList.remove('pl-seleccionando');
+      if (arrastra) { sinClick = true; setTimeout(() => { sinClick = false; }, 0); }
+    };
+    document.addEventListener('mousemove', mover); document.addEventListener('mouseup', soltar);
+  });
+  // Al moverse con el teclado, la celda marcada se suelta
+  document.addEventListener('focusin', ev => { if (rango && nCeldas() < 2 && !(ev.target.closest && ev.target.closest('.pl-csel, .pl-selpop'))) soltarRango(); });
+  // Con varias celdas marcadas: copiar, pegar, borrar, soltar
+  const enCasilla = () => { const el = document.activeElement; return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable); };
+  document.addEventListener('keydown', ev => {
+    if (!rango || nCeldas() < 2 || enCasilla()) return;
+    const k = ev.key;
+    if (k === 'Escape') { soltarRango(); return; }
+    if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === 'c') {
+      const tsv = copiarRango();
+      try { navigator.clipboard.writeText(tsv); } catch (e) {}
+      if (has('toast')) window.toast(`Copiadas ${nCeldas()} celdas · pégalas con Ctrl+V aquí o en Excel`);
+      return;
+    }
+    if ((k === 'Delete' || k === 'Backspace') && has('planOnPatch')) {
+      ev.preventDefault();
+      const porId = {};
+      celdasRango().forEach(f => f.forEach(td => {
+        const info = celdaInfo(td); if (!info) return;
+        const c = info.campo === 'deps' ? { dependsOnIds: [], depTipos: {} } : info.campo in VACIO ? { [info.campo]: Array.isArray(VACIO[info.campo]) ? [] : VACIO[info.campo] } : null;
+        if (c) porId[info.id] = Object.assign(porId[info.id] || {}, c);
+      }));
+      guardarCeldas(porId, '✓ Celdas borradas');
+      soltarRango();
+    }
+  });
+  // Con la lista desplegable abierta (clic en responsables, área o precedencias) y sin escribir nada,
+  // Ctrl+C copia esa celda y Ctrl+V pega lo copiado en ella
+  function celdaDeLista() {
+    const el = document.activeElement;
+    if (!el || !el.classList.contains('pl-sel-q') || el.value || !selCtx) return null;
+    return document.querySelector(`.pl-pick[data-pick="${selCtx.tipo}"][data-act="${selCtx.a.id}"]`);
+  }
+  document.addEventListener('keydown', ev => {
+    if (!(ev.ctrlKey || ev.metaKey) || ev.key.toLowerCase() !== 'c') return;
+    const td = celdaDeLista(); if (!td) return;
+    const p = puntoDe(td), info = celdaInfo(td); if (!p || !info) return;
+    rango = { a: p, b: p };
+    const tsv = copiarRango();
+    portapapeles = { campo: info.campo, valor: valorDe(info.id, info.campo), desde: info.id };
+    cerrarSel(false); pintarRango();
+    try { navigator.clipboard.writeText(tsv); } catch (e) {}
+    if (has('toast')) window.toast(`Copiado: ${NOMBRE_CAMPO[info.campo] || info.campo} · pégalo con Ctrl+V en otra celda`);
+  });
+  document.addEventListener('copy', ev => {
+    if (!rango || nCeldas() < 2 || enCasilla()) return;
+    const tsv = (bloque && bloque.tsv) || copiarRango();
+    ev.clipboardData.setData('text/plain', tsv); ev.preventDefault();
+  });
+  document.addEventListener('paste', ev => {
+    if (!(has('planOnRelleno') || has('planOnPatch'))) return;
+    const txt = (ev.clipboardData || window.clipboardData).getData('text') || (bloque && bloque.tsv) || '';
+    const tdLista = celdaDeLista();
+    if (tdLista && txt) {
+      // Un bloque, o lo que se copió de aquí: va a la celda (si no, el texto sirve para buscar en la lista)
+      const deAqui = bloque && bloque.tsv.replace(/\s+$/, '') === txt.replace(/\r/g, '').replace(/\s+$/, '');
+      if (!deAqui && !/[\t\n]/.test(txt.trim())) return;
+      const p = puntoDe(tdLista); if (!p) return;
+      ev.preventDefault(); cerrarSel(false);
+      rango = { a: p, b: p };
+      pegarMatriz(matrizDe(txt), tdLista, deAqui ? bloque.tipados : null);
+      soltarRango();
+      return;
+    }
+    if (!rango || enCasilla()) return;
+    if (!txt) return;
+    ev.preventDefault();
+    const tip = bloque && bloque.tsv.replace(/\s+$/, '') === txt.replace(/\r/g, '').replace(/\s+$/, '') ? bloque.tipados : null;
+    const c = celdasRango();
+    if (c[0] && c[0][0]) pegarMatriz(matrizDe(txt), c[0][0], tip);
+    soltarRango();
+  });
+
+  // ============================================================
+  // CORRER BARRAS EN EL GANTT (editor)
+  //   Arrastrar la barra: la corre conservando la duración.
+  //   Arrastrar un borde: cambia el inicio o el fin.
+  //   Las precedencias no se pierden: el desfase se recalcula para que quede
+  //   justo donde la soltaste (p. ej. «FC+5»), y lo que depende de ella se corre.
+  // ============================================================
+  let escalaActual = null, sinClick = false;
+  document.addEventListener('click', ev => { if (sinClick) { sinClick = false; ev.stopPropagation(); ev.preventDefault(); } }, true);
+  function nuevosDesfases(a, ni, nf) {
+    const tipos = JSON.parse(JSON.stringify(a.depTipos || {})), cambios = [];
+    (a.dependsOnIds || []).forEach(pid => {
+      const p = actDe(pid); if (!p) return;
+      const d0 = desfasePara(a, p, ni, nf); if (d0 === null) return;
+      const x = tipoDep(a, pid), d = Math.max(-730, Math.min(730, d0));
+      tipos[pid] = { t: x.t, d, u: x.u };
+      if (d !== x.d) cambios.push(etiquetaDep({ depTipos: tipos }, pid, p._cod || p.name));
+    });
+    return { tipos: tiposLimpios(tipos, a.dependsOnIds || []), cambios };
+  }
+  document.addEventListener('mousedown', ev => {
+    if (ev.button !== 0 || !escalaActual) return;
+    const bar = ev.target.closest && ev.target.closest('[data-mov][data-id]');
+    if (!bar || !has('planOnPatch')) return;
+    const a = actDe(bar.dataset.id); if (!a) return;
+    const ini = a.startDate || a.deadline, fin = a.deadline || a.startDate; if (!ini) return;
+    ev.preventDefault();
+    const E = escalaActual, hito = bar.classList.contains('pl-ms');
+    const modo = ev.target.classList.contains('pl-bh') ? (ev.target.classList.contains('l') ? 'ini' : 'fin') : 'mover';
+    const dur = Math.max(1, diasHabiles(ini, fin)), x0 = ev.clientX;
+    let ni = ini, nf = fin, movio = false, tip = null;
+    const pintar = () => {
+      if (hito) bar.style.left = (E.x(ni) + E.ppd / 2) + 'px';
+      else { bar.style.left = E.x(ni) + 'px'; bar.style.width = Math.max(E.ppd, E.x(addDays(nf, 1)) - E.x(ni)) + 'px'; }
+      const { tipos, cambios } = nuevosDesfases(a, ni, nf);
+      const deps = (a.dependsOnIds || []).map(pid => { const p = actDe(pid); return p ? etiquetaDep({ depTipos: tipos }, pid, p._cod || '') : ''; }).filter(Boolean);
+      tip.innerHTML = `<b>${esc(a._cod || '')}</b> ${fCorta(ni)} → ${fCorta(nf)} · ${diasHabiles(ni, nf)} día${diasHabiles(ni, nf) === 1 ? '' : 's'} hábil${diasHabiles(ni, nf) === 1 ? '' : 'es'}${deps.length ? `<br><span>Depende de: ${esc(deps.join(', '))}</span>` : ''}${cambios.length ? '<br><em>Se ajusta el desfase</em>' : ''}`;
+    };
+    const mover = e => {
+      const dd = Math.round((e.clientX - x0) / E.ppd);
+      if (!movio && Math.abs(e.clientX - x0) < 4) return;
+      if (!movio) {
+        movio = true;
+        document.body.classList.add('pl-moviendo');
+        bar.classList.add('pl-arrastrada');
+        tip = document.createElement('div'); tip.className = 'pl-dragtip'; document.body.appendChild(tip);
+      }
+      if (modo === 'mover') { ni = habilDesde(addDays(ini, dd)); nf = hito ? ni : finHabil(ni, dur); }
+      else if (modo === 'ini') { ni = habilDesde(addDays(ini, dd)); if (ni > fin) ni = habilAntes(fin); nf = fin; }
+      else { nf = habilAntes(addDays(fin, dd)); if (nf < ini) nf = habilDesde(ini); ni = ini; }
+      pintar();
+      tip.style.left = Math.min(window.innerWidth - 260, e.clientX + 14) + 'px'; tip.style.top = (e.clientY + 16) + 'px';
+    };
+    const soltar = () => {
+      document.removeEventListener('mousemove', mover); document.removeEventListener('mouseup', soltar);
+      if (!movio) return;
+      sinClick = true; setTimeout(() => { sinClick = false; }, 0);
+      document.body.classList.remove('pl-moviendo');
+      bar.classList.remove('pl-arrastrada');
+      if (tip) tip.remove();
+      if (ni === ini && nf === fin) return;
+      const { tipos, cambios } = nuevosDesfases(a, ni, nf);
+      const patch = { startDate: ni, deadline: nf };
+      if ((a.dependsOnIds || []).length) patch.depTipos = tipos;
+      window.planOnPatch(a.id, patch);
+      if (has('toast')) window.toast(`${a._cod || ''} ${fCorta(ni)} → ${fCorta(nf)}${cambios.length ? ' · precedencia: ' + cambios.join(', ') : ''}`);
+    };
+    document.addEventListener('mousemove', mover); document.addEventListener('mouseup', soltar);
   });
 
   // ---------- Escala «Todo»: mide lo que ocupan las columnas para que el cronograma quepa exacto ----------
@@ -1390,6 +1749,10 @@
           // Empiezan al tiempo: de inicio a inicio
           const x1 = p.l, y1 = p.y, x2 = q.l - 3, y2 = q.y, xo = Math.min(x1, x2) - 10;
           d = `M${x1},${y1} H${xo} V${y2} H${x2}`;
+        } else if (tipo === 'CF') {
+          // Termina cuando empiece la otra: de inicio a fin
+          const x1 = p.l, y1 = p.y, x2 = q.r + 3, y2 = q.y, xo = Math.min(x1, q.l) - 10;
+          d = `M${x1},${y1} H${xo} V${(y1 + y2) / 2} H${Math.max(x2, p.l) + 10} V${y2} H${x2}`;
         } else if (tipo === 'FF') {
           // Terminan al tiempo: de fin a fin
           const x1 = p.r, y1 = p.y, x2 = q.r + 3, y2 = q.y, xo = Math.max(x1, x2) + 10;
@@ -1454,6 +1817,7 @@
     }
     const zoom = opts.zoom || 'semana';
     const E = escala(fechas, today, zoom, opts.anchoTL);
+    escalaActual = E;
     const fondo = carrilFondo(E, today, zoom);
     const meta = model.fechaMeta || null;
     if (meta && meta >= E.ini && meta <= E.fin) fondo.capas += `<span class="pl-meta" style="left:${E.x(addDays(meta, 1))}px" title="Fecha meta: ${fCorta(meta)}"></span>`;
@@ -1562,9 +1926,12 @@
       const x0 = E.x(ini), w = Math.max(E.ppd, E.x(addDays(fin, 1)) - x0);
       const cls = est === 'Completada' ? ' ok' : est === 'Atrasada' ? ' late' : '';
       const click = has('planOnOpen') && opts.owner ? ` onclick="planOnOpen('${a.id}')"` : '';
+      // En el editor la barra se corre con el mouse (y sus bordes cambian inicio o fin)
+      const mov = editable && opts.owner && has('planOnPatch') ? ' data-mov="1"' : '';
+      const tipMov = mov ? esc(' · Arrástrala para correrla; sus bordes cambian el inicio o el fin') : '';
       barra += ini === fin
-        ? `<span class="pl-ms${cls}" data-id="${a.id}" style="left:${x0 + E.ppd / 2}px;--c:${g.color}" title="${tip}"${click}></span>`
-        : `<span class="pl-b${cls}${w < 34 ? ' mini' : ''}" data-id="${a.id}" style="left:${x0}px;width:${w}px;--c:${g.color}" title="${tip}"${click}><i style="width:${pct}%"></i></span>`;
+        ? `<span class="pl-ms${cls}" data-id="${a.id}"${mov} style="left:${x0 + E.ppd / 2}px;--c:${g.color}" title="${tip}${tipMov}"${click}></span>`
+        : `<span class="pl-b${cls}${w < 34 ? ' mini' : ''}" data-id="${a.id}"${mov} style="left:${x0}px;width:${w}px;--c:${g.color}" title="${tip}${tipMov}"${click}><i style="width:${pct}%"></i>${mov && w >= 30 ? '<b class="pl-bh l"></b><b class="pl-bh r"></b>' : ''}</span>`;
       if (cols.esDeps && editable && opts.owner && has('planOnPatch')) {
         barra += `<span class="pl-lk" data-src="${a.id}" style="left:${ini === fin ? x0 + E.ppd / 2 + 8 : x0 + w + 2}px" title="Arrastra hasta otra actividad: «${esc(a.name)}» debe terminar antes de que ella empiece"></span>`;
       }
@@ -1589,6 +1956,7 @@
       ? `<input class="pl-in ${cls || ''}" data-cell="${a.id}:${campo}" value="${esc(valor)}" placeholder="${ph}" title="${esc(valor)}"${campo === 'responsables' ? ' list="dl-personas"' : ''} onchange="planOnPatch('${a.id}',{${campo}:this.value.trim()})">`
       : `<span class="pl-tx ${cls || ''}" title="${esc(valor)}">${esc(valor) || '<span class="pl-mut">—</span>'}</span>`;
     const deps = (a.dependsOnIds || []).filter(id => codigo[id]).map(id => etiquetaDep(a, id, codigo[id])).join(', ');
+    const depsTxt = (a.dependsOnIds || []).filter(id => codigo[id]).map(id => { const x = tipoDep(a, id); return textoDep(x.t, x.d, x.u, codigo[id]); }).join(' · ');
     const dias = duracionDe(a) || '';
     const pctCell = !cols.full
       ? (editable
@@ -1624,8 +1992,8 @@
       ${pctCell}
       ${estCell}
       ${cols.deps ? (editable && opts.owner && has('planOnPatch')
-        ? `<td class="pl-dp pl-pick" tabindex="0" data-pick="deps" data-act="${a.id}" title="De qué actividades depende y cómo: en serie, empiezan al tiempo, terminan al tiempo, con desfase">${deps || '<span class="pl-mut">Elegir…</span>'}<i class="pl-caret">▾</i></td>`
-        : `<td class="pl-dp">${deps || '<span class="pl-mut">—</span>'}</td>`) : ''}
+        ? `<td class="pl-dp pl-pick" tabindex="0" data-pick="deps" data-act="${a.id}" title="${esc(depsTxt || 'De qué actividades depende y cómo: en serie, empiezan al tiempo, terminan al tiempo, con desfase')}">${deps || '<span class="pl-mut">Elegir…</span>'}<i class="pl-caret">▾</i></td>`
+        : `<td class="pl-dp" title="${esc(depsTxt)}">${deps || '<span class="pl-mut">—</span>'}</td>`) : ''}
       ${carril(barra)}
     </tr>`;
   }
@@ -1676,7 +2044,7 @@
   }
 
   window.Plan = {
-    render, estado, pickDate, duracionDe, tipoDep, etiquetaDep, aplicarLocal, adelantar, cascada, colorDe, respDe, norm, fCorta, dibujarLineas, cambiarDuracion, areasActividad,
+    render, estado, pickDate, duracionDe, tipoDep, etiquetaDep, textoDep, desfasePara, leerDeps, aplicarLocal, adelantar, cascada, colorDe, respDe, norm, fCorta, dibujarLineas, cambiarDuracion, areasActividad,
     etapas, ordenSecciones, medirAjuste, anchoAjuste, enfocar, pintarComentarios: pintarPop,
     // La vista Tabla del editor no pasa por render(): le presta su modelo a la nubecita
     usarModelo(m) { ultimoModelo = m; },

@@ -1,3 +1,37 @@
+CORRER BARRAS EN EL GANTT · DÍAS CORRIDOS · SELECCIONAR CELDAS
+===============================================================
+No hay nada que correr en Supabase (usa la misma columna dep_tipos de los
+tipos de precedencia). Recarga con Ctrl + F5.
+
+1) DESFASE EN DÍAS HÁBILES O CORRIDOS
+- Clic en «Depende de» → en cada precedencia eliges:
+    tipo (FC en serie · CC empiezan al tiempo · FF terminan al tiempo ·
+          CF termina cuando empiece la otra)
+    + después / − antes · cuántos días · días hábiles o días corridos
+  Abajo sale en palabras, p. ej. «Empieza 5 días corridos después de que
+  termine 1.2» o «Termina 2 días hábiles antes de que termine 1.4».
+- En la columna se ve corto: «1.2 FC+5» (hábiles) o «1.2 FC+5c» (corridos).
+
+2) CORRER LAS BARRAS CON EL MOUSE (Plan de trabajo y Dependencias; también
+   en el enlace de editor)
+- Arrastra la barra para correrla en la línea de tiempo (conserva la duración).
+- Arrastra su borde izquierdo o derecho para cambiar el inicio o el fin.
+- La precedencia NO se pierde: el desfase se recalcula solo para que quede
+  donde la soltaste (p. ej. pasa de «1.2» a «1.2 FC+5»). Lo que depende de
+  ella se corre detrás. Mientras arrastras ves las fechas y el desfase nuevo.
+- Se deshace con «↶ Deshacer».
+
+3) SELECCIONAR CELDAS, COPIAR Y PEGAR (como en Excel)
+- Clic en una celda y arrastra a otra: queda marcado el bloque en azul.
+  También: clic en una y Shift + clic en otra.
+- Ctrl + C copia el bloque (lo puedes pegar en Excel).
+- Ctrl + V pega un bloque (copiado aquí o en Excel) desde la primera celda
+  marcada o desde la celda donde hagas clic. Si copias un solo valor y
+  marcas varias celdas, las llena todas.
+- Supr borra lo marcado · Esc suelta la selección.
+- Fechas en 15/12/2026, 2026-12-15 o «15 dic»; precedencias como «1.2 FC+5c».
+- Un pegado completo se deshace de una vez.
+
 COPIAR VALORES COMO EN EXCEL (arrastrar hacia abajo o arriba, Ctrl+C / Ctrl+V)
 ==============================================================================
 No hay nada que correr en Supabase. Recarga con Ctrl + F5.
