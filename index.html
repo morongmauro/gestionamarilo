@@ -2929,7 +2929,7 @@
       <td><input type="number" min="1" max="999" class="pt-in pct" data-cell="${a.id}:dur" value="${Plan.duracionDe(a)||''}" placeholder="—" title="Duración en días hábiles. Con inicio, el fin sale solo; sin fechas, se programa al terminar sus precedentes" onchange="patchActivity('${a.id}',{duracion:this.value===''?null:Number(this.value)})"></td>
       <td><span class="st-badge" title="El estado sale del % de avance"><span class="g-sdot" style="background:${stCol}"></span>${AS[a.estadoEfectivo]||a.status}</span></td>
       <td><input type="number" min="0" max="100" step="5" class="pt-in pct" data-cell="${a.id}:pct" value="${a.pctComplete}" title="0% pendiente · 1-99% en curso · 100% completada" onchange="patchActivity('${a.id}',{pctComplete:Number(this.value)})"></td>
-      <td class="pl-pick pt-pick" tabindex="0" data-pick="deps" data-act="${a.id}" title="De qué actividades depende y cómo: en serie, empiezan al tiempo, terminan al tiempo, con desfase">${(a.dependsOnIds||[]).filter(id=>cod4[id]).map(id=>`<span class="dep-chip">${esc(Plan.etiquetaDep(a,id,cod4[id]))}</span>`).join(' ')||'<span style="color:var(--faint)">Elegir…</span>'}<i class="pl-caret">▾</i></td>
+      <td class="pl-pick pt-pick" tabindex="0" data-pick="deps" data-act="${a.id}" title="De qué actividades depende y cómo: en serie, empiezan al tiempo, terminan al tiempo, con desfase">${(a.dependsOnIds||[]).filter(id=>cod4[id]).map(id=>{const x=Plan.tipoDep(a,id);return `<span class="dep-chip" title="${esc(Plan.textoDep(x.t,x.d,x.u,cod4[id]))}">${esc(Plan.etiquetaDep(a,id,cod4[id]))}</span>`;}).join(' ')||'<span style="color:var(--faint)">Elegir…</span>'}<i class="pl-caret">▾</i></td>
       <td><input class="pt-in" data-cell="${a.id}:ent" value="${esc(a.entregable||'')}" placeholder="—" onchange="patchActivity('${a.id}',{entregable:this.value.trim()})"></td>
       <td><input class="pt-in" data-cell="${a.id}:notes" value="${esc(a.notes||'')}" placeholder="—" onchange="patchActivity('${a.id}',{notes:this.value})"></td>
       <td><button class="pt-del" onclick="removeActivity('${a.id}')" title="Eliminar esta fila">🗑</button></td>
@@ -2977,12 +2977,12 @@
   function planSetOpt(k,v){Plan.cambiar(planOpts,k,v);Plan.guardar(LS_PLAN,planOpts);renderPlan();}
   function planOnPatch(id,cambios){patchActivity(id,cambios);}
   // Copiar un valor a varias filas (agarradera, Ctrl+V, Ctrl+D): un solo «deshacer» para todo
-  async function planOnRelleno(items,campo){
+  async function planOnRelleno(items,campo,mensaje){
     if(!items.length)return;
-    pushUndo(`copiar ${campo||'valores'} en ${items.length} fila${items.length===1?'':'s'}`);undoSuspendido++;
+    pushUndo(campo==='celdas'?`pegar celdas en ${items.length} fila${items.length===1?'':'s'}`:`copiar ${campo||'valores'} en ${items.length} fila${items.length===1?'':'s'}`);undoSuspendido++;
     try{for(const x of items)await applyActivity(x.id,x.cambios);}
     finally{undoSuspendido--;}
-    toast(`✓ ${campo?campo.charAt(0).toUpperCase()+campo.slice(1):'Valor'} copiado en ${items.length} fila${items.length===1?'':'s'}`);
+    toast(mensaje||`✓ ${campo?campo.charAt(0).toUpperCase()+campo.slice(1):'Valor'} copiado en ${items.length} fila${items.length===1?'':'s'}`);
   }
   // ---------- COMENTARIOS (nubecita): agregar, borrar y convertir en tarea ----------
   async function planOnComentario(acc,actId,x){

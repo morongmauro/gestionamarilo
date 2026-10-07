@@ -594,7 +594,10 @@ svg.pl-links.editable path.hit:hover{stroke:color-mix(in srgb,#E2445C 35%,transp
 /* Tipo de cada precedencia en la lista «Depende de» */
 .pl-sel-rel{padding:0 14px 6px}
 .pl-rel-t{font-size:9.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin:2px 0 4px}
-.pl-rel{display:grid;grid-template-columns:38px minmax(0,1fr) 54px auto;gap:6px;align-items:center;margin-bottom:4px;font-size:11px}
+.pl-rel{display:grid;grid-template-columns:38px minmax(0,1fr);gap:4px 6px;align-items:center;margin-bottom:8px;font-size:11px}
+.pl-rel-d{grid-column:2;display:flex;gap:5px;align-items:center}
+.pl-rel-d .pl-rls{width:108px}.pl-rel-d input{width:52px}.pl-rel-d .pl-rlu{flex:1}
+.pl-rel-x{grid-column:2;font-style:normal;font-size:10.5px;color:var(--muted);margin:0 0 0 4px}
 .pl-rel b{font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
 .pl-rel select,.pl-rel input{font:600 11px Montserrat,system-ui,sans-serif;color:var(--ink);background:var(--sunk);border:none;border-radius:999px;padding:4px 8px;outline:none;min-width:0}
 .pl-rel input{text-align:right}
@@ -608,3 +611,17 @@ svg.pl-links.editable path.hit:hover{stroke:color-mix(in srgb,#E2445C 35%,transp
 body.pl-rellenando,body.pl-rellenando *{cursor:crosshair!important;user-select:none}
 td.pl-fill-org{box-shadow:inset 0 0 0 2px #3D7BF7!important}
 td.pl-fill-rango{background:color-mix(in srgb,#3D7BF7 14%,var(--card))!important;box-shadow:inset 0 0 0 1px color-mix(in srgb,#3D7BF7 45%,transparent)!important}
+/* Correr barras en el Gantt (editor) */
+.pl-b[data-mov],.pl-ms[data-mov]{cursor:grab}
+.pl-bh{position:absolute;top:0;bottom:0;width:7px;cursor:ew-resize;z-index:2}
+.pl-bh.l{left:0}.pl-bh.r{right:0}
+.pl-b[data-mov]:hover .pl-bh{background:color-mix(in srgb,var(--c) 55%,#fff 0%);opacity:.55}
+.pl-b.pl-arrastrada,.pl-ms.pl-arrastrada{filter:brightness(.95) drop-shadow(0 3px 8px rgba(28,26,23,.25));z-index:5;transition:none}
+body.pl-moviendo,body.pl-moviendo *{cursor:grabbing!important;user-select:none}
+.pl-dragtip{position:fixed;z-index:10000;pointer-events:none;background:#1C1A17;color:#fff;font:600 11px/1.45 Montserrat,system-ui,sans-serif;padding:7px 11px;border-radius:12px;box-shadow:0 8px 24px rgba(28,26,23,.3);max-width:250px}
+.pl-dragtip b{font-weight:800}.pl-dragtip span{color:#d8d4cc}.pl-dragtip em{font-style:normal;color:#FFCB00}
+/* Celdas marcadas (clic y arrastrar / Shift+clic) */
+td.pl-csel{background:color-mix(in srgb,#0073EA 9%,transparent)!important;box-shadow:inset 0 0 0 1px color-mix(in srgb,#0073EA 28%,transparent)}
+td.pl-csel-a{box-shadow:inset 0 0 0 2px color-mix(in srgb,#0073EA 55%,transparent)}
+td.pl-csel input,td.pl-csel .pl-in{background:transparent}
+body.pl-seleccionando,body.pl-seleccionando *{user-select:none;cursor:cell!important}
