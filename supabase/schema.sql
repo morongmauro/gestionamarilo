@@ -58,6 +58,7 @@ create table if not exists activities (
   entregable   text,                          -- entregable / resultado (hoja de plan de trabajo)
   area         text,                          -- área responsable elegida a mano (vacía = sale de los involucrados)
   duracion     integer,                       -- días hábiles (con inicio, el fin sale solo; sin fechas, se programa tras sus precedentes)
+  dep_tipos    jsonb not null default '{}'::jsonb, -- tipo de cada precedencia: { id: { t: FC|CC|FF, d: desfase } }
   real_start   date,                          -- fecha real de inicio (además de la planeada)
   real_end     date,                          -- fecha real de fin: la da por terminada
   propuesta    boolean not null default false, -- sumada desde un enlace de solo lectura

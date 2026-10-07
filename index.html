@@ -2152,6 +2152,8 @@
       cmp('realStart',a.realStart||null,nueva?null:(x.realStart||null));cmp('realEnd',a.realEnd||null,nueva?null:(x.realEnd||null));
       const deps=(a.dependsOnIds||[]).map(A);
       if(!igual([...deps].sort(),[...(nueva?[]:(x.dependsOnIds||[]))].sort()))f.dependsOnIds=deps;
+      const tipos={};Object.keys(a.depTipos||{}).forEach(k=>{tipos[A(k)]=a.depTipos[k];});
+      if(!igual(tipos,nueva?{}:(x.depTipos||{}))){f.depTipos=tipos;if(!f.dependsOnIds)f.dependsOnIds=deps;}
       if(Object.keys(f).length)await api('/api/activities/'+id,'PATCH',f);
     }
     // 5) Fechas y duraciones exactamente como estaban (de una, sin cascadas)
@@ -2880,6 +2882,7 @@
   window.addEventListener('resize',()=>{if(!currentProjectDetail)return;if(planView==='gantt')drawDepLinks();else if(planView==='hoja')Plan.dibujarLineas();});
 
   // ---------- PLAN EN TABLA (se diligencia toda la data aquí mismo) ----------
+  let ptCodigos={};
   function planTableHtml(d){
     const secs=Plan.ordenSecciones(d.sections);
     const acts=orderedActs(d);
@@ -2888,7 +2891,7 @@
     if(orphans.length)groups.push({id:null,name:'Otras',sec:null,acts:orphans});
     // Mismos colores y números de capítulo que en el plan de trabajo
     const modeloT=planModel(d);Plan.usarModelo(modeloT);
-    const et=Plan.etapas(modeloT),info={},codAct={};
+    const et=Plan.etapas(modeloT),info={},codAct={};ptCodigos=codAct;
     et.forEach(g=>{info[g.id||'_otras']=g;g.acts.forEach(a=>{codAct[a.id]=a._cod;});});
     const cols=14;
     const rows=groups.map(g=>{
@@ -2909,6 +2912,7 @@
       <tbody>${rows}${addSec}</tbody></table></div>`;
   }
   function ptRow(a,secs,color,cod){
+    const cod4=ptCodigos||{};
     const cp=a.critical?(a.criticaEnRiesgo?'cp-late':'cp-ok'):'';
     const secOpts='<option value="">— Sin fase —</option>'+secs.map(s=>`<option value="${s.id}"${a.sectionId===s.id?' selected':''}>${esc(s.name)}${s.enabled===false?' (no aplica)':''}</option>`).join('');
     const stCol=GC[a.estadoEfectivo]||GC.pendiente;
@@ -2925,7 +2929,7 @@
       <td><input type="number" min="1" max="999" class="pt-in pct" data-cell="${a.id}:dur" value="${Plan.duracionDe(a)||''}" placeholder="—" title="Duración en días hábiles. Con inicio, el fin sale solo; sin fechas, se programa al terminar sus precedentes" onchange="patchActivity('${a.id}',{duracion:this.value===''?null:Number(this.value)})"></td>
       <td><span class="st-badge" title="El estado sale del % de avance"><span class="g-sdot" style="background:${stCol}"></span>${AS[a.estadoEfectivo]||a.status}</span></td>
       <td><input type="number" min="0" max="100" step="5" class="pt-in pct" data-cell="${a.id}:pct" value="${a.pctComplete}" title="0% pendiente · 1-99% en curso · 100% completada" onchange="patchActivity('${a.id}',{pctComplete:Number(this.value)})"></td>
-      <td>${depCellHtml(a)}</td>
+      <td class="pl-pick pt-pick" tabindex="0" data-pick="deps" data-act="${a.id}" title="De qué actividades depende y cómo: en serie, empiezan al tiempo, terminan al tiempo, con desfase">${(a.dependsOnIds||[]).filter(id=>cod4[id]).map(id=>`<span class="dep-chip">${esc(Plan.etiquetaDep(a,id,cod4[id]))}</span>`).join(' ')||'<span style="color:var(--faint)">Elegir…</span>'}<i class="pl-caret">▾</i></td>
       <td><input class="pt-in" data-cell="${a.id}:ent" value="${esc(a.entregable||'')}" placeholder="—" onchange="patchActivity('${a.id}',{entregable:this.value.trim()})"></td>
       <td><input class="pt-in" data-cell="${a.id}:notes" value="${esc(a.notes||'')}" placeholder="—" onchange="patchActivity('${a.id}',{notes:this.value})"></td>
       <td><button class="pt-del" onclick="removeActivity('${a.id}')" title="Eliminar esta fila">🗑</button></td>

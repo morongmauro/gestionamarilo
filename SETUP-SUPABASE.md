@@ -15,6 +15,7 @@ La app ya no usa Notion para nada. Todo (tareas, proyectos, fases y actividades 
 > 9. [`supabase/migracion-2026-10-area.sql`](supabase/migracion-2026-10-area.sql) — **área responsable** elegida a mano en cada actividad.
 > 10. [`supabase/migracion-2026-10-duracion.sql`](supabase/migracion-2026-10-duracion.sql) — **duración** de cada actividad (sin necesidad de fechas).
 > 11. [`supabase/migracion-2026-10-edicion.sql`](supabase/migracion-2026-10-edicion.sql) — **enlaces de edición** con nombre, **historial de cambios** y **subcapítulos**.
+> 12. [`supabase/migracion-2026-10-precedencias.sql`](supabase/migracion-2026-10-precedencias.sql) — **tipos de precedencia** (en serie, al tiempo, terminan al tiempo) con desfase.
 >
 > Atajo: [`supabase/TODAS-octubre-2026.sql`](supabase/TODAS-octubre-2026.sql) trae todas las de octubre juntas (se puede correr aunque ya hayas corrido alguna).
 

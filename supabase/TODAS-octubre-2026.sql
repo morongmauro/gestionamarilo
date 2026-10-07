@@ -81,3 +81,6 @@ create table if not exists historial_cambios (
 );
 create index if not exists idx_historial_project on historial_cambios(project_id, created_at desc);
 alter table historial_cambios enable row level security;
+
+-- ---------- precedencias (tipos: en serie, al tiempo, terminan al tiempo + desfase) ----------
+alter table activities add column if not exists dep_tipos jsonb not null default '{}'::jsonb;
