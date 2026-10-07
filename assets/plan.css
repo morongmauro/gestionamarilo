@@ -590,3 +590,14 @@ tr.pl-lk-dest td{background:color-mix(in srgb,#7C6CF2 14%,var(--card))!important
 svg.pl-links.editable path.hit{stroke:transparent!important;stroke-width:11!important;pointer-events:stroke;cursor:pointer;fill:none}
 svg.pl-links.editable path.hit:hover{stroke:color-mix(in srgb,#E2445C 35%,transparent)!important}
 .pl td.pl-dp.pl-pick{min-width:90px;white-space:nowrap}
+
+/* Tipo de cada precedencia en la lista «Depende de» */
+.pl-sel-rel{padding:0 14px 6px}
+.pl-rel-t{font-size:9.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin:2px 0 4px}
+.pl-rel{display:grid;grid-template-columns:38px minmax(0,1fr) 54px auto;gap:6px;align-items:center;margin-bottom:4px;font-size:11px}
+.pl-rel b{font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
+.pl-rel select,.pl-rel input{font:600 11px Montserrat,system-ui,sans-serif;color:var(--ink);background:var(--sunk);border:none;border-radius:999px;padding:4px 8px;outline:none;min-width:0}
+.pl-rel input{text-align:right}
+.pl-rel span{color:var(--faint);font-size:10.5px}
+.pl-rel-n{font-size:10px;color:var(--faint);margin:2px 0 4px}
+.pl-selpop.ancho{width:400px}

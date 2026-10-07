@@ -1,3 +1,25 @@
+TIPOS DE PRECEDENCIA (en serie, al tiempo, terminan al tiempo, con desfase)
+============================================================================
+1. EN SUPABASE (una sola vez): corre supabase/migracion-2026-10-precedencias.sql
+   (o supabase/TODAS-octubre-2026.sql, que ya la trae).
+2. Recarga con Ctrl + F5.
+
+CÓMO SE USA (vista Tabla, Tabla completa y Dependencias; también en el enlace
+de editor)
+- Clic en la celda «Depende de» → marca de qué actividades depende y, en
+  «Cómo se relaciona con cada una», elige:
+    · Empieza cuando termine (en serie) ........ FC  (el de siempre)
+    · Empiezan al tiempo (en paralelo) ......... CC
+    · Terminan al tiempo ...................... FF
+  y el desfase en días hábiles: «3» = tres días después, «-2» = dos antes.
+- La celda lo muestra corto: «1.2» (en serie), «1.3 CC», «1.4 FF+2».
+- Al guardar, la actividad se programa exacto según la relación, y después
+  se mueve sola cuando se mueve su precedente (las «al tiempo» siguen el
+  inicio; las demás, el fin). Sin fines de semana ni festivos.
+- En Dependencias las flechas lo muestran: inicio→inicio, fin→fin o
+  fin→inicio.
+- Se puede deshacer y queda en el 🕘 Historial.
+
 PRECEDENCIAS EDITABLES EN LA VISTA DEPENDENCIAS · qué hacer
 ============================================================
 No hay nada que correr en Supabase. Recarga con Ctrl + F5.
