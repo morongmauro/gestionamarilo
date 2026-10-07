@@ -395,6 +395,15 @@
     if(!planConFoco())renderPlan();
     editar('patch',{activityId:id,cambios});
   }
+  // Copiar un valor a varias filas (agarradera, Ctrl+V, Ctrl+D)
+  async function planOnRelleno(items,campo){
+    if(!esEditor()||!items.length)return;
+    const hoy=(DATA.summary&&DATA.summary.today)||todayISO();
+    items.forEach(x=>Plan.aplicarLocal(DATA.activities,x.id,normalizar(x.cambios),hoy));
+    renderPlan();
+    for(const x of items)await editar('patch',{activityId:x.id,cambios:x.cambios});
+    toast(`✓ ${campo||'Valor'} copiado en ${items.length} fila${items.length===1?'':'s'}`);
+  }
   function planOnAdd(sectionId,inp){
     if(!esEditor())return;
     const name=inp.value.trim();if(!name)return;

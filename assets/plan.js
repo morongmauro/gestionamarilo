@@ -574,7 +574,7 @@
     const v = a[campo] || '';
     const txt = v ? fCorta(v) : '—';
     if (!editable) return `<td class="pl-d${v ? '' : ' vacio'}${extra || ''}">${txt}</td>`;
-    return `<td class="pl-d${extra || ''}"><button class="pl-date${v ? '' : ' vacio'}" data-v="${v}" onclick="Plan.pickDate(this,'${a.id}','${campo}')" title="${v ? 'Cambiar fecha' : 'Poner fecha'}">${v ? txt : '＋'}</button></td>`;
+    return `<td class="pl-d${extra || ''}"><button class="pl-date${v ? '' : ' vacio'}" data-v="${v}" data-campo="${campo}" onclick="Plan.pickDate(this,'${a.id}','${campo}')" title="${v ? 'Cambiar fecha' : 'Poner fecha'}">${v ? txt : '＋'}</button></td>`;
   }
   // «5 – 9 oct» / «28 sep – 2 oct»
   function rangoTxt(i, f) {
@@ -1184,6 +1184,136 @@
     if (!a || !b) return;
     if (!confirm(`¿Quitar la precedencia «${a._cod || ''} ${a.name}» → «${b._cod || ''} ${b.name}»?`)) return;
     window.planOnPatch(b.id, { dependsOnIds: (b.dependsOnIds || []).filter(x => x !== a.id) });
+  });
+
+  // ============================================================
+  // COPIAR VALORES COMO EN EXCEL
+  //   · Agarradera ■ en la esquina de la celda: arrástrala hacia abajo o
+  //     hacia arriba y el valor se copia en esas filas (misma columna).
+  //   · Ctrl+C / Ctrl+V de una celda a otra de la misma columna (también
+  //     responsables, área, precedencias y fechas).
+  //   · Ctrl+D: copia el valor de la celda de arriba.
+  // La página aplica los cambios con window.planOnRelleno(items) (o planOnPatch).
+  // ============================================================
+  const CAMPO_CELDA = { name: 'name', responsables: 'responsables', resp: 'responsables', entregable: 'entregable', ent: 'entregable',
+    pct: 'pctComplete', dur: 'duracion', start: 'startDate', end: 'deadline', notes: 'notes', sec: 'sectionId' };
+  const NOMBRE_CAMPO = { name: 'nombre', responsables: 'responsables', area: 'área', deps: 'precedencias', entregable: 'entregable', pctComplete: 'avance',
+    duracion: 'duración', startDate: 'inicio', deadline: 'fin', realStart: 'inicio real', realEnd: 'fin real', notes: 'nota', sectionId: 'capítulo' };
+  // Qué celda es: actividad y campo
+  function celdaInfo(el) {
+    const td = el && el.closest && el.closest('td');
+    const tr = td && td.closest('tr[data-row]');
+    if (!tr || !tr.closest(GRID)) return null;
+    let campo = null;
+    if (td.dataset.pick) campo = td.dataset.pick === 'resp' ? 'responsables' : td.dataset.pick === 'deps' ? 'deps' : td.dataset.pick === 'area' ? 'area' : null;
+    else {
+      const inp = td.querySelector('[data-cell]'), btn = td.querySelector('button.pl-date[data-campo]');
+      if (inp) campo = CAMPO_CELDA[inp.dataset.cell.slice(inp.dataset.cell.indexOf(':') + 1)] || null;
+      else if (btn) campo = btn.dataset.campo;
+    }
+    return campo ? { id: tr.dataset.row, campo, td, tr } : null;
+  }
+  const actDe = id => ((ultimoModelo && ultimoModelo.activities) || []).find(a => a.id === id);
+  function valorDe(id, campo) {
+    const a = actDe(id); if (!a) return undefined;
+    if (campo === 'deps') return { dependsOnIds: [...(a.dependsOnIds || [])], depTipos: JSON.parse(JSON.stringify(a.depTipos || {})) };
+    const v = a[campo];
+    return Array.isArray(v) ? [...v] : v === undefined ? null : v;
+  }
+  function cambiosCon(campo, valor, destino) {
+    if (campo === 'deps') {
+      const ids = valor.dependsOnIds.filter(x => x !== destino), tipos = {};
+      ids.forEach(x => { if (valor.depTipos[x]) tipos[x] = valor.depTipos[x]; });
+      return { dependsOnIds: ids, depTipos: tipos };
+    }
+    return { [campo]: valor };
+  }
+  function aplicarRelleno(campo, valor, destinos) {
+    const items = destinos.map(id => ({ id, cambios: cambiosCon(campo, valor, id) }));
+    if (!items.length) return;
+    if (has('planOnRelleno')) window.planOnRelleno(items, NOMBRE_CAMPO[campo] || campo);
+    else if (has('planOnPatch')) items.forEach(x => window.planOnPatch(x.id, x.cambios));
+  }
+  // Agarradera
+  let fh = null, fhInfo = null;
+  function ocultarFh() { if (fh) fh.style.display = 'none'; fhInfo = null; }
+  document.addEventListener('mouseover', ev => {
+    if (document.body.classList.contains('pl-rellenando')) return;
+    if (fh && ev.target === fh) return;
+    const info = celdaInfo(ev.target);
+    if (!info || !(has('planOnRelleno') || has('planOnPatch'))) { if (fh && !(ev.target.closest && ev.target.closest('.pl-fh'))) ocultarFh(); return; }
+    if (!fh) {
+      fh = document.createElement('div'); fh.className = 'pl-fh';
+      fh.title = 'Arrastra hacia abajo o hacia arriba para copiar este valor';
+      document.body.appendChild(fh);
+    }
+    fhInfo = info;
+    const r = info.td.getBoundingClientRect();
+    fh.style.left = (r.right - 5) + 'px'; fh.style.top = (r.bottom - 5) + 'px'; fh.style.display = 'block';
+  });
+  document.addEventListener('scroll', () => { if (!document.body.classList.contains('pl-rellenando')) ocultarFh(); }, true);
+  document.addEventListener('mousedown', ev => {
+    if (!fh || ev.target !== fh || !fhInfo || ev.button !== 0) return;
+    ev.preventDefault(); ev.stopPropagation();
+    const origen = fhInfo, col = origen.td.cellIndex;
+    const filas = [...origen.tr.parentElement.closest('table').querySelectorAll('tr[data-row]')];
+    const i0 = filas.indexOf(origen.tr);
+    let marcadas = [], destino = i0;
+    document.body.classList.add('pl-rellenando');
+    origen.td.classList.add('pl-fill-org');
+    const pintar = () => {
+      marcadas.forEach(td => td.classList.remove('pl-fill-rango')); marcadas = [];
+      const [a, b] = destino < i0 ? [destino, i0 - 1] : [i0 + 1, destino];
+      for (let i = a; i <= b; i++) { const td = filas[i] && filas[i].children[col]; if (td) { td.classList.add('pl-fill-rango'); marcadas.push(td); } }
+    };
+    const mover = e => {
+      const bajo = document.elementFromPoint(e.clientX, e.clientY);
+      const tr = bajo && bajo.closest && bajo.closest('tr[data-row]');
+      if (tr && filas.includes(tr)) { destino = filas.indexOf(tr); pintar(); }
+      fh.style.top = (e.clientY - 4) + 'px';
+    };
+    const soltar = () => {
+      document.removeEventListener('mousemove', mover); document.removeEventListener('mouseup', soltar);
+      document.body.classList.remove('pl-rellenando');
+      origen.td.classList.remove('pl-fill-org');
+      const ids = marcadas.map(td => td.closest('tr').dataset.row);
+      marcadas.forEach(td => td.classList.remove('pl-fill-rango'));
+      ocultarFh();
+      if (ids.length) aplicarRelleno(origen.campo, valorDe(origen.id, origen.campo), ids);
+    };
+    document.addEventListener('mousemove', mover); document.addEventListener('mouseup', soltar);
+  });
+  // Ctrl+C / Ctrl+V / Ctrl+D
+  let portapapeles = null;
+  document.addEventListener('keydown', ev => {
+    if (!(ev.ctrlKey || ev.metaKey) || ev.altKey || ev.shiftKey) return;
+    const k = ev.key.toLowerCase();
+    if (k !== 'c' && k !== 'v' && k !== 'd') return;
+    const info = celdaInfo(ev.target);
+    if (!info) return;
+    const esTexto = ev.target.tagName === 'INPUT' && (ev.target.type === 'text' || ev.target.type === '' || ev.target.type === 'search');
+    if (k === 'c') {
+      if (esTexto && ev.target.selectionStart !== ev.target.selectionEnd) { portapapeles = null; return; } // copiar parte del texto: lo normal
+      portapapeles = { campo: info.campo, valor: valorDe(info.id, info.campo), desde: info.id };
+      const a = actDe(info.id);
+      try { navigator.clipboard.writeText(info.campo === 'deps' ? '' : String(Array.isArray(portapapeles.valor) ? portapapeles.valor.join(', ') : (portapapeles.valor ?? ''))); } catch (e) {}
+      if (!esTexto) ev.preventDefault();
+      if (has('toast')) window.toast(`Copiado: ${NOMBRE_CAMPO[info.campo] || info.campo} de «${a ? (a._cod || a.name) : ''}» · pégalo con Ctrl+V en otra fila`);
+      return;
+    }
+    if (k === 'v') {
+      if (!portapapeles || esTexto) return; // en casillas de texto, el pegado normal (y el de varias líneas)
+      ev.preventDefault();
+      if (portapapeles.campo !== info.campo) { aviso(`Lo copiado es ${NOMBRE_CAMPO[portapapeles.campo] || portapapeles.campo}: pégalo en esa misma columna`); return; }
+      aplicarRelleno(info.campo, portapapeles.valor, [info.id]);
+      return;
+    }
+    // Ctrl+D: el valor de la fila de arriba
+    ev.preventDefault();
+    const filas = [...info.tr.parentElement.closest('table').querySelectorAll('tr[data-row]')];
+    const arriba = filas[filas.indexOf(info.tr) - 1];
+    if (!arriba) { aviso('No hay una fila arriba de donde copiar'); return; }
+    aplicarRelleno(info.campo, valorDe(arriba.dataset.row, info.campo), [info.id]);
   });
 
   // ---------- Escala «Todo»: mide lo que ocupan las columnas para que el cronograma quepa exacto ----------

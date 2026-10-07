@@ -1,3 +1,21 @@
+COPIAR VALORES COMO EN EXCEL (arrastrar hacia abajo o arriba, Ctrl+C / Ctrl+V)
+==============================================================================
+No hay nada que correr en Supabase. Recarga con Ctrl + F5.
+
+Sirve en Plan de trabajo, Tabla y Dependencias (y en el enlace de editor), para
+nombre, responsables, área, precedencias (con su tipo), duración, inicio, fin,
+avance, entregable y capítulo.
+
+- ARRASTRAR: pasa el mouse por una celda; en su esquina inferior derecha sale
+  un cuadrito azul ■. Arrástralo hacia abajo o hacia arriba: las celdas de
+  esa columna se pintan de azul y, al soltar, toman el mismo valor.
+- Ctrl + C en una celda y Ctrl + V en otra fila de la misma columna (también
+  en responsables, área, precedencias y fechas).
+- Ctrl + D: copia el valor de la celda de arriba.
+- Todo se deshace de una sola vez con «↶ Deshacer» y queda en el historial.
+- Las fechas siguen las reglas de siempre: copiar un inicio corre el fin según
+  la duración; copiar precedencias reprograma la actividad según ellas.
+
 TIPOS DE PRECEDENCIA (en serie, al tiempo, terminan al tiempo, con desfase)
 ============================================================================
 1. EN SUPABASE (una sola vez): corre supabase/migracion-2026-10-precedencias.sql

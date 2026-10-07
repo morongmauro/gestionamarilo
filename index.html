@@ -2976,6 +2976,14 @@
   function planOnAncho(forzar){if(forzar||planOpts.zoom==='ajustar')renderPlan();}
   function planSetOpt(k,v){Plan.cambiar(planOpts,k,v);Plan.guardar(LS_PLAN,planOpts);renderPlan();}
   function planOnPatch(id,cambios){patchActivity(id,cambios);}
+  // Copiar un valor a varias filas (agarradera, Ctrl+V, Ctrl+D): un solo «deshacer» para todo
+  async function planOnRelleno(items,campo){
+    if(!items.length)return;
+    pushUndo(`copiar ${campo||'valores'} en ${items.length} fila${items.length===1?'':'s'}`);undoSuspendido++;
+    try{for(const x of items)await applyActivity(x.id,x.cambios);}
+    finally{undoSuspendido--;}
+    toast(`✓ ${campo?campo.charAt(0).toUpperCase()+campo.slice(1):'Valor'} copiado en ${items.length} fila${items.length===1?'':'s'}`);
+  }
   // ---------- COMENTARIOS (nubecita): agregar, borrar y convertir en tarea ----------
   async function planOnComentario(acc,actId,x){
     const d=currentProjectDetail;if(!d)return;
