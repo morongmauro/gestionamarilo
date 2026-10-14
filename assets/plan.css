@@ -443,9 +443,9 @@ tr.pl-drop-dentro td{box-shadow:inset 0 -3px 0 var(--accent,#3D7BF7)!important;f
 .pl-cmt{position:relative;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:18px;padding:0 6px;border-radius:10px;font:800 10px Montserrat,system-ui,sans-serif;color:#fff;background:#7C6CF2;cursor:pointer;margin-left:2px}
 .pl-cmt::after{content:"";position:absolute;left:5px;bottom:-4px;border:4px solid transparent;border-top-color:#7C6CF2;border-bottom:0;border-left-width:2px}
 .pl-cmt:hover{filter:brightness(1.1)}
-.pl-cmt.vacio{display:none;background:var(--sunk);color:var(--muted)}
+.pl-cmt.vacio{background:var(--sunk);color:var(--muted);opacity:.55;transition:opacity .12s}
 .pl-cmt.vacio::after{border-top-color:var(--sunk)}
-.pl tr.pl-act:hover .pl-cmt.vacio{display:inline-flex}
+.pl tr.pl-act:hover .pl-cmt.vacio,.g-act:hover .pl-cmt.vacio,.pl-cmt.vacio:hover{opacity:1}
 /* Acciones de fila: ＋ insertar debajo · 🗑 eliminar (al pasar el mouse) */
 .pl-ra{display:none;flex-shrink:0;gap:1px}
 .pl tr.pl-act:hover .pl-ra{display:inline-flex}
@@ -466,6 +466,14 @@ tr.pl-drop-dentro td{box-shadow:inset 0 -3px 0 var(--accent,#3D7BF7)!important;f
 .pl-pop-l{overflow:auto;padding:0 14px;flex:1 1 auto}
 .pl-pc{padding:8px 0;border-top:1px solid color-mix(in srgb,var(--ink) 7%,transparent)}
 .pl-pc:first-child{border-top:none}
+/* Trazabilidad: línea de tiempo con un punto por comentario */
+.pl-pop-n{padding:0 14px 6px;font-size:10.5px;font-weight:700;color:var(--muted)}
+.pl-pop-l.linea{padding-left:30px;position:relative}
+.pl-pop-l.linea .pl-pc{position:relative;border-top:none;padding:6px 0 8px}
+.pl-pop-l.linea .pl-pc::before{content:"";position:absolute;left:-12px;top:12px;bottom:-12px;width:2px;background:color-mix(in srgb,#7C6CF2 22%,transparent)}
+.pl-pop-l.linea .pl-pc.ult::before{display:none}
+.pl-pop-l.linea .pl-pc::after{content:"";position:absolute;left:-16px;top:8px;width:10px;height:10px;border-radius:50%;background:var(--card,#fff);box-shadow:inset 0 0 0 2.5px #7C6CF2}
+.pl-pop-l.linea .pl-pc.ult::after{background:#7C6CF2}
 .pl-pc-f{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:10.5px;font-weight:700;color:var(--muted)}
 .pl-pc-a{display:inline-flex;gap:4px;align-items:center}
 .pl-pc-a button{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;color:var(--muted);background:var(--sunk)}
@@ -547,10 +555,21 @@ tr:hover .pl-caret,.pl-pick:focus .pl-caret{opacity:1}
 .pl tr.pl-area.sub .pl-an{font-size:11.5px;font-weight:750;color:color-mix(in srgb,var(--c) 75%,var(--ink))}
 .pl tr.pl-area.sub .pl-acod{min-width:28px;height:18px;font-size:9.5px;background:color-mix(in srgb,var(--c) 70%,var(--card))}
 .pl tr.pl-area.sub td.pl-c-id{box-shadow:inset 4px 0 0 color-mix(in srgb,var(--c) 55%,var(--card))}
-.pl-sdrag{display:inline-flex;width:11px;margin-right:2px;color:var(--faint);font-size:12px;cursor:grab;user-select:none;opacity:0;transition:opacity .12s;vertical-align:middle}
+.pl-sdrag{display:inline-flex;width:11px;margin-right:2px;color:var(--faint);font-size:12px;cursor:grab;user-select:none;opacity:.45;transition:opacity .12s;vertical-align:middle}
 .pl tr.pl-area:hover .pl-sdrag{opacity:1}
-.pl-sdel{margin-left:6px;width:22px;height:22px;border-radius:7px;font-size:11px;color:var(--faint);opacity:0;transition:opacity .12s;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle}
+.pl-sdel{margin-left:6px;width:22px;height:22px;border-radius:7px;font-size:11px;color:var(--faint);opacity:.5;transition:opacity .12s;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle}
 .pl tr.pl-area:hover .pl-sdel{opacity:1}
+/* Título del capítulo: el nombre se recorta y la papelera queda siempre a la vista, al borde derecho */
+.pl-anw{display:flex;align-items:center;min-width:0;position:relative}
+.pl-anw .pl-fold{flex-shrink:0}
+.pl-anw .pl-an{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl-anw .pl-mut{flex-shrink:0}
+.pl-anw .pl-tools{position:absolute;right:30px;top:50%;transform:translateY(-50%);margin-left:0;pointer-events:none;background:color-mix(in srgb,var(--c,#9A9384) 9%,var(--card));border-radius:999px;box-shadow:0 0 0 1px color-mix(in srgb,var(--ink) 8%,transparent)}
+.pl tr.pl-area:hover .pl-anw .pl-tools{pointer-events:auto}
+.pl-anw .pl-sdel{flex-shrink:0;margin-left:auto}
+/* Etiqueta junto al cursor al arrastrar un capítulo */
+.pl-dhint{position:fixed;z-index:9999;pointer-events:none;display:none;font:700 11px Montserrat,system-ui,sans-serif;color:#fff;background:var(--accent,#3D7BF7);border-radius:999px;padding:4px 10px;box-shadow:0 6px 18px rgba(28,26,23,.18);white-space:nowrap}
+.pl-dhint.on{display:block}
 .pl-sdel:hover{background:color-mix(in srgb,#E2445C 14%,var(--card));color:#E2445C}
 
 /* ============================================================

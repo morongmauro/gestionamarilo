@@ -3,6 +3,7 @@
 // PATCH /api/sections?id=...    → renombrar / activar / desactivar
 // DELETE /api/sections?id=...   → eliminar (&conActividades=1: también sus actividades)
 // POST { accion: 'anidar', id, padreId } → subcapítulo · { accion: 'sacar', id }
+// POST { accion: 'mover', id, destino, despues } → reordenar (antes o después de otro capítulo)
 const db = require('../lib/db');
 
 module.exports = async (req, res) => {
@@ -12,6 +13,7 @@ module.exports = async (req, res) => {
       const b = req.body || {};
       // Meter un capítulo dentro de otro (subcapítulo) o sacarlo
       if (b.accion === 'anidar') return res.status(200).json(await db.anidarSeccion(b.id, b.padreId));
+      if (b.accion === 'mover') return res.status(200).json({ sections: await db.moverSeccion(b.id, b.destino, !!b.despues) });
       if (b.accion === 'sacar') { await db.sacarSeccion(b.id); return res.status(200).json({ success: true }); }
       const section = await db.createSection(b);
       return res.status(201).json({ section });

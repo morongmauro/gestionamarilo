@@ -974,28 +974,46 @@
     document.addEventListener('mousemove', mover); document.addEventListener('mouseup', soltar);
   });
 
-  // Arrastrar un capítulo (⠿) sobre otro capítulo principal: queda como su subcapítulo
+  // Arrastrar un capítulo por su asa ⠿ sobre el título de otro capítulo:
+  //   borde de arriba → queda ANTES · borde de abajo → queda DESPUÉS (reordenar)
+  //   centro de un capítulo principal → queda DENTRO, como su subcapítulo
+  // Una etiqueta junto al cursor dice qué va a pasar al soltar.
   document.addEventListener('mousedown', ev => {
     const h = ev.target.closest && ev.target.closest('.pl-sdrag');
     if (!h || ev.button !== 0 || !has('planOnSection')) return;
     const fila = h.closest('tr[data-sec]'), grid = h.closest(GRID);
     if (!fila || !grid) return;
     ev.preventDefault();
-    const id = fila.dataset.sec;
+    const id = fila.dataset.sec, conHijos = fila.dataset.hijos === '1', padreSrc = fila.dataset.padre || '';
+    const nombreDe = tr => { const n = tr.querySelector('.pl-an'); return n ? n.textContent.trim() : 'el capítulo'; };
     let marca = null, destino = null;
     fila.classList.add('pl-moviendo'); document.body.classList.add('pl-arrastrando');
-    const limpiar = () => { if (marca) marca.classList.remove('pl-drop-dentro'); marca = null; };
+    const hint = document.createElement('div'); hint.className = 'pl-dhint'; document.body.appendChild(hint);
+    const limpiar = () => { if (marca) marca.classList.remove('pl-drop-antes', 'pl-drop-despues', 'pl-drop-dentro'); marca = null; };
     const mover = e => {
-      limpiar(); destino = null;
+      limpiar(); destino = null; hint.classList.remove('on');
       const bajo = document.elementFromPoint(e.clientX, e.clientY);
-      const tr = bajo && bajo.closest && bajo.closest('tr[data-sec][data-nivel="0"]');
-      if (!tr || !grid.contains(tr) || tr === fila || tr.dataset.sec === id) return;
-      marca = tr; tr.classList.add('pl-drop-dentro'); destino = tr.dataset.sec;
+      const tr = bajo && bajo.closest && bajo.closest('tr[data-sec]');
+      if (!tr || !grid.contains(tr) || tr === fila) return;
+      const dst = tr.dataset.sec, nivel = tr.dataset.nivel;
+      if (tr.dataset.padre === id) return;                 // sus propios subcapítulos
+      if (nivel === '1' && conHijos) return;               // con subcapítulos no baja de nivel
+      const r = tr.getBoundingClientRect(), fr = (e.clientY - r.top) / r.height;
+      const puedeDentro = nivel === '0' && !conHijos && padreSrc !== dst;
+      const zona = puedeDentro ? (fr < .3 ? 'antes' : fr > .7 ? 'despues' : 'dentro') : (fr < .5 ? 'antes' : 'despues');
+      marca = tr; tr.classList.add('pl-drop-' + zona);
+      destino = { zona, sec: dst };
+      const nm = nombreDe(tr);
+      hint.textContent = zona === 'dentro' ? `Meter dentro de «${nm}» (subcapítulo)` : zona === 'antes' ? `Mover antes de «${nm}»` : `Mover después de «${nm}»${nivel === '0' ? ' y todo su contenido' : ''}`;
+      hint.style.left = (e.clientX + 14) + 'px'; hint.style.top = (e.clientY + 12) + 'px';
+      hint.classList.add('on');
     };
     const soltar = () => {
       document.removeEventListener('mousemove', mover); document.removeEventListener('mouseup', soltar);
-      limpiar(); fila.classList.remove('pl-moviendo'); document.body.classList.remove('pl-arrastrando');
-      if (destino) window.planOnSection('anidar', id, destino);
+      limpiar(); hint.remove(); fila.classList.remove('pl-moviendo'); document.body.classList.remove('pl-arrastrando');
+      if (!destino) return;
+      if (destino.zona === 'dentro') window.planOnSection('anidar', id, destino.sec);
+      else window.planOnSection('mover', id, { destino: destino.sec, despues: destino.zona === 'despues' });
     };
     document.addEventListener('mousemove', mover); document.addEventListener('mouseup', soltar);
   });
@@ -1050,11 +1068,15 @@
     const m = ultimoModelo || {};
     const a = (m.activities || []).find(x => x.id === popId);
     if (!a) { cerrarPop(); return; }
-    const cs = (m.notas || []).filter(n => n.activityId === popId).sort((x, y) => String(y.createdAt).localeCompare(String(x.createdAt)));
+    // Trazabilidad: en orden cronológico, el más reciente abajo (junto a la caja para escribir)
+    const cs = (m.notas || []).filter(n => n.activityId === popId).sort((x, y) => String(x.createdAt).localeCompare(String(y.createdAt)));
+    const lista0 = pop.querySelector('.pl-pop-l');
+    const alFondo = !lista0 || lista0.dataset.n !== String(cs.length) || lista0.scrollTop + lista0.clientHeight >= lista0.scrollHeight - 8;
     const ts = (m.tasks || []).filter(t => t.activityId === popId);
     const borrador = pop.querySelector('textarea') ? pop.querySelector('textarea').value : '';
     pop.innerHTML = `<div class="pl-pop-h"><div><span class="pl-pop-cod">${a._cod || ''}</span>${esc(a.name)}</div><button data-acc="cerrar" title="Cerrar">×</button></div>
-      <div class="pl-pop-l">${cs.length ? cs.map(n => `<div class="pl-pc">
+      ${cs.length ? `<div class="pl-pop-n">💬 ${cs.length} comentario${cs.length === 1 ? '' : 's'} · del más antiguo al más reciente</div>` : ''}
+      <div class="pl-pop-l${cs.length ? ' linea' : ''}" data-n="${cs.length}">${cs.length ? cs.map((n, k) => `<div class="pl-pc${k === cs.length - 1 ? ' ult' : ''}">
           <div class="pl-pc-f"><span>📅 ${fechaCmt(n.createdAt)}</span><span class="pl-pc-a">${esTarea(n, ts) ? '<em>✓ ya es tarea</em>' : `<button data-acc="tarea" data-n="${n.id}" title="Crear una tarea de esta actividad con este texto">→ Tarea</button>`}<button data-acc="borrar" data-n="${n.id}" title="Borrar comentario">×</button></span></div>
           <div class="pl-pc-t">${esc(n.texto).replace(/\n/g, '<br>')}</div></div>`).join('')
         : '<div class="pl-pop-v">Sin comentarios todavía. Escribe el primero 👇</div>'}</div>
@@ -1062,7 +1084,9 @@
         <textarea rows="2" placeholder="Escribe un comentario… (Enter guarda · Shift+Enter: otra línea)">${esc(borrador)}</textarea>
         <div class="pl-pop-r"><input type="date" value="${hoyBog()}" title="Fecha del comentario (por defecto hoy)"><button data-acc="agregar" class="ok">Comentar</button></div>
       </div>
-      <div class="pl-pop-f"><span>${ts.length ? `☑ ${ts.filter(t => t.kanbanStatus === 'done').length}/${ts.length} tareas` : ''}</span><button data-acc="detalle">Abrir bitácora y tareas →</button></div>`;
+      <div class="pl-pop-f"><span>${ts.length ? `☑ ${ts.filter(t => t.kanbanStatus === 'done').length}/${ts.length} tareas` : ''}</span>${has('planOnDetalle') ? '<button data-acc="detalle">Abrir bitácora y tareas →</button>' : ''}</div>`;
+    const lista = pop.querySelector('.pl-pop-l');
+    if (lista && alFondo) lista.scrollTop = lista.scrollHeight;
   }
   function abrirPop(id, ancla, fijo) {
     clearTimeout(popT);
@@ -1872,13 +1896,13 @@
       const hechas = acts.filter(a => estado(a, today) === 'Completada').length;
       const estA = acts.length ? (avg >= 100 ? 'Completada' : fF && today > fF ? 'Atrasada' : fI && today >= fI ? 'En curso' : 'Por iniciar') : '';
       const tools = opts.owner && g.id && agr === 'etapa' ? `<span class="pl-tools"><button onclick="planOnSection('rename','${g.id}')" title="Renombrar">✎</button>${g.padre ? `<button onclick="planOnSection('sacar','${g.id}')" title="Sacarlo del capítulo: queda como capítulo">⇱ sacar</button>` : ''}<button onclick="planOnSection('off','${g.id}')" title="Esta etapa no aplica">no aplica</button></span>${editable ? `<button class="pl-sdel" onclick="planOnSection('remove','${g.id}')" title="Eliminar ${g.padre ? 'el subcapítulo' : 'el capítulo'} y sus actividades">🗑</button>` : ''}` : '';
-      const sdrag = editable && opts.owner && agr === 'etapa' && g.id && !(g.hijos && g.hijos.length) ? '<span class="pl-sdrag" title="Arrastra sobre otro capítulo para volverlo su subcapítulo">⠿</span>' : '';
+      const sdrag = editable && opts.owner && agr === 'etapa' && g.id ? `<span class="pl-sdrag" title="Arrastra para cambiar el orden: suéltalo arriba o abajo de otro capítulo${g.hijos && g.hijos.length ? '' : ', o en su centro para volverlo subcapítulo'}">⠿</span>` : '';
       const sum = fI ? `<span class="pl-sum" style="left:${E.x(fI)}px;width:${Math.max(6, E.x(addDays(fF, 1)) - E.x(fI))}px;--c:${g.color}"><i style="width:${avg}%"></i></span>` : '';
       const dvs = acts.map(desvio).filter(d => d != null);
       const dvMax = dvs.length ? Math.max(...dvs) : null;
-      const areaRow = `<tr class="pl-area${g.padre ? ' sub' : ''}" style="--c:${g.color}"${editable && opts.owner && agr === 'etapa' && g.id ? ` data-sec="${g.id}" data-nivel="${g.padre ? 1 : 0}"` : ''}>
+      const areaRow = `<tr class="pl-area${g.padre ? ' sub' : ''}" style="--c:${g.color}"${editable && opts.owner && agr === 'etapa' && g.id ? ` data-sec="${g.id}" data-nivel="${g.padre ? 1 : 0}"${g.padre ? ` data-padre="${g.padre}"` : ''}${gs.some(h => h.padre === g.id) ? ' data-hijos="1"' : ''}` : ''}>
         <td class="pl-sk pl-c-id">${sdrag}<span class="pl-acod">${g.area ? esc(g.name.slice(0, 1).toUpperCase()) : (g.cod || '')}</span></td>
-        <td class="pl-sk pl-c-nm"><button class="pl-fold" onclick="planSetOpt('plegar','${esc(g.key)}')" title="${plegada ? 'Ver sus actividades' : 'Contraer esta etapa'}">${plegada ? '▸' : '▾'}</button><span class="pl-an">${esc(g.name)}</span><span class="pl-mut">${hechas}/${acts.length} · ${avg}%</span>${tools}</td>
+        <td class="pl-sk pl-c-nm"><div class="pl-anw"><button class="pl-fold" onclick="planSetOpt('plegar','${esc(g.key)}')" title="${plegada ? 'Ver sus actividades' : 'Contraer esta etapa'}">${plegada ? '▸' : '▾'}</button><span class="pl-an" title="${esc(g.name)}">${esc(g.name)}</span><span class="pl-mut">${hechas}/${acts.length} · ${avg}%</span>${tools}</div></td>
         <td></td>${cols.area ? '<td></td>' : ''}${cols.entregable ? '<td></td>' : ''}${cols.base ? '<td></td>' : ''}
         ${full ? `<td class="pl-d b">${fCorta(fI)}</td><td class="pl-d b">${fCorta(fF)}</td>`
           : `<td class="pl-tlc">${fI ? pildoraRango(fI, fF, today, estA, g.color) : ''}${base && dvMax != null && dvMax > 0 ? ' ' + desvioHtml(dvMax) : ''}</td>`}${cols.real ? '<td></td><td></td>' : ''}

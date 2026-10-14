@@ -449,6 +449,17 @@
   .g-act.dragging{opacity:.45}
   .g-act.drop-before{box-shadow:inset 0 2px 0 0 var(--accent-ink)}
   .g-act.drop-after,.g-sec.drop-after{box-shadow:inset 0 -2px 0 0 var(--accent-ink)}
+  /* Capítulos: asa ⠿ para reordenar y papelera, siempre a la vista (más fuertes al pasar el mouse) */
+  .g-sgrip,.g-sdel{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;font-size:11px;color:var(--faint);opacity:.5;transition:opacity .12s}
+  .g-sgrip{cursor:grab;margin-right:2px;font-size:13px}
+  .g-sdel{margin-left:4px}
+  .g-sec:hover .g-sgrip,.g-sec:hover .g-sdel{opacity:1}
+  .g-sdel:hover{background:color-mix(in srgb,#E2445C 14%,var(--card));color:#E2445C}
+  .g-sec.dragging{opacity:.45}
+  .g-sec.g-sdrop-antes{box-shadow:inset 5px 0 0 var(--c,#9A9384),inset 0 3px 0 0 var(--accent-ink)!important}
+  .g-sec.g-sdrop-despues{box-shadow:inset 5px 0 0 var(--c,#9A9384),inset 0 -3px 0 0 var(--accent-ink)!important}
+  .g-sec.g-sdrop-dentro{box-shadow:inset 5px 0 0 var(--c,#9A9384),inset 0 0 0 2px var(--accent-ink)!important}
+  .g-anm .pl-cmt{margin:0 2px 3px 0}
   .g-act.link-target{background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent-ink)}
   body.g-linking .g-act{cursor:crosshair}
 
@@ -2470,7 +2481,8 @@
     const groups=secs.map(s=>({id:s.id,name:s.name,sec:s,acts:acts.filter(a=>a.sectionId===s.id)}));
     if(orphans.length)groups.push({id:null,name:'Otras',sec:null,acts:orphans});
     // Mismos números (1, 1.1…) y colores de etapa que en el plan de trabajo
-    const et=Plan.etapas(planModel(d)),infoEt={};
+    const modeloG=planModel(d);Plan.usarModelo(modeloG); // la nubecita de comentarios lee de aquí
+    const et=Plan.etapas(modeloG),infoEt={};
     et.forEach(g=>{infoEt[g.id||'_otras']=g;});
     groups.forEach(g=>{const e=infoEt[g.id||'_otras']||{};g.color=e.color||'#9A9384';g.cod=e.cod;g.nombre=e.name||g.name;g.padre=e.padre;});
     const rows=groups.map(g=>{
@@ -2496,15 +2508,17 @@
     const tools=g.id?`<span class="tools">
       <button onclick="renameSection('${g.id}')" title="Renombrar fase">✎</button>
       <button onclick="toggleSection('${g.id}',false)" title="Desactivar: esta fase no aplica en este proyecto">◻ no aplica</button>
-      ${g.acts.length?'':`<button onclick="removeSection('${g.id}')" title="Eliminar fase vacía">🗑</button>`}
     </span>`:'';
+    const tieneHijos=!!(g.id&&(currentProjectDetail.sections||[]).some(x=>x.parentId===g.id));
+    const grip=g.id?`<button class="g-sgrip" onmousedown="startSecDrag(event,'${g.id}')" title="Arrastra para cambiar el orden: suéltalo arriba o abajo de otro capítulo${tieneHijos?'':', o en su centro para volverlo subcapítulo'}">⠿</button>`:'';
+    const trash=g.id?`<button class="g-sdel" onclick="removeSection('${g.id}')" title="Eliminar ${g.padre?'el subcapítulo':'el capítulo'}${g.acts.length?' y sus actividades':''} (se puede deshacer)">🗑</button>`:'';
     const meta=g.acts.length?`${hechas}/${g.acts.length} completadas${plan!=null?` · plan a hoy ${plan}%`:''}`:'sin actividades';
     const bar=g.acts.length?`<div class="g-secbar" title="Avance de la fase: ${avg}%${plan!=null?` · plan a hoy ${plan}%`:''}"><i style="width:${avg}%"></i>${pmark}</div>`:'';
     const fechas=[];g.acts.forEach(a=>{if(a.startDate)fechas.push(a.startDate);if(a.deadline)fechas.push(a.deadline);});fechas.sort();
     const roll=fechas.length?(()=>{const l=pct(fechas[0]),w=Math.max(1,pct(addDays(fechas[fechas.length-1],1))-l);
       return `<div class="g-roll" style="left:${l}%;width:${w}%" title="${esc(g.name)}: ${fmtDate(fechas[0])} → ${fmtDate(fechas[fechas.length-1])} · ${avg}%"><i style="width:${avg}%"></i></div>`;})():'';
-    return `<div class="g-row g-sec${g.padre?' sub':''}" data-sec-id="${g.id||''}" style="--c:${g.color}"><div class="g-left">
-      <div class="g-secrow">${g.cod!=null?`<span class="g-scod">${g.cod}</span>`:''}<span class="nm">${esc(g.nombre||g.name)}</span>${g.acts.length?`<span class="g-secpct" style="color:${col}">${avg}%</span>`:''}${tools}</div>
+    return `<div class="g-row g-sec${g.padre?' sub':''}" data-sec-id="${g.id||''}" data-nivel="${g.padre?1:0}"${g.padre?` data-padre="${g.padre}"`:''}${tieneHijos?' data-hijos="1"':''} style="--c:${g.color}"><div class="g-left">
+      <div class="g-secrow">${grip}${g.cod!=null?`<span class="g-scod">${g.cod}</span>`:''}<span class="nm">${esc(g.nombre||g.name)}</span>${g.acts.length?`<span class="g-secpct" style="color:${col}">${avg}%</span>`:''}${trash}${tools}</div>
       ${bar}<span class="mt">${meta}</span>
     </div><div class="g-tl" style="min-height:38px">${ticks}${todayLine}${roll}</div></div>`;
   }
@@ -2546,7 +2560,7 @@
     }
     const nDeps=(a.dependsOnIds||[]).length;
     return `<div class="g-row g-act ${rowCls}" data-row-act="${a.id}" style="--c:${color||'#9A9384'}"><div class="g-left">
-      <div class="g-anm" onclick="openActivityModal('${a.id}')" onmouseenter="scheduleReqCard(event,'${a.id}')" onmouseleave="cancelReqCard()"><span class="g-cod">${a._cod||''}</span><span class="g-sdot" style="background:${col}" title="${AS[a.estadoEfectivo]||''}"></span><span class="nmtxt">${esc(a.name)}</span>${nDeps?`<span class="req-badge" title="Depende de ${nDeps} actividad(es) — pasa el mouse para ver la cadena">⛓${nDeps}</span>`:''}${a.critical?`<span class="cp-chip ${a.criticaEnRiesgo?'late':''}">crítica</span>`:''}</div>
+      <div class="g-anm" onclick="if(!event.target.closest('[data-cmt]'))openActivityModal('${a.id}')" onmouseenter="scheduleReqCard(event,'${a.id}')" onmouseleave="cancelReqCard()"><span class="g-cod">${a._cod||''}</span><span class="g-sdot" style="background:${col}" title="${AS[a.estadoEfectivo]||''}"></span>${(()=>{const nC=(d.notas||[]).filter(n=>n.activityId===a.id).length;return `<button class="pl-cmt${nC?'':' vacio'}" data-cmt="${a.id}" onmouseover="hideReqCard()" title="Comentarios de esta actividad">${nC||'＋'}</button>`;})()}<span class="nmtxt">${esc(a.name)}</span>${nDeps?`<span class="req-badge" title="Depende de ${nDeps} actividad(es) — pasa el mouse para ver la cadena">⛓${nDeps}</span>`:''}${a.critical?`<span class="cp-chip ${a.criticaEnRiesgo?'late':''}">crítica</span>`:''}</div>
       <div class="g-amt">${meta.join(' · ')}</div>
       <span class="g-tools-act">
         <button class="g-grip" onmousedown="startRowDrag(event,'${a.id}')" title="Arrastra para mover la actividad de lugar">⠿</button>
@@ -3110,6 +3124,7 @@
     else if(accion==='on')toggleSection(id,true);
     else if(accion==='remove')removeSection(id);
     else if(accion==='anidar')anidarSeccion(id,extra);
+    else if(accion==='mover')moverSeccion(id,extra&&extra.destino,!!(extra&&extra.despues));
     else if(accion==='sacar')sacarSeccion(id);
   }
   // Un capítulo arrastrado sobre otro queda como su subcapítulo
@@ -3128,6 +3143,68 @@
       }
       toast(`✓ «${sc.name}» ahora es subcapítulo de «${pa.name}»`);
     }catch(e){toast('⚠ '+e.message,false);}
+  }
+  // Reordenar capítulos arrastrando: queda antes o después del capítulo destino, a su
+  // mismo nivel. Se pinta de una vez y el servidor confirma el orden definitivo.
+  function ordenLocalSecciones(secs,id,destino,despues){
+    const src=secs.find(x=>x.id===id),dst=secs.find(x=>x.id===destino);if(!src||!dst)return null;
+    const padre=dst.parentId||null;
+    if(padre===id||(padre&&secs.some(x=>x.parentId===id)))return null;
+    const her=secs.filter(x=>(x.parentId||null)===padre&&x.id!==id).sort((a,b)=>a.position-b.position);
+    const i=her.findIndex(x=>x.id===destino);her.splice(despues?i+1:i,0,src);
+    const pos={};her.forEach((h,k)=>{pos[h.id]=k;});
+    return secs.map(x=>pos[x.id]!=null?{...x,position:pos[x.id],parentId:x.id===id?padre:x.parentId}:x);
+  }
+  async function moverSeccion(id,destino,despues){
+    const d=currentProjectDetail;if(!d||!destino||id===destino)return;
+    const sc=(d.sections||[]).find(x=>x.id===id),dst=(d.sections||[]).find(x=>x.id===destino);if(!sc||!dst)return;
+    const nuevas=ordenLocalSecciones(d.sections||[],id,destino,despues);
+    if(!nuevas){toast('⚠ Ese capítulo tiene subcapítulos: solo se puede mover entre capítulos principales',false);return;}
+    pushUndo(`mover «${sc.name}»`);
+    d.sections=nuevas;renderPlan();marcarGuardando(1);
+    try{
+      const r=await api('/api/sections','POST',{accion:'mover',id,destino,despues});
+      if(r&&r.sections){d.sections=r.sections;renderPlan();}
+      toast(`✓ «${sc.name}» ${despues?'después':'antes'} de «${dst.name}»`);
+    }catch(e){toast('⚠ '+e.message,false);await refreshProjectDetail();}
+    finally{marcarGuardando(-1);}
+  }
+  // Vista Dependencias: arrastrar un capítulo por su ⠿ (misma lógica que en el plan de trabajo)
+  let secDrag=null;
+  function startSecDrag(ev,id){
+    if(ev.button!==0)return;
+    ev.preventDefault();ev.stopPropagation();hideReqCard();
+    const fila=ev.currentTarget.closest('.g-sec');if(!fila)return;
+    const hint=document.createElement('div');hint.className='pl-dhint';document.body.appendChild(hint);
+    secDrag={id,fila,hint,conHijos:fila.dataset.hijos==='1',padre:fila.dataset.padre||'',destino:null};
+    fila.classList.add('dragging');document.body.classList.add('g-rowdrag');
+    document.addEventListener('mousemove',onSecDrag);document.addEventListener('mouseup',endSecDrag);
+  }
+  function limpiarSecDrop(){document.querySelectorAll('.g-sdrop-antes,.g-sdrop-despues,.g-sdrop-dentro').forEach(e=>e.classList.remove('g-sdrop-antes','g-sdrop-despues','g-sdrop-dentro'));}
+  function onSecDrag(e){
+    const s=secDrag;if(!s)return;
+    limpiarSecDrop();s.destino=null;s.hint.classList.remove('on');
+    const el=document.elementFromPoint(e.clientX,e.clientY);
+    const tr=el&&el.closest?el.closest('.g-sec[data-sec-id]'):null;
+    if(!tr||tr===s.fila||!tr.dataset.secId||tr.classList.contains('off'))return;
+    const dst=tr.dataset.secId,nivel=tr.dataset.nivel;
+    if(tr.dataset.padre===s.id||(nivel==='1'&&s.conHijos))return;
+    const r=tr.getBoundingClientRect(),fr=(e.clientY-r.top)/r.height;
+    const puedeDentro=nivel==='0'&&!s.conHijos&&s.padre!==dst;
+    const zona=puedeDentro?(fr<.3?'antes':fr>.7?'despues':'dentro'):(fr<.5?'antes':'despues');
+    tr.classList.add('g-sdrop-'+zona);s.destino={zona,sec:dst};
+    const nm=(tr.querySelector('.nm')||{}).textContent||'el capítulo';
+    s.hint.textContent=zona==='dentro'?`Meter dentro de «${nm.trim()}» (subcapítulo)`:zona==='antes'?`Mover antes de «${nm.trim()}»`:`Mover después de «${nm.trim()}»${nivel==='0'?' y todo su contenido':''}`;
+    s.hint.style.left=(e.clientX+14)+'px';s.hint.style.top=(e.clientY+12)+'px';s.hint.classList.add('on');
+  }
+  function endSecDrag(){
+    document.removeEventListener('mousemove',onSecDrag);document.removeEventListener('mouseup',endSecDrag);
+    document.body.classList.remove('g-rowdrag');limpiarSecDrop();
+    const s=secDrag;secDrag=null;if(!s)return;
+    s.hint.remove();s.fila.classList.remove('dragging');
+    if(!s.destino)return;
+    if(s.destino.zona==='dentro')anidarSeccion(s.id,s.destino.sec);
+    else moverSeccion(s.id,s.destino.sec,s.destino.zona==='despues');
   }
   async function sacarSeccion(id){
     pushUndo('sacar subcapítulo');
