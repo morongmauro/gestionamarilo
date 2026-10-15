@@ -1185,7 +1185,6 @@
 <div class="menu" id="rowmenu"></div>
 
 <!-- ficha «qué se necesita antes» del Gantt -->
-<div class="reqcard" id="reqcard" onmouseenter="clearTimeout(reqTimer)" onmouseleave="hideReqCard()"></div>
 
 <!-- MODAL TAREA -->
 <div class="backdrop" id="m-task" onclick="if(event.target===this)closeModal('m-task')">
@@ -1794,18 +1793,15 @@
 
   // ---------- PROYECTOS ----------
   let projView='tablero';
-  let planView='gantt';          // cómo se ve el plan de trabajo: 'gantt' | 'tabla'
+  let planView='hoja';           // cómo se ve el plan de trabajo: 'hoja' | 'tabla'
   let microHechasAbiertas=false; // microtareas: las completadas van colapsadas
   const pcolHechasAbiertas=new Set(); // tablero: columnas con las completadas desplegadas
   const LS_PLAN='planOptsV2';
   const planOpts=Plan.opciones(LS_PLAN,{owner:true,editable:true,panel:false,compacto:true}); // filtros, zoom y columnas de la hoja
   planOpts.compacto=true; // barra delgada: las opciones avanzadas quedan en «⚙ Opciones de vista»
-  let ganttColW=270;             // ancho de la columna de títulos del Gantt
-  try{
-    planView=localStorage.getItem('planViewV1')||'hoja';
-    const w=parseInt(localStorage.getItem('ganttColW'),10);
-    if(w>=160&&w<=680)ganttColW=w;
-  }catch{}
+  try{planView=localStorage.getItem('planViewV1')||'hoja';}catch{planView='hoja';}
+  // La vista «Dependencias» ya no existe: las flechas se editan en el plan de trabajo
+  if(planView!=='tabla')planView='hoja';
   const LS_PROJ='selProjectV1';
 
   function setProjView(v){
@@ -1945,7 +1941,7 @@
   }
 
   function setPlanView(v){
-    planView=v;try{localStorage.setItem('planViewV1',v);}catch{}
+    planView=v==='tabla'?'tabla':'hoja';try{localStorage.setItem('planViewV1',planView);}catch{}
     renderPlan();
   }
   function toggleMicroHechas(open){microHechasAbiertas=open;}
@@ -2303,17 +2299,6 @@
     if(!s.fechasCriticas.length)return '';
     return `<div style="margin-top:14px"><div class="subhead">Fechas críticas</div><div class="crit-list">${s.fechasCriticas.map(c=>`<span class="crit-chip ${c.alerta}" onclick="openActivityModal('${c.id}')">${c.alerta==='retraso'?'⏰':'⚠'} ${esc(c.name)} · ${fmtDate(c.deadline)} ${c.alerta==='retraso'?`(hace ${Math.abs(c.diasRestantes)}d)`:`(en ${c.diasRestantes}d)`}</span>`).join('')}</div></div>`;
   }
-  function legendHtml(){
-    return `<div class="g-legend">
-      <span><span class="sw" style="background:var(--line-2)"></span>Pendiente</span>
-      <span><span class="sw" style="background:var(--accent)"></span>En curso</span>
-      <span><span class="sw" style="background:var(--good)"></span>Completada</span>
-      <span><span class="sw" style="background:var(--crit)"></span>Retrasada</span>
-      <span><span class="sw" style="background:var(--cp)"></span>Ruta crítica al día</span>
-      <span><span class="sw" style="background:var(--cp-late)"></span>Ruta crítica atrasada</span>
-      <span>◆ Solo deadline</span>
-    </div>`;
-  }
   function planHeadHtml(){
     return `<div class="plan-head">
       <div class="plan-head-l" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -2322,17 +2307,14 @@
       </div>
       <div class="plan-head-r" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         ${mesa?mesaKpisHtml():''}
-        <span class="plan-info" title="${esc(planView==='gantt'
-          ? 'El % manda: al ponerlo, la actividad pasa a «en curso», y al llegar a 100% queda completada. Arrastra ⠿ para reordenar y el punto del borde de una barra hasta otra fila para conectarlas.'
-          : planView==='hoja'
-          ? 'Todo se edita aquí mismo y se guarda solo. Si mueves el fin de una actividad, lo que depende de ella se corre en cascada. Arrastra el borde del título «Actividad» para ensanchar la columna; pasa el mouse por un texto recortado para leerlo completo.'
+        <span class="plan-info" title="${esc(planView==='hoja'
+          ? 'Todo se edita aquí mismo y se guarda solo. Si mueves el fin de una actividad, lo que depende de ella se corre en cascada. Flechas: arrastra el punto del final de una barra hasta otra actividad para conectarlas; haz clic en una flecha para cambiar su tipo o quitarla; pasa el mouse por el número de una actividad para ver su cadena de precedentes. Arrastra el borde del título «Actividad» para ensanchar la columna.'
           : 'Diligencia aquí toda la data: se guarda al salir de cada casilla. El estado sale solo del % de avance.')}">ⓘ</span>
         <button class="btn btn-soft btn-sm undo-btn" id="btn-undo" onclick="deshacer()" disabled>↶ Deshacer</button>
         <button class="btn btn-soft btn-sm" onclick="abrirHistorial()" title="Quién cambió qué y cuándo (también lo que se edita desde los enlaces de editor)">🕘 Historial</button>
         <button class="btn btn-soft btn-sm mesa-btn${mesa?' on':''}" onclick="toggleMesa()" title="${mesa?'Volver a la vista normal (Esc)':'Solo el cronograma, a pantalla completa: para mesas de trabajo de revisión'}">${mesa?'✕ Salir de mesa':'⛶ Mesa de trabajo'}</button>
         <div class="toggle">
           <button class="${planView==='hoja'?'on':''}" onclick="setPlanView('hoja')">Plan de trabajo</button>
-          <button class="${planView==='gantt'?'on':''}" onclick="setPlanView('gantt')">Dependencias</button>
           <button class="${planView==='tabla'?'on':''}" onclick="setPlanView('tabla')">▤ Tabla</button>
         </div>
       </div>
@@ -2374,24 +2356,19 @@
       planOpts.anchoTL=Plan.anchoAjuste(wrapW,(planOpts.vista==='tabla'?1300:700)+Plan.extraNombre());
       return Plan.render(planModel(d),planOpts);
     }
-    return planView==='gantt'?ganttHtml(d)+legendHtml():planTableHtml(d);
+    return planTableHtml(d);
   }
   // Repinta solo lo que cambia con una edición: indicadores y plan. Sin recargar nada.
   function renderPlan(){
     const d=currentProjectDetail;
     if(!d||!$('plan-body'))return;
-    hideReqCard();
     $('p-kpis').innerHTML=kpisHtml(d);
     $('p-signals').innerHTML=senalesHtml(d.summary);
-    const sc=$('gantt-scroll'),keepG=sc?sc.scrollLeft:0;
     const tb=document.querySelector('.ptable-wrap'),keepT=tb?tb.scrollLeft:0;
     const hj=$('pl-wrap'),keepH=hj?[hj.scrollLeft,hj.scrollTop]:null;
     $('plan-head-wrap').innerHTML=planHeadHtml();pintarDeshacer();
     $('plan-body').innerHTML=planBodyHtml(d);
-    if(planView==='gantt'){
-      const n=$('gantt-scroll');if(n&&keepG)n.scrollLeft=keepG;
-      requestAnimationFrame(drawDepLinks);
-    }else if(planView==='hoja'){
+    if(planView==='hoja'){
       ajustarTodo(d);
       const n=$('pl-wrap');if(n&&keepH){n.scrollLeft=keepH[0];n.scrollTop=keepH[1];}
       requestAnimationFrame(()=>Plan.dibujarLineas());
@@ -2408,8 +2385,6 @@
   }
   function renderProjectPanel(){
     const d=currentProjectDetail;if(!d)return;const s=d.summary;
-    const sc=$('gantt-scroll'),keepG=sc?sc.scrollLeft:0;
-    hideReqCard();
     const nProp=(d.propuestas||[]).length+(d.activities||[]).filter(a=>a.propuesta).length;
     const badge=s.status==='red'?'<span class="badge red">Con retrasos</span>':s.status==='yellow'?'<span class="badge yellow">Deadlines cerca</span>':'<span class="badge green">Al día</span>';
     $('p-detail').innerHTML=`<div class="panel">
@@ -2433,10 +2408,7 @@
       <div class="sep"></div>
       <div id="micro-wrap">${microHtml(d)}</div>
     </div>`;
-    if(planView==='gantt'){
-      const n=$('gantt-scroll');if(n&&keepG)n.scrollLeft=keepG;
-      requestAnimationFrame(drawDepLinks);
-    }else if(planView==='hoja'){ajustarTodo(d);requestAnimationFrame(()=>Plan.dibujarLineas());}
+    if(planView==='hoja'){ajustarTodo(d);requestAnimationFrame(()=>Plan.dibujarLineas());}
     renderDatalist();pintarDeshacer();
     if(histAbierto)cargarHistorial();
     if(detalleId)renderDetalle();
@@ -2454,108 +2426,6 @@
     acts.filter(a=>!a.sectionId||!secs.some(s=>s.id===a.sectionId)).sort(pos).forEach(a=>out.push(a));
     return out;
   }
-  function ganttHtml(d){
-    const acts=orderedActs(d),today=d.summary.today||todayISO();
-    const all=[today];acts.forEach(a=>{if(a.startDate)all.push(a.startDate);if(a.deadline)all.push(a.deadline);});all.sort();
-    let min=addDays(all[0],-4),max=addDays(all[all.length-1],10);
-    if(dayDiff(min,max)<42)max=addDays(min,42);
-    const total=dayDiff(min,max),pct=x=>Math.max(0,Math.min(100,dayDiff(min,x)/total*100));
-    // Con planes largos las fechas se amontonan: se espacian las etiquetas
-    const pasoLab=total>340?56:total>160?28:total>90?14:7;
-    let ticks='';for(let i=0;i<=total;i+=7)ticks+=`<div class="g-tick" style="left:${i/total*100}%"></div>`;
-    let tlab='';for(let i=0;i<=total-4;i+=pasoLab)tlab+=`<div class="g-tlab" style="left:${i/total*100}%">${fmtDate(addDays(min,i))}</div>`;
-    const todayLine=`<div class="g-today" style="left:${pct(today)}%"></div>`,todayFlag=`<div class="g-flag" style="left:${pct(today)}%">HOY</div>`;
-    const secs=Plan.ordenSecciones(d.sections);
-    const orphans=acts.filter(a=>!a.sectionId||!secs.some(s=>s.id===a.sectionId));
-    const groups=secs.map(s=>({id:s.id,name:s.name,sec:s,acts:acts.filter(a=>a.sectionId===s.id)}));
-    if(orphans.length)groups.push({id:null,name:'Otras',sec:null,acts:orphans});
-    // Mismos números (1, 1.1…) y colores de etapa que en el plan de trabajo
-    const et=Plan.etapas(planModel(d)),infoEt={};
-    et.forEach(g=>{infoEt[g.id||'_otras']=g;});
-    groups.forEach(g=>{const e=infoEt[g.id||'_otras']||{};g.color=e.color||'#9A9384';g.cod=e.cod;g.nombre=e.name||g.name;g.padre=e.padre;});
-    const rows=groups.map(g=>{
-      // Fase desactivada: fila delgada, sin actividades, con opción de reactivar
-      if(g.sec&&g.sec.enabled===false){
-        return `<div class="g-row g-sec off"><div class="g-left"><div class="g-secrow"><span class="nm">${esc(g.name)}</span><span class="mt">no aplica</span><span class="tools" style="opacity:1"><button onclick="toggleSection('${g.id}',true)" title="Volver a activar esta fase">☑ activar</button></span></div></div><div class="g-tl" style="min-height:26px">${ticks}${todayLine}</div></div>`;
-      }
-      return gSecRow(g,pct,ticks,todayLine)+g.acts.map(a=>gActRow(a,pct,total,today,d,g.color)).join('')+
-        `<div class="g-row g-add"><div class="g-left"><input placeholder="＋ Actividad en ${esc(g.name)} (Enter) · o pega filas de Excel" data-sec-add="${g.id||''}" onkeydown="if(event.key==='Enter')addActivityInline('${g.id||''}',this)"></div><div class="g-tl" style="min-height:30px">${ticks}${todayLine}</div></div>`;
-    }).join('');
-    const addSec=`<div class="g-row g-add"><div class="g-left"><input placeholder="＋ Nueva fase (Enter)" onkeydown="if(event.key==='Enter')addSectionInline(this)"></div><div class="g-tl" style="min-height:30px">${ticks}${todayLine}</div></div>`;
-    const head=`<div class="g-row g-head"><div class="g-left"><span class="g-hlab">Actividad</span><span class="g-resizer" onmousedown="startColResize(event)" title="Arrastra para ensanchar o angostar esta columna"></span></div><div class="g-tl">${ticks}${tlab}${todayLine}${todayFlag}</div></div>`;
-    return `<div class="gantt-scroll" id="gantt-scroll"><div class="gantt" id="gantt" style="--gcol:${ganttColW}px"><svg class="g-links" id="g-links"></svg>${head}${rows}${addSec}</div></div>`;
-  }
-  // Fila madre (fase): avance propio, comparación con el plan y barra resumen en la línea de tiempo
-  function gSecRow(g,pct,ticks,todayLine){
-    const hechas=g.acts.filter(a=>a.estadoEfectivo==='completada').length;
-    const avg=g.acts.length?Math.round(g.acts.reduce((s,a)=>s+a.pctComplete,0)/g.acts.length):0;
-    const planes=g.acts.map(a=>a.pctEsperado).filter(v=>v!=null);
-    const plan=planes.length?Math.round(planes.reduce((s,v)=>s+v,0)/planes.length):null;
-    const col=plan==null?'var(--muted)':avg>=plan?'var(--good)':avg>=plan-15?'var(--warn)':'var(--crit)';
-    const pmark=plan!=null?`<span class="pmark" style="left:${plan}%" title="Plan a hoy: ${plan}%"></span>`:'';
-    const tools=g.id?`<span class="tools">
-      <button onclick="renameSection('${g.id}')" title="Renombrar fase">✎</button>
-      <button onclick="toggleSection('${g.id}',false)" title="Desactivar: esta fase no aplica en este proyecto">◻ no aplica</button>
-      ${g.acts.length?'':`<button onclick="removeSection('${g.id}')" title="Eliminar fase vacía">🗑</button>`}
-    </span>`:'';
-    const meta=g.acts.length?`${hechas}/${g.acts.length} completadas${plan!=null?` · plan a hoy ${plan}%`:''}`:'sin actividades';
-    const bar=g.acts.length?`<div class="g-secbar" title="Avance de la fase: ${avg}%${plan!=null?` · plan a hoy ${plan}%`:''}"><i style="width:${avg}%"></i>${pmark}</div>`:'';
-    const fechas=[];g.acts.forEach(a=>{if(a.startDate)fechas.push(a.startDate);if(a.deadline)fechas.push(a.deadline);});fechas.sort();
-    const roll=fechas.length?(()=>{const l=pct(fechas[0]),w=Math.max(1,pct(addDays(fechas[fechas.length-1],1))-l);
-      return `<div class="g-roll" style="left:${l}%;width:${w}%" title="${esc(g.name)}: ${fmtDate(fechas[0])} → ${fmtDate(fechas[fechas.length-1])} · ${avg}%"><i style="width:${avg}%"></i></div>`;})():'';
-    return `<div class="g-row g-sec${g.padre?' sub':''}" data-sec-id="${g.id||''}" style="--c:${g.color}"><div class="g-left">
-      <div class="g-secrow">${g.cod!=null?`<span class="g-scod">${g.cod}</span>`:''}<span class="nm">${esc(g.nombre||g.name)}</span>${g.acts.length?`<span class="g-secpct" style="color:${col}">${avg}%</span>`:''}${tools}</div>
-      ${bar}<span class="mt">${meta}</span>
-    </div><div class="g-tl" style="min-height:38px">${ticks}${todayLine}${roll}</div></div>`;
-  }
-  function gRowTicks(total){let t='';for(let i=0;i<=total;i+=7)t+=`<div class="g-tick" style="left:${i/total*100}%;opacity:.6"></div>`;return t;}
-  function gActRow(a,pct,total,today,d,color){
-    const col=GC[a.estadoEfectivo]||GC.pendiente,warn=a.alerta==='proximidad'?'ring':'';
-    const done=a.estadoEfectivo==='completada';
-    // La ruta crítica manda el color de la barra: morada si va bien, rojo suave si está en riesgo
-    const cpCls=a.critical?(a.criticaEnRiesgo?'cp-late':'cp'):'';
-    // Ya completada: manda el verde. Solo lo que falta se pinta con el color de la ruta crítica.
-    const barCol=(a.critical&&!done)?(a.criticaEnRiesgo?'var(--cp-late)':'var(--cp)'):col;
-    const rowCls=a.critical?(a.criticaEnRiesgo?'crit crit-late':'crit'):'';
-    const resp=(a.responsables&&a.responsables.length)?a.responsables:(a.responsable?[a.responsable]:[]);
-    const meta=[];
-    if(resp.length)meta.push((resp.length>1?'👥 ':'👤 ')+esc(resp.join(', ')));
-    if(a.deadline)meta.push(dueLabel(a.deadline));
-    if(a.pctEsperado!=null&&!done){
-      meta.push(`real ${a.pctComplete}% · plan ${a.pctEsperado}%`);
-      if(a.pctComplete<a.pctEsperado-15)meta.push('<span style="color:var(--crit);font-weight:700">⚠ por detrás</span>');
-    }else meta.push(a.pctComplete+'%');
-    meta.push(AS[a.estadoEfectivo]||a.status);
-    if(a.critical)meta.push(`<span style="color:${a.criticaEnRiesgo?'var(--cp-late-ink)':'var(--cp-ink)'};font-weight:700">ruta crítica</span>`);
-    const tip=`${a.name}${a.deadline?' · '+fmtDate(a.deadline):''} · real ${a.pctComplete}%${a.pctEsperado!=null?' vs plan '+a.pctEsperado+'%':''}${a.critical?' · en la ruta crítica':''}`;
-    const doneTag=p=>`<span class="g-done" style="${p>78?`right:calc(${100-p}% + 8px)`:`left:calc(${p}% + 8px)`}">✓ Completado</span>`;
-    let bar,tag='',handle='';
-    if(a.startDate&&a.deadline&&a.deadline>=a.startDate){
-      const l=pct(a.startDate),w=Math.max(1.4,pct(addDays(a.deadline,1))-l),fin=l+w;
-      const expMark=(a.pctEsperado!=null&&!done)?`<div class="g-exp" style="left:${a.pctEsperado}%" title="Plan a hoy: ${a.pctEsperado}%"></div>`:'';
-      bar=`<div class="g-bar ${warn} ${cpCls}" data-act="${a.id}" style="left:${l}%;width:${w}%;background:${barCol}" onclick="openActivityModal('${a.id}')" onmouseenter="scheduleReqCard(event,'${a.id}')" onmouseleave="cancelReqCard()"><div class="g-fill" style="width:${a.pctComplete}%"></div>${expMark}</div>`;
-      if(done)tag=doneTag(fin);
-      handle=`<span class="g-linkh" style="left:${fin}%" onmousedown="startLink(event,'${a.id}')" title="Arrastra hasta otra actividad: esta va antes que ella"></span>`;
-    }else if(a.startDate||a.deadline){
-      const dd=a.deadline||a.startDate,l=pct(dd);
-      bar=`<div class="g-ms ${warn} ${cpCls}" data-act="${a.id}" style="left:calc(${l}% - 6px);background:${barCol}" onclick="openActivityModal('${a.id}')" title="${esc(tip)}"></div>`;
-      if(done)tag=doneTag(l);
-      handle=`<span class="g-linkh" style="left:calc(${l}% + 9px)" onmousedown="startLink(event,'${a.id}')" title="Arrastra hasta otra actividad: esta va antes que ella"></span>`;
-    }else{
-      bar=`<button class="g-nod" data-act="${a.id}" onclick="openActivityModal('${a.id}')">＋ agregar fechas</button>${done?'<span class="g-done inline" style="position:absolute;left:150px;top:50%;transform:translateY(-50%)">✓ Completado</span>':''}`;
-    }
-    const nDeps=(a.dependsOnIds||[]).length;
-    return `<div class="g-row g-act ${rowCls}" data-row-act="${a.id}" style="--c:${color||'#9A9384'}"><div class="g-left">
-      <div class="g-anm" onclick="openActivityModal('${a.id}')" onmouseenter="scheduleReqCard(event,'${a.id}')" onmouseleave="cancelReqCard()"><span class="g-cod">${a._cod||''}</span><span class="g-sdot" style="background:${col}" title="${AS[a.estadoEfectivo]||''}"></span><span class="nmtxt">${esc(a.name)}</span>${nDeps?`<span class="req-badge" title="Depende de ${nDeps} actividad(es) — pasa el mouse para ver la cadena">⛓${nDeps}</span>`:''}${a.critical?`<span class="cp-chip ${a.criticaEnRiesgo?'late':''}">crítica</span>`:''}</div>
-      <div class="g-amt">${meta.join(' · ')}</div>
-      <span class="g-tools-act">
-        <button class="g-grip" onmousedown="startRowDrag(event,'${a.id}')" title="Arrastra para mover la actividad de lugar">⠿</button>
-        <button onclick="event.stopPropagation();moveActivity('${a.id}',-1)" title="Subir">▲</button>
-        <button onclick="event.stopPropagation();moveActivity('${a.id}',1)" title="Bajar">▼</button>
-        <button onclick="event.stopPropagation();openTaskModal(null,'todo','${d.id}','${a.id}')" title="Nueva microtarea en esta actividad">＋</button>
-      </span>
-    </div><div class="g-tl">${gRowTicks(total)}<div class="g-today" style="left:${pct(today)}%"></div>${bar}${tag}${handle}</div></div>`;
-  }
   async function addActivityInline(sectionId,inp){
     const name=inp.value.trim(),d=currentProjectDetail;
     if(!name||!d)return;
@@ -2568,21 +2438,6 @@
       toast('✓ Actividad agregada');
     }catch(e){toast('⚠ '+e.message,false);inp.disabled=false;}
     finally{marcarGuardando(-1);}
-  }
-
-  // ---------- ANCHO DE LA COLUMNA DE TÍTULOS ----------
-  function startColResize(ev){
-    ev.preventDefault();ev.stopPropagation();
-    const x0=ev.clientX,w0=ganttColW;
-    const move=e=>{ganttColW=Math.max(160,Math.min(680,Math.round(w0+(e.clientX-x0))));const g=$('gantt');if(g)g.style.setProperty('--gcol',ganttColW+'px');};
-    const up=()=>{
-      document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);
-      document.body.classList.remove('g-resizing');
-      try{localStorage.setItem('ganttColW',String(ganttColW));}catch{}
-      drawDepLinks();
-    };
-    document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
-    document.body.classList.add('g-resizing');
   }
 
   // ---------- REORDENAR ACTIVIDADES ----------
@@ -2622,248 +2477,6 @@
     finally{marcarGuardando(-1);}
   }
 
-  // ---------- ARRASTRAR FILAS PARA REORDENAR ----------
-  let rowDrag=null;
-  function startRowDrag(ev,id){
-    ev.preventDefault();ev.stopPropagation();
-    const fila=ev.currentTarget.closest('.g-act');if(!fila)return;
-    hideReqCard();
-    rowDrag={id,fila,destino:null,antes:true};
-    fila.classList.add('dragging');
-    document.body.classList.add('g-rowdrag');
-    document.addEventListener('mousemove',onRowDrag);
-    document.addEventListener('mouseup',endRowDrag);
-  }
-  function limpiarMarcas(){
-    document.querySelectorAll('.drop-before,.drop-after').forEach(e=>e.classList.remove('drop-before','drop-after'));
-  }
-  function onRowDrag(ev){
-    if(!rowDrag)return;
-    const el=document.elementFromPoint(ev.clientX,ev.clientY);
-    const fila=el&&el.closest?el.closest('.g-act,.g-sec'):null;
-    limpiarMarcas();
-    if(!fila||fila===rowDrag.fila){rowDrag.destino=null;return;}
-    const r=fila.getBoundingClientRect();
-    const antes=fila.classList.contains('g-sec')?false:(ev.clientY<r.top+r.height/2);
-    fila.classList.add(antes?'drop-before':'drop-after');
-    rowDrag.destino=fila;rowDrag.antes=antes;
-  }
-  function endRowDrag(){
-    document.removeEventListener('mousemove',onRowDrag);
-    document.removeEventListener('mouseup',endRowDrag);
-    document.body.classList.remove('g-rowdrag');
-    limpiarMarcas();
-    const drag=rowDrag;rowDrag=null;
-    if(!drag)return;
-    drag.fila.classList.remove('dragging');
-    const d=currentProjectDetail;
-    if(!drag.destino||!d)return;
-    const lista=orderedActs(d);
-    const movida=lista.find(x=>x.id===drag.id);if(!movida)return;
-    const resto=lista.filter(x=>x.id!==drag.id);
-    let indice,seccion;
-    if(drag.destino.classList.contains('g-sec')){
-      // Soltada sobre el título de una fase: se va al comienzo de esa fase
-      seccion=drag.destino.dataset.secId||null;
-      const primera=resto.findIndex(x=>(x.sectionId||'')===(seccion||''));
-      indice=primera<0?resto.length:primera;
-    }else{
-      const refId=drag.destino.dataset.rowAct;
-      const ref=resto.find(x=>x.id===refId);if(!ref)return;
-      seccion=ref.sectionId||null;
-      indice=resto.indexOf(ref)+(drag.antes?0:1);
-    }
-    const cambioSeccion=(movida.sectionId||'')!==(seccion||'')?{id:movida.id,sectionId:seccion}:null;
-    if(cambioSeccion)movida.sectionId=seccion;
-    resto.splice(indice,0,movida);
-    applyOrder(resto,cambioSeccion);
-  }
-
-  // ---------- QUÉ SE NECESITA ANTES DE ESTA ACTIVIDAD ----------
-  // Al pasar el mouse por una fila se abre una ficha con toda la cadena que
-  // debe cumplirse antes, y se resalta esa cadena en el Gantt.
-  let reqTimer=null,reqAbierta=null;
-  function upstreamDe(id){
-    const d=currentProjectDetail;if(!d)return [];
-    const byId=new Map(d.activities.map(a=>[a.id,a]));
-    const vistos=new Set(),orden=[];
-    const caminar=(actId,nivel)=>{
-      const a=byId.get(actId);if(!a)return;
-      (a.dependsOnIds||[]).forEach(pid=>{
-        if(vistos.has(pid))return;
-        vistos.add(pid);
-        const p=byId.get(pid);if(!p)return;
-        orden.push({act:p,nivel});
-        caminar(pid,nivel+1);
-      });
-    };
-    caminar(id,0);
-    return orden;
-  }
-  function scheduleReqCard(ev,id){
-    clearTimeout(reqTimer);
-    if(rowDrag||linking)return;   // mientras arrastras, la ficha estorba
-    const fila=ev.currentTarget.closest('.g-act'),ancla=ev.currentTarget;
-    reqTimer=setTimeout(()=>showReqCard(id,fila,ancla),380);
-  }
-  function cancelReqCard(){
-    clearTimeout(reqTimer);
-    reqTimer=setTimeout(()=>{if(!document.querySelector('#reqcard:hover'))hideReqCard();},260);
-  }
-  function hideReqCard(){
-    clearTimeout(reqTimer);
-    const c=$('reqcard');if(c)c.classList.remove('show');
-    reqAbierta=null;
-    document.querySelectorAll('.g-act.up,.g-act.up-self').forEach(e=>e.classList.remove('up','up-self'));
-    document.querySelectorAll('#g-links path.up').forEach(e=>e.classList.remove('up'));
-    const g=$('gantt');if(g)g.classList.remove('focusing');
-  }
-  function showReqCard(id,fila,ancla){
-    const d=currentProjectDetail;if(!d||!fila)return;
-    const a=d.activities.find(x=>x.id===id);if(!a)return;
-    reqAbierta=id;
-    const cadena=upstreamDe(id);
-    if(!cadena.length){hideReqCard();return;} // sin precedentes: no hay nada que mostrar
-    const pendientes=cadena.filter(x=>x.act.estadoEfectivo!=='completada');
-    const directas=new Set(a.dependsOnIds||[]);
-    // Resaltar la cadena en el Gantt
-    const g=$('gantt');
-    if(g){
-      g.classList.add('focusing');
-      document.querySelectorAll('.g-act').forEach(e=>e.classList.remove('up','up-self'));
-      fila.classList.add('up-self');
-      const ids=new Set(cadena.map(x=>x.act.id));
-      document.querySelectorAll('.g-act[data-row-act]').forEach(e=>{if(ids.has(e.dataset.rowAct))e.classList.add('up');});
-      document.querySelectorAll('#g-links path.g-link').forEach(p=>{
-        p.classList.toggle('up',ids.has(p.dataset.from)&&(ids.has(p.dataset.to)||p.dataset.to===id));
-      });
-    }
-    const filas=cadena.map(({act,nivel})=>{
-      const listo=act.estadoEfectivo==='completada';
-      const col=GC[act.estadoEfectivo]||GC.pendiente;
-      const resp=(act.responsables&&act.responsables.length)?act.responsables.join(', '):'';
-      const meta=[];
-      if(act.deadline)meta.push(listo?fmtDate(act.deadline):dueLabel(act.deadline));
-      if(!listo)meta.push(act.pctComplete+'%');
-      if(resp)meta.push(resp);
-      return `<div class="req-row ${listo?'ok':act.alerta==='retraso'?'late':''}" style="padding-left:${10+nivel*13}px" onclick="openActivityModal('${act.id}')">
-        <span class="req-mark">${listo?'✓':act.alerta==='retraso'?'⏰':'○'}</span>
-        <span class="req-body">
-          <span class="req-nm"><span class="req-dot" style="background:${col}"></span>${nivel?'↳ ':''}${act._cod?`<b class="req-cod">${act._cod}</b>`:''}${esc(act.name)}${directas.has(act.id)?'<span class="req-direct">directa</span>':''}</span>
-          <span class="req-meta">${esc(meta.join(' · '))}</span>
-        </span>
-      </div>`;
-    }).join('');
-    const frena=pendientes.slice().sort((x,y)=>(y.act.deadline||'9999').localeCompare(x.act.deadline||'9999'))[0];
-    const cuerpo=cadena.length
-      ? `<div class="req-list">${filas}</div>
-         <div class="req-foot">${cadena.length-pendientes.length} de ${cadena.length} listas${frena?` · la que más frena: <strong>${esc(frena.act.name)}</strong>${frena.act.deadline?` (${dueLabel(frena.act.deadline)})`:''}`:' · todo listo, puede arrancar'}</div>`
-      : `<div class="req-empty">No depende de nada. Puede arrancar cuando quieras.</div>`;
-    const card=$('reqcard');
-    card.innerHTML=`<div class="req-h">
-        <div class="req-t">${a._cod?`<b class="req-cod">${a._cod}</b>`:''}${esc(a.name)} · necesita antes:</div>
-        <div class="req-s">${cadena.length?`${pendientes.length} pendiente${pendientes.length===1?'':'s'} en la cadena`:'sin prerrequisitos'}${a.critical?' · está en la ruta crítica':''}</div>
-      </div>${cuerpo}`;
-    card.classList.add('show');
-    // Justo debajo del nombre o de la barra (arriba si no cabe), sin salirse de la pantalla
-    const r=(ancla||fila.querySelector('.g-left')||fila).getBoundingClientRect(),cr=card.getBoundingClientRect();
-    let top=r.bottom+6;
-    if(top+cr.height>window.innerHeight-12)top=Math.max(12,r.top-cr.height-6);
-    const left=Math.max(12,Math.min(window.innerWidth-cr.width-12,r.left));
-    card.style.top=top+'px';card.style.left=left+'px';
-  }
-
-  // ---------- DEPENDENCIAS: ARRASTRAR Y LÍNEAS ----------
-  const SVGNS='http://www.w3.org/2000/svg';
-  let linking=null;
-  function ganttPoint(ev){const g=$('gantt');if(!g)return null;const r=g.getBoundingClientRect();return {x:ev.clientX-r.left,y:ev.clientY-r.top};}
-  function anchorsOf(g){
-    const r=g.getBoundingClientRect(),out={};
-    g.querySelectorAll('[data-act]').forEach(el=>{
-      const b=el.getBoundingClientRect();
-      out[el.dataset.act]={x1:b.left-r.left,x2:b.right-r.left,y:b.top-r.top+b.height/2};
-    });
-    return out;
-  }
-  // Codo: sale por la derecha de la predecesora y entra por la izquierda de la sucesora
-  function elbowPath(f,t){
-    const x1=f.x2+3,y1=f.y,x2=t.x1-9,y2=t.y;
-    if(x2>=x1+14){const mid=x1+Math.max(11,(x2-x1)/2);return `M${x1} ${y1} H${mid} V${y2} H${x2}`;}
-    const s=y2>=y1?1:-1;
-    return `M${x1} ${y1} H${x1+11} V${y1+s*15} H${x2-11} V${y2} H${x2}`;
-  }
-  function drawDepLinks(){
-    const g=$('gantt'),svg=$('g-links'),d=currentProjectDetail;
-    if(!g||!svg||!d)return;
-    svg.innerHTML=`<defs>
-      <marker id="gl-a" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5.5" markerHeight="5.5" orient="auto"><path d="M0 0 L8 4 L0 8 z" style="fill:var(--line-2)"/></marker>
-      <marker id="gl-c" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5.5" markerHeight="5.5" orient="auto"><path d="M0 0 L8 4 L0 8 z" style="fill:var(--cp)"/></marker>
-    </defs>`;
-    const an=anchorsOf(g),byId={};
-    (d.activities||[]).forEach(a=>{byId[a.id]=a;});
-    (d.activities||[]).forEach(a=>{
-      (a.dependsOnIds||[]).forEach(pid=>{
-        const f=an[pid],t=an[a.id],prev=byId[pid];
-        if(!f||!t||!prev)return;
-        const critica=a.critical&&prev.critical;
-        const path=document.createElementNS(SVGNS,'path');
-        path.setAttribute('d',elbowPath(f,t));
-        path.setAttribute('class','g-link'+(critica?' crit':''));
-        path.setAttribute('marker-end',critica?'url(#gl-c)':'url(#gl-a)');
-        path.dataset.from=pid;path.dataset.to=a.id;
-        const ti=document.createElementNS(SVGNS,'title');
-        ti.textContent=`${prev.name} → ${a.name} · clic para quitar la dependencia`;
-        path.appendChild(ti);
-        path.addEventListener('click',()=>removeDependency(pid,a.id));
-        svg.appendChild(path);
-      });
-    });
-  }
-  function startLink(ev,id){
-    ev.preventDefault();ev.stopPropagation();
-    const svg=$('g-links');if(!svg)return;
-    const an=anchorsOf($('gantt')),from=an[id];if(!from)return;
-    const path=document.createElementNS(SVGNS,'path');
-    path.setAttribute('class','g-temp');
-    svg.appendChild(path);
-    linking={from,fromId:id,path};
-    hideReqCard();
-    document.body.classList.add('g-linking');
-    document.addEventListener('mousemove',onLinkMove);
-    document.addEventListener('mouseup',onLinkUp);
-  }
-  function filaBajoElCursor(ev){
-    const el=document.elementFromPoint(ev.clientX,ev.clientY);
-    if(!el||!el.closest)return null;
-    const conBarra=el.closest('[data-act]');
-    if(conBarra)return conBarra.dataset.act;
-    const fila=el.closest('.g-act[data-row-act]');   // vale toda la fila, no solo la barra
-    return fila?fila.dataset.rowAct:null;
-  }
-  function onLinkMove(ev){
-    if(!linking)return;
-    const p=ganttPoint(ev);if(!p)return;
-    linking.path.setAttribute('d',`M${linking.from.x2+3} ${linking.from.y} L${p.x} ${p.y}`);
-    const id=filaBajoElCursor(ev);
-    document.querySelectorAll('.g-act.link-target').forEach(e=>e.classList.remove('link-target'));
-    if(id&&id!==linking.fromId){
-      const fila=document.querySelector(`.g-act[data-row-act="${id}"]`);
-      if(fila)fila.classList.add('link-target');
-    }
-  }
-  function onLinkUp(ev){
-    if(!linking)return;
-    document.removeEventListener('mousemove',onLinkMove);
-    document.removeEventListener('mouseup',onLinkUp);
-    document.body.classList.remove('g-linking');
-    const {fromId,path}=linking;linking=null;
-    if(path&&path.parentNode)path.parentNode.removeChild(path);
-    document.querySelectorAll('.g-act.link-target').forEach(e=>e.classList.remove('link-target'));
-    const toId=filaBajoElCursor(ev);
-    if(!toId){toast('Suéltala sobre la fila de otra actividad',false);return;}
-    if(toId===fromId){toast('Una actividad no puede depender de sí misma',false);return;}
-    addDependency(fromId,toId);
-  }
   function addDependency(fromId,toId){
     const d=currentProjectDetail;if(!d)return;
     const t=(d.activities||[]).find(a=>a.id===toId);if(!t)return;
@@ -2879,7 +2492,7 @@
     if(!confirm(`¿Quitar la dependencia «${prev?prev.name:'?'}» → «${t.name}»?`))return;
     applyActivity(toId,{dependsOnIds:(t.dependsOnIds||[]).filter(x=>x!==fromId)});
   }
-  window.addEventListener('resize',()=>{if(!currentProjectDetail)return;if(planView==='gantt')drawDepLinks();else if(planView==='hoja')Plan.dibujarLineas();});
+  window.addEventListener('resize',()=>{if(currentProjectDetail&&planView==='hoja')Plan.dibujarLineas();});
 
   // ---------- PLAN EN TABLA (se diligencia toda la data aquí mismo) ----------
   let ptCodigos={};
@@ -2896,9 +2509,7 @@
     const cols=14;
     const rows=groups.map(g=>{
       const e=info[g.id||'_otras']||{color:'#9A9384'};
-      if(g.sec&&g.sec.enabled===false){
-        return `<tr class="sec off"><td colspan="${cols}">${esc(g.name)} · no aplica <button class="pt-del" onclick="toggleSection('${g.id}',true)" title="Volver a activar">☑ activar</button></td></tr>`;
-      }
+      if(g.sec&&g.sec.enabled===false)return ''; // «no aplica» ya no existe
       const hechas=g.acts.filter(a=>a.estadoEfectivo==='completada').length;
       const avg=g.acts.length?Math.round(g.acts.reduce((s,a)=>s+a.pctComplete,0)/g.acts.length):0;
       const head=`<tr class="sec${e.padre?' sub':''}" style="--c:${e.color}"${g.id?` data-sec="${g.id}"`:''}><td colspan="${cols}">${e.cod!=null?`<span class="pt-cod">${e.cod}</span>`:''}<span class="pt-snm">${esc(e.name||g.name)}</span>${g.acts.length?`<span class="pt-sst">${hechas}/${g.acts.length} completadas · ${avg}%</span><span class="pt-sbar"><i style="width:${avg}%"></i></span>`:''}${g.id?` <button class="pt-del" onclick="renameSection('${g.id}')" title="Renombrar">✎</button>${g.acts.length?'':` <button class="pt-del" onclick="removeSection('${g.id}')" title="Eliminar fase vacía">🗑</button>`}`:''}</td></tr>`;
@@ -2920,7 +2531,7 @@
     const atraso=a.alerta==='retraso'?' style="color:var(--crit);font-weight:700"':'';
     return `<tr class="act ${cp}" style="--c:${color||'#9A9384'}" data-row="${a.id}">
       <td class="pt-ord"><span class="pl-drag" title="Arrastra para mover la fila · clic derecho: más opciones">⠿</span><span class="pt-acod">${cod||''}</span><button onclick="moveActivity('${a.id}',-1)" title="Subir">▲</button><button onclick="moveActivity('${a.id}',1)" title="Bajar">▼</button></td>
-      <td><div class="pt-nmw"><input class="pt-in nm" data-cell="${a.id}:name" value="${esc(a.name)}" title="${esc(a.name)}" onchange="patchActivity('${a.id}',{name:this.value.trim()})">${a.critical?`<span class="cp-chip ${a.criticaEnRiesgo?'late':''}" title="Ruta crítica">RC</span>`:''}${(()=>{const nC=((currentProjectDetail&&currentProjectDetail.notas)||[]).filter(n=>n.activityId===a.id).length;return `<button class="pl-cmt${nC?'':' vacio'}" data-cmt="${a.id}" title="Comentarios">${nC||'＋'}</button>`;})()}<span class="pl-ra"><button onclick="planOnRow('insertar-debajo','${a.id}')" title="Insertar una fila debajo (Ctrl+Enter)">＋</button><button onclick="planOnRow('eliminar','${a.id}')" title="Eliminar esta fila">🗑</button></span></div></td>
+      <td><div class="pt-nmw"><input class="pt-in nm" data-cell="${a.id}:name" value="${esc(a.name)}" title="${esc(a.name)}" onchange="patchActivity('${a.id}',{name:this.value.trim()})">${a.critical?`<span class="cp-chip ${a.criticaEnRiesgo?'late':''}" title="Ruta crítica">RC</span>`:''}${(()=>{const nC=((currentProjectDetail&&currentProjectDetail.notas)||[]).filter(n=>n.activityId===a.id).length;return `<button class="pl-cmt${nC?'':' vacio'}" data-cmt="${a.id}" title="Comentarios">${Plan.nube(nC)}</button>`;})()}<span class="pl-ra"><button onclick="planOnRow('insertar-debajo','${a.id}')" title="Insertar una fila debajo (Ctrl+Enter)">＋</button><button onclick="planOnRow('eliminar','${a.id}')" title="Eliminar esta fila">🗑</button></span></div></td>
       <td><select class="pt-in" data-cell="${a.id}:sec" onchange="patchActivity('${a.id}',{sectionId:this.value||null})">${secOpts}</select></td>
       <td class="pl-pick pt-pick" tabindex="0" data-pick="resp" data-act="${a.id}" title="Elegir responsables de la lista de involucrados"><span class="pt-pv">${esc(resp)||'<span style="color:var(--faint)">Elegir…</span>'}</span><i class="pl-caret">▾</i></td>
       <td class="pl-pick pt-pick" tabindex="0" data-pick="area" data-act="${a.id}" title="${a.area?'Área elegida a mano':'Automática: sale del área de los responsables. Clic para elegirla a mano'}">${Plan.areasActividad(a,(currentProjectDetail&&currentProjectDetail.miembros)||[]).map(x=>`<span class="pl-arp${a.area?'':' auto'}" style="--c:${Plan.colorDe(x)}">${esc(x)}</span>`).join('')||'<span style="color:var(--faint)">Elegir…</span>'}<i class="pl-caret">▾</i></td>
@@ -3106,10 +2717,9 @@
   }
   function planOnSection(accion,id,extra){
     if(accion==='rename')renameSection(id);
-    else if(accion==='off')toggleSection(id,false);
-    else if(accion==='on')toggleSection(id,true);
     else if(accion==='remove')removeSection(id);
     else if(accion==='anidar')anidarSeccion(id,extra);
+    else if(accion==='mover')moverSeccion(id,extra&&extra.destino,!!(extra&&extra.despues));
     else if(accion==='sacar')sacarSeccion(id);
   }
   // Un capítulo arrastrado sobre otro queda como su subcapítulo
@@ -3128,6 +2738,31 @@
       }
       toast(`✓ «${sc.name}» ahora es subcapítulo de «${pa.name}»`);
     }catch(e){toast('⚠ '+e.message,false);}
+  }
+  // Reordenar capítulos arrastrando: queda antes o después del capítulo destino, a su
+  // mismo nivel. Se pinta de una vez y el servidor confirma el orden definitivo.
+  function ordenLocalSecciones(secs,id,destino,despues){
+    const src=secs.find(x=>x.id===id),dst=secs.find(x=>x.id===destino);if(!src||!dst)return null;
+    const padre=dst.parentId||null;
+    if(padre===id||(padre&&secs.some(x=>x.parentId===id)))return null;
+    const her=secs.filter(x=>(x.parentId||null)===padre&&x.id!==id).sort((a,b)=>a.position-b.position);
+    const i=her.findIndex(x=>x.id===destino);her.splice(despues?i+1:i,0,src);
+    const pos={};her.forEach((h,k)=>{pos[h.id]=k;});
+    return secs.map(x=>pos[x.id]!=null?{...x,position:pos[x.id],parentId:x.id===id?padre:x.parentId}:x);
+  }
+  async function moverSeccion(id,destino,despues){
+    const d=currentProjectDetail;if(!d||!destino||id===destino)return;
+    const sc=(d.sections||[]).find(x=>x.id===id),dst=(d.sections||[]).find(x=>x.id===destino);if(!sc||!dst)return;
+    const nuevas=ordenLocalSecciones(d.sections||[],id,destino,despues);
+    if(!nuevas){toast('⚠ Ese capítulo tiene subcapítulos: solo se puede mover entre capítulos principales',false);return;}
+    pushUndo(`mover «${sc.name}»`);
+    d.sections=nuevas;renderPlan();marcarGuardando(1);
+    try{
+      const r=await api('/api/sections','POST',{accion:'mover',id,destino,despues});
+      if(r&&r.sections){d.sections=r.sections;renderPlan();}
+      toast(`✓ «${sc.name}» ${despues?'después':'antes'} de «${dst.name}»`);
+    }catch(e){toast('⚠ '+e.message,false);await refreshProjectDetail();}
+    finally{marcarGuardando(-1);}
   }
   async function sacarSeccion(id){
     pushUndo('sacar subcapítulo');
@@ -3549,13 +3184,6 @@
     const n=prompt('Nombre de la fase:',sec.name);if(n===null||!n.trim()||n.trim()===sec.name)return;
     pushUndo(`renombrar «${sec.name}»`);
     try{await api('/api/sections?id='+id,'PATCH',{name:n.trim()});toast('✓ Fase renombrada');await refreshProjectDetail();}catch(e){toast('⚠ '+e.message,false);}
-  }
-  async function toggleSection(id,on){
-    if(!currentProjectDetail)return;
-    const acts=(currentProjectDetail.activities||[]).filter(a=>a.sectionId===id);
-    if(!on&&acts.length&&!confirm(`Esta fase tiene ${acts.length} actividad(es). Al desactivarla se ocultan del Gantt (no se borran). ¿Continuar?`))return;
-    pushUndo(on?'activar capítulo':'marcar «no aplica»');
-    try{await api('/api/sections?id='+id,'PATCH',{enabled:on});toast(on?'✓ Fase activada':'Fase marcada como «no aplica»');await refreshProjectDetail();}catch(e){toast('⚠ '+e.message,false);}
   }
   // Eliminar un capítulo con todo: sus actividades y sus subcapítulos (se puede deshacer)
   async function removeSection(id){
