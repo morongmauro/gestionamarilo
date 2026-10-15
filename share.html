@@ -170,8 +170,7 @@
     </div>
     <div class="hd-r">
       <div class="vistas" id="vistas">
-        <button data-v="gantt" onclick="setVista('gantt')" title="El cronograma con lo esencial">📊 Gantt</button>
-        <button data-v="deps" onclick="setVista('deps')" title="Quién depende de quién: flechas y, al pasar el mouse por el nombre o la barra, la cadena de precedentes">⛓ Dependencias</button>
+        <button data-v="gantt" onclick="setVista('gantt')" title="El cronograma con lo esencial y las flechas de dependencia">📊 Gantt</button>
         <button data-v="tabla" onclick="setVista('tabla')" title="Todas las columnas: responsable, área, entregable, fechas, duración, avance…">▤ Tabla</button>
       </div>
       <button class="mesa-sw" id="mesa-sw" onclick="toggleMesa()"></button>
@@ -459,7 +458,6 @@
     if(!esEditor())return;
     const sc=(DATA.sections||[]).find(x=>x.id===id);if(!sc)return;
     if(acc==='rename'){const n=prompt('Nombre del capítulo:',sc.name);if(n&&n.trim()&&n.trim()!==sc.name)editar('seccion-editar',{id,name:n.trim()});}
-    else if(acc==='off'||acc==='on')editar('seccion-editar',{id,enabled:acc==='on'});
     else if(acc==='remove'){
       const hijos=(DATA.sections||[]).filter(x=>x.parentId===id).map(x=>x.id);
       const n=(DATA.activities||[]).filter(a=>a.sectionId===id||hijos.includes(a.sectionId)).length;

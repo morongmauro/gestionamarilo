@@ -553,7 +553,7 @@
       ['dias', 'Duración', cols.dias], ['p', 'Avance', cols.p], ['e', 'Estado', cols.e], ['dp', 'Depende de', cols.deps]];
     if (base) lista.push(['lb', 'Línea base', cols.base], ['dv', 'Desvío', cols.desvio]);
     const hay = Object.keys(anchosCol).length;
-    return `<div class="pl-colsmenu"><span class="pl-ol">Columnas · ${full ? 'tabla completa' : opts.vista === 'deps' ? 'vista Dependencias' : 'vista Gantt'}</span>
+    return `<div class="pl-colsmenu"><span class="pl-ol">Columnas · ${full ? 'tabla completa' : 'vista Gantt'}</span>
       ${lista.map(([k, l, on]) => `<button class="pl-colchip${on ? ' on' : ''}" onclick="planSetOpt('colvis','${k}:${on ? 0 : 1}')" title="${on ? 'Ocultar' : 'Mostrar'} «${l}»"><i></i>${l}</button>`).join('')}
       ${hay ? `<button class="pl-optbtn" onclick="planSetOpt('anchosReset',1)" title="Volver al ancho normal de todas las columnas">↺ Anchos originales</button>` : ''}
       <span class="pl-mut">Para ensanchar o angostar una columna, arrastra el borde derecho de su título.</span></div>`;
@@ -578,7 +578,7 @@
     const full = opts.vista === 'tabla';
     const opciones = `<div class="pl-opts">
         <div class="pl-og"><span class="pl-ol">Vista</span>
-          <div class="pl-seg">${seg('vista', 'gantt', '📊 Gantt', opts.vista || 'gantt', 'Lo esencial y el cronograma a la vista')}${seg('vista', 'deps', '⛓ Dependencias', opts.vista || 'gantt', 'Quién depende de quién: flechas y, al pasar el mouse, la cadena de precedentes')}${seg('vista', 'tabla', '▤ Tabla completa', opts.vista || 'gantt', 'Todas las columnas: área, entregable, fechas reales, dependencias…')}</div></div>
+          <div class="pl-seg">${seg('vista', 'gantt', '📊 Gantt', opts.vista || 'gantt', 'Lo esencial y el cronograma a la vista')}${seg('vista', 'tabla', '▤ Tabla completa', opts.vista || 'gantt', 'Todas las columnas: área, entregable, fechas reales, dependencias…')}</div></div>
         <div class="pl-og"><span class="pl-ol">Agrupar por</span>
           <div class="pl-seg">${seg('agrupar', 'etapa', 'Etapa', agr, 'Etapas del plan (1, 2, 3…)')}${seg('agrupar', 'area', 'Área responsable', agr, 'Área de cada responsable (según los involucrados)')}</div></div>
         <div class="pl-og"><span class="pl-ol">Escala del cronograma</span>
@@ -1202,13 +1202,16 @@
     reqCard.style.left = Math.max(10, Math.min(window.innerWidth - w - 10, r.left)) + 'px';
     reqCard.style.top = top + 'px';
   }
-  // Solo sobre el NOMBRE: en el cronograma no estorba al crear o quitar precedencias
-  const SEL_CADENA = 'table.pl-deps tr.pl-act .pl-nmw';
+  // Sobre el número (ID) de la actividad: se resalta su cadena de precedentes.
+  // No va en el nombre ni en el cronograma para no estorbar al editar o al crear flechas.
+  const SEL_CADENA = 'table.pl tr.pl-act td.pl-c-id';
   document.addEventListener('mouseover', ev => {
     const t = ev.target.closest && ev.target.closest(SEL_CADENA);
     if (!t) return;
     const tr = t.closest('tr.pl-act'), id = tr && tr.dataset.a;
     if (!id || id === reqId) { clearTimeout(reqT); return; }
+    const act = ((ultimoModelo && ultimoModelo.activities) || []).find(x => x.id === id);
+    if (!act || !(act.dependsOnIds || []).length || flPop) return; // sin precedentes no hay cadena que mostrar
     clearTimeout(reqT);
     reqT = setTimeout(() => mostrarCadena(id, t), 280);
   });
@@ -1221,7 +1224,9 @@
   });
   document.addEventListener('scroll', () => { if (reqId) ocultarCadena(); }, true);
 
-  // ---------- Vista Dependencias (editando): crear precedencias arrastrando y quitarlas con clic ----------
+  // ---------- Flechas editables en el plan de trabajo ----------
+  //   · Arrastrar el punto del final de una barra hasta otra actividad: crea la precedencia
+  //   · Clic en una flecha: ficha para cambiar el tipo y el desfase, o quitarla
   document.addEventListener('mousedown', ev => {
     const h = ev.target.closest && ev.target.closest('.pl-lk[data-src]');
     if (!h || ev.button !== 0 || !has('planOnPatch')) return;
@@ -1260,15 +1265,63 @@
     document.addEventListener('mousemove', mover); document.addEventListener('mouseup', soltar);
     mover(ev);
   });
-  document.addEventListener('click', ev => {
-    const pth = ev.target.closest && ev.target.closest('svg.pl-links.editable path.hit');
-    if (!pth || !has('planOnPatch')) return;
+  let flPop = null, flCtx = null;
+  function cerrarFlecha(guardar) {
+    if (!flPop) return;
+    const ctx = flCtx; flPop.remove(); flPop = null; flCtx = null;
+    document.querySelectorAll('svg.pl-links path.sel').forEach(p => p.classList.remove('sel'));
+    if (!guardar || !ctx || !has('planOnPatch')) return;
+    const b = ctx.b, ids = [...(b.dependsOnIds || [])];
+    const tipos = tiposLimpios(Object.assign({}, b.depTipos || {}, { [ctx.a.id]: ctx.x }), ids);
+    if (JSON.stringify(tipos) === JSON.stringify(tiposLimpios(b.depTipos || {}, ids))) return;
+    window.planOnPatch(b.id, { dependsOnIds: ids, depTipos: tipos });
+  }
+  function abrirFlecha(pth, ev) {
     const acts = (ultimoModelo && ultimoModelo.activities) || [];
     const b = acts.find(x => x.id === pth.dataset.a), a = acts.find(x => x.id === pth.dataset.de);
     if (!a || !b) return;
-    if (!confirm(`¿Quitar la precedencia «${a._cod || ''} ${a.name}» → «${b._cod || ''} ${b.name}»?`)) return;
-    window.planOnPatch(b.id, { dependsOnIds: (b.dependsOnIds || []).filter(x => x !== a.id) });
-  });
+    cerrarFlecha(true); ocultarCadena();
+    const x = tipoDep(b, a.id), cod = a._cod || a.name;
+    flCtx = { a, b, x };
+    document.querySelectorAll(`svg.pl-links path[data-de="${a.id}"][data-a="${b.id}"]:not(.hit)`).forEach(p => p.classList.add('sel'));
+    flPop = document.createElement('div'); flPop.className = 'pl-selpop pl-flpop';
+    flPop.innerHTML = `<div class="pl-sel-h" title="${esc(`${a._cod || ''} ${a.name} → ${b._cod || ''} ${b.name}`)}">Flecha · <span><b>${esc(a._cod || '')}</b> ${esc(a.name)} <i>→</i> <b>${esc(b._cod || '')}</b> ${esc(b.name)}</span></div>
+      <div class="pl-rel" data-id="${esc(a.id)}" data-cod="${esc(cod)}"><b title="${esc(a.name)}">${esc(a._cod || '')}</b>
+        <select class="pl-rlt" title="Tipo de precedencia">${TIPOS_DEP.map(t => `<option value="${t}"${x.t === t ? ' selected' : ''}>${t} · ${NOMBRE_TIPO[t]}</option>`).join('')}</select>
+        <span class="pl-rel-d"><select class="pl-rls" title="¿Después o antes?"><option value="1"${x.d >= 0 ? ' selected' : ''}>+ después</option><option value="-1"${x.d < 0 ? ' selected' : ''}>− antes</option></select>
+        <input type="number" min="0" max="730" value="${Math.abs(x.d) || ''}" placeholder="0" title="Cuántos días de desfase">
+        <select class="pl-rlu" title="Días hábiles (sin fines de semana ni festivos) o corridos (calendario)"><option value="h"${x.u !== 'c' ? ' selected' : ''}>días hábiles</option><option value="c"${x.u === 'c' ? ' selected' : ''}>días corridos</option></select></span>
+        <em class="pl-rel-x">${esc(textoDep(x.t, x.d, x.u, cod))}</em></div>
+      <div class="pl-sel-f"><button class="pl-fl-quitar" data-quitar-fl="1" title="Borrar esta precedencia">🗑 Quitar flecha</button><button class="ok" data-listo="1">Listo</button></div>`;
+    document.body.appendChild(flPop);
+    const w = flPop.offsetWidth, h = flPop.offsetHeight;
+    flPop.style.left = Math.max(10, Math.min(ev.clientX - 20, window.innerWidth - w - 10)) + 'px';
+    flPop.style.top = (ev.clientY + 12 + h < window.innerHeight - 10 ? ev.clientY + 12 : Math.max(10, ev.clientY - h - 12)) + 'px';
+    const leer = () => {
+      const f = flPop.querySelector('.pl-rel');
+      const t = f.querySelector('.pl-rlt').value, u = f.querySelector('.pl-rlu').value;
+      const d = Math.abs(Math.round(Number(f.querySelector('input').value) || 0)) * Number(f.querySelector('.pl-rls').value);
+      flCtx.x = { t, d, u };
+      f.querySelector('.pl-rel-x').textContent = textoDep(t, d, u, cod);
+    };
+    flPop.addEventListener('change', leer); flPop.addEventListener('input', leer);
+    flPop.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); cerrarFlecha(true); } if (e.key === 'Escape') { e.stopPropagation(); cerrarFlecha(false); } });
+    flPop.addEventListener('click', e => {
+      if (e.target.closest('[data-listo]')) return cerrarFlecha(true);
+      if (e.target.closest('[data-quitar-fl]')) {
+        const ctx = flCtx; cerrarFlecha(false);
+        const ids = (ctx.b.dependsOnIds || []).filter(i => i !== ctx.a.id);
+        window.planOnPatch(ctx.b.id, { dependsOnIds: ids, depTipos: tiposLimpios(ctx.b.depTipos || {}, ids) });
+        if (has('toast')) window.toast(`Flecha quitada: ${ctx.b._cod || ''} ya no depende de ${ctx.a._cod || ''}`);
+      }
+    });
+  }
+  document.addEventListener('click', ev => {
+    const pth = ev.target.closest && ev.target.closest('svg.pl-links.editable path.hit');
+    if (pth && has('planOnPatch')) { ev.stopPropagation(); abrirFlecha(pth, ev); return; }
+    if (flPop && !ev.composedPath().includes(flPop)) cerrarFlecha(true);
+  }, true);
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && flPop) cerrarFlecha(false); });
 
   // ============================================================
   // COPIAR VALORES COMO EN EXCEL
@@ -1794,7 +1847,7 @@
         paths += `<path data-de="${de}" data-a="${a}" d="${d}" />`;
         if (svg.classList.contains('editable')) {
           const cod = id => { const x = ((ultimoModelo && ultimoModelo.activities) || []).find(y => y.id === id); return x ? (x._cod || x.name) : ''; };
-          golpes += `<path class="hit" data-de="${de}" data-a="${a}" d="${d}"><title>${esc(cod(de))} → ${esc(cod(a))} · clic para quitar esta precedencia</title></path>`;
+          golpes += `<path class="hit" data-de="${de}" data-a="${a}" d="${d}"><title>${esc(cod(de))} → ${esc(cod(a))} · clic para cambiar el tipo o quitarla</title></path>`;
         }
       });
       svg.innerHTML = `<defs><marker id="pl-flecha" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="pl-flecha"/></marker></defs>${paths.replace(/<path /g, '<path marker-end="url(#pl-flecha)" ')}${golpes}`;
@@ -1886,9 +1939,7 @@
       if (g.padre && estaPlegada(g.padre)) return ''; // capítulo contraído: tampoco sus subcapítulos
       const plegada = estaPlegada(g.key);
       if (g.sec && g.sec.enabled === false) {
-        // «No aplica»: no se pinta en el plan. Quedan juntos en una línea al final (ver noAplicaRow)
-        if (!opts.owner || agr !== 'etapa' || !opts.verNoAplica) return '';
-        return `<tr class="pl-area off"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><div class="pl-anw"><span class="pl-an" title="${esc(g.name)}">${esc(g.name)}</span><span class="pl-mut">no aplica</span><button class="pl-mini" onclick="planOnSection('on','${g.id}')" title="Vuelve a aparecer en el plan">activar</button>${editable ? `<button class="pl-sdel" onclick="planOnSection('remove','${g.id}')" title="Eliminar definitivamente">🗑</button>` : ''}</div></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>`;
+        return ''; // «no aplica» ya no existe: esos capítulos se borran
       }
       const filasActs = g.acts.filter(pasaResp);
       // Los totales del capítulo incluyen sus subcapítulos
@@ -1899,7 +1950,7 @@
       const avg = acts.length ? Math.round(acts.reduce((s, a) => s + (a.pctComplete || 0), 0) / acts.length) : 0;
       const hechas = acts.filter(a => estado(a, today) === 'Completada').length;
       const estA = acts.length ? (avg >= 100 ? 'Completada' : fF && today > fF ? 'Atrasada' : fI && today >= fI ? 'En curso' : 'Por iniciar') : '';
-      const tools = opts.owner && g.id && agr === 'etapa' ? `<span class="pl-tools"><button onclick="planOnSection('rename','${g.id}')" title="Renombrar">✎</button>${g.padre ? `<button onclick="planOnSection('sacar','${g.id}')" title="Sacarlo del capítulo: queda como capítulo">⇱ sacar</button>` : ''}<button onclick="planOnSection('off','${g.id}')" title="Ocultar: este capítulo no aplica en este proyecto (no se borra; para borrarlo usa 🗑)">no aplica</button></span>${editable ? `<button class="pl-sdel" onclick="planOnSection('remove','${g.id}')" title="Eliminar ${g.padre ? 'el subcapítulo' : 'el capítulo'} y sus actividades">🗑</button>` : ''}` : '';
+      const tools = opts.owner && g.id && agr === 'etapa' ? `<span class="pl-tools"><button onclick="planOnSection('rename','${g.id}')" title="Renombrar">✎</button>${g.padre ? `<button onclick="planOnSection('sacar','${g.id}')" title="Sacarlo del capítulo: queda como capítulo">⇱ sacar</button>` : ''}</span>${editable ? `<button class="pl-sdel" onclick="planOnSection('remove','${g.id}')" title="Eliminar ${g.padre ? 'el subcapítulo' : 'el capítulo'} y sus actividades">🗑</button>` : ''}` : '';
       const sdrag = editable && opts.owner && agr === 'etapa' && g.id ? `<span class="pl-sdrag" title="Arrastra para cambiar el orden: suéltalo arriba o abajo de otro capítulo${g.hijos && g.hijos.length ? '' : ', o en su centro para volverlo subcapítulo'}">⠿</span>` : '';
       const sum = fI ? `<span class="pl-sum" style="left:${E.x(fI)}px;width:${Math.max(6, E.x(addDays(fF, 1)) - E.x(fI))}px;--c:${g.color}"><i style="width:${avg}%"></i></span>` : '';
       const dvs = acts.map(desvio).filter(d => d != null);
@@ -1921,9 +1972,6 @@
       const add = !plegada && opts.owner && editable && agr === 'etapa' && !(g.hijos && g.hijos.length) ? `<tr class="pl-add"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><input placeholder="＋ Actividad en ${esc(g.name)} · o pega filas de Excel" data-sec-add="${g.id || ''}" onkeydown="if(event.key==='Enter')planOnAdd('${g.id || ''}',this)"></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>` : '';
       return areaRow + actRows + add;
     }).join('');
-    // Capítulos marcados «no aplica»: ocultos, en una sola línea discreta para verlos o reactivarlos
-    const offs = gs.filter(g => g.sec && g.sec.enabled === false);
-    const noAplicaRow = opts.owner && agr === 'etapa' && offs.length && !opts.grupo && !opts.resp ? `<tr class="pl-noap"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><div class="pl-anw"><span class="pl-noap-t" title="${esc(offs.map(g => g.name).join(' · '))}">⊘ ${offs.length} capítulo${offs.length === 1 ? '' : 's'} «no aplica» ${opts.verNoAplica ? '' : 'oculto' + (offs.length === 1 ? '' : 's')}</span><button class="pl-mini" onclick="planSetOpt('verNoAplica',${!opts.verNoAplica})">${opts.verNoAplica ? 'ocultar' : 'ver'}</button></div></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>` : '';
     const addArea = opts.owner && editable && agr === 'etapa' && !opts.grupo && !opts.resp ? `<tr class="pl-add"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><input placeholder="＋ Nueva etapa" onkeydown="if(event.key==='Enter')planOnAdd('__area__',this)"></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>` : '';
 
     const vacio = (model.activities || []).length ? '' : `<div class="pl-vacio">${opts.vacioHtml || 'Aún no hay actividades en este plan.'}</div>`;
@@ -1934,7 +1982,7 @@
     </div>`;
     const deps = [];
     if (opts.lineas !== false || esDeps) (model.activities || []).forEach(a => (a.dependsOnIds || []).forEach(p => deps.push([p, a.id, tipoDep(a, p).t])));
-    const tabla = `<style id="pl-colstyle">${cssCols}</style><div class="pl-wrap" id="pl-wrap"><div class="pl-canvas"><table class="pl${esDeps ? ' pl-deps' : ''}">${headF}<tbody>${filas}${addArea}${noAplicaRow}</tbody></table><svg class="pl-links${editable && opts.owner && has('planOnPatch') && esDeps ? ' editable' : ''}" data-deps='${esc(JSON.stringify(deps))}'></svg></div></div>`;
+    const tabla = `<style id="pl-colstyle">${cssCols}</style><div class="pl-wrap" id="pl-wrap"><div class="pl-canvas"><table class="pl${esDeps ? ' pl-deps' : ''}">${headF}<tbody>${filas}${addArea}</tbody></table><svg class="pl-links${editable && opts.owner && has('planOnPatch') ? ' editable' : ''}" data-deps='${esc(JSON.stringify(deps))}'></svg></div></div>`;
     const panel = opts.panel ? involucradosHtml(model, opts) : '';
     return `${filtrosHtml(model, opts, gs, cols, base)}<div class="pl-div"></div>${vacio}
       ${panel ? `<div class="pl-layout"><div class="pl-main">${tabla}</div>${panel}</div>` : tabla}
@@ -1963,7 +2011,7 @@
       barra += ini === fin
         ? `<span class="pl-ms${cls}" data-id="${a.id}"${mov} style="left:${x0 + E.ppd / 2}px;--c:${g.color}" title="${tip}${tipMov}"${click}></span>`
         : `<span class="pl-b${cls}${w < 34 ? ' mini' : ''}" data-id="${a.id}"${mov} style="left:${x0}px;width:${w}px;--c:${g.color}" title="${tip}${tipMov}"${click}><i style="width:${pct}%"></i>${mov && w >= 30 ? '<b class="pl-bh l"></b><b class="pl-bh r"></b>' : ''}</span>`;
-      if (cols.esDeps && editable && opts.owner && has('planOnPatch')) {
+      if (editable && opts.owner && has('planOnPatch') && opts.lineas !== false) {
         barra += `<span class="pl-lk" data-src="${a.id}" style="left:${ini === fin ? x0 + E.ppd / 2 + 8 : x0 + w + 2}px" title="Arrastra hasta otra actividad: «${esc(a.name)}» debe terminar antes de que ella empiece"></span>`;
       }
     }
@@ -2087,6 +2135,7 @@
     opciones(clave, base) {
       let o = Object.assign({ vista: 'gantt', zoom: 'semana', agrupar: 'etapa', grupo: null, resp: '', tareas: true, cols: { entregable: true, real: true, deps: true } }, base || {});
       try { const g = JSON.parse(localStorage.getItem(clave) || 'null'); if (g) { o = Object.assign(o, g, { cols: Object.assign({}, o.cols, g.cols || {}) }); } } catch (e) {}
+      if (o.vista === 'deps') o.vista = 'gantt'; // la vista «Dependencias» ya no existe: las flechas se editan en el plan
       return o;
     },
     guardar(clave, o) { try { localStorage.setItem(clave, JSON.stringify({ vista: o.vista, zoom: o.zoom, agrupar: o.agrupar, panel: o.panel, lineas: o.lineas, tareas: o.tareas, cols: o.cols, colsVis: o.colsVis })); } catch (e) {} },
@@ -2096,6 +2145,7 @@
         const [ck, on] = String(v).split(':'), vk = o.vista === 'tabla' ? 'tabla' : o.vista === 'deps' ? 'deps' : 'gantt';
         o.colsVis = o.colsVis || {}; o.colsVis[vk] = Object.assign({}, o.colsVis[vk], { [ck]: on === '1' });
       }
+      else if (k === 'vista') o.vista = v === 'deps' ? 'gantt' : v;
       else if (k === 'anchosReset') { anchosCol = {}; guardarAnchos(); }
       else if (k === 'agrupar') { o.agrupar = v; o.grupo = null; o.plegadas = []; }
       else if (k === 'soloEtapas') o.plegadas = v ? '*' : [];

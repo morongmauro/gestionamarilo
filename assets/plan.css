@@ -570,12 +570,6 @@ tr:hover .pl-caret,.pl-pick:focus .pl-caret{opacity:1}
 .pl-anw .pl-tools{position:absolute;right:30px;top:50%;transform:translateY(-50%);margin-left:0;pointer-events:none;background:color-mix(in srgb,var(--c,#9A9384) 9%,var(--card));border-radius:999px;box-shadow:0 0 0 1px color-mix(in srgb,var(--ink) 8%,transparent)}
 .pl tr.pl-area:hover .pl-anw .pl-tools{pointer-events:auto}
 .pl-anw .pl-sdel{flex-shrink:0;margin-left:auto}
-/* Línea con los capítulos «no aplica» (ocultos) */
-.pl tr.pl-noap td{height:28px;background:transparent}
-.pl-noap-t{font-size:11px;font-weight:600;color:var(--faint);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pl-noap .pl-mini{margin-left:8px;flex-shrink:0}
-.pl tr.pl-area.off .pl-mini{flex-shrink:0;margin-left:8px}
-.pl tr.pl-area.off .pl-sdel{opacity:.7}
 /* Etiqueta junto al cursor al arrastrar un capítulo */
 .pl-dhint{position:fixed;z-index:9999;pointer-events:none;display:none;font:700 11px Montserrat,system-ui,sans-serif;color:#fff;background:var(--accent,#3D7BF7);border-radius:999px;padding:4px 10px;box-shadow:0 6px 18px rgba(28,26,23,.18);white-space:nowrap}
 .pl-dhint.on{display:block}
@@ -616,7 +610,15 @@ body.pl-conectando,body.pl-conectando *{cursor:crosshair!important;user-select:n
 .pl-lk-tmp circle{fill:#7C6CF2}
 tr.pl-lk-dest td{background:color-mix(in srgb,#7C6CF2 14%,var(--card))!important}
 svg.pl-links.editable path.hit{stroke:transparent!important;stroke-width:11!important;pointer-events:stroke;cursor:pointer;fill:none}
-svg.pl-links.editable path.hit:hover{stroke:color-mix(in srgb,#E2445C 35%,transparent)!important}
+svg.pl-links.editable path.hit:hover{stroke:color-mix(in srgb,#7C6CF2 30%,transparent)!important}
+svg.pl-links path.sel{stroke:#7C6CF2!important;stroke-width:2.4!important;opacity:1!important}
+/* Ficha de una flecha: tipo, desfase y quitar */
+.pl-flpop{width:400px}
+.pl-flpop .pl-sel-h span{font-weight:600}
+.pl-flpop .pl-sel-h i{font-style:normal;color:#7C6CF2;margin:0 3px}
+.pl-flpop .pl-rel{margin:10px 12px 6px}
+.pl-flpop .pl-fl-quitar{color:#E2445C!important}
+.pl-flpop .pl-fl-quitar:hover{background:color-mix(in srgb,#E2445C 12%,var(--card))!important}
 .pl td.pl-dp.pl-pick{min-width:90px;white-space:nowrap}
 
 /* Tipo de cada precedencia en la lista «Depende de» */
