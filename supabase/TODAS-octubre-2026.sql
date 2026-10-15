@@ -67,7 +67,7 @@ alter table activities add column if not exists duracion integer;
 
 -- ---------- edicion (enlaces de editor, historial, subcapítulos) ----------
 alter table project_shares drop constraint if exists project_shares_role_check;
-alter table project_shares add constraint project_shares_role_check check (role in ('view','edit','editor'));
+alter table project_shares add constraint project_shares_role_check check (role in ('view','edit','editor','panorama'));
 alter table project_sections add column if not exists parent_id uuid references project_sections(id) on delete set null;
 create table if not exists historial_cambios (
   id          uuid primary key default gen_random_uuid(),
