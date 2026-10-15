@@ -440,12 +440,15 @@ tr.pl-drop-dentro td{box-shadow:inset 0 -3px 0 var(--accent,#3D7BF7)!important;f
 /* ============================================================
    Comentarios: nubecita en la fila, nubes en el cronograma y popover
    ============================================================ */
-.pl-cmt{position:relative;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:18px;padding:0 6px;border-radius:10px;font:800 10px Montserrat,system-ui,sans-serif;color:#fff;background:#7C6CF2;cursor:pointer;margin-left:2px}
-.pl-cmt::after{content:"";position:absolute;left:5px;bottom:-4px;border:4px solid transparent;border-top-color:#7C6CF2;border-bottom:0;border-left-width:2px}
-.pl-cmt:hover{filter:brightness(1.1)}
-.pl-cmt.vacio{background:var(--sunk);color:var(--muted);opacity:.55;transition:opacity .12s}
-.pl-cmt.vacio::after{border-top-color:var(--sunk)}
-.pl tr.pl-act:hover .pl-cmt.vacio,.g-act:hover .pl-cmt.vacio,.pl-cmt.vacio:hover{opacity:1}
+.pl-cmt{position:relative;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:27px;height:19px;padding:0;margin-left:3px;background:none;border:none;cursor:pointer}
+.pl-cmt svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.pl-cmt svg path{fill:#7C6CF2;transition:fill .12s,stroke .12s}
+.pl-cmt b{position:relative;margin-top:4px;font:800 9.5px Montserrat,system-ui,sans-serif;color:#fff;letter-spacing:-.02em}
+.pl-cmt:hover svg path{fill:#6A58EE}
+.pl-cmt.vacio{opacity:.6;transition:opacity .12s}
+.pl-cmt.vacio svg path{fill:var(--card,#fff);stroke:var(--faint,#B4AC9C);stroke-width:1.5}
+.pl tr.pl-act:hover .pl-cmt.vacio,.g-act:hover .pl-cmt.vacio,.ptable tr:hover .pl-cmt.vacio,.pl-cmt.vacio:hover{opacity:1}
+.pl-cmt.vacio:hover svg path{stroke:#7C6CF2;fill:color-mix(in srgb,#7C6CF2 10%,var(--card,#fff))}
 /* Acciones de fila: ＋ insertar debajo · 🗑 eliminar (al pasar el mouse) */
 .pl-ra{display:none;flex-shrink:0;gap:1px}
 .pl tr.pl-act:hover .pl-ra{display:inline-flex}
@@ -567,6 +570,12 @@ tr:hover .pl-caret,.pl-pick:focus .pl-caret{opacity:1}
 .pl-anw .pl-tools{position:absolute;right:30px;top:50%;transform:translateY(-50%);margin-left:0;pointer-events:none;background:color-mix(in srgb,var(--c,#9A9384) 9%,var(--card));border-radius:999px;box-shadow:0 0 0 1px color-mix(in srgb,var(--ink) 8%,transparent)}
 .pl tr.pl-area:hover .pl-anw .pl-tools{pointer-events:auto}
 .pl-anw .pl-sdel{flex-shrink:0;margin-left:auto}
+/* Línea con los capítulos «no aplica» (ocultos) */
+.pl tr.pl-noap td{height:28px;background:transparent}
+.pl-noap-t{font-size:11px;font-weight:600;color:var(--faint);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl-noap .pl-mini{margin-left:8px;flex-shrink:0}
+.pl tr.pl-area.off .pl-mini{flex-shrink:0;margin-left:8px}
+.pl tr.pl-area.off .pl-sdel{opacity:.7}
 /* Etiqueta junto al cursor al arrastrar un capítulo */
 .pl-dhint{position:fixed;z-index:9999;pointer-events:none;display:none;font:700 11px Montserrat,system-ui,sans-serif;color:#fff;background:var(--accent,#3D7BF7);border-radius:999px;padding:4px 10px;box-shadow:0 6px 18px rgba(28,26,23,.18);white-space:nowrap}
 .pl-dhint.on{display:block}

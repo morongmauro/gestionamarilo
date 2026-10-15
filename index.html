@@ -459,7 +459,12 @@
   .g-sec.g-sdrop-antes{box-shadow:inset 5px 0 0 var(--c,#9A9384),inset 0 3px 0 0 var(--accent-ink)!important}
   .g-sec.g-sdrop-despues{box-shadow:inset 5px 0 0 var(--c,#9A9384),inset 0 -3px 0 0 var(--accent-ink)!important}
   .g-sec.g-sdrop-dentro{box-shadow:inset 5px 0 0 var(--c,#9A9384),inset 0 0 0 2px var(--accent-ink)!important}
-  .g-anm .pl-cmt{margin:0 2px 3px 0}
+  .g-mini{flex-shrink:0;font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--card);color:var(--muted);margin-left:8px}
+  .g-mini:hover{color:var(--ink)}
+  .g-noap{background:transparent}
+  .g-noap .g-left{justify-content:center}
+  .g-noap-t{font-size:11px;font-weight:600;color:var(--faint);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .g-anm .pl-cmt{margin:0 3px 0 0}
   .g-act.link-target{background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent-ink)}
   body.g-linking .g-act{cursor:crosshair}
 
@@ -2487,15 +2492,19 @@
     groups.forEach(g=>{const e=infoEt[g.id||'_otras']||{};g.color=e.color||'#9A9384';g.cod=e.cod;g.nombre=e.name||g.name;g.padre=e.padre;});
     const rows=groups.map(g=>{
       // Fase desactivada: fila delgada, sin actividades, con opción de reactivar
+      // «No aplica»: oculto; se ve solo si se pide desde la línea del final
       if(g.sec&&g.sec.enabled===false){
-        return `<div class="g-row g-sec off"><div class="g-left"><div class="g-secrow"><span class="nm">${esc(g.name)}</span><span class="mt">no aplica</span><span class="tools" style="opacity:1"><button onclick="toggleSection('${g.id}',true)" title="Volver a activar esta fase">☑ activar</button></span></div></div><div class="g-tl" style="min-height:26px">${ticks}${todayLine}</div></div>`;
+        if(!planOpts.verNoAplica)return '';
+        return `<div class="g-row g-sec off"><div class="g-left"><div class="g-secrow"><span class="nm">${esc(g.name)}</span><span class="mt">no aplica</span><button class="g-mini" onclick="toggleSection('${g.id}',true)" title="Vuelve a aparecer en el plan">activar</button><button class="g-sdel" onclick="removeSection('${g.id}')" title="Eliminar definitivamente">🗑</button></div></div><div class="g-tl" style="min-height:26px">${ticks}${todayLine}</div></div>`;
       }
       return gSecRow(g,pct,ticks,todayLine)+g.acts.map(a=>gActRow(a,pct,total,today,d,g.color)).join('')+
         `<div class="g-row g-add"><div class="g-left"><input placeholder="＋ Actividad en ${esc(g.name)} (Enter) · o pega filas de Excel" data-sec-add="${g.id||''}" onkeydown="if(event.key==='Enter')addActivityInline('${g.id||''}',this)"></div><div class="g-tl" style="min-height:30px">${ticks}${todayLine}</div></div>`;
     }).join('');
     const addSec=`<div class="g-row g-add"><div class="g-left"><input placeholder="＋ Nueva fase (Enter)" onkeydown="if(event.key==='Enter')addSectionInline(this)"></div><div class="g-tl" style="min-height:30px">${ticks}${todayLine}</div></div>`;
     const head=`<div class="g-row g-head"><div class="g-left"><span class="g-hlab">Actividad</span><span class="g-resizer" onmousedown="startColResize(event)" title="Arrastra para ensanchar o angostar esta columna"></span></div><div class="g-tl">${ticks}${tlab}${todayLine}${todayFlag}</div></div>`;
-    return `<div class="gantt-scroll" id="gantt-scroll"><div class="gantt" id="gantt" style="--gcol:${ganttColW}px"><svg class="g-links" id="g-links"></svg>${head}${rows}${addSec}</div></div>`;
+    const offs=secs.filter(x=>x.enabled===false);
+    const noAp=offs.length?`<div class="g-row g-noap"><div class="g-left"><div class="g-secrow"><span class="g-noap-t" title="${esc(offs.map(x=>x.name).join(' · '))}">⊘ ${offs.length} capítulo${offs.length===1?'':'s'} «no aplica» ${planOpts.verNoAplica?'':'oculto'+(offs.length===1?'':'s')}</span><button class="g-mini" onclick="planSetOpt('verNoAplica',${!planOpts.verNoAplica})">${planOpts.verNoAplica?'ocultar':'ver'}</button></div></div><div class="g-tl" style="min-height:26px">${ticks}${todayLine}</div></div>`:'';
+    return `<div class="gantt-scroll" id="gantt-scroll"><div class="gantt" id="gantt" style="--gcol:${ganttColW}px"><svg class="g-links" id="g-links"></svg>${head}${rows}${addSec}${noAp}</div></div>`;
   }
   // Fila madre (fase): avance propio, comparación con el plan y barra resumen en la línea de tiempo
   function gSecRow(g,pct,ticks,todayLine){
@@ -2507,7 +2516,7 @@
     const pmark=plan!=null?`<span class="pmark" style="left:${plan}%" title="Plan a hoy: ${plan}%"></span>`:'';
     const tools=g.id?`<span class="tools">
       <button onclick="renameSection('${g.id}')" title="Renombrar fase">✎</button>
-      <button onclick="toggleSection('${g.id}',false)" title="Desactivar: esta fase no aplica en este proyecto">◻ no aplica</button>
+      <button onclick="toggleSection('${g.id}',false)" title="Ocultar: este capítulo no aplica en este proyecto (no se borra; para borrarlo usa 🗑)">◻ no aplica</button>
     </span>`:'';
     const tieneHijos=!!(g.id&&(currentProjectDetail.sections||[]).some(x=>x.parentId===g.id));
     const grip=g.id?`<button class="g-sgrip" onmousedown="startSecDrag(event,'${g.id}')" title="Arrastra para cambiar el orden: suéltalo arriba o abajo de otro capítulo${tieneHijos?'':', o en su centro para volverlo subcapítulo'}">⠿</button>`:'';
@@ -2560,7 +2569,7 @@
     }
     const nDeps=(a.dependsOnIds||[]).length;
     return `<div class="g-row g-act ${rowCls}" data-row-act="${a.id}" style="--c:${color||'#9A9384'}"><div class="g-left">
-      <div class="g-anm" onclick="if(!event.target.closest('[data-cmt]'))openActivityModal('${a.id}')" onmouseenter="scheduleReqCard(event,'${a.id}')" onmouseleave="cancelReqCard()"><span class="g-cod">${a._cod||''}</span><span class="g-sdot" style="background:${col}" title="${AS[a.estadoEfectivo]||''}"></span>${(()=>{const nC=(d.notas||[]).filter(n=>n.activityId===a.id).length;return `<button class="pl-cmt${nC?'':' vacio'}" data-cmt="${a.id}" onmouseover="hideReqCard()" title="Comentarios de esta actividad">${nC||'＋'}</button>`;})()}<span class="nmtxt">${esc(a.name)}</span>${nDeps?`<span class="req-badge" title="Depende de ${nDeps} actividad(es) — pasa el mouse para ver la cadena">⛓${nDeps}</span>`:''}${a.critical?`<span class="cp-chip ${a.criticaEnRiesgo?'late':''}">crítica</span>`:''}</div>
+      <div class="g-anm" onclick="if(!event.target.closest('[data-cmt]'))openActivityModal('${a.id}')" onmouseenter="scheduleReqCard(event,'${a.id}')" onmouseleave="cancelReqCard()"><span class="g-cod">${a._cod||''}</span><span class="g-sdot" style="background:${col}" title="${AS[a.estadoEfectivo]||''}"></span>${(()=>{const nC=(d.notas||[]).filter(n=>n.activityId===a.id).length;return `<button class="pl-cmt${nC?'':' vacio'}" data-cmt="${a.id}" onmouseover="hideReqCard()" title="Comentarios de esta actividad">${Plan.nube(nC)}</button>`;})()}<span class="nmtxt">${esc(a.name)}</span>${nDeps?`<span class="req-badge" title="Depende de ${nDeps} actividad(es) — pasa el mouse para ver la cadena">⛓${nDeps}</span>`:''}${a.critical?`<span class="cp-chip ${a.criticaEnRiesgo?'late':''}">crítica</span>`:''}</div>
       <div class="g-amt">${meta.join(' · ')}</div>
       <span class="g-tools-act">
         <button class="g-grip" onmousedown="startRowDrag(event,'${a.id}')" title="Arrastra para mover la actividad de lugar">⠿</button>
@@ -2911,7 +2920,8 @@
     const rows=groups.map(g=>{
       const e=info[g.id||'_otras']||{color:'#9A9384'};
       if(g.sec&&g.sec.enabled===false){
-        return `<tr class="sec off"><td colspan="${cols}">${esc(g.name)} · no aplica <button class="pt-del" onclick="toggleSection('${g.id}',true)" title="Volver a activar">☑ activar</button></td></tr>`;
+        if(!planOpts.verNoAplica)return '';
+        return `<tr class="sec off"><td colspan="${cols}">${esc(g.name)} · no aplica <button class="pt-del" onclick="toggleSection('${g.id}',true)" title="Volver a activar">☑ activar</button> <button class="pt-del" onclick="removeSection('${g.id}')" title="Eliminar definitivamente">🗑</button></td></tr>`;
       }
       const hechas=g.acts.filter(a=>a.estadoEfectivo==='completada').length;
       const avg=g.acts.length?Math.round(g.acts.reduce((s,a)=>s+a.pctComplete,0)/g.acts.length):0;
@@ -2923,7 +2933,7 @@
     const addSec=`<tr class="addrow"><td colspan="${cols}"><input placeholder="＋ Nueva fase (Enter)" onkeydown="if(event.key==='Enter')addSectionInline(this)"></td></tr>`;
     return `<div class="ptable-wrap"><table class="ptable">
       <thead><tr><th style="width:74px">ID</th><th style="min-width:250px">Actividad</th><th style="min-width:150px">Fase</th><th style="min-width:170px">Responsables</th><th style="min-width:140px" title="Elígela de la lista de áreas de «Involucrados»; si la dejas automática, sale del área de cada responsable">Área responsable</th><th style="min-width:142px">Inicio</th><th style="min-width:142px">Fin</th><th style="width:70px" title="Duración en días hábiles">Duración</th><th style="min-width:126px">Estado</th><th style="width:66px">%</th><th style="min-width:190px">Depende de</th><th style="min-width:190px">Entregable</th><th style="min-width:170px">Notas</th><th style="width:34px"></th></tr></thead>
-      <tbody>${rows}${addSec}</tbody></table></div>`;
+      <tbody>${rows}${addSec}${(()=>{const offs=secs.filter(x=>x.enabled===false);return offs.length?`<tr class="sec off"><td colspan="${cols}">⊘ ${offs.length} capítulo${offs.length===1?'':'s'} «no aplica» ${planOpts.verNoAplica?'':'oculto'+(offs.length===1?'':'s')} <button class="pt-del" onclick="planSetOpt('verNoAplica',${!planOpts.verNoAplica})">${planOpts.verNoAplica?'ocultar':'ver'}</button></td></tr>`:'';})()}</tbody></table></div>`;
   }
   function ptRow(a,secs,color,cod){
     const cod4=ptCodigos||{};
@@ -2934,7 +2944,7 @@
     const atraso=a.alerta==='retraso'?' style="color:var(--crit);font-weight:700"':'';
     return `<tr class="act ${cp}" style="--c:${color||'#9A9384'}" data-row="${a.id}">
       <td class="pt-ord"><span class="pl-drag" title="Arrastra para mover la fila · clic derecho: más opciones">⠿</span><span class="pt-acod">${cod||''}</span><button onclick="moveActivity('${a.id}',-1)" title="Subir">▲</button><button onclick="moveActivity('${a.id}',1)" title="Bajar">▼</button></td>
-      <td><div class="pt-nmw"><input class="pt-in nm" data-cell="${a.id}:name" value="${esc(a.name)}" title="${esc(a.name)}" onchange="patchActivity('${a.id}',{name:this.value.trim()})">${a.critical?`<span class="cp-chip ${a.criticaEnRiesgo?'late':''}" title="Ruta crítica">RC</span>`:''}${(()=>{const nC=((currentProjectDetail&&currentProjectDetail.notas)||[]).filter(n=>n.activityId===a.id).length;return `<button class="pl-cmt${nC?'':' vacio'}" data-cmt="${a.id}" title="Comentarios">${nC||'＋'}</button>`;})()}<span class="pl-ra"><button onclick="planOnRow('insertar-debajo','${a.id}')" title="Insertar una fila debajo (Ctrl+Enter)">＋</button><button onclick="planOnRow('eliminar','${a.id}')" title="Eliminar esta fila">🗑</button></span></div></td>
+      <td><div class="pt-nmw"><input class="pt-in nm" data-cell="${a.id}:name" value="${esc(a.name)}" title="${esc(a.name)}" onchange="patchActivity('${a.id}',{name:this.value.trim()})">${a.critical?`<span class="cp-chip ${a.criticaEnRiesgo?'late':''}" title="Ruta crítica">RC</span>`:''}${(()=>{const nC=((currentProjectDetail&&currentProjectDetail.notas)||[]).filter(n=>n.activityId===a.id).length;return `<button class="pl-cmt${nC?'':' vacio'}" data-cmt="${a.id}" title="Comentarios">${Plan.nube(nC)}</button>`;})()}<span class="pl-ra"><button onclick="planOnRow('insertar-debajo','${a.id}')" title="Insertar una fila debajo (Ctrl+Enter)">＋</button><button onclick="planOnRow('eliminar','${a.id}')" title="Eliminar esta fila">🗑</button></span></div></td>
       <td><select class="pt-in" data-cell="${a.id}:sec" onchange="patchActivity('${a.id}',{sectionId:this.value||null})">${secOpts}</select></td>
       <td class="pl-pick pt-pick" tabindex="0" data-pick="resp" data-act="${a.id}" title="Elegir responsables de la lista de involucrados"><span class="pt-pv">${esc(resp)||'<span style="color:var(--faint)">Elegir…</span>'}</span><i class="pl-caret">▾</i></td>
       <td class="pl-pick pt-pick" tabindex="0" data-pick="area" data-act="${a.id}" title="${a.area?'Área elegida a mano':'Automática: sale del área de los responsables. Clic para elegirla a mano'}">${Plan.areasActividad(a,(currentProjectDetail&&currentProjectDetail.miembros)||[]).map(x=>`<span class="pl-arp${a.area?'':' auto'}" style="--c:${Plan.colorDe(x)}">${esc(x)}</span>`).join('')||'<span style="color:var(--faint)">Elegir…</span>'}<i class="pl-caret">▾</i></td>

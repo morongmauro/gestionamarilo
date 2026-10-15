@@ -466,6 +466,7 @@
       if(confirm(`¿Eliminar «${sc.name}»${n?` y sus ${n} actividad${n===1?'':'es'}`:''}?`))editar('seccion-eliminar',{id});
     }
     else if(acc==='sacar')editar('seccion-sacar',{id});
+    else if(acc==='mover'&&extra&&extra.destino)editar('seccion-mover',{id,destino:extra.destino,despues:!!extra.despues});
     else if(acc==='anidar'){
       const pa=(DATA.sections||[]).find(x=>x.id===extra);if(!pa)return;
       const sueltas=(DATA.activities||[]).filter(a=>a.sectionId===extra).length;

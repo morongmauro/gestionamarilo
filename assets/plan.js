@@ -711,10 +711,13 @@
     const nC = (m.notas || []).filter(n => n.activityId === a.id).length;
     const ts = (m.tasks || []).filter(t => t.activityId === a.id);
     const nH = ts.filter(t => t.kanbanStatus === 'done').length;
-    const cmt = `<button class="pl-cmt${nC ? '' : ' vacio'}" data-cmt="${a.id}" title="Comentarios de esta actividad">${nC || '＋'}</button>`;
+    const cmt = `<button class="pl-cmt${nC ? '' : ' vacio'}" data-cmt="${a.id}" title="${nC ? `${nC} comentario${nC === 1 ? '' : 's'}` : 'Comentar esta actividad'}">${nube(nC)}</button>`;
     const tar = ts.length ? `<button class="pl-nb" onclick="planOnDetalle('${a.id}')" title="Tareas de esta actividad">☑ ${nH}/${ts.length}</button>` : '';
     return cmt + tar + accionesFila(a);
   }
+  // Dibujo de la nubecita: llena con el número de comentarios, o solo el contorno si no hay
+  const NUBE = 'M7.5 17h12a5 5 0 0 0 .9-9.92A7 7 0 0 0 7.2 6.6 5.2 5.2 0 0 0 7.5 17z';
+  const nube = n => `<svg viewBox="0 0 26 18" aria-hidden="true"><path d="${NUBE}"/></svg>${n ? `<b>${n > 99 ? '99+' : n}</b>` : ''}`;
   // ＋ insertar fila debajo · 🗑 eliminar (al pasar el mouse por la fila)
   function accionesFila(a) {
     return has('planOnRow') ? `<span class="pl-ra"><button onclick="planOnRow('insertar-debajo','${a.id}')" title="Insertar una fila debajo (Ctrl+Enter)">＋</button><button onclick="planOnRow('eliminar','${a.id}')" title="Eliminar esta fila">🗑</button></span>` : '';
@@ -1883,8 +1886,9 @@
       if (g.padre && estaPlegada(g.padre)) return ''; // capítulo contraído: tampoco sus subcapítulos
       const plegada = estaPlegada(g.key);
       if (g.sec && g.sec.enabled === false) {
-        if (!opts.owner || agr !== 'etapa') return '';
-        return `<tr class="pl-area off"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><span class="pl-an">${esc(g.name)}</span> <span class="pl-mut">no aplica</span> <button class="pl-mini" onclick="planOnSection('on','${g.id}')">activar</button></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>`;
+        // «No aplica»: no se pinta en el plan. Quedan juntos en una línea al final (ver noAplicaRow)
+        if (!opts.owner || agr !== 'etapa' || !opts.verNoAplica) return '';
+        return `<tr class="pl-area off"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><div class="pl-anw"><span class="pl-an" title="${esc(g.name)}">${esc(g.name)}</span><span class="pl-mut">no aplica</span><button class="pl-mini" onclick="planOnSection('on','${g.id}')" title="Vuelve a aparecer en el plan">activar</button>${editable ? `<button class="pl-sdel" onclick="planOnSection('remove','${g.id}')" title="Eliminar definitivamente">🗑</button>` : ''}</div></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>`;
       }
       const filasActs = g.acts.filter(pasaResp);
       // Los totales del capítulo incluyen sus subcapítulos
@@ -1895,7 +1899,7 @@
       const avg = acts.length ? Math.round(acts.reduce((s, a) => s + (a.pctComplete || 0), 0) / acts.length) : 0;
       const hechas = acts.filter(a => estado(a, today) === 'Completada').length;
       const estA = acts.length ? (avg >= 100 ? 'Completada' : fF && today > fF ? 'Atrasada' : fI && today >= fI ? 'En curso' : 'Por iniciar') : '';
-      const tools = opts.owner && g.id && agr === 'etapa' ? `<span class="pl-tools"><button onclick="planOnSection('rename','${g.id}')" title="Renombrar">✎</button>${g.padre ? `<button onclick="planOnSection('sacar','${g.id}')" title="Sacarlo del capítulo: queda como capítulo">⇱ sacar</button>` : ''}<button onclick="planOnSection('off','${g.id}')" title="Esta etapa no aplica">no aplica</button></span>${editable ? `<button class="pl-sdel" onclick="planOnSection('remove','${g.id}')" title="Eliminar ${g.padre ? 'el subcapítulo' : 'el capítulo'} y sus actividades">🗑</button>` : ''}` : '';
+      const tools = opts.owner && g.id && agr === 'etapa' ? `<span class="pl-tools"><button onclick="planOnSection('rename','${g.id}')" title="Renombrar">✎</button>${g.padre ? `<button onclick="planOnSection('sacar','${g.id}')" title="Sacarlo del capítulo: queda como capítulo">⇱ sacar</button>` : ''}<button onclick="planOnSection('off','${g.id}')" title="Ocultar: este capítulo no aplica en este proyecto (no se borra; para borrarlo usa 🗑)">no aplica</button></span>${editable ? `<button class="pl-sdel" onclick="planOnSection('remove','${g.id}')" title="Eliminar ${g.padre ? 'el subcapítulo' : 'el capítulo'} y sus actividades">🗑</button>` : ''}` : '';
       const sdrag = editable && opts.owner && agr === 'etapa' && g.id ? `<span class="pl-sdrag" title="Arrastra para cambiar el orden: suéltalo arriba o abajo de otro capítulo${g.hijos && g.hijos.length ? '' : ', o en su centro para volverlo subcapítulo'}">⠿</span>` : '';
       const sum = fI ? `<span class="pl-sum" style="left:${E.x(fI)}px;width:${Math.max(6, E.x(addDays(fF, 1)) - E.x(fI))}px;--c:${g.color}"><i style="width:${avg}%"></i></span>` : '';
       const dvs = acts.map(desvio).filter(d => d != null);
@@ -1917,6 +1921,9 @@
       const add = !plegada && opts.owner && editable && agr === 'etapa' && !(g.hijos && g.hijos.length) ? `<tr class="pl-add"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><input placeholder="＋ Actividad en ${esc(g.name)} · o pega filas de Excel" data-sec-add="${g.id || ''}" onkeydown="if(event.key==='Enter')planOnAdd('${g.id || ''}',this)"></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>` : '';
       return areaRow + actRows + add;
     }).join('');
+    // Capítulos marcados «no aplica»: ocultos, en una sola línea discreta para verlos o reactivarlos
+    const offs = gs.filter(g => g.sec && g.sec.enabled === false);
+    const noAplicaRow = opts.owner && agr === 'etapa' && offs.length && !opts.grupo && !opts.resp ? `<tr class="pl-noap"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><div class="pl-anw"><span class="pl-noap-t" title="${esc(offs.map(g => g.name).join(' · '))}">⊘ ${offs.length} capítulo${offs.length === 1 ? '' : 's'} «no aplica» ${opts.verNoAplica ? '' : 'oculto' + (offs.length === 1 ? '' : 's')}</span><button class="pl-mini" onclick="planSetOpt('verNoAplica',${!opts.verNoAplica})">${opts.verNoAplica ? 'ocultar' : 'ver'}</button></div></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>` : '';
     const addArea = opts.owner && editable && agr === 'etapa' && !opts.grupo && !opts.resp ? `<tr class="pl-add"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><input placeholder="＋ Nueva etapa" onkeydown="if(event.key==='Enter')planOnAdd('__area__',this)"></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>` : '';
 
     const vacio = (model.activities || []).length ? '' : `<div class="pl-vacio">${opts.vacioHtml || 'Aún no hay actividades en este plan.'}</div>`;
@@ -1927,7 +1934,7 @@
     </div>`;
     const deps = [];
     if (opts.lineas !== false || esDeps) (model.activities || []).forEach(a => (a.dependsOnIds || []).forEach(p => deps.push([p, a.id, tipoDep(a, p).t])));
-    const tabla = `<style id="pl-colstyle">${cssCols}</style><div class="pl-wrap" id="pl-wrap"><div class="pl-canvas"><table class="pl${esDeps ? ' pl-deps' : ''}">${headF}<tbody>${filas}${addArea}</tbody></table><svg class="pl-links${editable && opts.owner && has('planOnPatch') && esDeps ? ' editable' : ''}" data-deps='${esc(JSON.stringify(deps))}'></svg></div></div>`;
+    const tabla = `<style id="pl-colstyle">${cssCols}</style><div class="pl-wrap" id="pl-wrap"><div class="pl-canvas"><table class="pl${esDeps ? ' pl-deps' : ''}">${headF}<tbody>${filas}${addArea}${noAplicaRow}</tbody></table><svg class="pl-links${editable && opts.owner && has('planOnPatch') && esDeps ? ' editable' : ''}" data-deps='${esc(JSON.stringify(deps))}'></svg></div></div>`;
     const panel = opts.panel ? involucradosHtml(model, opts) : '';
     return `${filtrosHtml(model, opts, gs, cols, base)}<div class="pl-div"></div>${vacio}
       ${panel ? `<div class="pl-layout"><div class="pl-main">${tabla}</div>${panel}</div>` : tabla}
@@ -2069,7 +2076,7 @@
 
   window.Plan = {
     render, estado, pickDate, duracionDe, tipoDep, etiquetaDep, textoDep, desfasePara, leerDeps, aplicarLocal, adelantar, cascada, colorDe, respDe, norm, fCorta, dibujarLineas, cambiarDuracion, areasActividad,
-    etapas, ordenSecciones, medirAjuste, anchoAjuste, enfocar, pintarComentarios: pintarPop,
+    etapas, ordenSecciones, nube, medirAjuste, anchoAjuste, enfocar, pintarComentarios: pintarPop,
     // La vista Tabla del editor no pasa por render(): le presta su modelo a la nubecita
     usarModelo(m) { ultimoModelo = m; },
     // Ancho extra que tomó la columna «Actividad» (para que la escala «Todo» siga cabiendo)
