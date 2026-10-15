@@ -602,7 +602,8 @@
         </div>
       </div>`;
     const colsBtn = `<button class="pl-optbtn${opts.verCols ? ' on' : ''}" onclick="planSetOpt('verCols',${!opts.verCols})" title="Mostrar u ocultar columnas">▤ Columnas</button>`;
-    if (!opts.compacto) return opciones + `<div class="pl-bar-r" style="margin:0 0 8px">${colsBtn}</div>` + (opts.verCols ? columnasHtml(opts, cols, base) : '') + filtro;
+    const rcBtn = `<button class="pl-optbtn pl-rcbtn${opts.rutaCritica ? ' on' : ''}" onclick="planSetOpt('rutaCritica',${!opts.rutaCritica})" title="Ver solo la ruta crítica">◆ Ruta crítica</button>`;
+    if (!opts.compacto) return opciones + `<div class="pl-bar-r" style="margin:0 0 8px">${rcBtn}${colsBtn}</div>` + (opts.verCols ? columnasHtml(opts, cols, base) : '') + filtro;
     // Modo compacto (enlace para directivos): una barra delgada y las opciones escondidas
     const solo = opts.plegadas === '*';
     return `<div class="pl-bar-c">
@@ -611,6 +612,7 @@
           ${vivas.map(chip).join('')}
         </div>
         <div class="pl-bar-r">
+          <button class="pl-optbtn pl-rcbtn${opts.rutaCritica ? ' on' : ''}" onclick="planSetOpt('rutaCritica',${!opts.rutaCritica})" title="Ver solo la ruta crítica: las actividades que, si se atrasan, corren la fecha final">◆ Ruta crítica</button>
           <button class="pl-optbtn${solo ? ' on' : ''}" onclick="planSetOpt('soloEtapas',${!solo})" title="Ver solo el resumen de cada etapa (vista macro)">${solo ? '▸ Ver actividades' : '▾ Solo etapas'}</button>
           ${colsBtn}
           <button class="pl-optbtn${opts.verOpciones ? ' on' : ''}" onclick="planSetOpt('verOpciones',${!opts.verOpciones})" title="Vista, agrupación, escala, filtros y qué mostrar">⚙ Opciones de vista</button>
@@ -715,9 +717,10 @@
     const tar = ts.length ? `<button class="pl-nb" onclick="planOnDetalle('${a.id}')" title="Tareas de esta actividad">☑ ${nH}/${ts.length}</button>` : '';
     return cmt + tar + accionesFila(a);
   }
-  // Dibujo de la nubecita: llena con el número de comentarios, o solo el contorno si no hay
-  const NUBE = 'M7.5 17h12a5 5 0 0 0 .9-9.92A7 7 0 0 0 7.2 6.6 5.2 5.2 0 0 0 7.5 17z';
-  const nube = n => `<svg viewBox="0 0 26 18" aria-hidden="true"><path d="${NUBE}"/></svg>${n ? `<b>${n > 99 ? '99+' : n}</b>` : ''}`;
+  // Nubecita de comentario: globo de texto redondo con colita. Llena con el número
+  // de comentarios, o solo el contorno si no hay
+  const NUBE = 'M11 1.5a8 8 0 1 1-3.9 15L3 18.5l1.4-3.9A8 8 0 0 1 11 1.5z';
+  const nube = n => `<svg viewBox="0 0 21 20" aria-hidden="true"><path d="${NUBE}"/></svg>${n ? `<b>${n > 99 ? '99+' : n}</b>` : ''}`;
   // ＋ insertar fila debajo · 🗑 eliminar (al pasar el mouse por la fila)
   function accionesFila(a) {
     return has('planOnRow') ? `<span class="pl-ra"><button onclick="planOnRow('insertar-debajo','${a.id}')" title="Insertar una fila debajo (Ctrl+Enter)">＋</button><button onclick="planOnRow('eliminar','${a.id}')" title="Eliminar esta fila">🗑</button></span>` : '';
@@ -1883,7 +1886,9 @@
     const tareasDe = id => tareas.filter(t => t.activityId === id)
       .sort((x, y) => (x.kanbanStatus === 'done') - (y.kanbanStatus === 'done') || (x.dueDate || '9').localeCompare(y.dueDate || '9'));
     const codigo = {}; gsEt.forEach(g => g.acts.forEach(a => { codigo[a.id] = a._cod; }));
-    const pasaResp = a => !opts.resp || respDe(a).some(r => norm(r).includes(norm(opts.resp)));
+    // Ruta crítica: solo las actividades sin holgura (si una se atrasa, se corre el final)
+    const enRC = !!opts.rutaCritica;
+    const pasaResp = a => (!opts.resp || respDe(a).some(r => norm(r).includes(norm(opts.resp)))) && (!enRC || !!a.critical);
 
     const fechas = [];
     (model.activities || []).forEach(a => ['startDate', 'deadline', 'realStart', 'realEnd', 'baselineStart', 'baselineEnd'].forEach(k => { if (a[k]) fechas.push(a[k]); }));
@@ -1933,7 +1938,7 @@
       else if (k !== 'id' && k !== 'nm' && anchosCol[k]) cssCols += anchoCss(i + 1, anchosCol[k]);
     });
 
-    const estaPlegada = k => opts.plegadas === '*' || (Array.isArray(opts.plegadas) && opts.plegadas.includes(k));
+    const estaPlegada = k => !enRC && (opts.plegadas === '*' || (Array.isArray(opts.plegadas) && opts.plegadas.includes(k)));
     const filas = gs.map(g => {
       if (opts.grupo && g.key !== opts.grupo && g.padre !== opts.grupo) return '';
       if (g.padre && estaPlegada(g.padre)) return ''; // capítulo contraído: tampoco sus subcapítulos
@@ -1944,7 +1949,7 @@
       const filasActs = g.acts.filter(pasaResp);
       // Los totales del capítulo incluyen sus subcapítulos
       const acts = (g.todas || g.acts).filter(pasaResp);
-      if (opts.resp && !acts.length) return '';
+      if ((opts.resp || enRC) && !acts.length) return '';
       const fs = []; acts.forEach(a => { if (a.startDate) fs.push(a.startDate); if (a.deadline) fs.push(a.deadline); }); fs.sort();
       const fI = fs[0] || null, fF = fs[fs.length - 1] || null;
       const avg = acts.length ? Math.round(acts.reduce((s, a) => s + (a.pctComplete || 0), 0) / acts.length) : 0;
@@ -1969,10 +1974,10 @@
       </tr>`;
       const actRows = plegada ? '' : filasActs.map(a => filaActividad(a, g, today, E, carril, editable, opts, cols, codigo, base) +
         tareasDe(a.id).map(t => filaTarea(t, today, E, carril, nCols)).join('')).join('');
-      const add = !plegada && opts.owner && editable && agr === 'etapa' && !(g.hijos && g.hijos.length) ? `<tr class="pl-add"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><input placeholder="＋ Actividad en ${esc(g.name)} · o pega filas de Excel" data-sec-add="${g.id || ''}" onkeydown="if(event.key==='Enter')planOnAdd('${g.id || ''}',this)"></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>` : '';
+      const add = !plegada && !enRC && opts.owner && editable && agr === 'etapa' && !(g.hijos && g.hijos.length) ? `<tr class="pl-add"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><input placeholder="＋ Actividad en ${esc(g.name)} · o pega filas de Excel" data-sec-add="${g.id || ''}" onkeydown="if(event.key==='Enter')planOnAdd('${g.id || ''}',this)"></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>` : '';
       return areaRow + actRows + add;
     }).join('');
-    const addArea = opts.owner && editable && agr === 'etapa' && !opts.grupo && !opts.resp ? `<tr class="pl-add"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><input placeholder="＋ Nueva etapa" onkeydown="if(event.key==='Enter')planOnAdd('__area__',this)"></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>` : '';
+    const addArea = opts.owner && editable && agr === 'etapa' && !opts.grupo && !opts.resp && !enRC ? `<tr class="pl-add"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><input placeholder="＋ Nueva etapa" onkeydown="if(event.key==='Enter')planOnAdd('__area__',this)"></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>` : '';
 
     const vacio = (model.activities || []).length ? '' : `<div class="pl-vacio">${opts.vacioHtml || 'Aún no hay actividades en este plan.'}</div>`;
     const leyenda = `<div class="pl-ley">
@@ -1981,10 +1986,14 @@
       <span><i class="sw hoy"></i>Hoy</span><span class="pl-mut">Días hábiles sin fines de semana ni festivos de Colombia${opts.owner ? ' · ID morado = ruta crítica' : ''}</span>
     </div>`;
     const deps = [];
-    if (opts.lineas !== false || esDeps) (model.activities || []).forEach(a => (a.dependsOnIds || []).forEach(p => deps.push([p, a.id, tipoDep(a, p).t])));
-    const tabla = `<style id="pl-colstyle">${cssCols}</style><div class="pl-wrap" id="pl-wrap"><div class="pl-canvas"><table class="pl${esDeps ? ' pl-deps' : ''}">${headF}<tbody>${filas}${addArea}</tbody></table><svg class="pl-links${editable && opts.owner && has('planOnPatch') ? ' editable' : ''}" data-deps='${esc(JSON.stringify(deps))}'></svg></div></div>`;
+    if (opts.lineas !== false || esDeps || enRC) (model.activities || []).forEach(a => (a.dependsOnIds || []).forEach(p => deps.push([p, a.id, tipoDep(a, p).t])));
+    const tabla = `<style id="pl-colstyle">${cssCols}</style><div class="pl-wrap" id="pl-wrap"><div class="pl-canvas"><table class="pl${esDeps ? ' pl-deps' : ''}">${headF}<tbody>${filas}${addArea}</tbody></table><svg class="pl-links${enRC ? ' pl-rc' : ''}${editable && opts.owner && has('planOnPatch') ? ' editable' : ''}" data-deps='${esc(JSON.stringify(deps))}'></svg></div></div>`;
     const panel = opts.panel ? involucradosHtml(model, opts) : '';
-    return `${filtrosHtml(model, opts, gs, cols, base)}<div class="pl-div"></div>${vacio}
+    const nRC = (model.activities || []).filter(a => a.critical && !a.propuesta), nRiesgo = nRC.filter(a => a.criticaEnRiesgo).length;
+    const notaRC = enRC ? `<div class="pl-rcnota"><b>◆ Ruta crítica</b> ${nRC.length
+      ? `${nRC.length} actividad${nRC.length === 1 ? '' : 'es'} sin holgura: si alguna se atrasa, se corre la fecha final del proyecto.${nRiesgo ? ` <em>${nRiesgo} en riesgo</em>` : ''}`
+      : 'Todavía no hay ruta crítica: faltan fechas o precedencias entre actividades.'}<button onclick="planSetOpt('rutaCritica',false)">Ver todo el plan</button></div>` : '';
+    return `${filtrosHtml(model, opts, gs, cols, base)}<div class="pl-div"></div>${notaRC}${vacio}
       ${panel ? `<div class="pl-layout"><div class="pl-main">${tabla}</div>${panel}</div>` : tabla}
       ${leyenda}${opts.owner ? sueltasHtml(model, gsEt) : ''}`;
   }
@@ -2003,14 +2012,15 @@
     }
     if (ini) {
       const x0 = E.x(ini), w = Math.max(E.ppd, E.x(addDays(fin, 1)) - x0);
-      const cls = est === 'Completada' ? ' ok' : est === 'Atrasada' ? ' late' : '';
+      const cls = (est === 'Completada' ? ' ok' : est === 'Atrasada' ? ' late' : '') + (opts.rutaCritica && a.critical ? (a.criticaEnRiesgo ? ' rc rc-late' : ' rc') : '');
+      const colB = opts.rutaCritica && a.critical ? (a.criticaEnRiesgo ? '#E2445C' : '#7C6CF2') : g.color;
       const click = has('planOnOpen') && opts.owner ? ` onclick="planOnOpen('${a.id}')"` : '';
       // En el editor la barra se corre con el mouse (y sus bordes cambian inicio o fin)
       const mov = editable && opts.owner && has('planOnPatch') ? ' data-mov="1"' : '';
       const tipMov = mov ? esc(' · Arrástrala para correrla; sus bordes cambian el inicio o el fin') : '';
       barra += ini === fin
-        ? `<span class="pl-ms${cls}" data-id="${a.id}"${mov} style="left:${x0 + E.ppd / 2}px;--c:${g.color}" title="${tip}${tipMov}"${click}></span>`
-        : `<span class="pl-b${cls}${w < 34 ? ' mini' : ''}" data-id="${a.id}"${mov} style="left:${x0}px;width:${w}px;--c:${g.color}" title="${tip}${tipMov}"${click}><i style="width:${pct}%"></i>${mov && w >= 30 ? '<b class="pl-bh l"></b><b class="pl-bh r"></b>' : ''}</span>`;
+        ? `<span class="pl-ms${cls}" data-id="${a.id}"${mov} style="left:${x0 + E.ppd / 2}px;--c:${colB}" title="${tip}${tipMov}"${click}></span>`
+        : `<span class="pl-b${cls}${w < 34 ? ' mini' : ''}" data-id="${a.id}"${mov} style="left:${x0}px;width:${w}px;--c:${colB}" title="${tip}${tipMov}"${click}><i style="width:${pct}%"></i>${mov && w >= 30 ? '<b class="pl-bh l"></b><b class="pl-bh r"></b>' : ''}</span>`;
       if (editable && opts.owner && has('planOnPatch') && opts.lineas !== false) {
         barra += `<span class="pl-lk" data-src="${a.id}" style="left:${ini === fin ? x0 + E.ppd / 2 + 8 : x0 + w + 2}px" title="Arrastra hasta otra actividad: «${esc(a.name)}» debe terminar antes de que ella empiece"></span>`;
       }
@@ -2027,7 +2037,7 @@
         barra += `<span class="pl-nube" data-cmt="${a.id}" style="left:${E.x(d) + E.ppd / 2}px" title="${porDia[d]} comentario${porDia[d] > 1 ? 's' : ''} · ${fCorta(d)}">${porDia[d] > 1 ? porDia[d] : ''}</span>`;
       });
     }
-    const cp = opts.owner && a.critical ? ` style="color:${a.criticaEnRiesgo ? 'var(--cp-late-ink)' : 'var(--cp-ink)'}"` : '';
+    const cp = (opts.owner || opts.rutaCritica) && a.critical ? ` style="color:${a.criticaEnRiesgo ? 'var(--cp-late-ink)' : 'var(--cp-ink)'}"` : '';
     const idCell = has('planOnOpen') && opts.owner
       ? `<button class="pl-cod"${cp} onclick="planOnOpen('${a.id}')" title="Abrir detalle (dependencias, notas)">${a._cod}</button>`
       : `<span class="pl-cod">${a._cod}</span>`;

@@ -958,6 +958,8 @@
   #p-detail .panel-h .btn-sm{padding:5px 11px;font-size:11.5px}
   #p-detail .panel .sep{margin:10px 0}
   /* Barra del plan: ajuste rápido y vistas en una sola fila */
+  html.resumen-off #p-kpis,html.resumen-off #p-signals,html.resumen-off #asist-wrap,html.resumen-off #p-alerts,html.resumen-off .pl-areas-c{display:none!important}
+  html.resumen-off .pl-bar-c{justify-content:flex-end}
   .plan-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;flex-wrap:wrap}
   .plan-top #plan-head-wrap,.plan-top .plan-head{display:contents}
   .plan-top .plan-head-l{order:0;min-height:38px;position:relative}
@@ -2241,6 +2243,16 @@
     const txt=dif>0?`se pasa ${dif} día${dif===1?'':'s'} háb.`:dif<0?`sobran ${-dif} día${dif===-1?'':'s'} háb.`:'justo a tiempo';
     return `<div class="b"><div class="s">${fmtDate(d.fechaMeta)}</div><div class="l">Fecha meta · <strong style="color:${dif>0?'var(--crit)':'var(--good)'}">${txt}</strong></div></div>`;
   }
+  // Resumen de arriba del cronograma (indicadores, alertas, ajuste rápido y chips de etapas):
+  // se puede ocultar para que el plan no se vea saturado. Se recuerda en este navegador.
+  let resumenOculto=false;try{resumenOculto=localStorage.getItem('resumenOcultoV1')==='1';}catch{}
+  document.documentElement.classList.toggle('resumen-off',resumenOculto);
+  function toggleResumen(){
+    resumenOculto=!resumenOculto;try{localStorage.setItem('resumenOcultoV1',resumenOculto?'1':'0');}catch{}
+    document.documentElement.classList.toggle('resumen-off',resumenOculto);
+    const b=$('btn-resumen');if(b){b.textContent=resumenOculto?'▾ Mostrar resumen':'▴ Ocultar resumen';b.title=resumenOculto?'Mostrar los indicadores, alertas y el ajuste rápido de arriba del cronograma':'Ocultar los indicadores, alertas y el ajuste rápido para dejar más limpio el cronograma';}
+    if(planView==='hoja'&&currentProjectDetail)requestAnimationFrame(()=>Plan.dibujarLineas());
+  }
   // Indicadores en una sola franja (el detalle grande se abre con «▾ Detalle»)
   let kpiDetalle=false;try{kpiDetalle=localStorage.getItem('kpiDetalleV1')==='1';}catch{}
   function toggleKpis(){kpiDetalle=!kpiDetalle;try{localStorage.setItem('kpiDetalleV1',kpiDetalle?'1':'0');}catch{}renderPlan();}
@@ -2393,6 +2405,7 @@
       <div class="panel-h">
         <div><div class="nm">${esc(d.name)} ${badge}${nProp?` <span class="prop-alert" onclick="document.getElementById('prop-wrap').scrollIntoView({behavior:'smooth',block:'center'})" title="Hay propuestas del enlace compartido esperando tu revisión">✉ ${nProp} propuesta${nProp===1?'':'s'} por revisar</span>`:''}</div><div class="meta">👤 ${d.responsable?esc(d.responsable):'sin responsable'} <button class="btn btn-ghost btn-sm" style="padding:1px 7px" onclick="editResponsable()">✎</button>${d.descripcion?' · '+esc(d.descripcion):''}</div></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-soft btn-sm" id="btn-resumen" onclick="toggleResumen()" title="${resumenOculto?'Mostrar los indicadores, alertas y el ajuste rápido de arriba del cronograma':'Ocultar los indicadores, alertas y el ajuste rápido para dejar más limpio el cronograma'}">${resumenOculto?'▾ Mostrar resumen':'▴ Ocultar resumen'}</button>
           <button class="btn btn-soft btn-sm" onclick="openMiembros()" title="Quiénes participan en el proyecto y de qué área son">👥 Involucrados${(d.miembros||[]).length?` · ${d.miembros.length}`:''}</button>
           <button class="btn btn-soft btn-sm" onclick="openTplModal()" title="Cargar un plan de trabajo prediseñado en este proyecto">📥 Plantilla de plan</button>
           <button class="btn btn-soft btn-sm" onclick="openShareModal()">🔗 Compartir plan</button>
