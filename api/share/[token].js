@@ -35,7 +35,7 @@ module.exports = async (req, res) => {
   } catch (err) {
     console.error(err);
     const msg = err.message || 'Error';
-    const code = /no válido|revocado/.test(msg) ? 404 : /solo lectura|no se editan/.test(msg) ? 403 : /Operación no válida|Elige otro|subcapítulos|capítulo principal|ciclo/.test(msg) ? 400 : /no encontrada|no válid|Escribe|duración|Demasiados|nada que/.test(msg) ? 400 : 500;
+    const code = /no válido|revocado/.test(msg) ? 404 : /solo lectura|solo para ver|no se editan/.test(msg) ? 403 : /Operación no válida|Elige otro|subcapítulos|capítulo principal|ciclo/.test(msg) ? 400 : /no encontrada|no válid|Escribe|duración|Demasiados|nada que/.test(msg) ? 400 : 500;
     res.status(code).json({ error: msg });
   }
 };

@@ -898,7 +898,8 @@
   html.mesa .plan-head{margin-bottom:6px}
   .ptable tr.sec.sub td{padding-left:34px!important;box-shadow:inset 5px 0 0 color-mix(in srgb,var(--c) 55%,var(--card))}
   .g-sec.sub .g-left{padding-left:26px}
-  .sh-tipos{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+  .sh-tipos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+  @media(max-width:620px){.sh-tipos{grid-template-columns:1fr}}
   .sh-tipo{display:flex;flex-direction:column;gap:3px;text-align:left;padding:10px 12px;border-radius:14px;background:var(--sunk);font-family:inherit;cursor:pointer;box-shadow:inset 0 0 0 2px transparent}
   .sh-tipo b{font-size:12.5px;color:var(--ink)}.sh-tipo span{font-size:10.5px;color:var(--muted);line-height:1.35}
   .sh-tipo.on{background:var(--card);box-shadow:inset 0 0 0 2px var(--accent)}
@@ -957,6 +958,8 @@
   #p-detail .panel-h .btn-sm{padding:5px 11px;font-size:11.5px}
   #p-detail .panel .sep{margin:10px 0}
   /* Barra del plan: ajuste rápido y vistas en una sola fila */
+  html.resumen-off #p-kpis,html.resumen-off #p-signals,html.resumen-off #asist-wrap,html.resumen-off #p-alerts,html.resumen-off .pl-areas-c{display:none!important}
+  html.resumen-off .pl-bar-c{justify-content:flex-end}
   .plan-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;flex-wrap:wrap}
   .plan-top #plan-head-wrap,.plan-top .plan-head{display:contents}
   .plan-top .plan-head-l{order:0;min-height:38px;position:relative}
@@ -1323,6 +1326,7 @@
     <div class="modal-h"><h3 id="sh-title">Compartir plan</h3><button class="x-close" onclick="closeModal('m-share')">×</button></div>
     <div class="modal-b">
       <div class="sh-tipos">
+        <button class="sh-tipo" data-r="panorama" onclick="tipoShare('panorama')"><b>📊 Panorama</b><span>Solo para ver: el resumen y los capítulos contraídos. Abre el que quiera para ver el detalle. No propone ni edita.</span></button>
         <button class="sh-tipo on" data-r="view" onclick="tipoShare('view')"><b>👁 Ver y proponer</b><span>Ve el plan y propone actividades o ajustes; tú los aceptas.</span></button>
         <button class="sh-tipo" data-r="editor" onclick="tipoShare('editor')"><b>✎ Editor con nombre</b><span>Edita el cronograma de verdad: crea, mueve, elimina, fechas y capítulos. Todo queda en el historial a su nombre.</span></button>
       </div>
@@ -2239,6 +2243,16 @@
     const txt=dif>0?`se pasa ${dif} día${dif===1?'':'s'} háb.`:dif<0?`sobran ${-dif} día${dif===-1?'':'s'} háb.`:'justo a tiempo';
     return `<div class="b"><div class="s">${fmtDate(d.fechaMeta)}</div><div class="l">Fecha meta · <strong style="color:${dif>0?'var(--crit)':'var(--good)'}">${txt}</strong></div></div>`;
   }
+  // Resumen de arriba del cronograma (indicadores, alertas, ajuste rápido y chips de etapas):
+  // se puede ocultar para que el plan no se vea saturado. Se recuerda en este navegador.
+  let resumenOculto=false;try{resumenOculto=localStorage.getItem('resumenOcultoV1')==='1';}catch{}
+  document.documentElement.classList.toggle('resumen-off',resumenOculto);
+  function toggleResumen(){
+    resumenOculto=!resumenOculto;try{localStorage.setItem('resumenOcultoV1',resumenOculto?'1':'0');}catch{}
+    document.documentElement.classList.toggle('resumen-off',resumenOculto);
+    const b=$('btn-resumen');if(b){b.textContent=resumenOculto?'▾ Mostrar resumen':'▴ Ocultar resumen';b.title=resumenOculto?'Mostrar los indicadores, alertas y el ajuste rápido de arriba del cronograma':'Ocultar los indicadores, alertas y el ajuste rápido para dejar más limpio el cronograma';}
+    if(planView==='hoja'&&currentProjectDetail)requestAnimationFrame(()=>Plan.dibujarLineas());
+  }
   // Indicadores en una sola franja (el detalle grande se abre con «▾ Detalle»)
   let kpiDetalle=false;try{kpiDetalle=localStorage.getItem('kpiDetalleV1')==='1';}catch{}
   function toggleKpis(){kpiDetalle=!kpiDetalle;try{localStorage.setItem('kpiDetalleV1',kpiDetalle?'1':'0');}catch{}renderPlan();}
@@ -2391,6 +2405,7 @@
       <div class="panel-h">
         <div><div class="nm">${esc(d.name)} ${badge}${nProp?` <span class="prop-alert" onclick="document.getElementById('prop-wrap').scrollIntoView({behavior:'smooth',block:'center'})" title="Hay propuestas del enlace compartido esperando tu revisión">✉ ${nProp} propuesta${nProp===1?'':'s'} por revisar</span>`:''}</div><div class="meta">👤 ${d.responsable?esc(d.responsable):'sin responsable'} <button class="btn btn-ghost btn-sm" style="padding:1px 7px" onclick="editResponsable()">✎</button>${d.descripcion?' · '+esc(d.descripcion):''}</div></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-soft btn-sm" id="btn-resumen" onclick="toggleResumen()" title="${resumenOculto?'Mostrar los indicadores, alertas y el ajuste rápido de arriba del cronograma':'Ocultar los indicadores, alertas y el ajuste rápido para dejar más limpio el cronograma'}">${resumenOculto?'▾ Mostrar resumen':'▴ Ocultar resumen'}</button>
           <button class="btn btn-soft btn-sm" onclick="openMiembros()" title="Quiénes participan en el proyecto y de qué área son">👥 Involucrados${(d.miembros||[]).length?` · ${d.miembros.length}`:''}</button>
           <button class="btn btn-soft btn-sm" onclick="openTplModal()" title="Cargar un plan de trabajo prediseñado en este proyecto">📥 Plantilla de plan</button>
           <button class="btn btn-soft btn-sm" onclick="openShareModal()">🔗 Compartir plan</button>
@@ -3207,8 +3222,10 @@
     $('sh-role').value=r;
     document.querySelectorAll('.sh-tipo').forEach(b=>b.classList.toggle('on',b.dataset.r===r));
     $('sh-label-t').textContent=r==='editor'?'Nombre y apellido de quien va a editar':'Persona o área';
-    $('sh-label').placeholder=r==='editor'?'Ej: Yecid Cristancho':'Ej: Jurídica · Diana';
-    $('sh-hint').innerHTML=r==='editor'
+    $('sh-label').placeholder=r==='editor'?'Ej: Yecid Cristancho':r==='panorama'?'Ej: Comité directivo':'Ej: Jurídica · Diana';
+    $('sh-hint').innerHTML=r==='panorama'
+      ?'Para quienes solo quieren ver <strong>cómo va</strong>: abre con el semáforo, el avance, la fecha de fin y los capítulos contraídos. Cada quien despliega el capítulo que quiera. No pueden proponer ni editar. Tus tareas del día a día <strong>nunca</strong> se muestran.'
+      :r==='editor'
       ?'El enlace es <strong>personal</strong>: lo que se edite desde ahí queda a nombre de esa persona en el 🕘 Historial. Si deja de colaborar, revoca su enlace. Tus tareas del día a día <strong>nunca</strong> se muestran.'
       :'Quien reciba el enlace ve el plan y <strong>propone</strong>; tú aceptas o descartas. Tus tareas del día a día <strong>nunca</strong> se muestran.';
   }
@@ -3220,7 +3237,7 @@
         const url=location.origin+'/share/'+s.token;
         return `<div style="display:flex;align-items:center;gap:8px;background:var(--sunk);border-radius:10px;padding:8px 10px">
           <div style="flex:1;min-width:0">
-            <div style="font-size:12.5px;font-weight:650">${esc(s.label||'Sin nombre')} · <span style="color:${s.role==='editor'?'var(--accent-ink)':'var(--muted)'}">${s.role==='editor'?'✎ editor':'ve y propone'}</span></div>
+            <div style="font-size:12.5px;font-weight:650">${esc(s.label||'Sin nombre')} · <span style="color:${s.role==='editor'?'var(--accent-ink)':'var(--muted)'}">${s.role==='editor'?'✎ editor':s.role==='panorama'?'📊 panorama · solo ve':'ve y propone'}</span></div>
             <div style="font-size:10.5px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(url)}</div>
           </div>
           <button class="btn btn-soft btn-sm" onclick="copyShare('${url}')">Copiar</button>

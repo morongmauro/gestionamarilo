@@ -153,6 +153,13 @@
   .est-row input.cambio{background:var(--accent-soft)}
   @media(max-width:800px){.est-row{grid-template-columns:36px minmax(0,1fr) 90px}.est-row .hoy,.est-row .mot,.est-row.h span:nth-child(3),.est-row.h span:nth-child(5){display:none}}
   .btn-soft:hover{background:color-mix(in srgb,var(--ink) 8%,var(--sunk))}
+  html.resumen-off #exec,html.resumen-off .pl-areas-c{display:none!important}
+  html.resumen-off .pl-bar-c{justify-content:flex-end}
+  .pano-hint{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 10px;padding:9px 14px;border-radius:14px;background:var(--sunk);font-size:12.5px;color:var(--muted)}
+  .pano-hint b{color:var(--ink)}
+  .pano-hint .ph-b{display:inline-flex;gap:6px}
+  .pano-hint button{font:700 11.5px inherit;font-family:inherit;color:var(--ink);background:var(--card);border-radius:999px;padding:6px 12px;box-shadow:0 1px 3px rgba(28,26,23,.08)}
+  .pano-hint button:hover{filter:brightness(.97)}
   .toast{position:fixed;bottom:22px;left:50%;transform:translate(-50%,16px);background:var(--ink);color:var(--paper);padding:11px 20px;border-radius:999px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.2);z-index:500;opacity:0;pointer-events:none;transition:.25s;max-width:90vw}
   .toast.show{opacity:1;transform:translate(-50%,0)}
   .toast.err{background:var(--crit)}
@@ -173,11 +180,13 @@
         <button data-v="gantt" onclick="setVista('gantt')" title="El cronograma con lo esencial y las flechas de dependencia">📊 Gantt</button>
         <button data-v="tabla" onclick="setVista('tabla')" title="Todas las columnas: responsable, área, entregable, fechas, duración, avance…">▤ Tabla</button>
       </div>
+      <button class="mesa-sw" id="res-sw" onclick="toggleResumen()"></button>
       <button class="mesa-sw" id="mesa-sw" onclick="toggleMesa()"></button>
       <span class="role view" id="p-role">…</span>
     </div>
   </div>
   <div class="exec" id="exec"></div>
+  <div class="pano-hint" id="pano-hint" style="display:none"></div>
   <div id="plan"><div class="q-empty">Cargando plan…</div></div>
 
   <section class="equipo" id="equipo" style="display:none">
@@ -242,7 +251,7 @@
   const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const token=location.pathname.split('/').filter(Boolean).pop();
   const API='/api/share/'+encodeURIComponent(token);
-  const LS='planShareOptsV2';
+  let LS='planShareOptsV2';
   let DATA=null;
   let toastT=null;
   function toast(msg,ok=true){const el=$('toast');el.textContent=msg;el.classList.toggle('err',!ok);el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),2800);}
@@ -265,6 +274,14 @@
   function setVista(v){Plan.cambiar(opts,'vista',v);Plan.guardar(LS,opts);pintarVistas();if(DATA)renderPlan();}
   function pintarVistas(){document.querySelectorAll('#vistas button').forEach(b=>b.classList.toggle('on',b.dataset.v===(opts.vista||'gantt')));}
   pintarMesa();
+  // Resumen de arriba (semáforo, avance, alertas y chips de etapas): se puede ocultar
+  let resOff=false;try{resOff=localStorage.getItem('shareResumenOffV1')==='1';}catch(e){}
+  function pintarResumen(){
+    document.documentElement.classList.toggle('resumen-off',resOff);
+    const b=$('res-sw');if(b){b.textContent=resOff?'▾ Mostrar resumen':'▴ Ocultar resumen';b.title=resOff?'Ver el semáforo, el avance y las alertas':'Ocultar el resumen para ver solo el cronograma';}
+  }
+  function toggleResumen(){resOff=!resOff;try{localStorage.setItem('shareResumenOffV1',resOff?'1':'0');}catch(e){}pintarResumen();requestAnimationFrame(()=>Plan.dibujarLineas());}
+  pintarResumen();
   let nombre='';try{nombre=localStorage.getItem('planShareNombre')||'';}catch(e){}
   function recordarNombre(v){nombre=String(v||'').trim();try{localStorage.setItem('planShareNombre',nombre);}catch(e){}['n-quien','a-quien','e-nombre'].forEach(id=>{if($(id)&&!$(id).value)$(id).value=nombre;});}
 
@@ -289,7 +306,12 @@
     $('p-name').textContent=p.name;
     $('p-sub').textContent=(p.responsable?'Responsable: '+p.responsable+' · ':'')+'Plan de trabajo compartido'+(DATA.label?' con '+DATA.label:'');
     const r=$('p-role');
-    if(esEditor()){
+    if(esPanorama()){
+      // Enlace «Panorama»: solo ver. Arranca con los capítulos contraídos (vista global)
+      // y cada quien despliega el que quiera; no propone ni edita.
+      if(!opts.panorama)usarPanorama();
+      r.className='role view';r.textContent='📊 Panorama · solo ver';
+    }else if(esEditor()){
       // Enlace de editor con nombre: edita el cronograma de verdad (todo queda en el historial a su nombre)
       r.className='role edit';r.textContent='✎ Editor · '+(DATA.label||'');
       opts.editable=true;opts.owner=true;opts.tareas=false;
@@ -297,9 +319,27 @@
     document.title=p.name+' · Plan de trabajo';
     $('exec').innerHTML=franjaEjecutiva();
     renderPlan();
-    if(esEditor()){$('equipo').style.display='none';}else renderAddBox();
+    if(esEditor()||esPanorama()){$('equipo').style.display='none';}else renderAddBox();
+    pintarPista();
   }
   const esEditor=()=>!!(DATA&&DATA.role==='editor');
+  const esPanorama=()=>!!(DATA&&DATA.role==='panorama');
+  function usarPanorama(){
+    LS='planPanoramaV1';
+    Object.assign(opts,Plan.opciones(LS,{vista:'gantt',zoom:'ajustar',lineas:false,panel:false,tareas:false,colsVis:{gantt:{ar:false,dp:false,dias:false}}}),
+      {panorama:true,plegadas:'*',compacto:true,editable:false,owner:false});
+    if(opts.vista!=='gantt')opts.vista='gantt';
+    const v=$('vistas');if(v)v.style.display='none';
+  }
+  // Pista arriba del plan: qué se está viendo y cómo abrir el detalle
+  function pintarPista(){
+    const el=$('pano-hint');if(!el)return;
+    if(!esPanorama()){el.style.display='none';return;}
+    const todo=opts.plegadas==='*',nada=Array.isArray(opts.plegadas)&&!opts.plegadas.length;
+    el.style.display='';
+    el.innerHTML=`<span>${todo?'Vista general por capítulos. <b>Haz clic en un capítulo</b> para ver sus actividades.':'Haz clic en el título de un capítulo para abrirlo o cerrarlo.'}</span>
+      <span class="ph-b">${todo?'':`<button onclick="planSetOpt('soloEtapas',true)">▴ Contraer todo</button>`}${nada?'':`<button onclick="planSetOpt('soloEtapas',false)">▾ Ver todo el detalle</button>`}</span>`;
+  }
   // ---------- Franja ejecutiva: cómo vamos, si llegamos, qué está en riesgo y qué viene ----------
   function franjaEjecutiva(){
     const s=DATA.summary,p=DATA.project,today=s.today||todayISO();
@@ -484,7 +524,7 @@
   // ---------- Manejadores de la hoja (assets/plan.js) ----------
   // Al ensanchar la columna «Actividad», la escala «Todo» se recalcula para seguir cabiendo
   function planOnAncho(forzar){if(forzar||opts.zoom==='ajustar')renderPlan();}
-  function planSetOpt(k,v){Plan.cambiar(opts,k,v);Plan.guardar(LS,opts);renderPlan();if(k==='grupo'&&v&&DATA.sections.some(s=>s.id===v))$('n-area').value=v;}
+  function planSetOpt(k,v){Plan.cambiar(opts,k,v);Plan.guardar(LS,opts);renderPlan();pintarPista();if(k==='grupo'&&v&&DATA.sections.some(s=>s.id===v))$('n-area').value=v;}
   // ---------- Ronda de estimación de duraciones ----------
   function renderEstimacion(){
     const quien=$('e-quien').value;

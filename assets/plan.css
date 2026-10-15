@@ -440,10 +440,10 @@ tr.pl-drop-dentro td{box-shadow:inset 0 -3px 0 var(--accent,#3D7BF7)!important;f
 /* ============================================================
    Comentarios: nubecita en la fila, nubes en el cronograma y popover
    ============================================================ */
-.pl-cmt{position:relative;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:27px;height:19px;padding:0;margin-left:3px;background:none;border:none;cursor:pointer}
+.pl-cmt{position:relative;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:21px;height:20px;padding:0;margin-left:3px;background:none;border:none;cursor:pointer}
 .pl-cmt svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 .pl-cmt svg path{fill:#7C6CF2;transition:fill .12s,stroke .12s}
-.pl-cmt b{position:relative;margin-top:4px;font:800 9.5px Montserrat,system-ui,sans-serif;color:#fff;letter-spacing:-.02em}
+.pl-cmt b{position:relative;margin:-2px 0 0 1px;font:800 9.5px Montserrat,system-ui,sans-serif;color:#fff;letter-spacing:-.02em}
 .pl-cmt:hover svg path{fill:#6A58EE}
 .pl-cmt.vacio{opacity:.6;transition:opacity .12s}
 .pl-cmt.vacio svg path{fill:var(--card,#fff);stroke:var(--faint,#B4AC9C);stroke-width:1.5}
@@ -655,3 +655,19 @@ td.pl-csel{background:color-mix(in srgb,#0073EA 9%,transparent)!important;box-sh
 td.pl-csel-a{box-shadow:inset 0 0 0 2px color-mix(in srgb,#0073EA 55%,transparent)}
 td.pl-csel input,td.pl-csel .pl-in{background:transparent}
 body.pl-seleccionando,body.pl-seleccionando *{user-select:none;cursor:cell!important}
+
+/* Enlace «Panorama»: toda la fila del capítulo lo abre o lo cierra */
+.pl tr.pl-area.pl-abre{cursor:pointer}
+.pl tr.pl-area.pl-abre:hover td{filter:brightness(.97)}
+.pl tr.pl-area.pl-abre .pl-fold{background:var(--card,#fff);box-shadow:0 0 0 1px color-mix(in srgb,var(--ink) 10%,transparent)}
+
+/* Ruta crítica */
+.pl-optbtn.pl-rcbtn.on{background:#7C6CF2!important;color:#fff!important}
+.pl-rcnota{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 8px;padding:8px 14px;border-radius:14px;font-size:12px;color:var(--muted);background:color-mix(in srgb,#7C6CF2 10%,var(--card,#fff))}
+.pl-rcnota b{color:#5B4BD6}
+.pl-rcnota em{font-style:normal;font-weight:700;color:#E2445C}
+.pl-rcnota button{margin-left:auto;font:700 11.5px Montserrat,system-ui,sans-serif;color:#5B4BD6;background:var(--card,#fff);border-radius:999px;padding:5px 12px}
+.pl-b.rc{--c:#7C6CF2}.pl-ms.rc{--c:#7C6CF2}
+.pl-b.rc.late,.pl-b.rc-late{--c:#E2445C}
+svg.pl-links.pl-rc path{stroke:#7C6CF2;stroke-width:2}
+svg.pl-links.pl-rc .pl-flecha{fill:#7C6CF2}
