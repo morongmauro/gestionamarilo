@@ -93,7 +93,9 @@
         const idxs = rows.map((r, i) => (r.tipo === tipo ? i : -1)).filter(i => i >= 0);
         const trs = idxs.map(idx => {
           const r = nav.length; nav.push(idx);
-          return `<tr data-row="${r}"><td data-r="${r}" data-c="0"><input class="cpt" value="${esc(rows[idx].concepto || '')}" placeholder="Concepto" spellcheck="false" ${o.ro ? 'readonly' : ''}></td>` +
+          const ben = rows[idx].tipo === 'beneficio' && App.catOf;
+          const cat = ben ? App.catOf(rows[idx]) : null;
+          return `<tr data-row="${r}"><td data-r="${r}" data-c="0" class="${ben ? 'con-cat' : ''}"><input class="cpt" value="${esc(rows[idx].concepto || '')}" placeholder="Concepto" spellcheck="false" ${o.ro ? 'readonly' : ''}>${ben ? `<button class="catb cat-${cat}" data-cat="${idx}" tabindex="-1" title="Tipo de valor (cambiar)"><i></i>${esc(App.catLabel(cat))}</button>` : ''}</td>` +
             Array.from({ length: NC() }, (_, t) => `<td data-r="${r}" data-c="${t + 1}"><input value="${esc(show(val(idx, t)))}" inputmode="decimal" spellcheck="false" ${o.ro ? 'readonly' : ''}></td>`).join('') +
             `<td class="rt" data-rt="${idx}">${esc(App.num(rowTotal(idx) / o.escala, dec))}</td><td class="rm">${o.ro ? '' : `<button class="x" data-rowmenu="${idx}" title="Opciones de la fila" tabindex="-1">···</button>`}</td></tr>`;
         }).join('');
@@ -292,6 +294,7 @@
     };
     el.onmousedown = e => {
       if (e.target.closest('.fillh')) { e.preventDefault(); S.fill = { target: null }; return; }
+      if (e.target.closest('.catb')) { e.preventDefault(); return; }
       const td = e.target.closest('td[data-r]'); if (!td || e.button !== 0) return;
       const r = +td.dataset.r, c = +td.dataset.c;
       if (e.shiftKey && S.act) { e.preventDefault(); S.sel = { r0: S.act.r, c0: S.act.c, r1: r, c1: c }; paint(); return; }
@@ -354,6 +357,8 @@
       const add = e.target.closest('[data-addrow]');
       if (add) { op(() => { rows.push({ id: App.uid(), concepto: '', tipo: add.dataset.addrow, valores: [] }); }); const r = nav.indexOf(rows.length - 1); if (r >= 0) focusCell(r, 0); return; }
       const rm = e.target.closest('[data-rowmenu]'); if (rm) rowMenu(rm, +rm.dataset.rowmenu);
+      const cb = e.target.closest('[data-cat]');
+      if (cb && !o.ro) { const idx = +cb.dataset.cat; App.menu(cb, App.CATS.map(c => ({ id: c.id, label: (App.catOf(rows[idx]) === c.id ? '✓ ' : '   ') + c.label })), id => op(() => { rows[idx].categoria = id; }), 200); }
     };
     el.ondblclick = e => { const inp = e.target.closest('td[data-r] input'); if (inp && !o.ro) inp.setSelectionRange(inp.value.length, inp.value.length); };
     el.onscroll = () => paint();

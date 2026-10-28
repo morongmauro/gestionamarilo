@@ -8,6 +8,7 @@ correo y contraseña, y todos ven los mismos datos.
 
 | Sección | Qué tiene |
 |---|---|
+| **Tablero** | Lo captado en el año contra lo esperado a la fecha (los meses corridos según el caso de negocio), con anillo de cumplimiento; valor a captar por año apilado por tipo de valor (ahorro, nuevos ingresos, eficiencia, tiempo, riesgo evitado, otro) y lo captado al lado; curva de captura mes a mes; mezcla del valor; cumplimiento por proyecto; ICE contra valor; estado del portafolio; y la tabla de proyectos. Filtros por año, estado, tipo de valor y proyectos en realización. Los proyectos sin caso usan el Income como valor anual. |
 | **Proyectos** | Tabla tipo Notion: columnas con tipo (estado con colores, personas, número, fecha, texto, bitácora con fecha), filtros, orden, agrupación, tablero por estado y exportar a Excel. Al final, columnas calculadas con el cronograma, el avance y el caso de negocio. Cada proyecto abre su página con pestañas: Información, Cronograma, Caso de negocio y Comités. |
 | **Cronograma** | Gantt de todo el portafolio o de un proyecto. Actividades e hitos; las barras se arrastran para moverlas y por los bordes para cambiar fechas. Zoom por días, semanas o meses. Marca lo atrasado y muestra las sesiones de comité en la línea de tiempo. |
 | **Casos de negocio** | Uno por proyecto: problema, objetivo, alcance, beneficios, riesgos, supuestos y decisión solicitada. Flujo financiero por año (inversión, costos, beneficios) con VPN, TIR, payback y ROI calculados al instante. Estado del caso (borrador, en revisión, aprobado…). Se imprime o guarda en PDF. |
@@ -41,6 +42,13 @@ de años (Año 0… o 2026…), los conceptos, el tipo de cada fila (por la colu
 muestra una vista previa para corregir antes de importar. «Descargar Excel»
 entrega el caso con fórmulas reales (SUMA, VNA, TIR) y la narrativa; se puede
 editar en Excel y volver a subir. «Plantilla vacía» trae 10 años.
+
+## Valor captado e ICE
+
+- **Valor captado**: en cada caso de negocio, la sección «Valor captado (real)» es una tabla de 12 meses por tipo de valor. Se registra lo que el proyecto ya generó y se compara con lo esperado a la fecha.
+- **Tipo de valor**: cada beneficio del flujo lleva su tipo (se cambia con la etiqueta al lado del concepto). Al subir un Excel se deduce de las palabras del concepto.
+- **ICE**: la tabla de Proyectos tiene Impacto, Confianza y Facilidad (1 a 10); ICE = Impacto × Confianza × Facilidad.
+- **Lago**: la exportación incluye la tabla `captado` y el ICE de cada proyecto.
 
 ## Usuarios y roles
 
@@ -212,6 +220,7 @@ Todo es HTML, CSS y JavaScript sin compilación:
 | `lib/store-pg.js`, `api/index.js`, `vercel.json` | PostgreSQL y Vercel (demostración) |
 | `public/js/agenda.js` | Agenda de comités |
 | `public/js/usuarios.js` | Usuarios e historial |
+| `public/js/dash.js` | Tablero del portafolio |
 | `public/js/app.js` | Ingreso, navegación y sincronización |
 
 Una sección nueva es un archivo `public/js/<nombre>.js` que registra

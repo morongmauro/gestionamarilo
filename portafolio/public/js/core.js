@@ -235,5 +235,34 @@ App.menu = (anchor, items, onPick, width = 220) => {
   p.onclick = e => { const b = e.target.closest('[data-m]'); if (!b) return; App.closePop(true); onPick(b.dataset.m); };
 };
 
+/* ---------- tipos de valor (beneficios) e ICE ---------- */
+// Orden fijo: es el que validó la paleta (cada tipo conserva su color siempre)
+App.CATS = [
+  { id: 'ahorro', label: 'Ahorro' }, { id: 'ingresos', label: 'Nuevos ingresos' }, { id: 'eficiencia', label: 'Eficiencia' },
+  { id: 'tiempo', label: 'Tiempo' }, { id: 'riesgo', label: 'Riesgo evitado' }, { id: 'otro', label: 'Otro' }];
+App.catLabel = id => (App.CATS.find(c => c.id === id) || App.CATS.at(-1)).label;
+App.inferCat = txt => {
+  const n = String(txt || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (/ahorro|reduccion de costo|evita.*costo|menor costo/.test(n)) return 'ahorro';
+  if (/ingreso|venta|conversion|recaudo|cliente nuevo|revenue|income/.test(n)) return 'ingresos';
+  if (/eficien|productiv|automatiz/.test(n)) return 'eficiencia';
+  if (/hora|tiempo|dias|minuto|agil/.test(n)) return 'tiempo';
+  if (/riesgo|fraude|multa|cumplim|perdida/.test(n)) return 'riesgo';
+  return 'otro';
+};
+App.catOf = row => row.categoria || App.inferCat(row.concepto);
+// «Tipo de valor» del proyecto (columna) → tipo de beneficio, para proyectos sin caso
+App.catDeTipoValor = v => { const n = String(v || '').toLowerCase(); return /ingres/.test(n) ? 'ingresos' : /eficien/.test(n) ? 'eficiencia' : /riesg|cumpl/.test(n) ? 'riesgo' : /ahorr/.test(n) ? 'ahorro' : /tiemp/.test(n) ? 'tiempo' : 'otro'; };
+// ICE = Impacto × Confianza × Facilidad (cada uno de 1 a 10)
+App.iceOf = p => { const v = (p.props || {}); const i = Number(v.impacto), c = Number(v.confianza), f = Number(v.facilidad); return i > 0 && c > 0 && f > 0 ? Math.round(i * c * f) : null; };
+// Proyecto en realización: su estado dice ejecución, escalamiento, implementación, operación o cerrado, o ya tiene valor captado
+App.enRealizacion = p => {
+  const ec = App.estadoCol(), e = ec ? String((p.props || {})[ec.id] || '') : '';
+  const caso = App.caseOf(p.id);
+  return /ejecu|escal|implement|operac|produc|cerrad/i.test(e) || !!(caso && (caso.captado || []).some(x => Number(x.valor)));
+};
+// Año calendario del «Año 0» de un caso
+App.anioCero = c => c.anio_inicio || Number(String(c.created_at || App.d.today()).slice(0, 4));
+
 /* ---------- navegación ---------- */
 App.go = hash => { if (location.hash === hash) App.render(); else location.hash = hash; };

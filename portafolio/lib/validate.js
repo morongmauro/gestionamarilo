@@ -54,7 +54,7 @@ const SCHEMAS = {
     project_id: 'id', estado: 'str', sponsor: 'str', fecha_comite: 'date',
     problema: 'text', objetivo: 'text', alcance: 'text', fuera_alcance: 'text', beneficios_cual: 'text',
     riesgos: 'text', supuestos: 'text', recomendacion: 'text',
-    tasa: 'num', anios: 'num', anio_inicio: 'num', moneda: 'str', flujos: 'arr', escenarios: 'obj',
+    tasa: 'num', anios: 'num', anio_inicio: 'num', moneda: 'str', flujos: 'arr', escenarios: 'obj', captado: 'arr',
   },
   // Sesiones de comité (agenda)
   sessions: {

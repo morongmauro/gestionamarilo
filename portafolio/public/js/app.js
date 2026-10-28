@@ -58,7 +58,7 @@
     const d = await App.api('GET', '/api/estado');
     snapshot = JSON.stringify(d);
     App.S.demo = !!d.demo;
-    Object.assign(App.S, { me: d.me, org: d.org, columns: d.columns, projects: d.projects, activities: d.activities, cases: d.cases, sessions: d.sessions, committees: d.committees, people: d.people });
+    Object.assign(App.S, { me: d.me, org: d.org, columns: d.columns, projects: d.projects, activities: d.activities, cases: d.cases, sessions: d.sessions, committees: d.committees, people: d.people, tablero: d.tablero || { income_unidad: 1e6 } });
   }
   App.reload = async () => { try { await loadState(); App.render(); } catch (e) { console.error(e); } };
 
@@ -73,7 +73,7 @@
     $('#meRole').textContent = { admin: 'Administrador', editor: 'Editor', lector: 'Solo lectura' }[App.S.me.role];
     $('#tabUsuarios').hidden = !App.isAdmin();
     if (App.S.demo && !$('.demo-pill')) { const b = document.createElement('div'); b.className = 'demo-pill'; b.textContent = 'Demostración · solo datos de prueba'; b.title = 'Esta copia es para mostrar la herramienta. Los datos reales van en Azure.'; document.body.appendChild(b); }
-    if (!location.hash) location.hash = '#/proyectos'; else App.render();
+    if (!location.hash) location.hash = '#/tablero'; else App.render();
   }
 
   /* ---------- navegación ---------- */
@@ -143,7 +143,7 @@
       const s = JSON.stringify(d);
       if (s === snapshot || editing()) return;
       snapshot = s;
-      Object.assign(App.S, { columns: d.columns, projects: d.projects, activities: d.activities, cases: d.cases, sessions: d.sessions, committees: d.committees, people: d.people, me: d.me });
+      Object.assign(App.S, { columns: d.columns, projects: d.projects, activities: d.activities, cases: d.cases, sessions: d.sessions, committees: d.committees, people: d.people, me: d.me, tablero: d.tablero || { income_unidad: 1e6 } });
       if (!App.drawerOpen()) App.render();
     } catch (e) { if (e.status !== 401) live(false); }
   }, 20000);

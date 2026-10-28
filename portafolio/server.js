@@ -226,6 +226,7 @@ route('GET', '/api/estado', 'usuario', async (req, ctx) => {
     almacenamiento: store.kind,
     demo: process.env.MODO_DEMO === 'true',
     columns: await projectColumns(),
+    tablero: (await store.getConfig('tablero')) || { income_unidad: 1e6 },
     projects, activities, cases, sessions, committees,
     people: users.filter(u => u.active !== false).map(u => ({ id: u.id, name: u.name, email: u.email })),
   };
@@ -237,6 +238,13 @@ route('PUT', '/api/config/columnas', 'editor', async (req, ctx) => {
   const cols = cleanColumns(ctx.body.columns);
   await store.setConfig('project_columns', cols);
   return { columns: cols };
+});
+
+// ---------- Ajustes del tablero (unidad del Income) ----------
+route('PUT', '/api/config/tablero', 'editor', async (req, ctx) => {
+  const u = Number(ctx.body.income_unidad);
+  if (![1, 1e3, 1e6].includes(u)) throw new HttpError(400, 'Unidad inválida');
+  const v = { income_unidad: u }; await store.setConfig('tablero', v); return v;
 });
 
 // ---------- Exportación para el data lake ----------
@@ -403,6 +411,13 @@ async function prepare() {
   auth.setSecret(secret);
   // Estructura inicial (sin datos)
   if (!(await store.getConfig('project_columns'))) await store.setConfig('project_columns', defaults.projectColumns());
+  // Migración (una sola vez): columnas de ICE para portafolios creados antes
+  if (!(await store.getConfig('migr_ice_v1'))) {
+    const cols = await store.getConfig('project_columns');
+    const faltan = defaults.iceColumns().filter(c => !cols.some(x => x.id === c.id));
+    if (faltan.length) { const i = cols.findIndex(c => c.id === 'income'); cols.splice(i >= 0 ? i + 1 : cols.length, 0, ...faltan); await store.setConfig('project_columns', cols); }
+    await store.setConfig('migr_ice_v1', true);
+  }
   if (!(await store.getConfig('seeded_committees'))) {
     if (!(await store.list('committees')).length) for (const c of defaults.committees()) await store.insert('committees', { ...c, id: newId(), created_at: now(), updated_at: now() });
     await store.setConfig('seeded_committees', true);

@@ -1,4 +1,11 @@
 // Estructura inicial (sin datos). Todo se puede cambiar desde la app.
+function iceColumns() {
+  return [
+    { id: 'impacto', name: 'Impacto (1-10)', type: 'number', width: 120 },
+    { id: 'confianza', name: 'Confianza (1-10)', type: 'number', width: 130 },
+    { id: 'facilidad', name: 'Facilidad (1-10)', type: 'number', width: 125 },
+  ];
+}
 function projectColumns() {
   return [
     { id: 'estado', name: 'Estado', type: 'select', width: 150, options: [
@@ -10,6 +17,7 @@ function projectColumns() {
     { id: 'habilitadores', name: 'Habilitadores', type: 'people', width: 200, options: [] },
     { id: 'realizadores', name: 'Realizadores', type: 'people', width: 200, options: [] },
     { id: 'income', name: 'Income', type: 'number', width: 100 },
+    ...iceColumns(),
     { id: 'okrs', name: 'OKRs', type: 'text', width: 240 },
     { id: 'tipo_valor', name: 'Tipo de valor', type: 'select', width: 180, options: [
       { name: 'Ingresos', color: 'azul' }, { name: 'Eficiencia operativa', color: 'verde' },
@@ -22,4 +30,4 @@ function committees() {
     { name: 'Comité directivo', color: 'azul', frecuencia: 'Mensual', descripcion: '', integrantes: '' },
   ];
 }
-module.exports = { projectColumns, committees };
+module.exports = { projectColumns, committees, iceColumns };

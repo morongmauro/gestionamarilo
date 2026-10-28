@@ -26,6 +26,7 @@
           <span>Cronograma: <b>${pl.ini ? `${esc(App.d.fmt(pl.ini))} – ${esc(App.d.fmt(pl.fin))}` : 'sin fechas'}</b></span>
           ${pl.acts.length ? `<span><span class="bar-mini"><i style="width:${pl.avance}%"></i></span><b>${pl.avance}%</b> de avance${pl.atrasadas ? ` · <b style="color:var(--crit)">${pl.atrasadas} atrasada${pl.atrasadas > 1 ? 's' : ''}</b>` : ''}</span>` : ''}
           <span>Caso: ${caso ? `<span class="pill cl-${App.Caso.estadoColor(caso.estado)}">${esc(caso.estado || 'Borrador')}</span>${f.vpn != null ? ` <b>VPN ${esc(App.moneyShort(f.vpn, caso.moneda))}</b>` : ''}` : '<b>sin caso</b>'}</span>
+          <span>ICE: <b>${App.iceOf(p) ?? '—'}</b></span>
           <span>Próximo comité: <b>${prox ? `${esc(App.d.fmtShort(prox.fecha))} · ${esc(App.Agenda.tituloOf(prox))}` : 'ninguno'}</b></span>
         </div>
       </div>

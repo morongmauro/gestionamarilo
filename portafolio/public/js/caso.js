@@ -104,6 +104,7 @@
           <div class="sec" style="margin-bottom:6px"><h3><span class="nm">±</span>Escenarios y margen de seguridad</h3><div class="help">Cambia los porcentajes y mira cómo se mueve el caso. Lo que en Excel serían tres hojas copiadas, aquí se recalcula solo.</div></div>
           <div id="cSens"></div>
         </div>
+        <div class="card-box" style="margin-top:14px" id="cCapt"></div>
       </div>
       <div class="case-side">
         <div class="card-box">
@@ -134,6 +135,75 @@
       onYears: years => { flush(); App.patch('cases', c.id, { anios: years - 1, flujos: fl }).then(() => { App.toast(`Horizonte ampliado a ${years - 1} años`); editor(el, pid); }).catch(() => {}); },
     });
     refresh(fl);
+
+    // Valor captado (real), mes a mes, por tipo de valor
+    const cap = JSON.parse(JSON.stringify(c.captado || []));
+    const y0 = App.anioCero(c), hoyY = Number(App.d.today().slice(0, 4)), hoyM = Number(App.d.today().slice(5, 7));
+    let anioCap = Math.min(Math.max(hoyY, y0), y0 + n() - 1);
+    const extraCats = new Set();
+    let tCap = null;
+    const saveCap = () => { clearTimeout(tCap); tCap = setTimeout(() => { tCap = null; App.patch('cases', c.id, { captado: cap }).catch(() => {}); }, 500); };
+    const capVal = (mes, cat) => { const e = cap.find(x => x.mes === mes && x.categoria === cat); return e ? Number(e.valor) || 0 : 0; };
+    const setCap = (mes, cat, v) => { const i = cap.findIndex(x => x.mes === mes && x.categoria === cat); if (!v) { if (i >= 0) cap.splice(i, 1); } else if (i >= 0) cap[i].valor = v; else cap.push({ mes, categoria: cat, valor: v }); };
+    const esperadoAnual = (cat, year) => { const t = year - y0; if (t < 0 || t >= n()) return 0; return fl.filter(f => f.tipo === 'beneficio' && App.catOf(f) === cat).reduce((a, f) => a + (Number((f.valores || [])[t]) || 0), 0); };
+    const dec = escala === 1 ? 0 : 2, show = v => (v ? App.num(v / escala, dec) : ''), fmt = v => App.num(v / escala, dec);
+    const meses = () => Array.from({ length: 12 }, (_, i) => `${anioCap}-${String(i + 1).padStart(2, '0')}`);
+    const capCats = () => {
+      const ben = fl.filter(f => f.tipo === 'beneficio').map(App.catOf), con = cap.filter(x => x.mes.startsWith(anioCap + '-')).map(x => x.categoria);
+      return App.CATS.map(x => x.id).filter(id => ben.includes(id) || con.includes(id) || extraCats.has(id));
+    };
+    function resumenCap() {
+      const cats = capCats(), ms = meses();
+      const totMes = ms.map(m => cats.reduce((a, k) => a + capVal(m, k), 0));
+      const espMes = cats.reduce((a, k) => a + esperadoAnual(k, anioCap), 0) / 12;
+      const corrido = anioCap < hoyY ? 12 : anioCap > hoyY ? 0 : hoyM - 1 + Number(App.d.today().slice(8)) / new Date(Date.UTC(hoyY, hoyM, 0)).getUTCDate();
+      const captado = totMes.reduce((a, b) => a + b, 0), esperado = espMes * corrido, pc = esperado > 0 ? captado / esperado : null;
+      return { cats, ms, totMes, espMes, captado, esperado, pc };
+    }
+    const sumHTML = r => {
+      const est = r.pc == null ? null : r.pc >= 0.9 ? ['good', '✓', 'En meta'] : r.pc >= 0.7 ? ['warning', '!', 'Por debajo'] : ['critical', '✕', 'Rezagado'];
+      return est ? `<div class="cap-sum st-${est[0]}"><span class="ico">${est[1]}</span><b>${esc(est[2])}:</b> captado ${esc(App.moneyShort(r.captado, mon))} de ${esc(App.moneyShort(r.esperado, mon))} esperados a la fecha en ${anioCap} (${esc(App.pct(r.pc))})</div>`
+        : `<div class="cap-sum">${r.espMes ? `${anioCap} aún no empieza: no hay valor esperado a la fecha.` : `Este caso no proyecta beneficios para ${anioCap}.`}</div>`;
+    };
+    function updateCap() { // solo totales y resumen: los campos no se redibujan (Tab y Enter no pierden el foco)
+      const box = $('#cCapt', el), r = resumenCap();
+      $('#capSum', box).innerHTML = sumHTML(r);
+      r.cats.forEach(k => { const td = $(`[data-capt="${k}"]`, box); if (td) td.innerHTML = `<b>${esc(fmt(r.ms.reduce((a, m) => a + capVal(m, k), 0)))}</b>`; });
+      r.totMes.forEach((v, i) => { const td = $(`[data-captm="${i}"]`, box); if (td) td.textContent = fmt(v); });
+      const tt = $('[data-capt="_tot"]', box); if (tt) tt.innerHTML = `<b>${esc(fmt(r.captado))}</b>`;
+    }
+    function renderCap() {
+      const box = $('#cCapt', el); if (!box) return;
+      const r = resumenCap();
+      const futuro = m => anioCap > hoyY || (anioCap === hoyY && Number(m.slice(5)) > hoyM);
+      box.innerHTML = `<div class="hoja-top"><h3 class="hoja-t"><span class="nm">✓</span>Valor captado (real)</h3><span class="sp"></span>
+          <div class="seg">${Array.from({ length: n() }, (_, t) => y0 + t).map(y => `<button data-capy="${y}" class="${y === anioCap ? 'on' : ''}">${y}</button>`).join('')}</div></div>
+        <div class="help" style="margin:4px 0 10px">Registra cada mes lo que el proyecto ya generó, por tipo de valor. El tablero lo compara con lo que el caso proyecta a la fecha. Cifras en ${escala === 1 ? '' : escala === 1e3 ? 'miles de ' : 'millones de '}${esc(mon)}; acepta 1,2M, 300k y =fórmulas.</div>
+        <div id="capSum">${sumHTML(r)}</div>
+        ${r.cats.length ? `<div class="flujo-wrap"><table class="cap-tbl"><thead><tr><th>Tipo de valor</th>${r.ms.map(m => `<th class="${futuro(m) ? 'fut' : ''}">${App.d.MES3[Number(m.slice(5)) - 1]}</th>`).join('')}<th>Total</th><th>Esperado año</th></tr></thead><tbody>
+          ${r.cats.map(k => `<tr><td><span class="cat-dot cat-${k}"></span>${esc(App.catLabel(k))}</td>${r.ms.map(m => `<td class="${futuro(m) ? 'fut' : ''}"><input data-capm="${m}" data-capc="${k}" value="${esc(show(capVal(m, k)))}" inputmode="decimal" ${dis} placeholder="·"></td>`).join('')}<td class="n" data-capt="${k}"><b>${esc(fmt(r.ms.reduce((a, m) => a + capVal(m, k), 0)))}</b></td><td class="n faint">${esc(fmt(esperadoAnual(k, anioCap)))}</td></tr>`).join('')}
+          <tr class="tot"><td>Captado</td>${r.totMes.map((v, i) => `<td class="n" data-captm="${i}">${esc(fmt(v))}</td>`).join('')}<td class="n" data-capt="_tot"><b>${esc(fmt(r.captado))}</b></td><td></td></tr>
+          <tr class="tot"><td>Esperado</td>${r.ms.map(() => `<td class="n faint">${esc(fmt(r.espMes))}</td>`).join('')}<td class="n faint">${esc(fmt(r.espMes * 12))}</td><td></td></tr>
+        </tbody></table></div>` : '<div class="faint" style="font-size:12.5px">Agrega beneficios al flujo para registrar lo captado.</div>'}
+        ${ro ? '' : `<div style="margin-top:8px"><select class="fld" data-capnew style="width:auto"><option value="">+ Otro tipo de valor…</option>${App.CATS.filter(x => !r.cats.includes(x.id)).map(x => `<option value="${x.id}">${esc(x.label)}</option>`).join('')}</select></div>`}`;
+    }
+    renderCap();
+    $('#cCapt', el).addEventListener('change', e => {
+      const t = e.target;
+      if (t.dataset.capm) {
+        const v = App.Hoja.parseCell(t.value, 0, escala);
+        if (v == null) { App.toast(`No entendí «${t.value}». Escribe un número, 1,2M, 300k o =fórmula`, true); t.value = show(capVal(t.dataset.capm, t.dataset.capc)); return; }
+        setCap(t.dataset.capm, t.dataset.capc, v); t.value = show(v); saveCap(); updateCap();
+      }
+      if (t.dataset.capnew !== undefined && t.value) { extraCats.add(t.value); renderCap(); }
+    });
+    $('#cCapt', el).addEventListener('focusin', e => { if (e.target.dataset && e.target.dataset.capm) e.target.select(); });
+    $('#cCapt', el).addEventListener('click', e => { const b = e.target.closest('[data-capy]'); if (b) { anioCap = Number(b.dataset.capy); renderCap(); } });
+    $('#cCapt', el).addEventListener('keydown', e => { // Enter baja a la fila siguiente, como en Excel
+      const t = e.target; if (!t.dataset || !t.dataset.capm || e.key !== 'Enter') return;
+      e.preventDefault(); const nx = $(`[data-capm="${t.dataset.capm}"]`, $('#cCapt', el).querySelectorAll('tbody tr')[[...$('#cCapt', el).querySelectorAll('tbody tr')].indexOf(t.closest('tr')) + 1] || document.createElement('tr'));
+      t.blur(); if (nx) nx.focus(); else t.focus();
+    });
 
     // Guardar narrativa, datos generales y escenarios al salir del campo
     el.onchange = e => {

@@ -101,8 +101,10 @@
     { id: '_plan', name: 'Cronograma', icon: '▬', width: 170 },
     { id: '_avance', name: 'Avance', icon: '%', width: 120 },
     { id: '_caso', name: 'Caso de negocio', icon: '$', width: 190 },
+    { id: '_ice', name: 'ICE', icon: '★', width: 90 },
   ];
   function calcHTML(k, r) {
+    if (k === '_ice') { const v = App.iceOf(r); return `<div class="c-in n">${v == null ? '<span class="faint" title="Llena Impacto, Confianza y Facilidad (1 a 10)">—</span>' : `<b>${v}</b>`}</div>`; }
     if (k === '_plan') { const pl = App.planOf(r.id); return `<div class="c-in">${pl.ini ? `${esc(App.d.fmtShort(pl.ini))} – ${esc(App.d.fmt(pl.fin))}` : '<span class="faint">Sin cronograma</span>'}${pl.atrasadas ? ` <span class="pill cl-rojo">${pl.atrasadas} atrasada${pl.atrasadas > 1 ? 's' : ''}</span>` : ''}</div>`; }
     if (k === '_avance') { const pl = App.planOf(r.id); return pl.acts.length ? `<div class="c-in"><span class="bar-mini"><i style="width:${pl.avance}%"></i></span>${pl.avance}%</div>` : '<div class="c-in"></div>'; }
     if (k === '_caso') { const c = App.caseOf(r.id); if (!c) return '<div class="c-in"><span class="faint">Sin caso</span></div>';
@@ -397,7 +399,7 @@
     if (a === 'burger') App.toggleSide();
     else if (a === 'open') { e.stopPropagation(); App.go('#/proyectos/' + t.dataset.id); }
     else if (a === 'edit') openEditor(t, t.dataset.id, t.dataset.col);
-    else if (a === 'calc') App.go(`#/proyectos/${t.dataset.id}/${t.dataset.k === '_caso' ? 'caso' : 'cronograma'}`);
+    else if (a === 'calc') App.go(`#/proyectos/${t.dataset.id}/${t.dataset.k === '_caso' ? 'caso' : t.dataset.k === '_ice' ? 'info' : 'cronograma'}`);
     else if (a === 'colmenu') { if (e.target.classList.contains('rz')) return; openColMenu(t, t.dataset.col); }
     else if (a === 'addcol') openAddColumn(t);
     else if (a === 'rowmenu') openRowMenu(t, t.dataset.id);

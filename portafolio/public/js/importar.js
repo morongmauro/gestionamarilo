@@ -77,7 +77,7 @@
       for (let t = 0; t < valores.length; t++) valores[t] = valores[t] || 0;
       const total = esTotal(concepto);
       if (!total && tipo !== 'beneficio' && valores.reduce((a, b) => a + b, 0) < 0) { for (let t = 0; t < valores.length; t++) valores[t] = Math.abs(valores[t]); invertidos++; }
-      out.push({ concepto: concepto || 'Sin nombre', tipo, valores, incluir: !total, motivo: total ? 'Parece un total: no se trae' : '' });
+      out.push({ concepto: concepto || 'Sin nombre', tipo, categoria: tipo === 'beneficio' ? App.inferCat(concepto) : undefined, valores, incluir: !total, motivo: total ? 'Parece un total: no se trae' : '' });
     }
     const maxIdx = Math.max(...anioCols.map(x => x.idx));
     return { filas: out, anios: maxIdx, anioInicio, invertidos };
@@ -168,7 +168,7 @@
       if (e.target === bg || (b && b.dataset.i === 'cerrar')) return bg.remove();
       if (!b || b.dataset.i !== 'ok') return;
       const a = candidatas[sel].a, maxY = App.Hoja.MAXY;
-      const nuevos = a.filas.filter(f => f.incluir).map(f => ({ id: App.uid(), concepto: f.concepto, tipo: f.tipo, valores: f.valores.slice(0, maxY + 1).map(v => Math.round((v || 0) * escala * 100) / 100) }));
+      const nuevos = a.filas.filter(f => f.incluir).map(f => ({ id: App.uid(), concepto: f.concepto, tipo: f.tipo, ...(f.tipo === 'beneficio' ? { categoria: App.inferCat(f.concepto) } : {}), valores: f.valores.slice(0, maxY + 1).map(v => Math.round((v || 0) * escala * 100) / 100) }));
       if (modo === 'reemplazar' && flActual.some(f => (f.valores || []).some(Number)) && !confirm(`Se reemplazan las ${flActual.length} filas del flujo actual por las ${nuevos.length} del Excel. ¿Continuar?`)) return;
       const flujos = modo === 'reemplazar' ? nuevos : flActual.concat(nuevos);
       // horizonte: hasta el último año con alguna cifra

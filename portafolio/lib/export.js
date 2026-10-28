@@ -5,7 +5,8 @@
 // ============================================================
 const Finanzas = require('../public/js/finanzas');
 
-const TABLAS = ['proyectos', 'actividades', 'casos', 'flujos', 'sesiones', 'compromisos', 'comites'];
+const TABLAS = ['proyectos', 'actividades', 'casos', 'flujos', 'captado', 'sesiones', 'compromisos', 'comites'];
+const CATS = { ahorro: 'Ahorro', ingresos: 'Nuevos ingresos', eficiencia: 'Eficiencia', tiempo: 'Tiempo', riesgo: 'Riesgo evitado', otro: 'Otro' };
 
 function plano(v) {
   if (v == null) return '';
@@ -31,6 +32,8 @@ function build(tabla, d) {
       o.avance_promedio = acts.length ? Math.round(acts.reduce((s, a) => s + (a.avance || 0), 0) / acts.length) : '';
       const caso = d.cases.find(c => c.project_id === p.id);
       o.estado_caso = caso ? caso.estado || '' : '';
+      const pr = p.props || {}; const ice = [pr.impacto, pr.confianza, pr.facilidad].map(Number);
+      o.ice = ice.every(v => v > 0) ? Math.round(ice[0] * ice[1] * ice[2]) : '';
       return Object.assign(o, meta(p));
     });
     case 'actividades': return d.activities.map(a => ({
@@ -45,7 +48,10 @@ function build(tabla, d) {
         problema: c.problema || '', objetivo: c.objetivo || '', alcance: c.alcance || '', riesgos: c.riesgos || '', recomendacion: c.recomendacion || '', ...meta(c) };
     });
     case 'flujos': return d.cases.flatMap(c => (c.flujos || []).flatMap(fl => (fl.valores || []).map((v, t) => ({
-      proyecto_id: c.project_id, proyecto: nombre(c.project_id), concepto: fl.concepto || '', tipo: fl.tipo || '', anio: t, valor: Number(v) || 0 }))));
+      proyecto_id: c.project_id, proyecto: nombre(c.project_id), concepto: fl.concepto || '', tipo: fl.tipo || '',
+      tipo_valor: fl.tipo === 'beneficio' ? CATS[fl.categoria] || '' : '', anio: t, anio_calendario: c.anio_inicio ? c.anio_inicio + t : '', valor: Number(v) || 0 }))));
+    case 'captado': return d.cases.flatMap(c => (c.captado || []).map(k => ({
+      proyecto_id: c.project_id, proyecto: nombre(c.project_id), mes: k.mes || '', tipo_valor: CATS[k.categoria] || 'Otro', valor: Number(k.valor) || 0 })));
     case 'sesiones': return d.sessions.map(s => ({
       sesion_id: s.id, comite_id: s.comite_id || '', comite: comite(s.comite_id), titulo: s.titulo || '', fecha: s.fecha || '',
       hora_inicio: s.hora_ini || '', hora_fin: s.hora_fin || '', estado: s.estado || '', lugar: s.lugar || '', enlace: s.enlace || '',
@@ -63,13 +69,14 @@ const META = ['creado', 'actualizado', 'actualizado_por'];
 const HEADERS = {
   actividades: ['actividad_id', 'proyecto_id', 'proyecto', 'actividad', 'responsable', 'inicio', 'fin', 'avance', 'hito', ...META],
   casos: ['proyecto_id', 'proyecto', 'estado', 'sponsor', 'moneda', 'tasa_descuento', 'horizonte_anios', 'inversion_total', 'costo_total', 'beneficio_total', 'vpn', 'tir', 'payback_anios', 'roi', 'problema', 'objetivo', 'alcance', 'riesgos', 'recomendacion', ...META],
-  flujos: ['proyecto_id', 'proyecto', 'concepto', 'tipo', 'anio', 'valor'],
+  flujos: ['proyecto_id', 'proyecto', 'concepto', 'tipo', 'tipo_valor', 'anio', 'anio_calendario', 'valor'],
+  captado: ['proyecto_id', 'proyecto', 'mes', 'tipo_valor', 'valor'],
   sesiones: ['sesion_id', 'comite_id', 'comite', 'titulo', 'fecha', 'hora_inicio', 'hora_fin', 'estado', 'lugar', 'enlace', 'proyectos', 'temas', 'decisiones', ...META],
   compromisos: ['sesion_id', 'comite', 'fecha_sesion', 'compromiso', 'responsable', 'fecha_compromiso', 'cumplido'],
   comites: ['comite_id', 'comite', 'frecuencia', 'descripcion', 'integrantes', ...META],
 };
 function headersOf(tabla, d) {
-  if (tabla === 'proyectos') return ['proyecto_id', ...(d.columns || []).map(c => c.name), 'inicio_cronograma', 'fin_cronograma', 'avance_promedio', 'estado_caso', ...META];
+  if (tabla === 'proyectos') return ['proyecto_id', ...(d.columns || []).map(c => c.name), 'inicio_cronograma', 'fin_cronograma', 'avance_promedio', 'estado_caso', 'ice', ...META];
   return HEADERS[tabla];
 }
 
