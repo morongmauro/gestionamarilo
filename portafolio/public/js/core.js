@@ -4,7 +4,7 @@
    ============================================================ */
 'use strict';
 const App = window.App = {
-  S: { me: null, org: '', columns: [], projects: [], activities: [], cases: [], sessions: [], committees: [], people: [] },
+  S: { me: null, org: '', columns: [], projects: [], activities: [], sections: [], cases: [], sessions: [], committees: [], people: [] },
   views: {},
 };
 

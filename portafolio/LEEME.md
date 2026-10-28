@@ -10,11 +10,21 @@ correo y contraseña, y todos ven los mismos datos.
 |---|---|
 | **Tablero** | Lo captado en el año contra lo esperado a la fecha (los meses corridos según el caso de negocio), con anillo de cumplimiento; valor a captar por año apilado por tipo de valor (ahorro, nuevos ingresos, eficiencia, tiempo, riesgo evitado, otro) y lo captado al lado; curva de captura mes a mes; mezcla del valor; cumplimiento por proyecto; ICE contra valor; estado del portafolio; y la tabla de proyectos. Filtros por año, estado, tipo de valor y proyectos en realización. Los proyectos sin caso usan el Income como valor anual. |
 | **Proyectos** | Tabla tipo Notion: columnas con tipo (estado con colores, personas, número, fecha, texto, bitácora con fecha), filtros, orden, agrupación, tablero por estado y exportar a Excel. Al final, columnas calculadas con el cronograma, el avance y el caso de negocio. Cada proyecto abre su página con pestañas: Información, Cronograma, Caso de negocio y Comités. |
-| **Cronograma** | Gantt de todo el portafolio o de un proyecto. Actividades e hitos; las barras se arrastran para moverlas y por los bordes para cambiar fechas. Zoom por días, semanas o meses. Marca lo atrasado y muestra las sesiones de comité en la línea de tiempo. |
+| **Cronograma** | El mismo plan de trabajo de la app de gestión (mismo aspecto y mismas funciones): capítulos y subcapítulos, ID 1.1.1, responsables, área, entregable, duración en días hábiles de Colombia, precedencias FC/CC/FF/CF con desfase, fechas en cascada, ruta crítica, línea base y desvío, fechas reales, arrastrar barras y flechas, edición tipo Excel (copiar, pegar, agarradera, clic derecho), comentarios, deshacer, fecha meta, involucrados y mesa de trabajo. Arriba se elige el proyecto o «Todo el portafolio» (cada proyecto como capítulo, solo lectura). |
 | **Casos de negocio** | Uno por proyecto: problema, objetivo, alcance, beneficios, riesgos, supuestos y decisión solicitada. Flujo financiero por año (inversión, costos, beneficios) con VPN, TIR, payback y ROI calculados al instante. Estado del caso (borrador, en revisión, aprobado…). Se imprime o guarda en PDF. |
 | **Agenda de comités** | Calendario mensual y lista. Cada sesión tiene comité, hora, lugar o enlace de Teams, proyectos que se presentan, temas, asistentes, decisiones y compromisos con responsable y fecha. Sesiones repetidas (semanal, quincenal, mensual) y botón «Agregar a Outlook». |
 
 Además: **Historial** (quién cambió qué y cuándo) y **Usuarios** (solo administradores).
+
+## Cronograma: el plan de trabajo de la app de gestión
+
+`public/plan/plan.js` y `public/plan/plan.css` son **copia exacta** de `assets/plan.js` y `assets/plan.css` de la app de gestión. Así el cronograma se ve y se comporta igual en las dos. Si mejoras el plan en la app de gestión, tráelo con:
+
+```
+npm run sync-plan
+```
+
+`public/js/plan-host.js` es el puente: arma los datos para la hoja, guarda los cambios (`POST /api/plan/:proyecto`, varios cambios en una sola petición, como cuando una fecha corre en cascada a 20 actividades) y pone deshacer, línea base, fecha meta, involucrados, mesa de trabajo y el detalle de cada actividad. `public/js/plan-csp.js` deja correr la hoja sin aflojar la política de seguridad (la hoja trae `onclick="…"` y este portafolio no permite JavaScript dentro del HTML: se traducen a un intérprete mínimo que solo conoce esas llamadas).
 
 ## Caso de negocio: se trabaja como en Excel
 
@@ -212,7 +222,8 @@ Todo es HTML, CSS y JavaScript sin compilación:
 | `public/js/core.js` | Estado compartido, API, fechas, editores |
 | `public/js/tabla.js` | Sección Proyectos |
 | `public/js/proyecto.js` | Página de cada proyecto |
-| `public/js/cronograma.js` | Gantt |
+| `public/plan/` | Hoja del plan de trabajo (copia de la app de gestión) |
+| `public/js/plan-host.js` · `plan-csp.js` | Cronograma: datos, guardado, deshacer, línea base · puente con la CSP |
 | `public/js/caso.js` + `finanzas.js` | Caso de negocio, escenarios y cálculos |
 | `public/js/hoja.js` | Hoja tipo Excel del flujo |
 | `public/js/importar.js`, `lib/excel.js` | Subir y descargar Excel |

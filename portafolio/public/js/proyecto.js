@@ -40,7 +40,7 @@
         return `<div class="k"><span class="ic">${App.Tabla.TYPES[c.type].icon}</span>${esc(c.name)}</div><div class="v ${vacio && c.type !== 'check' ? 'empty' : ''}" data-col="${c.id}">${vacio && c.type !== 'check' ? `<div class="c-in">${ro ? '—' : 'Vacío'}</div>` : App.Tabla.renderValue(c, v)}</div>`; }).join('')}</div>
         <div class="meta-line">Creado ${esc(App.d.ago(p.created_at))}${p.updated_by_name ? ` · Última edición: ${esc(p.updated_by_name)}, ${esc(App.d.ago(p.updated_at))}` : ''}${ro ? '' : ' · Las columnas se administran desde la tabla de Proyectos'}</div></div>`;
     } else if (tab === 'cronograma') {
-      App.Gantt.render(box, { projectIds: [id], single: true, key: 'p-' + id });
+      App.PlanHost.render(box, id);
     } else if (tab === 'caso') {
       App.Caso.editor(box, id);
     } else {

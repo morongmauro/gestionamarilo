@@ -9,7 +9,7 @@ try { sql = require('mssql'); } catch {
   throw new Error('Falta el paquete mssql. Corre «npm install» en la carpeta portafolio.');
 }
 
-const COLLS = ['users', 'projects', 'activities', 'cases', 'sessions', 'committees', 'historial'];
+const COLLS = ['users', 'projects', 'activities', 'sections', 'cases', 'sessions', 'committees', 'historial'];
 const ident = s => { if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(s)) throw new Error(`Nombre SQL inválido: ${s}`); return s; };
 
 function buildConfig() {

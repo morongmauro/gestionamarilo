@@ -36,9 +36,15 @@ function build(tabla, d) {
       o.ice = ice.every(v => v > 0) ? Math.round(ice[0] * ice[1] * ice[2]) : '';
       return Object.assign(o, meta(p));
     });
-    case 'actividades': return d.activities.map(a => ({
-      actividad_id: a.id, proyecto_id: a.project_id, proyecto: nombre(a.project_id), actividad: a.name || '',
-      responsable: a.responsable || '', inicio: a.inicio || '', fin: a.fin || '', avance: a.avance || 0, hito: a.hito ? 1 : 0, ...meta(a) }));
+    case 'actividades': {
+      const secs = new Map((d.sections || []).map(x => [x.id, x]));
+      const cap = id => { const x = secs.get(id); if (!x) return ''; const pa = x.parent_id && secs.get(x.parent_id); return pa ? `${pa.name} › ${x.name}` : x.name || ''; };
+      return d.activities.map(a => ({
+        actividad_id: a.id, proyecto_id: a.project_id, proyecto: nombre(a.project_id), capitulo: cap(a.section_id), actividad: a.name || '',
+        responsable: a.responsable || '', area: a.area || '', entregable: a.entregable || '', inicio: a.inicio || '', fin: a.fin || '', duracion_habiles: a.duracion ?? '',
+        avance: a.avance || 0, hito: a.hito ? 1 : 0, inicio_real: a.real_ini || '', fin_real: a.real_fin || '', inicio_base: a.base_ini || '', fin_base: a.base_fin || '',
+        depende_de: (a.deps || []).join(';'), ...meta(a) }));
+    }
     case 'casos': return d.cases.map(c => {
       const f = Finanzas.calc(c);
       return { proyecto_id: c.project_id, proyecto: nombre(c.project_id), estado: c.estado || '', sponsor: c.sponsor || '',
@@ -67,7 +73,7 @@ function build(tabla, d) {
 // Encabezados fijos por tabla: una tabla vacía igual sale con sus columnas
 const META = ['creado', 'actualizado', 'actualizado_por'];
 const HEADERS = {
-  actividades: ['actividad_id', 'proyecto_id', 'proyecto', 'actividad', 'responsable', 'inicio', 'fin', 'avance', 'hito', ...META],
+  actividades: ['actividad_id', 'proyecto_id', 'proyecto', 'capitulo', 'actividad', 'responsable', 'area', 'entregable', 'inicio', 'fin', 'duracion_habiles', 'avance', 'hito', 'inicio_real', 'fin_real', 'inicio_base', 'fin_base', 'depende_de', ...META],
   casos: ['proyecto_id', 'proyecto', 'estado', 'sponsor', 'moneda', 'tasa_descuento', 'horizonte_anios', 'inversion_total', 'costo_total', 'beneficio_total', 'vpn', 'tir', 'payback_anios', 'roi', 'problema', 'objetivo', 'alcance', 'riesgos', 'recomendacion', ...META],
   flujos: ['proyecto_id', 'proyecto', 'concepto', 'tipo', 'tipo_valor', 'anio', 'anio_calendario', 'valor'],
   captado: ['proyecto_id', 'proyecto', 'mes', 'tipo_valor', 'valor'],

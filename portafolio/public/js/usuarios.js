@@ -102,7 +102,7 @@
   }
 
   /* ---------- historial ---------- */
-  const COLL = { projects: 'el proyecto', activities: 'la actividad', cases: 'el', sessions: 'la sesión', committees: 'el comité', users: 'el usuario' };
+  const COLL = { projects: 'el proyecto', activities: 'la actividad', sections: 'el capítulo', cases: 'el', sessions: 'la sesión', committees: 'el comité', users: 'el usuario' };
   let quien = '';
   async function historial(main) {
     main.innerHTML = '<div class="empty-box">Cargando…</div>';
@@ -113,7 +113,7 @@
     let day = '';
     const link = h => {
       if (h.coll === 'projects' && App.byId('projects', h.record_id)) return `#/proyectos/${h.record_id}`;
-      if (h.coll === 'activities') { const a = App.byId('activities', h.record_id); if (a) return `#/proyectos/${a.project_id}/cronograma`; }
+      if (h.coll === 'activities' || h.coll === 'sections') { const a = App.byId(h.coll, h.record_id); if (a) return `#/proyectos/${a.project_id}/cronograma`; }
       if (h.coll === 'cases') { const c = App.byId('cases', h.record_id); if (c) return `#/casos/${c.project_id}`; }
       if (h.coll === 'sessions' && App.byId('sessions', h.record_id)) return `ses:${h.record_id}`;
       return null;

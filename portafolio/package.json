@@ -6,7 +6,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "sync-plan": "node -e \"const f=require('fs');['js','css'].forEach(x=>f.copyFileSync('../assets/plan.'+x,'public/plan/plan.'+x));console.log('Plan de trabajo copiado de la app de gestión')\""
   },
   "engines": {
     "node": ">=18"

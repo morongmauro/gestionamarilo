@@ -58,7 +58,7 @@
     const d = await App.api('GET', '/api/estado');
     snapshot = JSON.stringify(d);
     App.S.demo = !!d.demo;
-    Object.assign(App.S, { me: d.me, org: d.org, columns: d.columns, projects: d.projects, activities: d.activities, cases: d.cases, sessions: d.sessions, committees: d.committees, people: d.people, tablero: d.tablero || { income_unidad: 1e6 } });
+    Object.assign(App.S, { me: d.me, org: d.org, columns: d.columns, projects: d.projects, activities: d.activities, sections: d.sections || [], cases: d.cases, sessions: d.sessions, committees: d.committees, people: d.people, tablero: d.tablero || { income_unidad: 1e6 } });
   }
   App.reload = async () => { try { await loadState(); App.render(); } catch (e) { console.error(e); } };
 
@@ -133,7 +133,7 @@
   /* ---------- sincronización con los demás usuarios ---------- */
   const editing = () => {
     const a = document.activeElement;
-    return App.popOpen() || App.$('.modal-bg') || (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.id !== 'tq');
+    return App.popOpen() || App.$('.modal-bg') || (App.PlanHost && App.PlanHost.ocupado()) || (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.id !== 'tq');
   };
   function live(ok) { $('#live').classList.toggle('off', !ok); $('#liveTxt').textContent = ok ? 'En línea' : 'Sin conexión'; }
   setInterval(async () => {
@@ -143,7 +143,7 @@
       const s = JSON.stringify(d);
       if (s === snapshot || editing()) return;
       snapshot = s;
-      Object.assign(App.S, { columns: d.columns, projects: d.projects, activities: d.activities, cases: d.cases, sessions: d.sessions, committees: d.committees, people: d.people, me: d.me, tablero: d.tablero || { income_unidad: 1e6 } });
+      Object.assign(App.S, { columns: d.columns, projects: d.projects, activities: d.activities, sections: d.sections || [], cases: d.cases, sessions: d.sessions, committees: d.committees, people: d.people, me: d.me, tablero: d.tablero || { income_unidad: 1e6 } });
       if (!App.drawerOpen()) App.render();
     } catch (e) { if (e.status !== 401) live(false); }
   }, 20000);

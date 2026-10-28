@@ -16,7 +16,7 @@ const lake = require('./lib/lake');
 let store = null; // se crea al arrancar (prepare)
 
 const PUBLIC = path.join(__dirname, 'public');
-const COLLS = ['projects', 'activities', 'cases', 'sessions', 'committees'];
+const COLLS = ['projects', 'activities', 'sections', 'cases', 'sessions', 'committees'];
 const PROD = process.env.NODE_ENV === 'production';
 const newId = () => crypto.randomUUID();
 const DUMMY_HASH = auth.hashPassword(crypto.randomBytes(12).toString('hex'));
@@ -219,7 +219,7 @@ route('DELETE', '/api/usuarios/:id', 'admin', async (req, ctx) => {
 
 // ---------- Estado completo (lo que la app necesita para pintar) ----------
 route('GET', '/api/estado', 'usuario', async (req, ctx) => {
-  const [projects, activities, cases, sessions, committees, users] = await Promise.all(['projects', 'activities', 'cases', 'sessions', 'committees', 'users'].map(c => store.list(c)));
+  const [projects, activities, sections, cases, sessions, committees, users] = await Promise.all(['projects', 'activities', 'sections', 'cases', 'sessions', 'committees', 'users'].map(c => store.list(c)));
   return {
     me: auth.publicUser(ctx.user),
     org: process.env.ORG_NAME || 'Portafolio',
@@ -227,7 +227,7 @@ route('GET', '/api/estado', 'usuario', async (req, ctx) => {
     demo: process.env.MODO_DEMO === 'true',
     columns: await projectColumns(),
     tablero: (await store.getConfig('tablero')) || { income_unidad: 1e6 },
-    projects, activities, cases, sessions, committees,
+    projects, activities, sections, cases, sessions, committees,
     people: users.filter(u => u.active !== false).map(u => ({ id: u.id, name: u.name, email: u.email })),
   };
 });
@@ -250,8 +250,8 @@ route('PUT', '/api/config/tablero', 'editor', async (req, ctx) => {
 // ---------- Exportación para el data lake ----------
 route('GET', '/api/export', 'export', async () => ({ tablas: exporter.TABLAS, formatos: ['json', 'csv'] }));
 async function exportData() {
-  const [projects, activities, cases, sessions, committees] = await Promise.all(COLLS.map(c => store.list(c)));
-  return { columns: await projectColumns(), projects, activities, cases, sessions, committees };
+  const [projects, activities, sections, cases, sessions, committees] = await Promise.all(COLLS.map(c => store.list(c)));
+  return { columns: await projectColumns(), projects, activities, sections, cases, sessions, committees };
 }
 route('GET', '/api/export/:tabla', 'export', async (req, ctx) => {
   if (!exporter.TABLAS.includes(ctx.params.tabla)) throw new HttpError(404, 'Tabla desconocida');
@@ -306,6 +306,82 @@ route('GET', '/api/sesiones/:id/ics', 'usuario', async (req, ctx) => {
   return { __raw: exporter.toICS(s, c && c.name, names, process.env.TZ_OFFSET), type: 'text/calendar; charset=utf-8', file: `comite-${s.fecha}.ics` };
 });
 
+// ---------- Plan de trabajo: varios cambios de una vez ----------
+// El navegador calcula las fechas en cascada (mismas reglas de la app de gestión:
+// días hábiles de Colombia, precedencias FC/CC/FF/CF con desfase) y manda solo lo
+// que cambió: actividades y capítulos nuevos (con su id), editados o borrados.
+// Así un arrastre que corre 20 actividades se guarda en una sola petición, y
+// «Deshacer» puede devolver incluso filas borradas con su mismo id.
+const ID_RX = /^[A-Za-z0-9_-]{8,64}$/;
+route('POST', '/api/plan/:pid', 'editor', async (req, ctx) => {
+  const pid = ctx.params.pid, b = ctx.body || {};
+  const proyecto = await store.get('projects', pid);
+  if (!proyecto) throw new HttpError(404, 'El proyecto no existe');
+  const lista = (v, n) => { const l = Array.isArray(v) ? v : []; if (l.length > n) throw new HttpError(413, 'Demasiados cambios de una vez'); return l; };
+  const cambios = { sections: b.sections || {}, activities: b.activities || {} };
+  let n = 0;
+  // Primero capítulos (las actividades nuevas pueden caer en un capítulo nuevo); al final, lo borrado
+  for (const coll of ['sections', 'activities']) {
+    for (const raw of lista(cambios[coll].upsert, 2000)) {
+      const id = String((raw && raw.id) || '');
+      if (!ID_RX.test(id)) throw new HttpError(400, 'Id inválido');
+      const data = cleanDoc(coll, raw, true);
+      delete data.project_id;
+      const cur = await store.get(coll, id);
+      if (cur) {
+        if (cur.project_id !== pid) throw new HttpError(400, 'El registro es de otro proyecto');
+        if (!Object.keys(data).length) continue;
+        const doc = await store.update(coll, id, c => ({ ...c, ...data, updated_at: now(), updated_by: ctx.user.id, updated_by_name: ctx.user.name }));
+        if (b.registrar !== false) await log(ctx.user, 'editó', coll, id, await labelOf(coll, doc), Object.keys(data));
+      } else {
+        const doc = { name: coll === 'sections' ? 'Capítulo' : 'Nueva actividad', ...data, project_id: pid, id, created_at: now(), updated_at: now(), updated_by: ctx.user.id, updated_by_name: ctx.user.name };
+        await store.insert(coll, doc);
+        if (b.registrar !== false) await log(ctx.user, 'creó', coll, id, await labelOf(coll, doc));
+      }
+      n++;
+    }
+  }
+  for (const coll of ['activities', 'sections']) {
+    for (const id of lista(cambios[coll].remove, 2000)) {
+      const cur = await store.get(coll, String(id));
+      if (!cur) continue;
+      if (cur.project_id !== pid) throw new HttpError(400, 'El registro es de otro proyecto');
+      await store.remove(coll, cur.id);
+      if (b.registrar !== false) await log(ctx.user, 'eliminó', coll, cur.id, await labelOf(coll, cur));
+      n++;
+    }
+  }
+  const [activities, sections] = await Promise.all(['activities', 'sections'].map(c => store.list(c)));
+  return { cambios: n, activities: activities.filter(a => a.project_id === pid), sections: sections.filter(x => x.project_id === pid) };
+});
+
+// ---------- Comentarios de una actividad (la nubecita del plan) ----------
+route('POST', '/api/activities/:id/comentarios', 'editor', async (req, ctx) => {
+  const texto = String(ctx.body.texto || '').trim().slice(0, 4000);
+  if (!texto) throw new HttpError(400, 'Escribe el comentario');
+  const fecha = /^\d{4}-\d{2}-\d{2}$/.test(ctx.body.fecha || '') ? ctx.body.fecha : null;
+  const hoy = now();
+  // Con fecha elegida (distinta de hoy) se guarda al mediodía, sin hora
+  const createdAt = fecha && fecha !== hoy.slice(0, 10) ? `${fecha}T17:00:00.000Z` : hoy;
+  const nota = { id: newId(), texto, createdAt, autor: ctx.user.name, autor_id: ctx.user.id };
+  const doc = await store.update('activities', ctx.params.id, c => ({ ...c, comentarios: [...(c.comentarios || []), nota].slice(-500) }));
+  if (!doc) throw new HttpError(404, 'Actividad no encontrada');
+  await log(ctx.user, 'comentó', 'activities', doc.id, doc.name, []);
+  return { nota, activity: doc };
+});
+route('DELETE', '/api/activities/:id/comentarios/:cid', 'editor', async (req, ctx) => {
+  let ok = false;
+  const doc = await store.update('activities', ctx.params.id, c => {
+    const l = c.comentarios || [], x = l.find(n => n.id === ctx.params.cid);
+    if (!x) return c;
+    if (x.autor_id && x.autor_id !== ctx.user.id && ctx.user.role !== 'admin') throw new HttpError(403, 'Solo quien lo escribió (o un administrador) puede borrarlo');
+    ok = true;
+    return { ...c, comentarios: l.filter(n => n.id !== ctx.params.cid) };
+  });
+  if (!doc) throw new HttpError(404, 'Actividad no encontrada');
+  return { ok, activity: doc };
+});
+
 // ---------- CRUD genérico de colecciones ----------
 const COLL_RX = `:coll(${COLLS.join('|')})`;
 route('POST', `/api/${COLL_RX}`, 'editor', async (req, ctx) => {
@@ -316,9 +392,9 @@ route('POST', `/api/${COLL_RX}`, 'editor', async (req, ctx) => {
     const ya = (await store.list('cases')).find(c => c.project_id === data.project_id);
     if (ya) return ya;
   }
-  if (coll === 'projects' || coll === 'activities') {
+  if (coll === 'projects' || coll === 'activities' || coll === 'sections') {
     const all = await store.list(coll);
-    const same = coll === 'activities' ? all.filter(a => a.project_id === data.project_id) : all;
+    const same = coll === 'projects' ? all : all.filter(a => a.project_id === data.project_id);
     if (data.position == null) data.position = same.reduce((m, x) => Math.max(m, x.position ?? 0), -1) + 1;
   }
   const doc = { ...data, id: newId(), created_at: now(), updated_at: now(), updated_by: ctx.user.id, updated_by_name: ctx.user.name };
@@ -346,8 +422,16 @@ route('DELETE', `/api/${COLL_RX}/:id`, 'editor', async (req, ctx) => {
   const nombre = await labelOf(coll, cur);
   if (coll === 'projects') { // borra en cascada lo que cuelga del proyecto
     for (const a of (await store.list('activities')).filter(a => a.project_id === id)) await store.remove('activities', a.id);
+    for (const x of (await store.list('sections')).filter(x => x.project_id === id)) await store.remove('sections', x.id);
     for (const c of (await store.list('cases')).filter(c => c.project_id === id)) await store.remove('cases', c.id);
     for (const s of (await store.list('sessions')).filter(s => (s.proyectos || []).includes(id))) await store.update('sessions', s.id, d => ({ ...d, proyectos: d.proyectos.filter(p => p !== id) }));
+  }
+  if (coll === 'sections') { // sus actividades y subcapítulos se van con él
+    for (const x of (await store.list('sections')).filter(x => x.parent_id === id)) {
+      for (const a of (await store.list('activities')).filter(a => a.section_id === x.id)) await store.remove('activities', a.id);
+      await store.remove('sections', x.id);
+    }
+    for (const a of (await store.list('activities')).filter(a => a.section_id === id)) await store.remove('activities', a.id);
   }
   if (coll === 'committees') for (const s of (await store.list('sessions')).filter(s => s.comite_id === id)) await store.update('sessions', s.id, d => ({ ...d, comite_id: null }));
   await store.remove(coll, id);
@@ -384,7 +468,7 @@ async function handle(req, res) {
     const out = await r.handler(req, ctx);
     const headers = ctx.setCookie ? { 'Set-Cookie': ctx.setCookie } : {};
     if (out && out.__raw !== undefined) return send(res, 200, out.__raw, { ...headers, 'Content-Type': out.type, 'Content-Disposition': `attachment; filename="${out.file}"` });
-    send(res, req.method === 'POST' && /^\/api\/(projects|activities|cases|sessions|committees|usuarios)$/.test(url.pathname) ? 201 : 200, out, headers);
+    send(res, req.method === 'POST' && /^\/api\/(projects|activities|sections|cases|sessions|committees|usuarios)$/.test(url.pathname) ? 201 : 200, out, headers);
   } catch (e) {
     const status = e.status || (e instanceof ValidationError ? 400 : 500);
     if (status >= 500) console.error(e);

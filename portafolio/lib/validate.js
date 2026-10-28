@@ -42,13 +42,34 @@ const T = {
   ids: v => (Array.isArray(v) ? [...new Set(v.map(String))].slice(0, 300) : []),
   obj: v => (v && typeof v === 'object' && !Array.isArray(v) ? cleanAny(v) : {}),
   arr: v => (Array.isArray(v) ? cleanAny(v) : []),
+  stamp: v => (v == null || v === '' ? null : !isNaN(Date.parse(v)) ? new Date(v).toISOString() : bad('Fecha y hora inválidas')),
+  dur: v => (v == null || v === '' ? null : Number.isInteger(Number(v)) && Number(v) >= 1 && Number(v) <= 999 ? Number(v) : bad('Duración inválida (1 a 999 días hábiles)')),
+  // { idPrecedente: { t: 'FC'|'CC'|'FF'|'CF', d: desfase, u: 'h' hábiles | 'c' corridos } }
+  deptipos: v => {
+    const out = {};
+    if (!v || typeof v !== 'object' || Array.isArray(v)) return out;
+    for (const [k, x] of Object.entries(v).slice(0, 300)) {
+      if (BAD_KEYS.has(k) || k.length > 64 || !x || typeof x !== 'object') continue;
+      const t = ['FC', 'CC', 'FF', 'CF'].includes(x.t) ? x.t : 'FC', d = Math.max(-730, Math.min(730, Math.round(Number(x.d) || 0)));
+      out[k] = x.u === 'c' ? { t, d, u: 'c' } : { t, d };
+    }
+    return out;
+  },
 };
 
 const SCHEMAS = {
   // Proyecto: sus columnas (las define la tabla, como en Notion) van en props
-  projects: { props: 'obj', position: 'num' },
-  // Actividades e hitos del cronograma
-  activities: { project_id: 'id', name: 'str', responsable: 'str', inicio: 'date', fin: 'date', avance: 'pct', hito: 'bool', position: 'num', notas: 'text' },
+  // Además, lo del plan de trabajo: fecha meta, línea base e involucrados ({nombre, area, rol})
+  projects: { props: 'obj', position: 'num', fecha_meta: 'date', linea_base_at: 'stamp', miembros: 'arr' },
+  // Actividades e hitos del cronograma (plan de trabajo, igual que en la app de gestión):
+  // capítulo, duración en días hábiles, precedencias con su tipo (FC/CC/FF/CF y desfase),
+  // fechas reales, línea base, entregable y área responsable
+  activities: {
+    project_id: 'id', section_id: 'id', name: 'str', responsable: 'str', inicio: 'date', fin: 'date', avance: 'pct', hito: 'bool', position: 'num', notas: 'text',
+    duracion: 'dur', deps: 'ids', dep_tipos: 'deptipos', real_ini: 'date', real_fin: 'date', base_ini: 'date', base_fin: 'date', entregable: 'str', area: 'str',
+  },
+  // Capítulos del plan de trabajo (un nivel de subcapítulos con parent_id)
+  sections: { project_id: 'id', name: 'str', position: 'num', parent_id: 'id', enabled: 'bool' },
   // Caso de negocio (uno por proyecto)
   cases: {
     project_id: 'id', estado: 'str', sponsor: 'str', fecha_comite: 'date',
@@ -64,7 +85,7 @@ const SCHEMAS = {
   // Tipos de comité
   committees: { name: 'str', color: 'str', frecuencia: 'str', descripcion: 'text', integrantes: 'text' },
 };
-const REQUIRED = { activities: ['project_id'], cases: ['project_id'], sessions: ['fecha'], committees: ['name'] };
+const REQUIRED = { activities: ['project_id'], sections: ['project_id', 'name'], cases: ['project_id'], sessions: ['fecha'], committees: ['name'] };
 
 function cleanDoc(coll, data, partial) {
   const schema = SCHEMAS[coll];

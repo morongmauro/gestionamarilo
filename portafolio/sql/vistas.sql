@@ -27,18 +27,27 @@ CROSS APPLY OPENJSON(p.data) WITH (
 GO
 
 CREATE OR ALTER VIEW dbo.v_pf_actividades AS
-SELECT a.id AS actividad_id, j.proyecto_id, j.actividad, j.responsable,
-       j.inicio, j.fin, j.avance, j.hito, a.updated_at
+SELECT a.id AS actividad_id, j.proyecto_id, j.capitulo_id, s.capitulo, j.actividad, j.responsable, j.area, j.entregable,
+       j.inicio, j.fin, j.duracion_habiles, j.avance, j.hito, j.inicio_real, j.fin_real, j.inicio_base, j.fin_base, a.updated_at
 FROM dbo.pf_activities a
 CROSS APPLY OPENJSON(a.data) WITH (
-  proyecto_id NVARCHAR(64)  '$.project_id',
-  actividad   NVARCHAR(500) '$.name',
-  responsable NVARCHAR(500) '$.responsable',
-  inicio      DATE          '$.inicio',
-  fin         DATE          '$.fin',
-  avance      INT           '$.avance',
-  hito        BIT           '$.hito'
-) j;
+  proyecto_id      NVARCHAR(64)  '$.project_id',
+  capitulo_id      NVARCHAR(64)  '$.section_id',
+  actividad        NVARCHAR(500) '$.name',
+  responsable      NVARCHAR(500) '$.responsable',
+  area             NVARCHAR(500) '$.area',
+  entregable       NVARCHAR(500) '$.entregable',
+  inicio           DATE          '$.inicio',
+  fin              DATE          '$.fin',
+  duracion_habiles INT           '$.duracion',
+  avance           INT           '$.avance',
+  hito             BIT           '$.hito',
+  inicio_real      DATE          '$.real_ini',
+  fin_real         DATE          '$.real_fin',
+  inicio_base      DATE          '$.base_ini',
+  fin_base         DATE          '$.base_fin'
+) j
+OUTER APPLY (SELECT JSON_VALUE(c.data, '$.name') AS capitulo FROM dbo.pf_sections c WHERE c.id = j.capitulo_id) s;
 GO
 
 CREATE OR ALTER VIEW dbo.v_pf_casos AS
