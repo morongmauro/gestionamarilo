@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portafolio de proyectos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300..900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<!-- Ingreso -->
+<section class="login" id="login" hidden>
+  <form class="login-card" id="loginForm" autocomplete="on"></form>
+</section>
+
+<!-- Aplicación -->
+<div class="app" id="app" hidden>
+  <aside class="nav-side" id="side">
+    <div class="side-top">
+      <a class="logo" href="#/proyectos" id="logo">P</a>
+      <div class="side-brand"><b id="orgName">Portafolio</b><div class="sub"><span class="live" id="live"></span><span id="liveTxt">En línea</span></div></div>
+      <button class="side-col" id="sideCol" title="Colapsar / expandir la barra">‹</button>
+    </div>
+    <nav class="tabs">
+      <a class="tab" href="#/proyectos" data-sec="proyectos" title="Proyectos"><span class="ic">▤</span><span class="lb">Proyectos</span></a>
+      <a class="tab" href="#/cronograma" data-sec="cronograma" title="Cronograma"><span class="ic">▬</span><span class="lb">Cronograma</span></a>
+      <a class="tab" href="#/casos" data-sec="casos" title="Casos de negocio"><span class="ic">$</span><span class="lb">Casos de negocio</span></a>
+      <a class="tab" href="#/agenda" data-sec="agenda" title="Agenda de comités"><span class="ic">▦</span><span class="lb">Agenda de comités</span></a>
+      <div class="side-sep"></div>
+      <a class="tab" href="#/historial" data-sec="historial" title="Historial de cambios"><span class="ic">↺</span><span class="lb">Historial</span></a>
+      <a class="tab" href="#/usuarios" data-sec="usuarios" title="Usuarios" id="tabUsuarios" hidden><span class="ic">◎</span><span class="lb">Usuarios</span></a>
+    </nav>
+    <div class="side-sep"></div>
+    <div class="side-proj">
+      <div class="side-proj-h">Proyectos</div>
+      <div id="sideProj"></div>
+    </div>
+    <button class="me" id="meBtn"><span class="av" id="meAv">?</span><span class="tx"><b id="meName"></b><span id="meRole"></span></span></button>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+  <main id="main"></main>
+</div>
+
+<div class="pop" id="pop" hidden></div>
+<div id="toast"></div>
+
+<script src="/js/finanzas.js"></script>
+<script src="/js/core.js"></script>
+<script src="/js/tabla.js"></script>
+<script src="/js/cronograma.js"></script>
+<script src="/js/caso.js"></script>
+<script src="/js/agenda.js"></script>
+<script src="/js/proyecto.js"></script>
+<script src="/js/usuarios.js"></script>
+<script src="/js/app.js"></script>
+</body>
+</html>

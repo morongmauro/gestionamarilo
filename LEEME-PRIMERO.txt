@@ -1,21 +1,10 @@
-INICIATIVAS · BASE DE DATOS TIPO NOTION (TABLA + TABLERO) Y CAMINO MICROSOFT
-=============================================================================
-1) EN SUPABASE (una sola vez): corre supabase/migracion-2026-10-iniciativas.sql.
-2) Abre /iniciativas (Ctrl + F5 si ya la tenías abierta).
-
-- Tabla editable celda por celda, como la base de iniciativas de Notion:
-  Estado · Iniciativa · Trazabilidad · Habilitadores · Realizadores · Income ·
-  OKRs · Tipo de valor. Columnas con tipo (selección con colores, personas,
-  número, fecha, casilla, enlace); se agregan, renombran, ocultan, mueven y
-  redimensionan desde la cabecera.
-- Buscar, filtrar, ordenar, agrupar; vista Tablero (arrastrar tarjetas);
-  «⤢ Abrir» en el título abre la ficha con todas las propiedades; ⇩ CSV para Excel.
-- Trazabilidad es bitácora: «+ Entrada de hoy» antepone «28 OCT: ».
-- Sin la migración la página funciona igual, pero guarda solo en tu navegador
-  (badge amarillo). Con la migración, en Supabase (badge verde).
-- Para publicarla en Microsoft (Azure Static Web Apps + Azure SQL + Entra ID,
-  o Microsoft Lists sin código, con Copilot): lee INICIATIVAS-MICROSOFT.md.
-  La carpeta azure/ trae la misma API para Azure Functions y el esquema T-SQL.
+PORTAFOLIO DE PROYECTOS (APLICACIÓN APARTE, CARPETA portafolio/)
+===============================================================
+Es otra aplicación, independiente de esta: proyectos (tabla tipo Notion),
+cronograma, casos de negocio y agenda de comités, con usuarios por correo y
+contraseña. No usa Supabase ni Vercel: corre en un servidor Node (Azure App
+Service) con Azure SQL o la SQL database de Fabric. Todo está explicado en
+portafolio/LEEME.md.
 
 CORRER BARRAS EN EL GANTT · DÍAS CORRIDOS · SELECCIONAR CELDAS
 ===============================================================

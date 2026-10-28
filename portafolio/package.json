@@ -1,0 +1,16 @@
+{
+  "name": "portafolio-proyectos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Portafolio de proyectos: listado, cronograma, casos de negocio y agenda de comités. Usuarios con correo y contraseña.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": {},
+  "optionalDependencies": {
+    "mssql": "^12.0.0"
+  }
+}
