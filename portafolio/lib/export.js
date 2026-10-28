@@ -58,9 +58,24 @@ function build(tabla, d) {
   return null;
 }
 
-function toCSV(rows) {
-  if (!rows.length) return '';
-  const heads = [...new Set(rows.flatMap(r => Object.keys(r)))];
+// Encabezados fijos por tabla: una tabla vacía igual sale con sus columnas
+const META = ['creado', 'actualizado', 'actualizado_por'];
+const HEADERS = {
+  actividades: ['actividad_id', 'proyecto_id', 'proyecto', 'actividad', 'responsable', 'inicio', 'fin', 'avance', 'hito', ...META],
+  casos: ['proyecto_id', 'proyecto', 'estado', 'sponsor', 'moneda', 'tasa_descuento', 'horizonte_anios', 'inversion_total', 'costo_total', 'beneficio_total', 'vpn', 'tir', 'payback_anios', 'roi', 'problema', 'objetivo', 'alcance', 'riesgos', 'recomendacion', ...META],
+  flujos: ['proyecto_id', 'proyecto', 'concepto', 'tipo', 'anio', 'valor'],
+  sesiones: ['sesion_id', 'comite_id', 'comite', 'titulo', 'fecha', 'hora_inicio', 'hora_fin', 'estado', 'lugar', 'enlace', 'proyectos', 'temas', 'decisiones', ...META],
+  compromisos: ['sesion_id', 'comite', 'fecha_sesion', 'compromiso', 'responsable', 'fecha_compromiso', 'cumplido'],
+  comites: ['comite_id', 'comite', 'frecuencia', 'descripcion', 'integrantes', ...META],
+};
+function headersOf(tabla, d) {
+  if (tabla === 'proyectos') return ['proyecto_id', ...(d.columns || []).map(c => c.name), 'inicio_cronograma', 'fin_cronograma', 'avance_promedio', 'estado_caso', ...META];
+  return HEADERS[tabla];
+}
+
+function toCSV(rows, headers) {
+  const heads = headers || [...new Set(rows.flatMap(r => Object.keys(r)))];
+  if (!heads.length) return '';
   const cell = v => { const s = String(v ?? ''); return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
   return [heads.map(cell).join(','), ...rows.map(r => heads.map(h => cell(r[h])).join(','))].join('\r\n');
 }
@@ -92,4 +107,4 @@ function addHour(h) {
   return `${String(Math.min(23, H + 1)).padStart(2, '0')}:${String(M || 0).padStart(2, '0')}`;
 }
 
-module.exports = { TABLAS, build, toCSV, toICS };
+module.exports = { TABLAS, build, toCSV, toICS, headersOf };

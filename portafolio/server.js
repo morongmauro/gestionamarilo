@@ -12,6 +12,7 @@ const auth = require('./lib/auth');
 const { cleanDoc, cleanColumns, ValidationError } = require('./lib/validate');
 const defaults = require('./lib/defaults');
 const exporter = require('./lib/export');
+const lake = require('./lib/lake');
 const store = require('./lib/store').create();
 
 const PUBLIC = path.join(__dirname, 'public');
@@ -228,12 +229,33 @@ route('PUT', '/api/config/columnas', 'editor', async (req, ctx) => {
 
 // ---------- Exportación para el data lake ----------
 route('GET', '/api/export', 'export', async () => ({ tablas: exporter.TABLAS, formatos: ['json', 'csv'] }));
+async function exportData() {
+  const [projects, activities, cases, sessions, committees] = await Promise.all(COLLS.map(c => store.list(c)));
+  return { columns: await projectColumns(), projects, activities, cases, sessions, committees };
+}
 route('GET', '/api/export/:tabla', 'export', async (req, ctx) => {
   if (!exporter.TABLAS.includes(ctx.params.tabla)) throw new HttpError(404, 'Tabla desconocida');
-  const [projects, activities, cases, sessions, committees] = await Promise.all(COLLS.map(c => store.list(c)));
-  const rows = exporter.build(ctx.params.tabla, { columns: await projectColumns(), projects, activities, cases, sessions, committees });
-  if (ctx.query.get('format') === 'csv') return { __raw: exporter.toCSV(rows), type: 'text/csv; charset=utf-8', file: `${ctx.params.tabla}.csv` };
+  const rows = exporter.build(ctx.params.tabla, await exportData());
+  if (ctx.query.get('format') === 'csv') return { __raw: exporter.toCSV(rows, exporter.headersOf(ctx.params.tabla, await exportData())), type: 'text/csv; charset=utf-8', file: `${ctx.params.tabla}.csv` };
   return rows;
+});
+
+// ---------- Envío al data lake de Azure ----------
+async function enviarAlLago(origen, user) {
+  try {
+    const r = await lake.enviar(await exportData());
+    await store.setConfig('lake_ultimo', { ...r, ok: true, origen, por: user ? user.name : 'automático' });
+    return r;
+  } catch (e) {
+    await store.setConfig('lake_ultimo', { at: now(), fecha: lake.localNow().fecha, ok: false, error: e.message, origen, por: user ? user.name : 'automático' });
+    throw e;
+  }
+}
+route('GET', '/api/lake', 'admin', async () => ({ ...lake.describe(), ultimo: await store.getConfig('lake_ultimo') }));
+route('POST', '/api/lake/enviar', 'admin', async (req, ctx) => {
+  if (!lake.configured()) throw new HttpError(400, 'El envío al data lake no está configurado (falta LAKE_ACCOUNT en la configuración del servidor)');
+  try { return await enviarAlLago('manual', ctx.user); }
+  catch (e) { throw new HttpError(502, 'No se pudo escribir en el data lake: ' + e.message); }
 });
 
 // ---------- Agenda: archivo .ics para Outlook ----------
@@ -348,6 +370,17 @@ async function main() {
   if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD && !(await store.list('users')).length) {
     await createUser({ name: process.env.ADMIN_NAME || 'Administrador', email: process.env.ADMIN_EMAIL, password: process.env.ADMIN_PASSWORD, role: 'admin' }, false);
     console.log(`Administrador creado: ${process.env.ADMIN_EMAIL}`);
+  }
+  // Envío nocturno al data lake (una vez al día, a la hora LAKE_HOUR)
+  if (lake.configured() && lake.describe().hora != null) {
+    setInterval(async () => {
+      const { fecha, hora } = lake.localNow();
+      if (hora !== lake.describe().hora) return;
+      const u = await store.getConfig('lake_ultimo');
+      if (u && u.fecha === fecha && u.origen === 'automático' && u.ok) return;
+      try { const r = await enviarAlLago('automático'); console.log(`Data lake: ${r.archivos.length} tablas enviadas (${r.fecha})`); }
+      catch (e) { console.error('Data lake:', e.message); }
+    }, 60 * 1000);
   }
   const port = Number(process.env.PORT) || 8080;
   http.createServer((req, res) => { handle(req, res).catch(e => { console.error(e); send(res, 500, { error: 'Error interno' }); }); })

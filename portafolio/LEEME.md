@@ -40,78 +40,96 @@ Abre `http://localhost:8080` y entra con ese correo. Los datos quedan en
 `portafolio/data/portafolio.json`. En Windows, copia `.env.example` como
 `.env`, llena `ADMIN_EMAIL` y `ADMIN_PASSWORD`, y corre `npm start`.
 
-## Dónde vive cada cosa
+## Dónde vive cada cosa (todo en Azure)
 
-| Pieza | Dónde |
+| Pieza | Servicio de Azure | Para qué |
+|---|---|---|
+| Código | GitHub (este repositorio, carpeta `portafolio/`) | Versiones y despliegue automático |
+| Aplicación (el link) | Azure App Service (Linux, Node 20) | Sirve la página y la API |
+| Base de datos | Azure SQL Database *serverless* | Donde viven los datos y se editan |
+| Data lake | Azure Data Lake Storage Gen2 | Copia diaria para análisis y Power BI |
+| Identidad | Microsoft Entra ID | La app entra a SQL y al lago sin contraseñas |
+
+## Publicarla en Azure
+
+Todo está descrito en `infra/main.bicep` (infraestructura como código).
+
+1. **Pedir a TI** un grupo de recursos y un grupo de Entra ID que administre
+   la base (su nombre y su *Object ID*).
+2. **Crear los recursos** (Azure CLI o Cloud Shell):
+
+   ```bash
+   az deployment group create -g <grupo-de-recursos> -f portafolio/infra/main.bicep \
+     -p sqlAdminLogin="<grupo-entra>" sqlAdminObjectId="<object-id>" \
+        adminEmail="<tu-correo>" adminPassword="<clave-temporal>" \
+        sessionSecret="$(openssl rand -base64 48)"
+   ```
+
+   Crea el App Service con identidad administrada, la Azure SQL (solo acceso
+   por Entra ID, se pausa sola cuando nadie la usa) y una cuenta de Data Lake
+   Gen2 con el contenedor `portafolio`. Si la empresa ya tiene un lago, agrega
+   `crearLago=false lagoCuentaExistente=<cuenta>` y pide a TI el rol
+   *Storage Blob Data Contributor* para la identidad de la app.
+3. **Permisos en la base**: conectado como administrador de Entra, corre
+   `sql/permisos-app.sql` con el nombre del App Service (sale al final del
+   paso 2). Después corre `sql/vistas.sql` para las vistas de Power BI.
+4. **Publicar el código**: en GitHub, *Settings → Secrets and variables →
+   Actions*, crea la variable `AZURE_WEBAPP_NAME` y los secretos
+   `AZURE_CLIENT_ID`, `AZURE_TENANT_ID` y `AZURE_SUBSCRIPTION_ID` (una
+   identidad de Entra con credencial federada, sin contraseñas). Cada cambio
+   en `portafolio/` que llegue a `main` se publica solo
+   (`.github/workflows/portafolio-azure.yml`).
+5. Abre la URL del paso 2 y entra con el correo del administrador.
+6. **Dentro de Teams** (opcional): pestaña *Sitio web* con el link.
+
+Variables que usa la app (el Bicep ya las pone):
+
+| Variable | Valor |
 |---|---|
-| Código | Este repositorio, carpeta `portafolio/` |
-| Aplicación (el link) | Azure App Service: un servidor Node que sirve la página y la API |
-| Base de datos | Azure SQL Database o la *SQL database* de Microsoft Fabric |
-| Data lake | Recibe una copia de la base (ver abajo); la app no escribe directo en el lago |
+| `DB` | `sql` |
+| `SQL_SERVER`, `SQL_DATABASE` | servidor y base |
+| `SQL_AUTH` | `managed-identity` |
+| `SESSION_SECRET` | cadena larga aleatoria |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | primer administrador |
+| `LAKE_ACCOUNT`, `LAKE_CONTAINER` | cuenta y contenedor del lago |
+| `LAKE_HOUR` | hora del envío diario (`2` = 2 a. m.; `off` lo apaga) |
+| `LAKE_FORMAT` | `csv` (por defecto) o `jsonl` |
+| `EXPORT_TOKEN` | opcional, para la API de exportación |
 
-## Publicarla en Microsoft (Azure)
+> Qué está probado y qué no: la app completa se probó en navegador con dos
+> usuarios a la vez; el envío al lago se probó contra Azurite, el emulador
+> oficial de Azure Storage. **No se probó contra una suscripción de Azure
+> real**: ni la plantilla Bicep (no se pudo compilar aquí) ni la conexión a
+> Azure SQL. El primer despliegue puede pedir ajustes de red o permisos.
 
-1. **Base de datos**: en el portal de Azure, crea una *Azure SQL Database* (el
-   nivel *serverless* sale barato). O, si la empresa usa Fabric, crea una
-   *SQL database* dentro del espacio de trabajo de Fabric.
-2. **Aplicación**: crea un *App Service* con pila *Node 20 LTS* (Linux).
-   Conéctalo a este repositorio en *Centro de implementación* (GitHub). Como
-   la app está en una subcarpeta, agrega la variable `PROJECT=portafolio` (o,
-   si usas el flujo de GitHub Actions que genera Azure, apunta el paquete a
-   `portafolio`). También puedes publicar la imagen del `Dockerfile`.
-3. **Variables** (App Service → Configuración → Variables de entorno):
+## Conexión con el data lake
 
-   | Variable | Valor |
-   |---|---|
-   | `DB` | `sql` |
-   | `SQL_SERVER` | `tu-servidor.database.windows.net` |
-   | `SQL_DATABASE` | nombre de la base |
-   | `SQL_AUTH` | `managed-identity` (recomendado), `service-principal` o `sql` |
-   | `SESSION_SECRET` | una cadena larga aleatoria |
-   | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | el primer administrador |
-   | `ORG_NAME` | nombre que sale en la barra |
-   | `NODE_ENV` | `production` |
+Un data lake está hecho para analizar grandes volúmenes, no para que varias
+personas editen fila por fila. Por eso la app trabaja sobre Azure SQL y el
+lago recibe una copia:
 
-   Con `managed-identity`, activa la identidad del App Service y dale acceso
-   en la base: `CREATE USER [nombre-del-app-service] FROM EXTERNAL PROVIDER;`
-   y `ALTER ROLE db_owner ADD MEMBER [nombre-del-app-service];` (db_owner solo
-   hace falta la primera vez, para crear las tablas; luego basta
-   `db_datareader` y `db_datawriter`). Así no hay contraseñas de base de datos.
-4. Abre `https://<tu-app>.azurewebsites.net`. Las tablas `pf_*` se crean solas
-   al primer arranque. Después corre `sql/vistas.sql` para tener las vistas
-   planas de Power BI.
-5. **Dentro de Teams** (opcional): agrega una pestaña *Sitio web* con el link,
-   o ábrela desde el navegador.
+1. **Envío directo (incluido)**: cada noche, y cuando un administrador pulsa
+   *Usuarios → Enviar ahora*, la app escribe cada tabla en el lago con su
+   identidad administrada:
 
-> Lo probado en este repositorio: la app completa con el almacenamiento en
-> archivo, en navegador, con dos usuarios a la vez. El conector de SQL Server
-> carga y falla con un mensaje claro si no hay servidor, pero **no se probó
-> contra una base Azure SQL real**: la primera conexión puede pedir algún
-> ajuste de red o permisos.
+   ```
+   portafolio/<tabla>/fecha=AAAA-MM-DD/<tabla>.csv   ← histórico, una carpeta por día
+   portafolio/<tabla>/actual/<tabla>.csv             ← última foto
+   ```
 
-## Conectar con el data lake
+   Tablas: `proyectos`, `actividades`, `casos`, `flujos` (caso de negocio
+   por año), `sesiones`, `compromisos`, `comites`. Synapse, Databricks,
+   Fabric o Power BI leen esas carpetas directamente.
+2. **Data Factory o Fabric** (si TI prefiere que el lago jale los datos): un
+   *pipeline* copia las vistas de `sql/vistas.sql` desde Azure SQL al lago, o
+   Fabric refleja la base completa con *mirroring*.
+3. **API de exportación**: `GET /api/export/<tabla>?format=csv` con el
+   encabezado `Authorization: Bearer <EXPORT_TOKEN>`, para cualquier otra
+   herramienta.
 
-Un data lake está hecho para analizar grandes volúmenes, no para que una app
-edite fila por fila con varias personas al tiempo. Por eso la app escribe en
-una base SQL y el lago recibe una copia. Hay tres caminos, del más simple al
-más general:
-
-1. **SQL database de Fabric**: si la base se crea dentro de Fabric, Fabric la
-   replica sola en OneLake casi en tiempo real. No hay que programar nada.
-2. **Azure SQL + replicación de Fabric (*mirroring*) o Data Factory**: Fabric
-   puede reflejar una Azure SQL en OneLake, o un *pipeline* de Data Factory la
-   copia al lago (ADLS, Databricks, Synapse) cada cierto tiempo. Las vistas de
-   `sql/vistas.sql` dejan los datos ya planos.
-3. **API de exportación** (sirve para cualquier lago, incluso fuera de
-   Microsoft): define `EXPORT_TOKEN` y el lago lee
-   `GET /api/export/<tabla>?format=csv` con el encabezado
-   `Authorization: Bearer <EXPORT_TOKEN>`. Tablas: `proyectos`,
-   `actividades`, `casos`, `flujos`, `sesiones`, `compromisos`, `comites`.
-   Los administradores también las descargan desde *Usuarios*.
-
-Si además quieren **leer** datos del lago en la app (por ejemplo, el maestro
-de proyectos o el income real), se agrega un conector de lectura a la base o
-al *SQL endpoint* del lago; dime cuál usan y lo armamos.
+Si además quieren **leer** datos del lago en la app (por ejemplo, el income
+real de cada proyecto), se agrega un conector de lectura al *SQL endpoint* de
+Synapse o Fabric.
 
 ## Agregarle funciones
 
@@ -124,6 +142,9 @@ Todo es HTML, CSS y JavaScript sin compilación:
 | `lib/validate.js` | Campos permitidos de cada tabla: aquí se agrega un campo nuevo |
 | `lib/auth.js` | Contraseñas y sesiones |
 | `lib/export.js` | Exportación plana y archivo de Outlook |
+| `lib/lake.js` | Envío al Data Lake de Azure |
+| `infra/main.bicep` | Infraestructura en Azure |
+| `sql/permisos-app.sql`, `sql/vistas.sql` | Permisos de la app y vistas para Power BI |
 | `public/js/core.js` | Estado compartido, API, fechas, editores |
 | `public/js/tabla.js` | Sección Proyectos |
 | `public/js/proyecto.js` | Página de cada proyecto |
