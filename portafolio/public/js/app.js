@@ -7,28 +7,32 @@
   const { $, $$, esc } = App;
   let snapshot = '';
 
+  // Se quita la pantalla de carga cuando ya hay algo que mostrar
+  const booted = () => { const b = $('#boot'); if (b) b.remove(); };
+
   /* ---------- ingreso ---------- */
   function showLogin(mode, info = {}) {
-    $('#app').hidden = true; $('#login').hidden = false;
+    $('#app').hidden = true; $('#login').hidden = false; booted();
     App.closeDrawer(); App.closePop(true);
     const f = $('#loginForm');
-    const org = esc(info.org || App.S.org || 'Portafolio');
+    const org = esc(info.org || App.S.org || 'Amarilo');
+    $('#loginOrg').textContent = info.org || App.S.org || 'Amarilo';
     if (mode === 'setup') {
-      f.innerHTML = `<div class="logo">P</div><h1>Primer ingreso</h1><p>Crea el usuario administrador de ${org}. Después podrás invitar al resto del equipo desde «Usuarios».</p>
+      f.innerHTML = `<h1>Primer ingreso</h1><p>Crea el usuario administrador de ${org}. Después podrás invitar al resto del equipo desde «Usuarios».</p>
         <label>Nombre</label><input class="fld" name="name" required autocomplete="name">
         <label>Correo</label><input class="fld" name="email" type="email" required autocomplete="email">
         <label>Contraseña</label><input class="fld" name="password" type="password" required autocomplete="new-password" placeholder="Mínimo 8 caracteres, letras y números">
         ${info.needCode ? '<label>Código de instalación</label><input class="fld" name="code" required autocomplete="off">' : ''}
         <button class="btn primary" type="submit">Crear administrador</button><div class="err"></div>`;
     } else if (mode === 'cambiar') {
-      f.innerHTML = `<div class="logo">P</div><h1>Cambia tu contraseña</h1><p>Entraste con una contraseña temporal. Elige una propia para continuar.</p>
+      f.innerHTML = `<h1>Cambia tu contraseña</h1><p>Entraste con una contraseña temporal. Elige una propia para continuar.</p>
         <input type="hidden" name="actual" value="${esc(info.actual || '')}">
         ${info.actual ? '' : '<label>Contraseña actual</label><input class="fld" name="actual" type="password" required autocomplete="current-password">'}
         <label>Nueva contraseña</label><input class="fld" name="nueva" type="password" required autocomplete="new-password" placeholder="Mínimo 8 caracteres, letras y números">
         <label>Repítela</label><input class="fld" name="nueva2" type="password" required autocomplete="new-password">
         <button class="btn primary" type="submit">Guardar y entrar</button><div class="err"></div>`;
     } else {
-      f.innerHTML = `<div class="logo">P</div><h1>${org}</h1><p>Portafolio de proyectos · inicia sesión con tu correo</p>${info.demo ? '<div class="demo-note">Versión de demostración: usa solo datos de prueba.</div>' : ''}
+      f.innerHTML = `<div class="eyebrow">${org}</div><h1>Inicia sesión</h1><p>Usa tu correo corporativo y tu contraseña.</p>${info.demo ? '<div class="demo-note">Versión de demostración: usa solo datos de prueba.</div>' : ''}
         <label>Correo</label><input class="fld" name="email" type="email" required autocomplete="username">
         <label>Contraseña</label><input class="fld" name="password" type="password" required autocomplete="current-password">
         <button class="btn primary" type="submit">Entrar</button><div class="err">${esc(info.msg || '')}</div>`;
@@ -67,12 +71,13 @@
     if (App.S.me.must_change) return showLogin('cambiar');
     $('#login').hidden = true; $('#app').hidden = false;
     $('#orgName').textContent = App.S.org;
-    document.title = `${App.S.org} · Portafolio`;
+    document.title = `${App.S.org} · Portafolio de Generación de Valor`;
     $('#meAv').textContent = App.initials(App.S.me.name);
     $('#meName').textContent = App.S.me.name;
     $('#meRole').textContent = { admin: 'Administrador', editor: 'Editor', lector: 'Solo lectura' }[App.S.me.role];
     $('#tabUsuarios').hidden = !App.isAdmin();
-    if (App.S.demo && !$('.demo-pill')) { const b = document.createElement('div'); b.className = 'demo-pill'; b.textContent = 'Demostración · solo datos de prueba'; b.title = 'Esta copia es para mostrar la herramienta. Los datos reales van en Azure.'; document.body.appendChild(b); }
+    $('#demoTag').hidden = !App.S.demo; live(true);
+    booted();
     if (!location.hash) location.hash = '#/tablero'; else App.render();
   }
 
@@ -135,7 +140,12 @@
     const a = document.activeElement;
     return App.popOpen() || App.$('.modal-bg') || (App.PlanHost && App.PlanHost.ocupado()) || (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.id !== 'tq');
   };
-  function live(ok) { $('#live').classList.toggle('off', !ok); $('#liveTxt').textContent = ok ? 'En línea' : 'Sin conexión'; }
+  // Confianza: siempre se ve si la información está al día
+  function live(ok) {
+    $('#live').classList.toggle('off', !ok);
+    $('#liveTxt').textContent = ok ? 'Sincronizado ' + new Date().toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit' }) : 'Sin conexión: revisa tu red';
+  }
+  App.live = live;
   setInterval(async () => {
     if ($('#app').hidden || document.visibilityState !== 'visible') return;
     try {
@@ -156,6 +166,6 @@
       if (st.setup) return showLogin('setup', st);
       if (!st.user) return showLogin('login', st);
       await enter();
-    } catch (e) { $('#login').hidden = false; $('#loginForm').innerHTML = `<div class="logo">P</div><h1>No hay conexión con el servidor</h1><p>${esc(e.message)}</p>`; }
+    } catch (e) { booted(); $('#login').hidden = false; $('#loginForm').innerHTML = `<div class="alert critical" role="alert"><svg aria-hidden="true"><use href="#i-alerta"/></svg><div><b>No hay conexión con el servidor</b><span>${esc(e.message)}. Revisa tu conexión y recarga la página; si sigue, avísale a TI.</span></div></div><button class="btn primary" type="button" id="reintentar">Reintentar</button>`; $('#reintentar').onclick = () => location.reload(); }
   })();
 })();

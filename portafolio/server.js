@@ -124,7 +124,7 @@ async function titleColumn() { return (await projectColumns()).find(c => c.type 
 // ---------- Autenticación ----------
 route('GET', '/api/auth/estado', 'publico', async (req, ctx) => {
   const users = await store.list('users');
-  return { setup: users.length === 0, needCode: users.length === 0 && (PROD || !!process.env.SETUP_CODE), user: auth.publicUser(ctx.user), org: process.env.ORG_NAME || 'Portafolio', demo: process.env.MODO_DEMO === 'true' };
+  return { setup: users.length === 0, needCode: users.length === 0 && (PROD || !!process.env.SETUP_CODE), user: auth.publicUser(ctx.user), org: process.env.ORG_NAME || 'Amarilo', demo: process.env.MODO_DEMO === 'true' };
 });
 
 route('POST', '/api/auth/setup', 'publico', async (req, ctx) => {
@@ -222,7 +222,7 @@ route('GET', '/api/estado', 'usuario', async (req, ctx) => {
   const [projects, activities, sections, cases, sessions, committees, users] = await Promise.all(['projects', 'activities', 'sections', 'cases', 'sessions', 'committees', 'users'].map(c => store.list(c)));
   return {
     me: auth.publicUser(ctx.user),
-    org: process.env.ORG_NAME || 'Portafolio',
+    org: process.env.ORG_NAME || 'Amarilo',
     almacenamiento: store.kind,
     demo: process.env.MODO_DEMO === 'true',
     columns: await projectColumns(),

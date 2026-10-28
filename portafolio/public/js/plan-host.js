@@ -558,10 +558,10 @@
     const dif = M.fechaMeta && s.fechaFinal ? P.cal.difHabiles(M.fechaMeta, s.fechaFinal) : null;
     const delta = s.avanceEsperado != null ? s.avance - s.avanceEsperado : null;
     return `<span class="mesa-kpis">
-      <span title="Promedio del avance de las actividades vs. lo que deberían llevar hoy según sus fechas"><b>${s.avance}%</b> avance${s.avanceEsperado != null ? ` · plan ${s.avanceEsperado}%${delta < -10 ? ' <em style="color:var(--crit)">▼</em>' : ''}` : ''}</span>
+      <span title="Promedio del avance de las actividades vs. lo que deberían llevar hoy según sus fechas"><b>${s.avance}%</b> avance${s.avanceEsperado != null ? ` · plan ${s.avanceEsperado}%${delta < -10 ? ' <em style="color:var(--crit-ink)">▼</em>' : ''}` : ''}</span>
       <span>Fin <b>${esc(fmt(s.fechaFinal))}</b>${M.fechaMeta ? ` · meta ${esc(fmt(M.fechaMeta))}${dif != null ? ` <em style="color:${dif > 0 ? 'var(--crit)' : 'var(--good)'}">${dif > 0 ? `+${dif} háb.` : dif < 0 ? `${dif} háb.` : 'justo'}</em>` : ''}` : ''}</span>
       <span><b>${s.completadas}/${s.total}</b> listas</span>
-      ${s.retrasos ? `<span style="color:var(--crit)"><b>${s.retrasos}</b> atrasada${s.retrasos === 1 ? '' : 's'}</span>` : ''}
+      ${s.retrasos ? `<span style="color:var(--crit-ink)"><b>${s.retrasos}</b> atrasada${s.retrasos === 1 ? '' : 's'}</span>` : ''}
       ${s.rutaCritica ? `<span title="Actividades sin holgura: si una se atrasa, se atrasa todo el proyecto" style="color:${s.rutaCriticaEnRiesgo ? 'var(--cp-late-ink)' : 'var(--cp-ink)'}"><b>${s.rutaCritica}</b> en ruta crítica${s.rutaCriticaEnRiesgo ? ` (${s.rutaCriticaEnRiesgo} en riesgo)` : ''}</span>` : ''}
     </span>`;
   }
@@ -657,7 +657,7 @@
     const visibles = ps.filter(p => !filtro || !ec || (p.props || {})[ec.id] === filtro);
     const acts = App.S.activities.filter(a => visibles.some(p => p.id === a.project_id));
     const late = acts.filter(a => a.fin && a.fin < hoy() && (a.avance || 0) < 100 && !a.real_fin).length;
-    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><div><h1>Cronograma</h1><div class="sub">${pid ? esc(App.projectName(App.byId('projects', pid))) + ' · plan de trabajo' : `${visibles.length} proyectos · ${acts.length} actividades${late ? ` · <b style="color:var(--crit)">${late} atrasadas</b>` : ''}`}</div></div><span class="sp"></span>
+    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><div><h1>Cronograma</h1><div class="sub">${pid ? esc(App.projectName(App.byId('projects', pid))) + ' · plan de trabajo' : `${visibles.length} proyectos · ${acts.length} actividades${late ? ` · <b style="color:var(--crit-ink)">${late} atrasadas</b>` : ''}`}</div></div><span class="sp"></span>
         ${!pid && ec ? `<select class="fld" id="gEstado" style="width:auto"><option value="">Todos los estados</option>${(ec.options || []).map(o => `<option ${filtro === o.name ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}</select>` : ''}
         ${pid ? `<a class="btn" href="#/proyectos/${pid}">Abrir proyecto →</a>` : ''}</div>
       <div class="cron-tabs"><a class="ctab${pid ? '' : ' on'}" href="#/cronograma/todos" title="Todos los proyectos en un solo cronograma (solo lectura)">▦ Todo el portafolio</a>${ps.map(p => { const pl = App.planOf(p.id); return `<a class="ctab${p.id === pid ? ' on' : ''}" href="#/cronograma/${p.id}"><i style="background:var(--c-${App.projectColor(p)}-i)"></i>${esc(App.projectName(p))}${pl.acts.length ? `<span class="n">${pl.avance}%</span>` : ''}</a>`; }).join('')}</div>

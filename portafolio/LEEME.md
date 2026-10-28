@@ -222,6 +222,7 @@ Todo es HTML, CSS y JavaScript sin compilación:
 | `public/js/core.js` | Estado compartido, API, fechas, editores |
 | `public/js/tabla.js` | Sección Proyectos |
 | `public/js/proyecto.js` | Página de cada proyecto |
+| `public/css/marca.css` · `public/js/sistema.js` · `public/marca/` | Sistema de diseño (ver `DISENO.md` y la sección «Sistema de diseño» dentro de la app) · logo |
 | `public/plan/` | Hoja del plan de trabajo (copia de la app de gestión) |
 | `public/js/plan-host.js` · `plan-csp.js` | Cronograma: datos, guardado, deshacer, línea base · puente con la CSP |
 | `public/js/caso.js` + `finanzas.js` | Caso de negocio, escenarios y cálculos |

@@ -98,32 +98,105 @@
   const row = (c, lbl, val, bold) => `<div class="r"><span>${c ? `<i style="--c:${c}"></i>` : ''}${esc(lbl)}</span>${bold ? `<b>${esc(val)}</b>` : esc(val)}</div>`;
   const cvar = k => `var(--cat-${k})`;
 
-  /* ---------- 1 · cifra principal ---------- */
-  function hero(d) {
+  /* ---------- salud de cada proyecto (para «Requiere atención» y la matriz) ---------- */
+  // Reglas a la vista: nada se decide en secreto. Cada señal dice de dónde sale.
+  function senales(d) {
+    const hoy = d.hoy, en14 = App.d.add(hoy, 14);
+    return d.filas.map(x => {
+      const p = x.p, pl = App.planOf(p.id), out = [];
+      const st = estadoDe(x.pc);
+      if (st && st[0] !== 'good') out.push({ sev: st[0] === 'critical' ? 3 : 2, txt: `Captura ${st[0] === 'critical' ? 'rezagada' : 'por debajo'}: ${Math.round(x.pc * 100)}% de lo esperado a la fecha`, href: `#/casos/${p.id}` });
+      if (pl.atrasadas) out.push({ sev: pl.atrasadas >= 3 ? 3 : 2, txt: `${pl.atrasadas} actividad${pl.atrasadas > 1 ? 'es' : ''} atrasada${pl.atrasadas > 1 ? 's' : ''} en el cronograma`, href: `#/cronograma/${p.id}` });
+      let riesgoRC = 0;
+      if (pl.acts.length && App.PlanHost) { try { riesgoRC = App.PlanHost.modelo(p.id).summary.rutaCriticaEnRiesgo || 0; } catch (e) { riesgoRC = 0; } }
+      if (riesgoRC) out.push({ sev: 3, txt: `${riesgoRC} actividad${riesgoRC > 1 ? 'es' : ''} de la ruta crítica en riesgo`, href: `#/cronograma/${p.id}` });
+      if (p.fecha_meta && pl.fin && pl.fin > p.fecha_meta && window.Plan) { const dif = Plan.cal.difHabiles(p.fecha_meta, pl.fin); out.push({ sev: 2, txt: `Termina ${dif} día${dif === 1 ? '' : 's'} hábil${dif === 1 ? '' : 'es'} después de la fecha meta`, href: `#/cronograma/${p.id}` }); }
+      if (x.vpn != null && x.vpn < 0) out.push({ sev: 2, txt: `VPN negativo (${m(x.vpn)})`, href: `#/casos/${p.id}` });
+      const vencidos = App.S.sessions.filter(s => (s.proyectos || []).includes(p.id)).flatMap(s => s.compromisos || []).filter(k => !k.hecho && k.fecha && k.fecha < hoy && (k.texto || '').trim()).length;
+      if (vencidos) out.push({ sev: 2, txt: `${vencidos} compromiso${vencidos > 1 ? 's' : ''} de comité vencido${vencidos > 1 ? 's' : ''}`, href: '#/agenda' });
+      const ses = App.S.sessions.filter(s => (s.proyectos || []).includes(p.id) && s.fecha >= hoy && s.fecha <= en14 && s.estado !== 'Cancelada').sort((a, b) => a.fecha.localeCompare(b.fecha))[0];
+      if (ses) out.push({ sev: 1, txt: `Pasa por ${App.Agenda ? App.Agenda.tituloOf(ses) : 'comité'} el ${App.d.fmtShort(ses.fecha)}${x.caso && (x.caso.estado || 'Borrador') !== 'Aprobado' ? ' · caso ' + (x.caso.estado || 'en borrador').toLowerCase() : ''}`, href: `#/proyectos/${p.id}/comites` });
+      const pausado = /paus|cancel|suspend|detenid/i.test(x.estado || '');
+      const malo = out.some(z => z.sev >= 2);
+      return { x, out, pausado, malo, max: out.reduce((mx, z) => Math.max(mx, z.sev), 0) };
+    });
+  }
+  const SEV = { 3: ['crit', 'i-x', 'Crítico'], 2: ['warn', 'i-alerta', 'Atención'], 1: ['info', 'i-info', 'Próximo'] };
+  const ico = id => `<svg aria-hidden="true"><use href="#${id}"/></svg>`;
+
+  /* ---------- 1 · cifra principal + resumen en una frase ---------- */
+  function hero(d, sg) {
     const pc = d.esperadoY > 0 ? d.captadoY / d.esperadoY : null, st = estadoDe(pc);
     const R = 54, fill = Math.max(0, Math.min(1, pc || 0));
     const col = st ? `var(--st-${st[0]})` : 'var(--viz-muted)';
-    const vpn = d.filas.reduce((a, x) => a + (x.vpn || 0), 0);
-    const ices = d.filas.map(x => x.ice).filter(v => v != null);
-    return `<div class="dash-card span-7"><div class="hero">
-        <svg class="ring" width="136" height="136" viewBox="0 0 136 136" role="img" aria-label="Cumplimiento ${pc == null ? 'sin dato' : App.pct(pc)}">
-          <circle class="trk" cx="68" cy="68" r="${R}" style="stroke:${col};stroke-opacity:.18"/>
+    const nAt = sg.filter(z => z.max >= 2).length;
+    const frase = d.esperadoY > 0
+      ? `En ${d.Y} el portafolio ha capturado <b>${esc(m(d.captadoY))}</b>, el <b>${Math.round(pc * 100)}%</b> de lo esperado a la fecha. <b>${d.reales.length} de ${d.filas.length}</b> iniciativas están en realización${nAt ? ` y <b>${nAt} ${nAt === 1 ? 'tiene' : 'tienen'} alertas</b> de ejecución o de valor` : ' y ninguna tiene alertas'}.`
+      : d.Y > d.hoyY ? `${d.Y} aún no empieza: se proyectan <b>${esc(m(d.proyectadoY))}</b> para el año.` : `Aún no hay proyectos en realización con valor esperado en ${d.Y}.`;
+    return `<div class="dash-card span-8"><div class="exec">
+        <svg class="ring" width="132" height="132" viewBox="0 0 136 136" role="img" aria-label="Cumplimiento ${pc == null ? 'sin dato' : Math.round(pc * 100) + '%'}${st ? ', ' + st[2] : ''}">
+          <circle class="trk" cx="68" cy="68" r="${R}" style="stroke:${col};stroke-opacity:.16"/>
           <circle class="val draw" pathLength="1" cx="68" cy="68" r="${R}" style="stroke:${col};stroke-dasharray:${fill} 1;stroke-dashoffset:0"/>
-          <text x="68" y="68" text-anchor="middle" style="font-size:26px;font-weight:800;fill:var(--ink)">${pc == null ? '—' : Math.round(pc * 100) + '%'}</text>
-          <text x="68" y="86" text-anchor="middle" style="font-size:9.5px;font-weight:700;fill:var(--muted)">cumplimiento</text>
+          <text x="68" y="70" text-anchor="middle" style="font-size:26px;font-weight:800;fill:var(--ink)">${pc == null ? '—' : Math.round(pc * 100) + '%'}</text>
+          <text x="68" y="88" text-anchor="middle" style="font-size:9.5px;font-weight:700;fill:var(--muted)">cumplimiento</text>
         </svg>
-        <div style="min-width:0;flex:1">
-          <div class="lbl">Valor captado en ${d.Y}</div>
+        <div style="min-width:0">
+          <div class="lbl">Valor captado en ${d.Y}${st ? ` · <span class="badge ${st[0] === 'good' ? 'good' : st[0] === 'warning' ? 'warn' : 'crit'}" style="vertical-align:1px">${ico(st[0] === 'good' ? 'i-check' : st[0] === 'warning' ? 'i-alerta' : 'i-x')}${esc(st[2])}</span>` : ''}</div>
           <div class="big" data-count="${d.captadoY}">${esc(m(d.captadoY))}</div>
-          <div class="det">${d.esperadoY > 0 ? `de <b>${esc(m(d.esperadoY))}</b> esperados a la fecha ${st ? `· <span class="st-ico ${st[0]}" style="display:inline-flex;vertical-align:middle">${st[1]}</span> <b>${esc(st[2])}</b>` : ''}` : d.Y > d.hoyY ? 'el año aún no empieza' : 'sin proyectos en realización con valor esperado'}</div>
-          <div class="det">Proyectado para todo ${d.Y}: <b>${esc(m(d.proyectadoY))}</b></div>
-        </div></div></div>
-      <div class="dash-card span-5"><div class="tiles">
-        <div class="tile"><div class="l">Proyectos en realización</div><div class="v">${d.reales.length}</div><div class="s">de ${d.filas.length} en la vista</div></div>
-        <div class="tile"><div class="l">VPN del portafolio</div><div class="v">${esc(m(vpn))}</div><div class="s">suma de los casos de negocio</div></div>
-        <div class="tile"><div class="l">ICE promedio</div><div class="v">${ices.length ? Math.round(ices.reduce((a, b) => a + b, 0) / ices.length) : '—'}</div><div class="s">${ices.length} de ${d.filas.length} con ICE</div></div>
-        <div class="tile"><div class="l">Por captar en ${d.Y}</div><div class="v">${esc(m(Math.max(0, d.proyectadoY - d.captadoY)))}</div><div class="s">proyectado menos captado</div></div>
-      </div></div>`;
+          <p class="frase">${frase}</p>
+          <div class="det">Esperado a la fecha: <b>${esc(m(d.esperadoY))}</b> · Proyectado para todo ${d.Y}: <b>${esc(m(d.proyectadoY))}</b> · prorrateado por los meses corridos de los proyectos en realización</div>
+        </div></div></div>`;
+  }
+
+  /* ---------- 1b · requiere atención ---------- */
+  function atencion(d, sg) {
+    // Una fila por iniciativa (su alerta más grave) para no repetir nombres
+    const filas = sg.filter(z => z.out.length).map(z => { const o = z.out.slice().sort((a, b) => b.sev - a.sev); return { z, o: o[0], mas: o.length - 1 }; })
+      .sort((a, b) => b.o.sev - a.o.sev || b.mas - a.mas).slice(0, 6);
+    const nAt = sg.filter(z => z.max >= 2).length;
+    return `<div class="dash-card span-4"><h3>Requiere atención</h3><div class="sub">${nAt ? `${nAt} de ${sg.length} iniciativas con alertas; primero lo más grave.` : 'Lo que necesita una decisión o seguimiento.'}</div>
+      ${filas.length ? `<div class="atn">${filas.map(({ z, o, mas }) => { const [c, i, l] = SEV[o.sev];
+        return `<a href="${o.href}" title="${esc(z.out.map(x => '• ' + x.txt).join('\n'))}"><span class="badge ${c}">${ico(i)}${l}</span><span style="min-width:0"><span class="p" style="display:block">${esc(App.projectName(z.x.p))}</span><span class="r">${esc(o.txt)}${mas ? ` · <b>+${mas} más</b>` : ''}</span></span><svg class="go" aria-hidden="true"><use href="#i-flecha"/></svg></a>`; }).join('')}</div>`
+        : `<div class="atn-ok">${ico('i-check')}Todo al día: sin alertas con estos filtros.</div>`}</div>`;
+  }
+
+  /* ---------- 1c · indicadores ---------- */
+  function indicadores(d, sg) {
+    const vpn = d.filas.reduce((a, x) => a + (x.vpn || 0), 0);
+    const inv = d.filas.reduce((a, x) => a + (x.caso && x.caso.moneda !== 'USD' ? Finanzas.calc(x.caso).totalInversion || 0 : 0), 0);
+    const nCasos = d.filas.filter(x => x.caso && x.caso.moneda !== 'USD').length;
+    const ices = d.filas.map(x => x.ice).filter(v => v != null);
+    const nAt = sg.filter(z => z.max >= 2).length;
+    const k = (l, v, s, cls, t) => `<div class="xk ${cls || ''}"${t ? ` title="${esc(t)}"` : ''}><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+    return `<div class="dash-card span-12 xks">
+      ${k(`Proyectado ${d.Y}`, esc(m(d.proyectadoY)), `por captar: ${esc(m(Math.max(0, d.proyectadoY - d.captadoY)))}`, '', 'Suma del valor anual de los casos de negocio (o del Income) para el año')}
+      ${k('Inversión de los casos', esc(m(inv)), `${nCasos} caso${nCasos === 1 ? '' : 's'} de negocio`, '', 'Suma de las filas de inversión de los casos de negocio en pesos')}
+      ${k('VPN del portafolio', esc(m(vpn)), 'valor presente neto sumado', '', 'Suma del VPN de cada caso de negocio, con su tasa de descuento')}
+      ${k('ICE promedio', ices.length ? Math.round(ices.reduce((a, b) => a + b, 0) / ices.length) : '—', `${ices.length} de ${d.filas.length} con ICE`, '', 'Impacto × Confianza × Facilidad (cada uno de 1 a 10)')}
+      ${k('Iniciativas con alertas', `${nAt}<span style="font-size:14px;color:var(--muted);font-weight:600"> / ${d.filas.length}</span>`, nAt ? 'ver «Requiere atención»' : 'sin alertas', nAt ? 'alerta' : '')}
+    </div>`;
+  }
+
+  /* ---------- 1d · matriz de decisión ---------- */
+  function matriz(d, sg) {
+    const conIce = sg.filter(z => z.x.ice != null).map(z => z.x.ice).sort((a, b) => a - b);
+    const med = conIce.length ? conIce[Math.floor(conIce.length / 2)] : null;
+    const Q = { acelerar: [], replantear: [], sostener: [], revisar: [] };
+    sg.forEach(z => {
+      const alto = med != null && z.x.ice != null && z.x.ice >= med;
+      const q = z.pausado || (z.x.vpn != null && z.x.vpn < 0) ? 'revisar' : alto ? (z.malo ? 'replantear' : 'acelerar') : (z.malo ? 'revisar' : 'sostener');
+      Q[q].push(z);
+    });
+    const val = z => (z.x.proy ? m(z.x.proy) + ` en ${d.Y}` : z.x.vpn != null ? 'VPN ' + m(z.x.vpn) : 'sin valor');
+    const caja = (k, ic, t, sub) => `<div class="q ${k}"><h4><span class="qi" aria-hidden="true">${ic}</span><span>${t}<em>${sub}</em></span></h4>${Q[k].length ? Q[k].sort((a, b) => (b.x.proy || 0) - (a.x.proy || 0)).map(z => `<a href="#/proyectos/${z.x.p.id}">${esc(App.projectName(z.x.p))}<span>${esc(val(z))}</span></a>`).join('') : '<div class="vac">Ninguna</div>'}</div>`;
+    return `<div class="dash-card span-7"><h3>¿Qué hacer con cada iniciativa?</h3><div class="sub">Sugerencia según potencial (ICE) y salud de ejecución. La decisión es del comité.</div>
+      <div class="mtx">
+        <div class="ax-y">Potencial (ICE) ↑</div>
+        ${caja('replantear', '↻', 'Replantear', 'alto potencial, con alertas')}${caja('acelerar', '↑', 'Acelerar', 'alto potencial, sana')}
+        ${caja('revisar', '■', 'Revisar continuidad', 'bajo potencial con alertas, pausada o VPN negativo')}${caja('sostener', '→', 'Sostener', 'bajo potencial, sana')}
+        <div></div><div class="ax-x">Salud de ejecución →</div>
+      </div>
+      <details class="regla"><summary>¿Cómo se calcula?</summary>Potencial alto: ICE igual o mayor a la mediana del portafolio (${med ?? '—'}). Con alertas: captura bajo 90% de lo esperado, actividades atrasadas, ruta crítica en riesgo, fin después de la fecha meta, VPN negativo o compromisos de comité vencidos. Sin ICE cuenta como potencial bajo.</details></div>`;
   }
 
   /* ---------- 2 · valor por año (apilado por tipo) + captado ---------- */
@@ -217,9 +290,9 @@
   /* ---------- 5 · cumplimiento por proyecto ---------- */
   function cumplimiento(d) {
     const rows = d.filas.filter(x => x.esp > 0).sort((a, b) => (a.pc ?? 9) - (b.pc ?? 9));
-    if (!rows.length) return `<div class="dash-card span-6"><h3>Cumplimiento por proyecto</h3><div class="dash-empty">${d.Y > d.hoyY ? `${d.Y} aún no empieza.` : 'Ningún proyecto en realización tiene valor esperado a la fecha con estos filtros.'}</div></div>`;
+    if (!rows.length) return `<div class="dash-card"><h3>Cumplimiento por proyecto</h3><div class="dash-empty">${d.Y > d.hoyY ? `${d.Y} aún no empieza.` : 'Ningún proyecto en realización tiene valor esperado a la fecha con estos filtros.'}</div></div>`;
     const max = Math.max(...rows.map(x => Math.max(x.esp, x.cap)));
-    return `<div class="dash-card span-6"><h3>Cumplimiento por proyecto · ${d.Y}</h3><div class="sub">Barra: captado. Raya: esperado a la fecha. Primero los más rezagados.</div>
+    return `<div class="dash-card"><h3>Cumplimiento por proyecto · ${d.Y}</h3><div class="sub">Barra: captado. Raya: esperado a la fecha. Primero los más rezagados.</div>
       <div class="bul">${rows.map((x, i) => { const st = estadoDe(x.pc);
         return `<a class="nm" href="#/proyectos/${x.p.id}/caso" title="${esc(App.projectName(x.p))}">${esc(App.projectName(x.p))}</a>
           <div class="trk" data-bul="${x.p.id}"><div class="bg" style="width:100%"></div><div class="fg growx" style="width:${x.cap / max * 100}%;background:var(--st-${st[0]});animation-delay:${i * 60}ms"></div><div class="tk" style="left:calc(${x.esp / max * 100}% - 1px)"></div></div>
@@ -227,10 +300,10 @@
   }
 
   /* ---------- 6 · ICE vs valor ---------- */
-  function iceValor(d, W) {
+  function iceValor(d, W) { // ocupa todo el ancho
     const pts = d.filas.filter(x => x.ice != null);
     const sin = d.filas.length - pts.length;
-    if (!pts.length) return `<div class="dash-card span-6"><h3>Prioridad: ICE vs valor</h3><div class="dash-empty">Ningún proyecto tiene ICE todavía. Llena Impacto, Confianza y Facilidad (1 a 10) en la tabla de Proyectos.</div></div>`;
+    if (!pts.length) return `<div class="dash-card span-12"><h3>Prioridad: ICE vs valor</h3><div class="dash-empty">Ningún proyecto tiene ICE todavía. Llena Impacto, Confianza y Facilidad (1 a 10) en la tabla de Proyectos.</div></div>`;
     const H = 280, L = 64, R = 18, T = 18, B = 40;
     const xmax = Math.max(100, ...pts.map(x => x.ice)) * 1.1, ymaxRaw = Math.max(1, ...pts.map(x => x.proy)), tk = ticks(ymaxRaw), ymax = tk.at(-1);
     const X = v => L + v / xmax * (W - L - R), Y = v => T + (1 - v / ymax) * (H - T - B);
@@ -248,7 +321,7 @@
       return `<text class="lbl2 fade" x="${right ? X(x.ice) + 10 : X(x.ice) - 10}" y="${yy}" text-anchor="${right ? 'start' : 'end'}">${esc(t)}</text>`;
     };
     const xt = ticks(xmax / 1.1, 4);
-    return `<div class="dash-card span-6"><h3>Prioridad: ICE vs valor ${d.Y}</h3><div class="sub">Arriba a la derecha: alto valor y alto ICE, los que conviene priorizar. Las líneas marcan la mediana del portafolio; se nombran los 3 de más valor.${sin ? ` ${sin} sin ICE no aparecen.` : ''}</div>
+    return `<div class="dash-card span-12"><h3>Prioridad: ICE vs valor ${d.Y}</h3><div class="sub">Arriba a la derecha: alto valor y alto ICE, los que conviene priorizar. Las líneas marcan la mediana del portafolio; se nombran los 3 de más valor.${sin ? ` ${sin} sin ICE no aparecen.` : ''}</div>
       <div class="lgd"><span><i class="dt" style="--c:var(--cat-ahorro)"></i>En realización</span><span><i class="dt" style="--c:var(--viz-muted)"></i>Otros</span></div>
       <svg class="viz" viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="ICE contra valor">
         <g class="grid">${tk.map(v => `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/>`).join('')}</g>
@@ -274,7 +347,7 @@
     const atras = d.filas.filter(x => App.planOf(x.p.id).atrasadas > 0).length, sinCron = d.filas.filter(x => !App.planOf(x.p.id).acts.length).length;
     const casosE = ['Aprobado', 'En revisión', 'Borrador'].map(e => ({ e, n: d.filas.filter(x => x.caso && (x.caso.estado || 'Borrador') === e).length }));
     let acc = 0;
-    return `<div class="dash-card span-12"><h3>Estado del portafolio</h3><div class="sub">${d.filas.length} proyectos en la vista, por etapa.</div>
+    return `<div class="dash-card"><h3>Estado del portafolio</h3><div class="sub">${d.filas.length} proyectos en la vista, por etapa.</div>
       <svg class="viz" viewBox="0 0 1000 46" preserveAspectRatio="none" height="46" role="img" aria-label="Proyectos por estado">${cuenta.map((z, i) => { const w = z.n / total * 1000, x0 = acc; acc += w;
         return `<rect class="growx" data-est="${esc(z.o.name)}" x="${x0 + (i ? 1 : 0)}" y="4" width="${Math.max(0, w - (i ? 2 : 0))}" height="38" rx="6" style="fill:${color(z.o)};animation-delay:${i * 60}ms"/>`; }).join('')}${sinE ? `<rect x="${acc + 1}" y="4" width="${sinE / total * 1000 - 1}" height="38" rx="6" style="fill:var(--sunk)"/>` : ''}</svg>
       <div class="lgd" style="margin-top:8px">${cuenta.map(z => `<span><i class="sw" style="--c:${color(z.o)}"></i>${esc(z.o.name)} <b style="color:var(--ink)">${z.n}</b></span>`).join('')}${sinE ? `<span><i class="sw" style="--c:var(--sunk)"></i>Sin estado <b style="color:var(--ink)">${sinE}</b></span>` : ''}</div>
@@ -310,22 +383,23 @@
     const ec = App.estadoCol();
     const key = JSON.stringify([F.anio, F.estado, F.tipo, F.alcance, F.tabla]);
     const anim = key !== lastKey; lastKey = key;
-    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><div><h1>Tablero del portafolio</h1><div class="sub">Valor a captar, valor captado, ICE y estado de los proyectos · al ${esc(App.d.fmt(d.hoy))}</div></div></div>
-      <div class="dash-f">
-        <label>Año <select data-f="anio">${d.anios.map(y => `<option ${y === d.Y ? 'selected' : ''}>${y}</option>`).join('')}</select></label>
-        ${ec ? `<label>Estado <select data-f="estado"><option value="">Todos</option>${(ec.options || []).map(o => `<option ${F.estado === o.name ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}</select></label>` : ''}
-        <label>Tipo de valor <select data-f="tipo"><option value="">Todos</option>${App.CATS.map(c => `<option value="${c.id}" ${F.tipo === c.id ? 'selected' : ''}>${esc(c.label)}</option>`).join('')}</select></label>
-        <div class="seg"><button data-f-alc="todos" class="${F.alcance !== 'real' ? 'on' : ''}">Todos los proyectos</button><button data-f-alc="real" class="${F.alcance === 'real' ? 'on' : ''}">En realización</button></div>
-        <span style="flex:1"></span>
-        ${App.canEdit() ? `<label title="En qué unidad está la columna Income de la tabla de Proyectos">Income en <select data-f="unidad">${[[1e6, 'millones'], [1e3, 'miles'], [1, 'pesos']].map(([v, l]) => `<option value="${v}" ${d.unidad === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>` : ''}
-      </div>
+    const nF = (F.estado ? 1 : 0) + (F.tipo ? 1 : 0);
+    main.innerHTML = `<div class="dash-head"><button class="burger" data-act="burger" aria-label="Menú">☰</button><div><div class="eyebrow">Portafolio de Generación de Valor</div><h1>Tablero ejecutivo</h1><div class="sub">Datos al ${esc(App.d.fmt(d.hoy))} · ${d.filas.length} iniciativa${d.filas.length === 1 ? '' : 's'} en la vista · cifras en pesos colombianos</div></div><span class="sp"></span>
+      <div class="dash-f" role="group" aria-label="Filtros del tablero">
+        <select data-f="anio" aria-label="Año">${d.anios.map(y => `<option ${y === d.Y ? 'selected' : ''}>${y}</option>`).join('')}</select>
+        <div class="seg"><button data-f-alc="todos" class="${F.alcance !== 'real' ? 'on' : ''}" aria-pressed="${F.alcance !== 'real'}">Todas</button><button data-f-alc="real" class="${F.alcance === 'real' ? 'on' : ''}" aria-pressed="${F.alcance === 'real'}">En realización</button></div>
+        <button class="btn ghost" data-f-mas aria-haspopup="true"><svg aria-hidden="true"><use href="#i-filtro"/></svg>Filtros${nF ? ` <span class="n">${nF}</span>` : ''}</button>
+        ${App.canEdit() ? '<button class="btn ghost" data-f-aj title="Ajustes del tablero" aria-label="Ajustes del tablero"><svg aria-hidden="true"><use href="#i-ajustes"/></svg></button>' : ''}
+      </div></div>
+      ${nF ? `<div class="f-act">${F.estado ? `<button data-quitar="estado" title="Quitar filtro">Estado: ${esc(F.estado)} <span>✕</span></button>` : ''}${F.tipo ? `<button data-quitar="tipo" title="Quitar filtro">Tipo de valor: ${esc(App.catLabel(F.tipo))} <span>✕</span></button>` : ''}</div>` : ''}
       <div class="dash-grid ${anim ? 'anim' : ''}" id="dashGrid"></div>`;
     const grid = $('#dashGrid', main);
     const draw = () => {
       const W = Math.max(320, (grid.clientWidth || 1000) - 36);
       const W7 = Math.max(320, (grid.clientWidth >= 1100 ? grid.clientWidth * 7 / 12 - 14 : grid.clientWidth) - 36);
       const W6 = Math.max(320, (grid.clientWidth >= 1100 ? grid.clientWidth / 2 - 7 : grid.clientWidth) - 36);
-      grid.innerHTML = hero(d) + porAnio(d, W) + curva(d, W7) + mezcla(d) + cumplimiento(d) + iceValor(d, W6) + estado(d) + tabla(d);
+      const sg = senales(d);
+      grid.innerHTML = hero(d, sg) + atencion(d, sg) + indicadores(d, sg) + porAnio(d, W) + matriz(d, sg) + `<div class="span-5 dash-col">${cumplimiento(d)}${estado(d)}</div>` + curva(d, W7) + mezcla(d) + iceValor(d, W) + tabla(d);
       // la cifra principal cuenta hasta su valor
       const big = $('.big[data-count]', grid);
       if (big && grid.classList.contains('anim') && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -339,6 +413,23 @@
     main.onclick = e => {
       if (e.target.closest('.burger')) return App.toggleSide();
       const a = e.target.closest('[data-f-alc]'); if (a) { F.alcance = a.dataset.fAlc; saveF(); return App.render(); }
+      const q = e.target.closest('[data-quitar]'); if (q) { F[q.dataset.quitar] = ''; saveF(); return App.render(); }
+      const fm = e.target.closest('[data-f-mas]');
+      if (fm) {
+        const p = App.openPop(fm, `<div class="lbl">Filtrar el tablero</div>
+          ${ec ? `<label class="mi" style="display:block;cursor:default">Estado<select class="fld" data-pf="estado" style="margin-top:4px"><option value="">Todos</option>${(ec.options || []).map(o => `<option ${F.estado === o.name ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}</select></label>` : ''}
+          <label class="mi" style="display:block;cursor:default">Tipo de valor<select class="fld" data-pf="tipo" style="margin-top:4px"><option value="">Todos</option>${App.CATS.map(c => `<option value="${c.id}" ${F.tipo === c.id ? 'selected' : ''}>${esc(c.label)}</option>`).join('')}</select></label>
+          ${nF ? '<div class="sep"></div><button class="mi" data-limpiar="1">Quitar todos los filtros</button>' : ''}`, { width: 260, nofocus: true });
+        p.onchange = ev => { const t = ev.target; if (!t.dataset.pf) return; F[t.dataset.pf] = t.value; saveF(); App.closePop(true); App.render(); };
+        p.onclick = ev => { if (ev.target.closest('[data-limpiar]')) { F.estado = ''; F.tipo = ''; saveF(); App.closePop(true); App.render(); } };
+        return;
+      }
+      const aj = e.target.closest('[data-f-aj]');
+      if (aj) {
+        const p = App.openPop(aj, `<div class="lbl">Ajustes del tablero</div><label class="mi" style="display:block;cursor:default">La columna Income de Proyectos está en<select class="fld" data-unidad style="margin-top:4px">${[[1e6, 'millones'], [1e3, 'miles'], [1, 'pesos']].map(([v, l]) => `<option value="${v}" ${d.unidad === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label><div class="hint" style="padding:0 10px 8px">Se usa como valor anual de los proyectos que aún no tienen caso de negocio.</div>`, { width: 280, nofocus: true });
+        p.onchange = ev => { if (!ev.target.hasAttribute('data-unidad')) return; const v = Number(ev.target.value); App.closePop(true); App.guard(async () => { App.S.tablero = await App.api('PUT', '/api/config/tablero', { income_unidad: v }); App.render(); }); };
+        return;
+      }
       if (e.target.closest('[data-dash=tabla]')) { F.tabla = !F.tabla; saveF(); return App.render(); }
       const yr = e.target.closest('[data-anio]'); if (yr) { F.anio = +yr.dataset.anio; saveF(); hideTip(); return App.render(); }
       const o = e.target.closest('[data-orden]'); if (o) { F.orden = o.dataset.orden; saveF(); lastKey = key; return App.render(); }

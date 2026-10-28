@@ -50,7 +50,7 @@
     let st;
     try { st = await App.api('GET', '/api/lake'); } catch (e) { box.innerHTML = `<h3 style="font-size:14px;font-weight:800">Data lake de Azure</h3><div class="muted">${esc(e.message)}</div>`; return; }
     const u = st.ultimo;
-    const ult = !u ? 'Aún no se ha enviado' : u.ok ? `Último envío: ${esc(App.d.ago(u.at))} (${esc(u.origen)}${u.por && u.origen === 'manual' ? ', ' + esc(u.por) : ''}) · ${u.archivos.reduce((a, x) => a + x.filas, 0)} filas en ${u.archivos.length} tablas` : `<span style="color:var(--crit);font-weight:700">Falló el último envío (${esc(App.d.ago(u.at))}): ${esc(u.error)}</span>`;
+    const ult = !u ? 'Aún no se ha enviado' : u.ok ? `Último envío: ${esc(App.d.ago(u.at))} (${esc(u.origen)}${u.por && u.origen === 'manual' ? ', ' + esc(u.por) : ''}) · ${u.archivos.reduce((a, x) => a + x.filas, 0)} filas en ${u.archivos.length} tablas` : `<span style="color:var(--crit-ink);font-weight:700">Falló el último envío (${esc(App.d.ago(u.at))}): ${esc(u.error)}</span>`;
     box.innerHTML = `<h3 style="font-size:14px;font-weight:800;margin-bottom:6px">Data lake de Azure ${st.configurado ? '<span class="tag" style="background:var(--c-verde);color:var(--c-verde-i)">Conectado</span>' : '<span class="tag">Sin configurar</span>'}</h3>
       ${st.configurado ? `<div style="font-size:12.5px;line-height:1.7"><div><span class="muted">Destino:</span> <code class="u">${esc(st.destino)}</code></div>
         <div><span class="muted">Acceso:</span> ${esc(st.autenticacion)} · <span class="muted">Formato:</span> ${esc(st.formato.toUpperCase())} · <span class="muted">Envío automático:</span> ${st.hora == null ? 'apagado' : `todos los días a las ${st.hora}:00`}</div>
