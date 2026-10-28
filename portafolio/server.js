@@ -13,7 +13,7 @@ const { cleanDoc, cleanColumns, ValidationError } = require('./lib/validate');
 const defaults = require('./lib/defaults');
 const exporter = require('./lib/export');
 const lake = require('./lib/lake');
-const store = require('./lib/store').create();
+let store = null; // se crea al arrancar (prepare)
 
 const PUBLIC = path.join(__dirname, 'public');
 const COLLS = ['projects', 'activities', 'cases', 'sessions', 'committees'];
@@ -33,6 +33,17 @@ function send(res, status, body, headers = {}) {
   res.end(isText ? body : JSON.stringify(body));
 }
 function readBody(req) {
+  // En Vercel el cuerpo ya viene leído en req.body (y el flujo ya se consumió:
+  // leerlo otra vez dejaría la petición colgada)
+  if ('body' in req || req.readableEnded) {
+    let pre;
+    try { pre = req.body; } catch { return Promise.reject(new HttpError(400, 'JSON inválido')); }
+    if (pre === undefined || pre === null || pre === '') return Promise.resolve({});
+    try {
+      if (Buffer.isBuffer(pre)) pre = pre.toString('utf8');
+      return Promise.resolve(typeof pre === 'string' ? (pre ? JSON.parse(pre) : {}) : (pre || {}));
+    } catch { return Promise.reject(new HttpError(400, 'JSON inválido')); }
+  }
   return new Promise((resolve, reject) => {
     let size = 0; const chunks = [];
     req.on('data', c => { size += c.length; if (size > 2 * 1024 * 1024) { reject(new HttpError(413, 'Demasiado grande')); req.destroy(); } else chunks.push(c); });
@@ -113,7 +124,7 @@ async function titleColumn() { return (await projectColumns()).find(c => c.type 
 // ---------- Autenticación ----------
 route('GET', '/api/auth/estado', 'publico', async (req, ctx) => {
   const users = await store.list('users');
-  return { setup: users.length === 0, needCode: users.length === 0 && (PROD || !!process.env.SETUP_CODE), user: auth.publicUser(ctx.user), org: process.env.ORG_NAME || 'Portafolio' };
+  return { setup: users.length === 0, needCode: users.length === 0 && (PROD || !!process.env.SETUP_CODE), user: auth.publicUser(ctx.user), org: process.env.ORG_NAME || 'Portafolio', demo: process.env.MODO_DEMO === 'true' };
 });
 
 route('POST', '/api/auth/setup', 'publico', async (req, ctx) => {
@@ -213,6 +224,7 @@ route('GET', '/api/estado', 'usuario', async (req, ctx) => {
     me: auth.publicUser(ctx.user),
     org: process.env.ORG_NAME || 'Portafolio',
     almacenamiento: store.kind,
+    demo: process.env.MODO_DEMO === 'true',
     columns: await projectColumns(),
     projects, activities, cases, sessions, committees,
     people: users.filter(u => u.active !== false).map(u => ({ id: u.id, name: u.name, email: u.email })),
@@ -322,6 +334,9 @@ route('DELETE', `/api/${COLL_RX}/:id`, 'editor', async (req, ctx) => {
 // ------------------------------------------------------------
 async function handle(req, res) {
   const url = new URL(req.url, 'http://x');
+  // En Vercel todas las rutas /api/* llegan a una sola función con ?__path=
+  const viaPath = url.searchParams.get('__path');
+  if (viaPath !== null) { url.pathname = '/api/' + viaPath.replace(/^\/+/, ''); url.searchParams.delete('__path'); }
   if (!url.pathname.startsWith('/api/')) return serveStatic(req, res, url.pathname);
   const r = routes.find(x => x.method === req.method && x.rx.test(url.pathname));
   if (!r) return send(res, 404, { error: 'No encontrado' });
@@ -351,7 +366,15 @@ async function handle(req, res) {
   }
 }
 
-async function main() {
+// Arranque: conecta la base, crea la estructura inicial y el primer administrador.
+// Se hace una sola vez por proceso (en Vercel, en la primera petición).
+let readyPromise = null;
+function ready() {
+  if (!readyPromise) readyPromise = prepare().catch(e => { readyPromise = null; throw e; });
+  return readyPromise;
+}
+async function prepare() {
+  store = require('./lib/store').create();
   await store.init();
   // Clave de sesión: la del entorno o una generada y guardada en la base
   let secret = process.env.SESSION_SECRET;
@@ -371,6 +394,20 @@ async function main() {
     await createUser({ name: process.env.ADMIN_NAME || 'Administrador', email: process.env.ADMIN_EMAIL, password: process.env.ADMIN_PASSWORD, role: 'admin' }, false);
     console.log(`Administrador creado: ${process.env.ADMIN_EMAIL}`);
   }
+}
+
+// Para Vercel (api/index.js) y para cualquier servidor que quiera montarla
+async function handler(req, res) {
+  try { await ready(); }
+  catch (e) { console.error('No arrancó:', e); return send(res, 503, { error: 'La aplicación no pudo arrancar: ' + e.message }); }
+  try { await handle(req, res); }
+  catch (e) { console.error(e); if (!res.headersSent) send(res, 500, { error: 'Error interno' }); }
+}
+module.exports = handler;
+
+// Servidor propio (computador, Azure App Service, Docker)
+async function main() {
+  await ready();
   // Envío nocturno al data lake (una vez al día, a la hora LAKE_HOUR)
   if (lake.configured() && lake.describe().hora != null) {
     setInterval(async () => {
@@ -383,8 +420,8 @@ async function main() {
     }, 60 * 1000);
   }
   const port = Number(process.env.PORT) || 8080;
-  http.createServer((req, res) => { handle(req, res).catch(e => { console.error(e); send(res, 500, { error: 'Error interno' }); }); })
+  http.createServer(handler)
     .listen(port, () => console.log(`Portafolio en http://localhost:${port} · almacenamiento: ${store.kind}`));
 }
 
-main().catch(e => { console.error('No arrancó:', e.message); process.exit(1); });
+if (require.main === module) main().catch(e => { console.error('No arrancó:', e.message); process.exit(1); });

@@ -2,7 +2,20 @@
   "buildCommand": "echo skip-build",
   "outputDirectory": ".",
   "rewrites": [
-    { "source": "/share/:token", "destination": "/share.html" },
-    { "source": "/((?!api|share|assets).*)", "destination": "/index.html" }
+    {
+      "source": "/share/:token",
+      "destination": "/share.html"
+    },
+    {
+      "source": "/((?!api|share|assets).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/portafolio/:path*",
+      "destination": "/",
+      "permanent": false
+    }
   ]
 }

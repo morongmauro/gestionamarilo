@@ -28,7 +28,7 @@
         <label>Repítela</label><input class="fld" name="nueva2" type="password" required autocomplete="new-password">
         <button class="btn primary" type="submit">Guardar y entrar</button><div class="err"></div>`;
     } else {
-      f.innerHTML = `<div class="logo">P</div><h1>${org}</h1><p>Portafolio de proyectos · inicia sesión con tu correo</p>
+      f.innerHTML = `<div class="logo">P</div><h1>${org}</h1><p>Portafolio de proyectos · inicia sesión con tu correo</p>${info.demo ? '<div class="demo-note">Versión de demostración: usa solo datos de prueba.</div>' : ''}
         <label>Correo</label><input class="fld" name="email" type="email" required autocomplete="username">
         <label>Contraseña</label><input class="fld" name="password" type="password" required autocomplete="current-password">
         <button class="btn primary" type="submit">Entrar</button><div class="err">${esc(info.msg || '')}</div>`;
@@ -57,6 +57,7 @@
   async function loadState() {
     const d = await App.api('GET', '/api/estado');
     snapshot = JSON.stringify(d);
+    App.S.demo = !!d.demo;
     Object.assign(App.S, { me: d.me, org: d.org, columns: d.columns, projects: d.projects, activities: d.activities, cases: d.cases, sessions: d.sessions, committees: d.committees, people: d.people });
   }
   App.reload = async () => { try { await loadState(); App.render(); } catch (e) { console.error(e); } };
@@ -71,6 +72,7 @@
     $('#meName').textContent = App.S.me.name;
     $('#meRole').textContent = { admin: 'Administrador', editor: 'Editor', lector: 'Solo lectura' }[App.S.me.role];
     $('#tabUsuarios').hidden = !App.isAdmin();
+    if (App.S.demo && !$('.demo-pill')) { const b = document.createElement('div'); b.className = 'demo-pill'; b.textContent = 'Demostración · solo datos de prueba'; b.title = 'Esta copia es para mostrar la herramienta. Los datos reales van en Azure.'; document.body.appendChild(b); }
     if (!location.hash) location.hash = '#/proyectos'; else App.render();
   }
 
