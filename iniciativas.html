@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Iniciativas · Gestión Mauro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300..900&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     INICIATIVAS · base de datos tipo Notion (vista Tabla + Tablero)
+     Sin build: HTML + CSS + JS. La fuente de datos la decide
+     `pickStore()` abajo: /api/iniciativas si responde, si no, este
+     navegador (localStorage).
+     ============================================================ */
+  :root{
+    --paper:#FAFAF8; --card:#FFFFFF; --sunk:#F4F2EC; --hover:#F7F6F2;
+    --ink:#1A1712; --muted:#6E6858; --faint:#9A9384;
+    --line:rgba(26,23,18,.09); --line-2:rgba(26,23,18,.16);
+    --accent:#FFD000; --accent-ink:#8A6A00; --accent-soft:#FFF6D6;
+    --good:#2F9E6A; --crit:#DB4A44; --crit-bg:#FBE3E1;
+    --shadow:0 2px 5px rgba(26,23,18,.05), 0 10px 24px rgba(26,23,18,.06);
+    --shadow-lg:0 4px 10px rgba(26,23,18,.06), 0 18px 44px rgba(26,23,18,.14);
+    --sans:"Montserrat",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;
+    --sel:rgba(35,131,226,.14); --sel-brd:#2383E2;
+    /* Colores de etiquetas (pills), como las opciones de Notion */
+    --c-gris:#E9E7E1; --c-gris-i:#4F4B44;
+    --c-rojo:#FFE2DD; --c-rojo-i:#93302A;
+    --c-naranja:#FADEC9; --c-naranja-i:#8A4B14;
+    --c-amarillo:#FDEDC0; --c-amarillo-i:#7A5B00;
+    --c-verde:#DBEDDB; --c-verde-i:#1F6A3E;
+    --c-azul:#D3E5EF; --c-azul-i:#1F4F74;
+    --c-morado:#E8DEEE; --c-morado-i:#5A3A7E;
+    --c-rosa:#F5E0E9; --c-rosa-i:#8D3A63;
+    --c-cafe:#EEE0DA; --c-cafe-i:#6B4332;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --paper:#141310; --card:#1D1B16; --sunk:#232019; --hover:#24211A;
+    --ink:#F3EFE6; --muted:#A49C8B; --faint:#6E6858;
+    --line:rgba(243,239,230,.10); --line-2:rgba(243,239,230,.18);
+    --accent:#FFD000; --accent-ink:#FFD84D; --accent-soft:rgba(255,208,0,.12);
+    --good:#46B37E; --crit:#F0645E; --crit-bg:rgba(240,100,94,.14);
+    --shadow:0 2px 6px rgba(0,0,0,.35), 0 12px 30px rgba(0,0,0,.45);
+    --shadow-lg:0 6px 14px rgba(0,0,0,.4), 0 22px 50px rgba(0,0,0,.55);
+    --sel:rgba(35,131,226,.22);
+    --c-gris:#3A3833; --c-gris-i:#D9D5CC; --c-rojo:#5A2D2A; --c-rojo-i:#FFB3AC;
+    --c-naranja:#5B3A1E; --c-naranja-i:#FFC89A; --c-amarillo:#59481A; --c-amarillo-i:#FFE08A;
+    --c-verde:#23402D; --c-verde-i:#A6E3B9; --c-azul:#23384A; --c-azul-i:#A9D0EC;
+    --c-morado:#3B2E4A; --c-morado-i:#D5BFF0; --c-rosa:#4A2D3B; --c-rosa-i:#F1B6D0;
+    --c-cafe:#44322B; --c-cafe-i:#E2C2B4;
+  }}
+  :root[data-theme="dark"]{
+    --paper:#141310; --card:#1D1B16; --sunk:#232019; --hover:#24211A;
+    --ink:#F3EFE6; --muted:#A49C8B; --faint:#6E6858;
+    --line:rgba(243,239,230,.10); --line-2:rgba(243,239,230,.18);
+    --accent:#FFD000; --accent-ink:#FFD84D; --accent-soft:rgba(255,208,0,.12);
+    --good:#46B37E; --crit:#F0645E; --crit-bg:rgba(240,100,94,.14);
+    --shadow:0 2px 6px rgba(0,0,0,.35), 0 12px 30px rgba(0,0,0,.45);
+    --shadow-lg:0 6px 14px rgba(0,0,0,.4), 0 22px 50px rgba(0,0,0,.55);
+    --sel:rgba(35,131,226,.22);
+    --c-gris:#3A3833; --c-gris-i:#D9D5CC; --c-rojo:#5A2D2A; --c-rojo-i:#FFB3AC;
+    --c-naranja:#5B3A1E; --c-naranja-i:#FFC89A; --c-amarillo:#59481A; --c-amarillo-i:#FFE08A;
+    --c-verde:#23402D; --c-verde-i:#A6E3B9; --c-azul:#23384A; --c-azul-i:#A9D0EC;
+    --c-morado:#3B2E4A; --c-morado-i:#D5BFF0; --c-rosa:#4A2D3B; --c-rosa-i:#F1B6D0;
+    --c-cafe:#44322B; --c-cafe-i:#E2C2B4;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:13.5px;line-height:1.45;-webkit-font-smoothing:antialiased;padding:14px 16px 32px}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;font-size:inherit}
+  input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+  .container{max-width:1700px;margin:0 auto}
+
+  /* Cabecera */
+  .header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 14px 8px 10px;margin-bottom:12px;border-radius:999px;background:var(--card);box-shadow:var(--shadow)}
+  .brand{display:flex;align-items:center;gap:12px;min-width:0}
+  .logo{width:36px;height:36px;border-radius:50%;background:var(--accent);color:#1C1A17;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;flex-shrink:0}
+  .brand h1{font-size:16px;font-weight:800;letter-spacing:-.01em;line-height:1.2}
+  .brand .sub{font-size:11.5px;color:var(--muted);font-weight:500}
+  .hd-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .vistas{display:inline-flex;background:var(--sunk);border-radius:999px;padding:3px}
+  .vistas button{font-size:12px;font-weight:700;color:var(--muted);padding:6px 14px;border-radius:999px;white-space:nowrap}
+  .vistas button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 4px rgba(28,26,23,.1)}
+  .badge{font-size:11px;font-weight:700;padding:6px 12px;border-radius:999px;background:var(--sunk);color:var(--muted);white-space:nowrap}
+  .badge.db{background:#DBEDDB;color:#1F6A3E}
+  .badge.local{background:var(--accent-soft);color:var(--accent-ink)}
+
+  /* Barra de herramientas */
+  .toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 8px}
+  .toolbar .sp{flex:1}
+  .tb{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);padding:6px 10px;border-radius:8px;white-space:nowrap}
+  .tb:hover{background:var(--sunk);color:var(--ink)}
+  .tb.on{color:var(--sel-brd);background:var(--sel)}
+  .tb.primary{background:var(--ink);color:var(--paper);font-weight:700;padding:7px 14px;border-radius:999px}
+  .tb.primary:hover{opacity:.9;background:var(--ink);color:var(--paper)}
+  .search{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:5px 10px;min-width:220px}
+  .search input{border:none;background:none;outline:none;width:100%;font-size:12.5px}
+  .search span{color:var(--faint)}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px;min-height:0}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:4px 8px 4px 10px;border-radius:999px;border:1px solid var(--line-2);background:var(--card);color:var(--ink)}
+  .chip b{font-weight:800;color:var(--sel-brd)}
+  .chip button{color:var(--faint);font-size:14px;line-height:1;padding:0 2px}
+  .chip button:hover{color:var(--crit)}
+
+  /* Tabla */
+  .tbl-wrap{background:var(--card);border-radius:16px;box-shadow:var(--shadow);overflow:auto;max-height:calc(100vh - 150px);position:relative}
+  table.tbl{border-collapse:separate;border-spacing:0;table-layout:fixed;min-width:100%}
+  .tbl th,.tbl td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);vertical-align:top;text-align:left;padding:0}
+  .tbl th{position:sticky;top:0;z-index:3;background:var(--sunk);font-size:12px;font-weight:700;color:var(--muted);height:36px;user-select:none}
+  .tbl th .th-in{display:flex;align-items:center;gap:6px;padding:0 8px;height:36px;position:relative;cursor:pointer;overflow:hidden}
+  .tbl th .th-in:hover{background:var(--hover);color:var(--ink)}
+  .tbl th .ic{font-size:11px;color:var(--faint);width:16px;text-align:center;flex-shrink:0;font-weight:800}
+  .tbl th .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tbl th .srt{color:var(--sel-brd);font-size:10px;margin-left:auto}
+  .tbl th .rz{position:absolute;top:0;right:-3px;width:7px;height:100%;cursor:col-resize;z-index:4}
+  .tbl th .rz:hover,.tbl th .rz.on{background:var(--sel-brd)}
+  .tbl td.ttl-col .open{position:absolute;right:6px;top:6px;font-size:10.5px;font-weight:700;color:var(--muted);background:var(--card);border:1px solid var(--line-2);border-radius:6px;padding:2px 7px;opacity:0;box-shadow:0 1px 3px rgba(26,23,18,.08)}
+  .tbl td.ttl-col:hover .open{opacity:1}
+  .tbl td.ttl-col .open:hover{color:var(--ink);background:var(--sunk)}
+  .tbl th.addc{width:46px;min-width:46px}
+  .tbl th.addc .th-in{justify-content:center;font-size:16px;color:var(--faint)}
+  .tbl td.cell{cursor:pointer;min-height:36px;position:relative}
+  .tbl td.cell:hover{background:var(--hover)}
+  .tbl td.cell.ed{box-shadow:inset 0 0 0 2px var(--sel-brd);z-index:3}
+  .tbl td.ttl-col{background:var(--card)}
+  .tbl td .c-in{padding:8px 8px;min-height:36px;font-size:13px;line-height:1.4}
+  .tbl td .c-in.ttl{font-weight:700}
+  .tbl td .c-in.txt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap;word-break:break-word;color:var(--ink)}
+  .tbl td .c-in.n{text-align:right;font-variant-numeric:tabular-nums}
+  .tbl td .c-in.empty{color:transparent}
+  .tbl td .c-in a{color:var(--sel-brd);text-decoration:none}
+  .tbl td .c-in a:hover{text-decoration:underline}
+  .tbl td.menu-col{width:40px;min-width:40px;text-align:center;border-right:none}
+  .tbl td.menu-col button{opacity:0;color:var(--faint);padding:8px 10px;font-size:14px;letter-spacing:1px}
+  .tbl tr:hover td.menu-col button{opacity:1}
+  .tbl tr.grp td{background:var(--paper);padding:10px 10px 6px;border-right:none;cursor:pointer}
+  .tbl tr.grp td .g-in{display:flex;align-items:center;gap:8px;font-weight:700;font-size:12.5px}
+  .tbl tr.grp td .g-in .n{color:var(--faint);font-weight:600;font-size:11.5px}
+  .tbl tr.grp td .g-in .ar{color:var(--faint);font-size:10px;width:12px}
+  .tbl tr.newrow td{border-right:none;padding:0}
+  .tbl tr.newrow button{width:100%;text-align:left;padding:8px 14px;color:var(--faint);font-size:12.5px;font-weight:600}
+  .tbl tr.newrow button:hover{background:var(--hover);color:var(--ink)}
+  .tbl tfoot td{border:none;padding:8px 14px;font-size:11.5px;color:var(--faint);font-weight:600}
+  .empty-state{padding:56px 20px;text-align:center;color:var(--faint);font-size:13px}
+  .empty-state b{display:block;color:var(--ink);font-size:15px;margin-bottom:4px}
+
+  /* Pills (select / multi) y personas */
+  .pills{display:flex;flex-wrap:wrap;gap:4px}
+  .pill{display:inline-flex;align-items:center;gap:5px;max-width:100%;font-size:12px;font-weight:600;line-height:1.3;padding:2px 8px;border-radius:4px;background:var(--c-gris);color:var(--c-gris-i);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pill.ppl{padding-left:3px;border-radius:999px}
+  .av{width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;background:var(--sel-brd);flex-shrink:0;letter-spacing:.02em}
+  .cl-gris{background:var(--c-gris);color:var(--c-gris-i)} .cl-rojo{background:var(--c-rojo);color:var(--c-rojo-i)}
+  .cl-naranja{background:var(--c-naranja);color:var(--c-naranja-i)} .cl-amarillo{background:var(--c-amarillo);color:var(--c-amarillo-i)}
+  .cl-verde{background:var(--c-verde);color:var(--c-verde-i)} .cl-azul{background:var(--c-azul);color:var(--c-azul-i)}
+  .cl-morado{background:var(--c-morado);color:var(--c-morado-i)} .cl-rosa{background:var(--c-rosa);color:var(--c-rosa-i)}
+  .cl-cafe{background:var(--c-cafe);color:var(--c-cafe-i)}
+  .chk{display:inline-block;width:16px;height:16px;border-radius:4px;border:1.5px solid var(--line-2);vertical-align:middle;position:relative}
+  .chk.on{background:var(--sel-brd);border-color:var(--sel-brd)}
+  .chk.on::after{content:'';position:absolute;left:4.5px;top:1px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+
+  /* Popover (editores, menús) */
+  .pop{position:fixed;z-index:50;background:var(--card);border-radius:12px;box-shadow:var(--shadow-lg);border:1px solid var(--line);min-width:240px;max-width:min(520px,calc(100vw - 24px));max-height:min(70vh,560px);overflow:auto;padding:6px}
+  .pop[hidden]{display:none}
+  .pop textarea,.pop input[type=text],.pop input[type=number],.pop input[type=date],.pop input[type=url],.pop select{width:100%;border:1px solid var(--line-2);border-radius:8px;padding:8px 10px;background:var(--paper);outline:none;font-size:13px;line-height:1.45}
+  .pop textarea{resize:vertical;min-height:38px;max-height:50vh}
+  .pop textarea:focus,.pop input:focus,.pop select:focus{border-color:var(--sel-brd);box-shadow:0 0 0 3px var(--sel)}
+  .pop .ttl-in{font-weight:700}
+  .pop .row{display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap}
+  .pop .hint{font-size:11px;color:var(--faint);margin:6px 4px 2px}
+  .pop .mi{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:7px 10px;border-radius:8px;font-size:12.5px;font-weight:600;color:var(--ink)}
+  .pop .mi:hover{background:var(--sunk)}
+  .pop .mi.danger{color:var(--crit)}
+  .pop .mi .k{color:var(--faint);font-size:11px;margin-left:auto;font-weight:600}
+  .pop .sep{height:1px;background:var(--line);margin:5px 2px}
+  .pop .lbl{font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);margin:8px 10px 4px}
+  .pop .opt{display:flex;align-items:center;gap:8px;width:100%;padding:5px 8px;border-radius:8px;cursor:pointer}
+  .pop .opt:hover,.pop .opt.hl{background:var(--sunk)}
+  .pop .opt .pill{pointer-events:none}
+  .pop .opt .ck{width:16px;color:var(--sel-brd);font-size:12px;text-align:center;flex-shrink:0}
+  .pop .opt .more{margin-left:auto;color:var(--faint);opacity:0;padding:0 4px;font-size:13px;letter-spacing:1px}
+  .pop .opt:hover .more{opacity:1}
+  .pop .selbox{display:flex;flex-wrap:wrap;gap:4px;padding:6px;border:1px solid var(--line-2);border-radius:8px;background:var(--paper);min-height:36px;align-items:center}
+  .pop .selbox input{flex:1;min-width:80px;border:none;background:none;outline:none;padding:2px}
+  .pop .pill button{color:inherit;opacity:.6;font-size:13px;line-height:1;padding:0 0 0 2px}
+  .pop .pill button:hover{opacity:1}
+  .pop .colors{display:flex;gap:6px;flex-wrap:wrap;padding:6px 8px}
+  .pop .colors i{width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent}
+  .pop .colors i.on{border-color:var(--ink)}
+  .pop .btn{font-size:12px;font-weight:700;padding:7px 12px;border-radius:8px;background:var(--sunk);color:var(--ink)}
+  .pop .btn:hover{filter:brightness(.97)}
+  .pop .btn.primary{background:var(--ink);color:var(--paper)}
+  .pop .btn.sm{padding:5px 9px;font-size:11.5px}
+
+  /* Ficha (fila abierta) */
+  .ficha-bg{position:fixed;inset:0;background:rgba(0,0,0,.28);z-index:40;display:flex;justify-content:flex-end}
+  .ficha{width:min(640px,100vw);height:100%;background:var(--card);box-shadow:var(--shadow-lg);overflow:auto;padding:22px 26px 40px}
+  .ficha .f-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+  .ficha .f-top .x{font-size:18px;color:var(--faint);padding:4px 8px;border-radius:8px}
+  .ficha .f-top .x:hover{background:var(--sunk);color:var(--ink)}
+  .ficha h2{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.25;cursor:text;padding:4px 6px;border-radius:8px;margin:0 -6px 14px}
+  .ficha h2:hover{background:var(--sunk)}
+  .ficha h2.empty{color:var(--faint);font-weight:600}
+  .ficha .prop{display:grid;grid-template-columns:160px 1fr;gap:4px 10px;align-items:start;padding:2px 0}
+  .ficha .prop .k{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);padding:7px 6px}
+  .ficha .prop .k .ic{font-size:10.5px;color:var(--faint);width:14px;text-align:center;font-weight:800}
+  .ficha .prop .v{min-height:34px;padding:7px 8px;border-radius:8px;cursor:pointer;font-size:13px;white-space:pre-wrap;word-break:break-word}
+  .ficha .prop .v:hover{background:var(--sunk)}
+  .ficha .prop .v.empty{color:var(--faint)}
+  .ficha .meta{margin-top:18px;font-size:11px;color:var(--faint)}
+
+  /* Tablero (kanban) */
+  .board{display:flex;gap:12px;overflow-x:auto;padding:2px 2px 12px;align-items:flex-start;min-height:60vh}
+  .bcol{flex:0 0 272px;background:var(--sunk);border-radius:14px;padding:8px}
+  .bcol.over{outline:2px dashed var(--sel-brd);outline-offset:-2px}
+  .bcol .bh{display:flex;align-items:center;gap:8px;padding:4px 6px 8px;font-size:12px;font-weight:700}
+  .bcol .bh .n{color:var(--faint);font-weight:600}
+  .bcol .bh button{margin-left:auto;color:var(--faint);font-size:15px;padding:0 4px}
+  .card{background:var(--card);border-radius:10px;padding:10px 12px;margin-bottom:8px;box-shadow:0 1px 2px rgba(26,23,18,.06);cursor:grab;border:1px solid transparent}
+  .card:hover{border-color:var(--line-2)}
+  .card.drag{opacity:.4}
+  .card .ct{font-weight:700;font-size:13px;line-height:1.35;margin-bottom:6px}
+  .card .ct.empty{color:var(--faint);font-weight:600}
+  .card .pills{margin-top:4px}
+  .card .cn{font-size:11.5px;color:var(--muted);margin-top:4px;font-variant-numeric:tabular-nums}
+  .bcol .newrow button{width:100%;text-align:left;padding:6px 8px;color:var(--faint);font-size:12px;font-weight:600;border-radius:8px}
+  .bcol .newrow button:hover{background:var(--card);color:var(--ink)}
+
+  #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:9px 16px;border-radius:999px;font-size:12.5px;font-weight:600;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw}
+  #toast.on{opacity:1}
+  #toast.err{background:var(--crit);color:#fff}
+  @media(max-width:700px){body{padding:10px 10px 24px}.tbl-wrap{max-height:none}.search{min-width:140px}}
+</style>
+</head>
+<body>
+<div class="container">
+  <header class="header">
+    <div class="brand">
+      <div class="logo">I</div>
+      <div><h1 id="dbTitle">Iniciativas</h1><div class="sub" id="sub">Portafolio · base de datos</div></div>
+    </div>
+    <div class="hd-r">
+      <div class="vistas">
+        <button data-view="tabla" class="on">▤ Tabla</button>
+        <button data-view="tablero">▦ Tablero</button>
+      </div>
+      <span class="badge" id="storeBadge" title="Dónde se guardan los datos">…</span>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <label class="search"><span>⌕</span><input id="q" placeholder="Buscar en todas las columnas…"></label>
+    <button class="tb" id="btnFiltro">⚲ Filtrar</button>
+    <button class="tb" id="btnOrden">↕ Ordenar</button>
+    <button class="tb" id="btnGrupo">▤ Agrupar</button>
+    <button class="tb" id="btnCols">▥ Columnas</button>
+    <span class="sp"></span>
+    <button class="tb" id="btnCsv" title="Descargar como CSV (se abre en Excel)">⇩ CSV</button>
+    <button class="tb primary" id="btnNueva">+ Nueva</button>
+  </div>
+  <div class="chips" id="chips"></div>
+  <div id="view"></div>
+</div>
+<div class="pop" id="pop" hidden></div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* ============================================================
+   1. MODELO
+   Una columna: { id, name, type, width, hidden, options:[{name,color}], log }
+   Una fila:    { id, props:{ [colId]: valor }, position, created_at, updated_at }
+   Tipos de valor por columna:
+     title/text/url → string · select → string (nombre de opción)
+     multi/people   → string[] · number → number|null · date → 'YYYY-MM-DD' · check → boolean
+   ============================================================ */
+const TYPES = {
+  title:  { label:'Título',             icon:'Aa' },
+  text:   { label:'Texto',              icon:'≡'  },
+  select: { label:'Selección',          icon:'◉'  },
+  multi:  { label:'Selección múltiple', icon:'☰'  },
+  people: { label:'Personas',           icon:'◎'  },
+  number: { label:'Número',             icon:'#'  },
+  date:   { label:'Fecha',              icon:'▣'  },
+  check:  { label:'Casilla',            icon:'☑'  },
+  url:    { label:'Enlace',             icon:'⇗'  },
+};
+const COLORS = ['gris','rojo','naranja','amarillo','verde','azul','morado','rosa','cafe'];
+const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+
+// Estructura inicial (misma forma que la base de Notion: estado, iniciativa,
+// trazabilidad, habilitadores, realizadores, income, OKRs, tipo de valor).
+// Sin datos: las opciones son solo un punto de partida y se pueden cambiar.
+function defaultColumns() {
+  return [
+    { id:'estado',       name:'Estado',        type:'select', width:150, options:[
+        { name:'L0 - Idea', color:'gris' }, { name:'L1 - Planeación', color:'verde' },
+        { name:'L2 - Ejecución', color:'naranja' }, { name:'L3 - Escalamiento', color:'azul' },
+        { name:'L4 - Cerrada', color:'morado' }, { name:'Pausada', color:'rojo' } ] },
+    { id:'iniciativa',   name:'Iniciativa',    type:'title',  width:320 },
+    { id:'trazabilidad', name:'Trazabilidad',  type:'text',   width:420, log:true },
+    { id:'habilitadores',name:'Habilitadores', type:'people', width:210, options:[] },
+    { id:'realizadores', name:'Realizadores',  type:'people', width:210, options:[] },
+    { id:'income',       name:'Income',        type:'number', width:100 },
+    { id:'okrs',         name:'OKRs',          type:'text',   width:260 },
+    { id:'tipo_valor',   name:'Tipo de valor', type:'select', width:180, options:[
+        { name:'Ingresos', color:'azul' }, { name:'Ahorro / eficiencia', color:'verde' },
+        { name:'Riesgo y cumplimiento', color:'rojo' }, { name:'Experiencia', color:'morado' } ] },
+  ];
+}
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'id-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
+const nowISO = () => new Date().toISOString();
+
+/* ============================================================
+   2. ALMACENAMIENTO · dos adaptadores con la misma interfaz
+      load() → {columns, rows} · saveColumns(cols) · createRow(props) → row
+      updateRow(id, props) → row · deleteRow(id)
+   ============================================================ */
+class LocalStore {
+  constructor() { this.key = 'iniciativas.v1'; this.name = 'Este navegador'; this.kind = 'local'; }
+  _read() { try { return JSON.parse(localStorage.getItem(this.key)) || null; } catch { return null; } }
+  _write(d) { localStorage.setItem(this.key, JSON.stringify(d)); }
+  async load() {
+    const d = this._read() || { columns: defaultColumns(), rows: [] };
+    this._write(d); return d;
+  }
+  async saveColumns(columns) { const d = this._read(); d.columns = columns; this._write(d); }
+  async createRow(props) {
+    const d = this._read();
+    const row = { id: uid(), props: props || {}, position: d.rows.length, created_at: nowISO(), updated_at: nowISO() };
+    d.rows.push(row); this._write(d); return row;
+  }
+  async updateRow(id, props) {
+    const d = this._read(); const row = d.rows.find(r => r.id === id);
+    if (!row) throw new Error('Fila no encontrada');
+    Object.assign(row.props, props); row.updated_at = nowISO(); this._write(d); return row;
+  }
+  async deleteRow(id) { const d = this._read(); d.rows = d.rows.filter(r => r.id !== id); this._write(d); }
+}
+class RestStore {
+  // Mismo contrato contra /api/iniciativas (Vercel + Supabase) o /api/iniciativas (Azure Functions + Azure SQL)
+  constructor(base, first) { this.base = base; this.first = first; this.name = 'Base de datos'; this.kind = 'db'; }
+  async _req(method, qs, body) {
+    const r = await fetch(this.base + (qs || ''), { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || ('Error ' + r.status));
+    return j;
+  }
+  async load() { const d = this.first || await this._req('GET'); this.first = null; return { columns: d.columns && d.columns.length ? d.columns : defaultColumns(), rows: d.rows || [] }; }
+  async saveColumns(columns) { await this._req('PUT', '?config=1', { columns }); }
+  async createRow(props) { return (await this._req('POST', '', { props })).row; }
+  async updateRow(id, props) { return (await this._req('PATCH', '?id=' + encodeURIComponent(id), { props })).row; }
+  async deleteRow(id) { await this._req('DELETE', '?id=' + encodeURIComponent(id)); }
+}
+async function pickStore() {
+  const base = window.INICIATIVAS_API || '/api/iniciativas';
+  try {
+    const r = await fetch(base, { headers: { Accept: 'application/json' } });
+    if (r.ok) { const j = await r.json(); if (j && Array.isArray(j.rows)) return new RestStore(base, j); }
+  } catch { /* sin API: se usa el navegador */ }
+  return new LocalStore();
+}
+
+/* ============================================================
+   3. ESTADO DE LA VISTA (se recuerda en este navegador)
+   ============================================================ */
+const S = {
+  store: null, columns: [], rows: [],
+  view: 'tabla', q: '', sort: null, filters: [], group: '', collapsed: {}, boardCol: '',
+};
+const VKEY = 'iniciativas.vista';
+function loadPrefs() { try { Object.assign(S, JSON.parse(localStorage.getItem(VKEY)) || {}); } catch {} }
+function savePrefs() { const { view, sort, filters, group, collapsed, boardCol } = S; localStorage.setItem(VKEY, JSON.stringify({ view, sort, filters, group, collapsed, boardCol })); }
+
+const $ = (s, el) => (el || document).querySelector(s);
+const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const col = id => S.columns.find(c => c.id === id);
+const titleCol = () => S.columns.find(c => c.type === 'title') || S.columns[0];
+const visibleCols = () => S.columns.filter(c => !c.hidden);
+const optColor = (c, name) => ((c.options || []).find(o => o.name === name) || {}).color || 'gris';
+const initials = n => String(n || '').trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
+const fmtDate = d => { if (!d) return ''; const [y, m, dd] = d.split('-'); return `${parseInt(dd)} ${MESES[parseInt(m) - 1].toLowerCase()} ${y}`; };
+const fmtNum = n => (n == null || n === '') ? '' : Number(n).toLocaleString('es-CO', { maximumFractionDigits: 2 });
+const rowTitle = r => (r.props[titleCol().id] || '').trim();
+
+let toastT;
+function toast(msg, err) {
+  const t = $('#toast'); t.textContent = msg; t.className = 'on' + (err ? ' err' : '');
+  clearTimeout(toastT); toastT = setTimeout(() => t.className = '', err ? 5000 : 2200);
+}
+async function guard(fn) { try { return await fn(); } catch (e) { console.error(e); toast(e.message || 'Error al guardar', true); } }
+
+/* ============================================================
+   4. FILTRO · BÚSQUEDA · ORDEN · AGRUPACIÓN
+   ============================================================ */
+function textOf(c, v) {
+  if (v == null || v === '') return '';
+  if (Array.isArray(v)) return v.join(', ');
+  if (c.type === 'check') return v ? 'sí' : 'no';
+  if (c.type === 'date') return fmtDate(v);
+  return String(v);
+}
+function matchFilter(r, f) {
+  const c = col(f.col); if (!c) return true;
+  const v = r.props[c.id];
+  switch (c.type) {
+    case 'select': return f.op === 'no' ? v !== f.val : v === f.val;
+    case 'multi': case 'people': { const a = Array.isArray(v) ? v : []; return f.op === 'no' ? !a.includes(f.val) : a.includes(f.val); }
+    case 'number': { if (v == null || v === '') return false; const n = Number(v), x = Number(f.val);
+      return f.op === '>' ? n > x : f.op === '<' ? n < x : n === x; }
+    case 'date': { if (!v) return false; return f.op === '<=' ? v <= f.val : v >= f.val; }
+    case 'check': return !!v === (f.val === 'si');
+    default: return String(v || '').toLowerCase().includes(String(f.val || '').toLowerCase());
+  }
+}
+function rowsVisibles() {
+  const q = S.q.trim().toLowerCase();
+  let rows = S.rows.filter(r => S.filters.every(f => matchFilter(r, f)));
+  if (q) rows = rows.filter(r => S.columns.some(c => textOf(c, r.props[c.id]).toLowerCase().includes(q)));
+  if (S.sort && col(S.sort.col)) {
+    const c = col(S.sort.col), dir = S.sort.dir === 'desc' ? -1 : 1;
+    const key = r => { const v = r.props[c.id];
+      if (c.type === 'number') return v == null || v === '' ? null : Number(v);
+      if (c.type === 'select') return v ? (c.options || []).findIndex(o => o.name === v) : null; // orden de las opciones, como Notion
+      if (c.type === 'check') return v ? 1 : 0;
+      const t = textOf(c, v); return t ? t.toLowerCase() : null; };
+    rows = rows.slice().sort((a, b) => { const x = key(a), y = key(b);
+      if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1;
+      return (x < y ? -1 : x > y ? 1 : 0) * dir; });
+  } else rows = rows.slice().sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+  return rows;
+}
+function groupRows(rows, colId) {
+  const c = col(colId); if (!c) return [{ key: null, rows }];
+  const map = new Map();
+  const keysOf = r => { const v = r.props[c.id];
+    if (c.type === 'multi' || c.type === 'people') return (Array.isArray(v) && v.length) ? v : [''];
+    if (c.type === 'check') return [v ? 'Marcado' : 'Sin marcar'];
+    return [textOf(c, v)]; };
+  rows.forEach(r => keysOf(r).forEach(k => { if (!map.has(k)) map.set(k, []); map.get(k).push(r); }));
+  let keys = Array.from(map.keys());
+  if (c.options && c.options.length) { const order = c.options.map(o => o.name); keys.sort((a, b) => (order.indexOf(a) + 1 || 999) - (order.indexOf(b) + 1 || 999)); }
+  else keys.sort((a, b) => (a === '') - (b === '') || a.localeCompare(b));
+  return keys.map(k => ({ key: k, rows: map.get(k) }));
+}
+
+/* ============================================================
+   5. RENDER · celdas y tabla
+   ============================================================ */
+function renderPills(c, arr) {
+  if (!arr || !arr.length) return '';
+  const ppl = c.type === 'people';
+  return '<div class="pills">' + arr.map(n => `<span class="pill ${ppl ? 'ppl' : ''} cl-${optColor(c, n)}">${ppl ? `<span class="av">${esc(initials(n))}</span>` : ''}${esc(n)}</span>`).join('') + '</div>';
+}
+function renderValue(c, v, ctx) {
+  // ctx: 'cell' | 'ficha' | 'card'
+  switch (c.type) {
+    case 'title': return `<div class="c-in ttl ${v ? '' : 'empty'}">${esc(v || 'Sin título')}</div>`;
+    case 'text': return `<div class="c-in txt ${v ? '' : 'empty'}">${esc(v || '·')}</div>`;
+    case 'select': return `<div class="c-in">${v ? `<span class="pill cl-${optColor(c, v)}">${esc(v)}</span>` : ''}</div>`;
+    case 'multi': case 'people': return `<div class="c-in">${renderPills(c, v)}</div>`;
+    case 'number': return `<div class="c-in n">${esc(fmtNum(v))}</div>`;
+    case 'date': return `<div class="c-in">${esc(fmtDate(v))}</div>`;
+    case 'check': return `<div class="c-in"><span class="chk ${v ? 'on' : ''}"></span></div>`;
+    case 'url': return `<div class="c-in">${v ? `<a href="${esc(/^https?:/i.test(v) ? v : 'https://' + v)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(v)}</a>` : ''}</div>`;
+  }
+  return `<div class="c-in">${esc(textOf(c, v))}</div>`;
+}
+// Contenido de una celda; la del título lleva además el botón «⤢ Abrir» (sale al pasar el mouse)
+function cellHTML(c, r) {
+  return renderValue(c, r.props[c.id], 'cell') + (c.type === 'title' ? `<button class="open" data-act="open" data-id="${r.id}" title="Abrir ficha">⤢ Abrir</button>` : '');
+}
+function render() {
+  $$('.vistas button').forEach(b => b.classList.toggle('on', b.dataset.view === S.view));
+  $('#btnFiltro').classList.toggle('on', S.filters.length > 0);
+  $('#btnOrden').classList.toggle('on', !!S.sort);
+  $('#btnGrupo').classList.toggle('on', !!S.group);
+  $('#btnCols').classList.toggle('on', S.columns.some(c => c.hidden));
+  renderChips();
+  if (S.view === 'tablero') renderTablero(); else renderTabla();
+}
+function renderChips() {
+  const parts = [];
+  if (S.sort && col(S.sort.col)) parts.push(`<span class="chip">↕ <b>${esc(col(S.sort.col).name)}</b> ${S.sort.dir === 'desc' ? 'descendente' : 'ascendente'} <button data-chip="sort" title="Quitar">×</button></span>`);
+  S.filters.forEach((f, i) => { const c = col(f.col); if (!c) return;
+    const opName = { es: 'es', no: 'no es', contiene: 'contiene', '=': '=', '>': '>', '<': '<', '>=': 'desde', '<=': 'hasta' }[f.op] || f.op;
+    const val = c.type === 'check' ? (f.val === 'si' ? 'marcado' : 'sin marcar') : c.type === 'date' ? fmtDate(f.val) : f.val;
+    parts.push(`<span class="chip">⚲ <b>${esc(c.name)}</b> ${esc(opName)} «${esc(val)}» <button data-chip="f${i}" title="Quitar">×</button></span>`); });
+  if (S.group && col(S.group)) parts.push(`<span class="chip">▤ Agrupado por <b>${esc(col(S.group).name)}</b> <button data-chip="group" title="Quitar">×</button></span>`);
+  $('#chips').innerHTML = parts.join('');
+}
+function renderTabla() {
+  const cols = visibleCols(), rows = rowsVisibles(), tc = titleCol();
+  const groups = S.group && col(S.group) ? groupRows(rows, S.group) : [{ key: null, rows }];
+  const colgroup = `<colgroup>${cols.map(c => `<col style="width:${c.width || 180}px">`).join('')}<col style="width:46px"><col style="width:40px"></colgroup>`;
+  // Ancho explícito = suma de columnas: así cada columna conserva su ancho y la tabla se desplaza en horizontal, como en Notion
+  const total = cols.reduce((a, c) => a + (c.width || 180), 0) + 46 + 40;
+  const thead = `<thead><tr>${cols.map(c => `<th class="${c.id === tc.id ? 'ttl-col' : ''}" data-col="${c.id}"><div class="th-in" data-act="colmenu" data-col="${c.id}"><span class="ic">${TYPES[c.type].icon}</span><span class="nm">${esc(c.name)}</span>${S.sort && S.sort.col === c.id ? `<span class="srt">${S.sort.dir === 'desc' ? '▼' : '▲'}</span>` : ''}<span class="rz" data-act="resize" data-col="${c.id}"></span></div></th>`).join('')}<th class="addc"><div class="th-in" data-act="addcol" title="Agregar columna">+</div></th><th></th></tr></thead>`;
+  const trRow = r => `<tr data-id="${r.id}">${cols.map(c => `<td class="cell ${c.id === tc.id ? 'ttl-col' : ''}" data-act="edit" data-id="${r.id}" data-col="${c.id}">${cellHTML(c, r)}</td>`).join('')}<td></td><td class="menu-col"><button data-act="rowmenu" data-id="${r.id}" title="Opciones">···</button></td></tr>`;
+  const span = cols.length + 2;
+  const bodies = groups.map(g => {
+    const gc = S.group ? col(S.group) : null; const closed = g.key !== null && S.collapsed[g.key];
+    const head = g.key === null ? '' : `<tr class="grp"><td colspan="${span}" data-act="toggle" data-key="${esc(g.key)}"><div class="g-in"><span class="ar">${closed ? '▶' : '▼'}</span>${g.key === '' ? `<span class="pill cl-gris">Sin ${esc(gc.name.toLowerCase())}</span>` : (gc.type === 'select' || gc.type === 'multi') ? `<span class="pill cl-${optColor(gc, g.key)}">${esc(g.key)}</span>` : gc.type === 'people' ? `<span class="pill ppl cl-${optColor(gc, g.key)}"><span class="av">${esc(initials(g.key))}</span>${esc(g.key)}</span>` : `<span>${esc(g.key)}</span>`}<span class="n">${g.rows.length}</span></div></td></tr>`;
+    const body = closed ? '' : g.rows.map(trRow).join('') + `<tr class="newrow"><td colspan="${span}"><button data-act="new" data-gkey="${g.key === null ? '' : esc(g.key)}" data-gcol="${S.group || ''}">+ Nueva</button></td></tr>`;
+    return `<tbody>${head}${body}</tbody>`;
+  }).join('');
+  const empty = !S.rows.length ? `<tbody><tr><td colspan="${span}"><div class="empty-state"><b>Aún no hay iniciativas</b>Haz clic en «+ Nueva» para crear la primera. Cada celda se edita con un clic, como en Notion.</div></td></tr><tr class="newrow"><td colspan="${span}"><button data-act="new">+ Nueva</button></td></tr></tbody>` : '';
+  const tfoot = `<tfoot><tr><td colspan="${span}">${rows.length} ${rows.length === 1 ? 'iniciativa' : 'iniciativas'}${rows.length !== S.rows.length ? ` de ${S.rows.length}` : ''}</td></tr></tfoot>`;
+  $('#view').innerHTML = `<div class="tbl-wrap"><table class="tbl" style="width:${total}px">${colgroup}${thead}${empty || bodies}${tfoot}</table></div>`;
+}
+
+/* ============================================================
+   6. RENDER · tablero (kanban por una columna de selección)
+   ============================================================ */
+function boardColumn() {
+  const c = col(S.boardCol); if (c && c.type === 'select') return c;
+  return S.columns.find(x => x.type === 'select') || null;
+}
+function renderTablero() {
+  const bc = boardColumn();
+  if (!bc) { $('#view').innerHTML = `<div class="tbl-wrap"><div class="empty-state"><b>El tablero necesita una columna de selección</b>Agrega una columna de tipo «Selección» (por ejemplo, Estado) para ver las iniciativas por etapa.</div></div>`; return; }
+  const rows = rowsVisibles(), tc = titleCol();
+  const show = visibleCols().filter(c => c.id !== bc.id && c.id !== tc.id && ['select', 'multi', 'people', 'number', 'date'].includes(c.type)).slice(0, 4);
+  const lanes = [{ name: '', color: 'gris' }, ...(bc.options || [])];
+  $('#view').innerHTML = '<div class="board">' + lanes.map(o => {
+    const items = rows.filter(r => (r.props[bc.id] || '') === o.name);
+    if (!o.name && !items.length) return '';
+    return `<div class="bcol" data-lane="${esc(o.name)}"><div class="bh">${o.name ? `<span class="pill cl-${o.color}">${esc(o.name)}</span>` : `<span class="pill cl-gris">Sin ${esc(bc.name.toLowerCase())}</span>`}<span class="n">${items.length}</span><button data-act="new" data-gcol="${bc.id}" data-gkey="${esc(o.name)}" title="Nueva aquí">+</button></div>` +
+      items.map(r => `<div class="card" draggable="true" data-act="open" data-id="${r.id}"><div class="ct ${rowTitle(r) ? '' : 'empty'}">${esc(rowTitle(r) || 'Sin título')}</div>${show.map(c => { const v = r.props[c.id]; if (v == null || v === '' || (Array.isArray(v) && !v.length)) return '';
+        if (c.type === 'select') return `<div class="pills"><span class="pill cl-${optColor(c, v)}">${esc(v)}</span></div>`;
+        if (c.type === 'number') return `<div class="cn">${esc(c.name)}: <b>${esc(fmtNum(v))}</b></div>`;
+        if (c.type === 'date') return `<div class="cn">${esc(c.name)}: ${esc(fmtDate(v))}</div>`;
+        return renderPills(c, v); }).join('')}</div>`).join('') +
+      `<div class="newrow"><button data-act="new" data-gcol="${bc.id}" data-gkey="${esc(o.name)}">+ Nueva</button></div></div>`;
+  }).join('') + '</div>';
+}
+
+/* ============================================================
+   7. POPOVER genérico (editores y menús)
+   ============================================================ */
+const pop = $('#pop');
+let popCtx = null; // { onClose }
+function openPop(anchor, html, opts) {
+  closePop();
+  pop.innerHTML = html; pop.hidden = false; popCtx = opts || {};
+  const r = anchor.getBoundingClientRect(); const pw = Math.max(pop.offsetWidth, opts && opts.width ? opts.width : 0);
+  pop.style.minWidth = (opts && opts.width ? opts.width : Math.max(240, r.width)) + 'px';
+  let left = r.left, top = r.bottom + 4;
+  const W = window.innerWidth, H = window.innerHeight;
+  if (left + pop.offsetWidth > W - 12) left = Math.max(12, W - 12 - pop.offsetWidth);
+  if (top + pop.offsetHeight > H - 12) top = Math.max(12, r.top - pop.offsetHeight - 4);
+  if (opts && opts.cover) { top = r.top; left = r.left; } // el editor de texto se pone encima de la celda
+  if (top + pop.offsetHeight > H - 12) top = Math.max(12, H - 12 - pop.offsetHeight);
+  pop.style.left = left + 'px'; pop.style.top = top + 'px';
+  const f = $('textarea, input:not([type=hidden]), select', pop); if (f && !(opts && opts.nofocus)) { f.focus(); if (f.select && f.type !== 'date') f.select(); }
+  $$('.cell.ed').forEach(e => e.classList.remove('ed'));
+  if (anchor.classList && anchor.classList.contains('cell')) anchor.classList.add('ed');
+}
+function closePop(cancel) {
+  if (pop.hidden) return;
+  const ctx = popCtx; popCtx = null;
+  if (ctx && ctx.onClose) ctx.onClose(!!cancel); // primero guarda (lee el popover), luego lo cierra
+  pop.hidden = true; pop.innerHTML = ''; pop.onclick = null; pop.onchange = null;
+  $$('.cell.ed').forEach(e => e.classList.remove('ed'));
+}
+document.addEventListener('mousedown', e => { if (!pop.hidden && !pop.contains(e.target)) closePop(false); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !pop.hidden) { e.preventDefault(); closePop(true); } });
+
+/* ============================================================
+   8. EDITORES DE CELDA (un popover por tipo)
+   ============================================================ */
+async function setValue(rowId, colId, value, rerender) {
+  const r = S.rows.find(x => x.id === rowId); if (!r) return;
+  const before = r.props[colId]; if (JSON.stringify(before) === JSON.stringify(value)) return;
+  r.props[colId] = value; if (rerender !== false) refreshRow(rowId);
+  await guard(async () => { await S.store.updateRow(rowId, { [colId]: value }); });
+}
+function refreshRow(rowId) {
+  // Actualiza solo las celdas de esa fila si están en pantalla; si hay agrupación u orden, se repinta todo
+  if (S.view === 'tablero' || S.group || S.sort || S.filters.length || S.q) { render(); return; }
+  $$(`.tbl td.cell[data-id="${rowId}"]`).forEach(td => { const c = col(td.dataset.col), r = S.rows.find(x => x.id === rowId); if (c && r) td.innerHTML = cellHTML(c, r); });
+  if (fichaId === rowId) renderFicha();
+}
+function openEditor(anchor, rowId, colId) {
+  const c = col(colId), r = S.rows.find(x => x.id === rowId); if (!c || !r) return;
+  const v = r.props[colId];
+  if (c.type === 'check') { setValue(rowId, colId, !v); return; }
+  if (c.type === 'title' || c.type === 'text' || c.type === 'url') {
+    const multi = c.type === 'text';
+    const log = c.log ? `<div class="row"><button class="btn sm" data-p="hoy">+ Entrada de hoy</button><span class="hint" style="margin:0">Ctrl+Enter guarda · Esc cancela</span></div>` : (multi ? `<div class="hint">Ctrl+Enter guarda · Esc cancela</div>` : '');
+    openPop(anchor, `<textarea class="${c.type === 'title' ? 'ttl-in' : ''}" rows="${multi ? 5 : 1}" placeholder="${esc(c.name)}">${esc(v || '')}</textarea>${log}`, { cover: true, width: Math.max(anchor.getBoundingClientRect().width, multi ? 420 : 300),
+      onClose: cancel => { if (!cancel) setValue(rowId, colId, ta.value.trim()); } });
+    const ta = $('textarea', pop); ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight + 2, window.innerHeight * .5) + 'px';
+    ta.addEventListener('input', () => { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight + 2, window.innerHeight * .5) + 'px'; });
+    ta.addEventListener('keydown', e => { if (e.key === 'Enter' && (!multi || e.ctrlKey || e.metaKey)) { e.preventDefault(); closePop(false); } });
+    const hoy = $('[data-p=hoy]', pop); if (hoy) hoy.onclick = () => { const d = new Date(); const pre = `${d.getDate()} ${MESES[d.getMonth()]}: `; ta.value = pre + (ta.value ? '\n' + ta.value : ''); ta.focus(); ta.setSelectionRange(pre.length, pre.length); ta.dispatchEvent(new Event('input')); };
+    return;
+  }
+  if (c.type === 'number') {
+    openPop(anchor, `<input type="number" step="any" value="${v == null ? '' : esc(v)}" placeholder="${esc(c.name)}">`, { cover: true, onClose: cancel => { if (!cancel) { const x = $('input', pop).value; setValue(rowId, colId, x === '' ? null : Number(x)); } } });
+    $('input', pop).addEventListener('keydown', e => { if (e.key === 'Enter') closePop(false); });
+    return;
+  }
+  if (c.type === 'date') {
+    openPop(anchor, `<input type="date" value="${esc(v || '')}"><div class="row"><button class="btn sm" data-p="clear">Sin fecha</button></div>`, { cover: true, onClose: cancel => { if (!cancel) setValue(rowId, colId, $('input', pop).value || null); } });
+    $('input', pop).addEventListener('change', () => closePop(false));
+    $('[data-p=clear]', pop).onclick = () => { setValue(rowId, colId, null); closePop(true); };
+    return;
+  }
+  if (c.type === 'select' || c.type === 'multi' || c.type === 'people') openSelectEditor(anchor, rowId, c);
+}
+function openSelectEditor(anchor, rowId, c) {
+  const r = S.rows.find(x => x.id === rowId);
+  const multi = c.type !== 'select';
+  let sel = multi ? (Array.isArray(r.props[c.id]) ? r.props[c.id].slice() : []) : (r.props[c.id] ? [r.props[c.id]] : []);
+  let q = '', hl = 0, dirty = false;
+  const draw = () => {
+    const opts = (c.options || []).filter(o => !q || o.name.toLowerCase().includes(q.toLowerCase()));
+    const canCreate = q.trim() && !(c.options || []).some(o => o.name.toLowerCase() === q.trim().toLowerCase());
+    pop.innerHTML = `<div class="selbox">${sel.map(n => `<span class="pill ${c.type === 'people' ? 'ppl' : ''} cl-${optColor(c, n)}">${c.type === 'people' ? `<span class="av">${esc(initials(n))}</span>` : ''}${esc(n)}<button data-rm="${esc(n)}" title="Quitar">×</button></span>`).join('')}<input placeholder="${sel.length ? '' : (c.type === 'people' ? 'Escribe un nombre…' : 'Busca o crea una opción…')}" value="${esc(q)}"></div>
+      <div class="lbl">${c.type === 'people' ? 'Personas' : 'Opciones'}</div>
+      ${opts.map((o, i) => `<div class="opt ${i === hl ? 'hl' : ''}" data-pick="${esc(o.name)}"><span class="ck">${sel.includes(o.name) ? '✓' : ''}</span><span class="pill ${c.type === 'people' ? 'ppl' : ''} cl-${o.color}">${c.type === 'people' ? `<span class="av">${esc(initials(o.name))}</span>` : ''}${esc(o.name)}</span><button class="more" data-opt="${esc(o.name)}" title="Editar opción">···</button></div>`).join('')}
+      ${canCreate ? `<div class="opt ${hl === opts.length ? 'hl' : ''}" data-create="${esc(q.trim())}"><span class="ck">+</span>Crear <span class="pill cl-gris">${esc(q.trim())}</span></div>` : ''}
+      ${!opts.length && !canCreate ? '<div class="hint">Escribe para crear una opción</div>' : ''}`;
+    const inp = $('input', pop); inp.focus(); inp.setSelectionRange(q.length, q.length);
+    inp.oninput = () => { q = inp.value; hl = 0; draw(); };
+    inp.onkeydown = e => {
+      const n = opts.length + (canCreate ? 1 : 0);
+      if (e.key === 'ArrowDown') { hl = (hl + 1) % Math.max(n, 1); draw(); e.preventDefault(); }
+      else if (e.key === 'ArrowUp') { hl = (hl - 1 + n) % Math.max(n, 1); draw(); e.preventDefault(); }
+      else if (e.key === 'Enter') { e.preventDefault(); if (hl < opts.length) pick(opts[hl].name); else if (canCreate) create(q.trim()); else if (!multi) closePop(false); }
+      else if (e.key === 'Backspace' && !q && sel.length) { sel.pop(); dirty = true; draw(); }
+      else if (e.key === 'Tab') { closePop(false); }
+    };
+  };
+  const pick = name => { dirty = true; if (multi) { sel.includes(name) ? sel.splice(sel.indexOf(name), 1) : sel.push(name); q = ''; draw(); } else { sel = [name]; closePop(false); } };
+  const create = name => { c.options = c.options || []; c.options.push({ name, color: COLORS[c.options.length % COLORS.length] }); pick(name); guard(() => S.store.saveColumns(S.columns)); };
+  pop.onclick = e => {
+    const rm = e.target.closest('[data-rm]'); if (rm) { sel = sel.filter(n => n !== rm.dataset.rm); dirty = true; draw(); return; }
+    const more = e.target.closest('[data-opt]'); if (more) { e.stopPropagation(); openOptionMenu(more, c, more.dataset.opt, draw); return; }
+    const cr = e.target.closest('[data-create]'); if (cr) { create(cr.dataset.create); return; }
+    const pk = e.target.closest('[data-pick]'); if (pk) pick(pk.dataset.pick);
+  };
+  openPop(anchor, '<div></div>', { width: 300, nofocus: true, onClose: cancel => { if (cancel && !dirty) return; setValue(rowId, c.id, multi ? sel : (sel[0] || '')); } });
+  draw();
+}
+// Menú de una opción: color, renombrar, eliminar (se muestra dentro del selector)
+function openOptionMenu(anchor, c, name, redraw) {
+  const o = (c.options || []).find(x => x.name === name); if (!o) return;
+  const old = pop.innerHTML, oldClick = pop.onclick, oldCtx = popCtx;
+  pop.onclick = null;
+  pop.innerHTML = `<div class="lbl">Opción</div><input type="text" value="${esc(o.name)}" style="margin:0 4px 4px;width:calc(100% - 8px)"><div class="colors">${COLORS.map(k => `<i class="cl-${k} ${o.color === k ? 'on' : ''}" data-color="${k}" title="${k}"></i>`).join('')}</div><div class="sep"></div><button class="mi" data-p="ok">Guardar</button><button class="mi danger" data-p="del">Eliminar opción</button><button class="mi" data-p="back">← Volver</button>`;
+  const back = () => { pop.innerHTML = old; pop.onclick = oldClick; popCtx = oldCtx; redraw(); };
+  const inp = $('input', pop); inp.focus();
+  const save = async () => { const nn = inp.value.trim() || o.name; if (nn !== o.name) { S.rows.forEach(r => { const v = r.props[c.id]; if (Array.isArray(v)) { const i = v.indexOf(o.name); if (i >= 0) { v[i] = nn; S.store.updateRow(r.id, { [c.id]: v }); } } else if (v === o.name) { r.props[c.id] = nn; S.store.updateRow(r.id, { [c.id]: nn }); } }); o.name = nn; } await guard(() => S.store.saveColumns(S.columns)); back(); render(); };
+  pop.onclick = async e => {
+    const ci = e.target.closest('[data-color]'); if (ci) { o.color = ci.dataset.color; $$('.colors i', pop).forEach(x => x.classList.toggle('on', x.dataset.color === o.color)); await guard(() => S.store.saveColumns(S.columns)); return; }
+    const p = e.target.closest('[data-p]'); if (!p) return;
+    if (p.dataset.p === 'ok') save();
+    if (p.dataset.p === 'back') back();
+    if (p.dataset.p === 'del') { if (!confirm(`¿Eliminar la opción «${o.name}»? Se quita de todas las filas.`)) return;
+      c.options = c.options.filter(x => x !== o);
+      S.rows.forEach(r => { const v = r.props[c.id]; if (Array.isArray(v) && v.includes(o.name)) { r.props[c.id] = v.filter(n => n !== o.name); S.store.updateRow(r.id, { [c.id]: r.props[c.id] }); } else if (v === o.name) { r.props[c.id] = ''; S.store.updateRow(r.id, { [c.id]: '' }); } });
+      await guard(() => S.store.saveColumns(S.columns)); back(); render(); }
+  };
+  inp.onkeydown = e => { if (e.key === 'Enter') save(); };
+}
+
+/* ============================================================
+   9. MENÚS: columna, agregar columna, fila, filtro, orden, agrupar, columnas
+   ============================================================ */
+function openColMenu(anchor, colId) {
+  const c = col(colId); if (!c) return;
+  const isTitle = c.type === 'title';
+  openPop(anchor, `<input type="text" value="${esc(c.name)}" style="margin:2px 4px 6px;width:calc(100% - 8px)">
+    <div class="lbl">Tipo</div><select ${isTitle ? 'disabled' : ''} style="margin:0 4px 6px;width:calc(100% - 8px)">${Object.entries(TYPES).filter(([k]) => k !== 'title' || isTitle).map(([k, t]) => `<option value="${k}" ${k === c.type ? 'selected' : ''}>${t.icon}  ${t.label}</option>`).join('')}</select>
+    ${c.type === 'text' ? `<label class="mi" style="cursor:pointer"><input type="checkbox" ${c.log ? 'checked' : ''} data-p="log" style="width:auto"> Bitácora con fecha (botón «+ Entrada de hoy»)</label>` : ''}
+    <div class="sep"></div>
+    <button class="mi" data-p="asc">↑ Ordenar ascendente</button><button class="mi" data-p="desc">↓ Ordenar descendente</button>
+    <button class="mi" data-p="filter">⚲ Filtrar por esta columna</button>
+    ${['select', 'multi', 'people', 'check'].includes(c.type) ? `<button class="mi" data-p="group">▤ Agrupar por esta columna</button>` : ''}
+    <div class="sep"></div>
+    <button class="mi" data-p="left">← Mover a la izquierda</button><button class="mi" data-p="right">→ Mover a la derecha</button>
+    ${isTitle ? '' : `<button class="mi" data-p="hide">◌ Ocultar columna</button><div class="sep"></div><button class="mi danger" data-p="del">🗑 Eliminar columna</button>`}`, { width: 280, nofocus: true });
+  const inp = $('input[type=text]', pop), sel = $('select', pop);
+  const saveName = async () => { const nn = inp.value.trim(); if (nn && nn !== c.name) { c.name = nn; await guard(() => S.store.saveColumns(S.columns)); render(); } };
+  inp.onkeydown = e => { if (e.key === 'Enter') { saveName(); closePop(true); } };
+  inp.onblur = saveName;
+  sel.onchange = async () => { c.type = sel.value; if (['select', 'multi', 'people'].includes(c.type)) c.options = c.options || []; await guard(() => S.store.saveColumns(S.columns)); closePop(true); render(); };
+  pop.onclick = async e => {
+    const log = e.target.closest('[data-p=log]'); if (log) { c.log = log.checked; await guard(() => S.store.saveColumns(S.columns)); return; }
+    const p = e.target.closest('button[data-p]'); if (!p) return; const a = p.dataset.p;
+    if (a === 'asc' || a === 'desc') S.sort = { col: c.id, dir: a };
+    if (a === 'filter') { closePop(true); openFilterMenu($('#btnFiltro'), c.id); return; }
+    if (a === 'group') S.group = c.id;
+    if (a === 'left' || a === 'right') { const i = S.columns.indexOf(c), j = a === 'left' ? i - 1 : i + 1; if (j >= 0 && j < S.columns.length) { S.columns.splice(i, 1); S.columns.splice(j, 0, c); await guard(() => S.store.saveColumns(S.columns)); } }
+    if (a === 'hide') { c.hidden = true; await guard(() => S.store.saveColumns(S.columns)); }
+    if (a === 'del') { if (!confirm(`¿Eliminar la columna «${c.name}»? Se pierde su contenido en todas las filas.`)) return; S.columns = S.columns.filter(x => x !== c); S.rows.forEach(r => delete r.props[c.id]); if (S.sort && S.sort.col === c.id) S.sort = null; if (S.group === c.id) S.group = ''; S.filters = S.filters.filter(f => f.col !== c.id); await guard(() => S.store.saveColumns(S.columns)); }
+    savePrefs(); closePop(true); render();
+  };
+}
+function openAddColumn(anchor) {
+  openPop(anchor, `<div class="lbl">Nueva columna</div><input type="text" placeholder="Nombre" style="margin:0 4px 6px;width:calc(100% - 8px)"><select style="margin:0 4px 6px;width:calc(100% - 8px)">${Object.entries(TYPES).filter(([k]) => k !== 'title').map(([k, t]) => `<option value="${k}">${t.icon}  ${t.label}</option>`).join('')}</select><div class="row" style="padding:0 4px 4px"><button class="btn primary" data-p="ok">Agregar</button></div>`, { width: 260 });
+  const inp = $('input', pop), sel = $('select', pop);
+  const ok = async () => { const name = inp.value.trim(); if (!name) { inp.focus(); return; }
+    const c = { id: uid(), name, type: sel.value, width: 180 }; if (['select', 'multi', 'people'].includes(c.type)) c.options = [];
+    S.columns.push(c); await guard(() => S.store.saveColumns(S.columns)); closePop(true); render(); };
+  inp.onkeydown = e => { if (e.key === 'Enter') ok(); };
+  $('[data-p=ok]', pop).onclick = ok;
+}
+function openRowMenu(anchor, rowId) {
+  openPop(anchor, `<button class="mi" data-p="open">⤢ Abrir ficha</button><button class="mi" data-p="dup">⧉ Duplicar</button><div class="sep"></div><button class="mi danger" data-p="del">🗑 Eliminar</button>`, { width: 200, nofocus: true });
+  pop.onclick = async e => { const p = e.target.closest('[data-p]'); if (!p) return; const a = p.dataset.p; closePop(true);
+    if (a === 'open') openFicha(rowId);
+    if (a === 'dup') { const r = S.rows.find(x => x.id === rowId); await guard(async () => { const nr = await S.store.createRow(JSON.parse(JSON.stringify(r.props))); S.rows.push(nr); render(); }); }
+    if (a === 'del') { const r = S.rows.find(x => x.id === rowId); if (!confirm(`¿Eliminar «${rowTitle(r) || 'Sin título'}»?`)) return; await guard(async () => { await S.store.deleteRow(rowId); S.rows = S.rows.filter(x => x.id !== rowId); if (fichaId === rowId) closeFicha(); render(); }); } };
+}
+function openFilterMenu(anchor, presetCol) {
+  const draw = () => {
+    const c = col($('select[data-p=col]', pop) ? $('select[data-p=col]', pop).value : presetCol) || S.columns[0];
+    const ops = c.type === 'select' || c.type === 'multi' || c.type === 'people' ? [['es', c.type === 'select' ? 'es' : 'incluye'], ['no', c.type === 'select' ? 'no es' : 'no incluye']]
+      : c.type === 'number' ? [['=', '='], ['>', 'mayor que'], ['<', 'menor que']] : c.type === 'date' ? [['>=', 'desde'], ['<=', 'hasta']] : c.type === 'check' ? [['es', 'está']] : [['contiene', 'contiene']];
+    const val = c.type === 'select' || c.type === 'multi' || c.type === 'people' ? `<select data-p="val">${(c.options || []).map(o => `<option>${esc(o.name)}</option>`).join('')}</select>${!(c.options || []).length ? '<div class="hint">Esta columna aún no tiene opciones</div>' : ''}`
+      : c.type === 'number' ? `<input type="number" step="any" data-p="val">` : c.type === 'date' ? `<input type="date" data-p="val">` : c.type === 'check' ? `<select data-p="val"><option value="si">marcado</option><option value="no">sin marcar</option></select>` : `<input type="text" data-p="val" placeholder="texto…">`;
+    pop.innerHTML = `<div class="lbl">Filtrar</div><select data-p="col" style="margin:0 4px 6px;width:calc(100% - 8px)">${S.columns.map(x => `<option value="${x.id}" ${x.id === c.id ? 'selected' : ''}>${TYPES[x.type].icon}  ${esc(x.name)}</option>`).join('')}</select><div class="row" style="padding:0 4px"><select data-p="op" style="width:auto;flex:1">${ops.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></div><div class="row" style="padding:0 4px">${val}</div><div class="row" style="padding:4px 4px 4px"><button class="btn primary" data-p="ok">Aplicar</button>${S.filters.length ? '<button class="btn" data-p="clear">Quitar todos</button>' : ''}</div>`;
+    $('select[data-p=col]', pop).onchange = () => { presetCol = $('select[data-p=col]', pop).value; draw(); };
+    $('[data-p=ok]', pop).onclick = () => { const v = $('[data-p=val]', pop); const vv = v ? v.value : ''; if (vv === '' && c.type !== 'check') { v && v.focus(); return; } S.filters.push({ col: c.id, op: $('[data-p=op]', pop).value, val: c.type === 'number' ? Number(vv) : vv }); savePrefs(); closePop(true); render(); };
+    const cl = $('[data-p=clear]', pop); if (cl) cl.onclick = () => { S.filters = []; savePrefs(); closePop(true); render(); };
+    const vi = $('input[data-p=val]', pop); if (vi) vi.onkeydown = e => { if (e.key === 'Enter') $('[data-p=ok]', pop).click(); };
+  };
+  openPop(anchor, '<div></div>', { width: 280, nofocus: true }); draw();
+}
+function openSortMenu(anchor) {
+  openPop(anchor, `<div class="lbl">Ordenar por</div><select data-p="col" style="margin:0 4px 6px;width:calc(100% - 8px)">${S.columns.map(x => `<option value="${x.id}" ${S.sort && S.sort.col === x.id ? 'selected' : ''}>${TYPES[x.type].icon}  ${esc(x.name)}</option>`).join('')}</select><div class="row" style="padding:0 4px"><select data-p="dir" style="flex:1;width:auto"><option value="asc" ${!S.sort || S.sort.dir === 'asc' ? 'selected' : ''}>Ascendente</option><option value="desc" ${S.sort && S.sort.dir === 'desc' ? 'selected' : ''}>Descendente</option></select></div><div class="row" style="padding:4px 4px 4px"><button class="btn primary" data-p="ok">Aplicar</button>${S.sort ? '<button class="btn" data-p="clear">Quitar orden</button>' : ''}</div>`, { width: 260, nofocus: true });
+  $('[data-p=ok]', pop).onclick = () => { S.sort = { col: $('[data-p=col]', pop).value, dir: $('[data-p=dir]', pop).value }; savePrefs(); closePop(true); render(); };
+  const cl = $('[data-p=clear]', pop); if (cl) cl.onclick = () => { S.sort = null; savePrefs(); closePop(true); render(); };
+}
+function openGroupMenu(anchor) {
+  const cands = S.columns.filter(c => ['select', 'multi', 'people', 'check'].includes(c.type));
+  const isBoard = S.view === 'tablero';
+  openPop(anchor, `<div class="lbl">${isBoard ? 'Columnas del tablero por' : 'Agrupar por'}</div>${(isBoard ? cands.filter(c => c.type === 'select') : cands).map(c => `<button class="mi" data-g="${c.id}">${TYPES[c.type].icon} ${esc(c.name)} ${(isBoard ? boardColumn() && boardColumn().id : S.group) === c.id ? '<span class="k">✓</span>' : ''}</button>`).join('')}${!isBoard ? `<div class="sep"></div><button class="mi" data-g="">Sin agrupar</button>` : ''}`, { width: 240, nofocus: true });
+  pop.onclick = e => { const b = e.target.closest('[data-g]'); if (!b) return; if (isBoard) S.boardCol = b.dataset.g; else S.group = b.dataset.g; savePrefs(); closePop(true); render(); };
+}
+function openColsMenu(anchor) {
+  openPop(anchor, `<div class="lbl">Columnas visibles</div>${S.columns.map(c => `<label class="mi" style="cursor:pointer"><input type="checkbox" data-c="${c.id}" ${c.hidden ? '' : 'checked'} ${c.type === 'title' ? 'disabled' : ''} style="width:auto"> ${TYPES[c.type].icon} ${esc(c.name)}</label>`).join('')}<div class="sep"></div><button class="mi" data-p="add">+ Agregar columna</button>`, { width: 250, nofocus: true });
+  pop.onchange = async e => { const cb = e.target.closest('[data-c]'); if (!cb) return; col(cb.dataset.c).hidden = !cb.checked; await guard(() => S.store.saveColumns(S.columns)); render(); };
+  pop.onclick = e => { if (e.target.closest('[data-p=add]')) { closePop(true); openAddColumn(anchor); } };
+}
+
+/* ============================================================
+   10. FICHA (la fila abierta, como abrir una página de Notion)
+   ============================================================ */
+let fichaId = null;
+function openFicha(rowId) { fichaId = rowId; renderFicha(); }
+function closeFicha() { fichaId = null; const f = $('.ficha-bg'); if (f) f.remove(); }
+function renderFicha() {
+  const r = S.rows.find(x => x.id === fichaId); if (!r) { closeFicha(); return; }
+  const tc = titleCol();
+  let bg = $('.ficha-bg'); if (!bg) { bg = document.createElement('div'); bg.className = 'ficha-bg'; document.body.appendChild(bg); bg.addEventListener('mousedown', e => { if (e.target === bg) closeFicha(); }); }
+  bg.innerHTML = `<div class="ficha"><div class="f-top"><span class="badge">${esc(tc.name)}</span><button class="x" data-p="close" title="Cerrar">✕</button></div>
+    <h2 class="${rowTitle(r) ? '' : 'empty'}" data-act="edit" data-id="${r.id}" data-col="${tc.id}">${esc(rowTitle(r) || 'Sin título')}</h2>
+    ${S.columns.filter(c => c.id !== tc.id).map(c => { const v = r.props[c.id]; const vacio = v == null || v === '' || (Array.isArray(v) && !v.length);
+      return `<div class="prop"><div class="k"><span class="ic">${TYPES[c.type].icon}</span>${esc(c.name)}</div><div class="v ${vacio && c.type !== 'check' ? 'empty' : ''}" data-act="edit" data-id="${r.id}" data-col="${c.id}">${vacio && c.type !== 'check' ? 'Vacío' : renderValue(c, v, 'ficha').replace(/class="c-in[^"]*"/, 'class="fv"')}</div></div>`; }).join('')}
+    <div class="meta">Creada ${r.created_at ? new Date(r.created_at).toLocaleString('es-CO') : ''} · Editada ${r.updated_at ? new Date(r.updated_at).toLocaleString('es-CO') : ''}</div></div>`;
+  $('[data-p=close]', bg).onclick = closeFicha;
+  bg.querySelector('.ficha').onclick = e => { const t = e.target.closest('[data-act=edit]'); if (t) openEditor(t, t.dataset.id, t.dataset.col); };
+}
+
+/* ============================================================
+   11. ACCIONES · eventos delegados en la vista
+   ============================================================ */
+async function nuevaFila(gcol, gkey) {
+  const props = {};
+  if (gcol && col(gcol) && gkey) { const c = col(gcol); props[gcol] = (c.type === 'multi' || c.type === 'people') ? [gkey] : c.type === 'check' ? gkey === 'Marcado' : gkey; }
+  await guard(async () => { const r = await S.store.createRow(props); S.rows.push(r); render();
+    const td = $(`.tbl td.cell[data-id="${r.id}"][data-col="${titleCol().id}"]`); if (td) { td.scrollIntoView({ block: 'nearest' }); openEditor(td, r.id, titleCol().id); } else openFicha(r.id); });
+}
+$('#view').addEventListener('click', e => {
+  const t = e.target.closest('[data-act]'); if (!t) return;
+  const a = t.dataset.act;
+  if (a === 'edit') openEditor(t, t.dataset.id, t.dataset.col);
+  else if (a === 'colmenu') { if (e.target.classList.contains('rz')) return; openColMenu(t, t.dataset.col); }
+  else if (a === 'addcol') openAddColumn(t);
+  else if (a === 'rowmenu') openRowMenu(t, t.dataset.id);
+  else if (a === 'new') nuevaFila(t.dataset.gcol, t.dataset.gkey);
+  else if (a === 'toggle') { S.collapsed[t.dataset.key] = !S.collapsed[t.dataset.key]; savePrefs(); render(); }
+  else if (a === 'open') openFicha(t.dataset.id);
+});
+// Redimensionar columnas arrastrando el borde de la cabecera
+$('#view').addEventListener('mousedown', e => {
+  const h = e.target.closest('.rz'); if (!h) return; e.preventDefault(); e.stopPropagation();
+  const c = col(h.dataset.col), x0 = e.clientX, w0 = c.width || 180; h.classList.add('on');
+  const colEl = $$('.tbl colgroup col')[visibleCols().indexOf(c)];
+  const mv = ev => { c.width = Math.max(70, w0 + ev.clientX - x0); if (colEl) colEl.style.width = c.width + 'px'; };
+  const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); h.classList.remove('on'); guard(() => S.store.saveColumns(S.columns)); };
+  document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
+});
+// Tablero: arrastrar tarjetas entre columnas
+let dragId = null;
+$('#view').addEventListener('dragstart', e => { const c = e.target.closest('.card'); if (!c) return; dragId = c.dataset.id; c.classList.add('drag'); e.dataTransfer.effectAllowed = 'move'; });
+$('#view').addEventListener('dragend', e => { const c = e.target.closest('.card'); if (c) c.classList.remove('drag'); $$('.bcol.over').forEach(x => x.classList.remove('over')); });
+$('#view').addEventListener('dragover', e => { const l = e.target.closest('.bcol'); if (!l || !dragId) return; e.preventDefault(); $$('.bcol.over').forEach(x => x.classList.remove('over')); l.classList.add('over'); });
+$('#view').addEventListener('drop', e => { const l = e.target.closest('.bcol'); if (!l || !dragId) return; e.preventDefault(); const bc = boardColumn(); setValue(dragId, bc.id, l.dataset.lane); dragId = null; });
+
+$$('.vistas button').forEach(b => b.onclick = () => { S.view = b.dataset.view; savePrefs(); render(); });
+$('#q').addEventListener('input', e => { S.q = e.target.value; render(); });
+$('#btnFiltro').onclick = e => openFilterMenu(e.currentTarget);
+$('#btnOrden').onclick = e => openSortMenu(e.currentTarget);
+$('#btnGrupo').onclick = e => openGroupMenu(e.currentTarget);
+$('#btnCols').onclick = e => openColsMenu(e.currentTarget);
+$('#btnNueva').onclick = () => nuevaFila();
+$('#chips').addEventListener('click', e => { const b = e.target.closest('[data-chip]'); if (!b) return; const k = b.dataset.chip;
+  if (k === 'sort') S.sort = null; else if (k === 'group') S.group = ''; else if (k[0] === 'f') S.filters.splice(Number(k.slice(1)), 1);
+  savePrefs(); render(); });
+$('#btnCsv').onclick = () => {
+  const cols = visibleCols(), rows = rowsVisibles();
+  const cell = s => { s = String(s == null ? '' : s); return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const lines = [cols.map(c => cell(c.name)).join(';'), ...rows.map(r => cols.map(c => { const v = r.props[c.id]; return cell(Array.isArray(v) ? v.join(', ') : c.type === 'check' ? (v ? 'Sí' : 'No') : v); }).join(';'))];
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `iniciativas-${new Date().toISOString().slice(0, 10)}.csv`; a.click(); URL.revokeObjectURL(a.href);
+};
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && fichaId && pop.hidden) closeFicha();
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f' && !e.shiftKey) { e.preventDefault(); $('#q').focus(); }
+});
+
+/* ============================================================
+   12. ARRANQUE
+   ============================================================ */
+(async function init() {
+  loadPrefs();
+  S.store = await pickStore();
+  const b = $('#storeBadge'); b.textContent = S.store.kind === 'db' ? '● Base de datos' : '● Solo en este navegador'; b.className = 'badge ' + S.store.kind;
+  b.title = S.store.kind === 'db' ? 'Los cambios se guardan en la base de datos (API /api/iniciativas)' : 'No hay API /api/iniciativas: los datos quedan guardados solo en este navegador. Ver INICIATIVAS-MICROSOFT.md para conectar una base.';
+  try { const d = await S.store.load(); S.columns = d.columns; S.rows = d.rows; }
+  catch (e) { toast(e.message, true); S.columns = defaultColumns(); S.rows = []; }
+  if (!S.columns.some(c => c.type === 'title')) S.columns.unshift({ id: 'titulo', name: 'Título', type: 'title', width: 300 });
+  render();
+})();
+</script>
+</body>
+</html>

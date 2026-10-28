@@ -16,6 +16,7 @@ La app ya no usa Notion para nada. Todo (tareas, proyectos, fases y actividades 
 > 10. [`supabase/migracion-2026-10-duracion.sql`](supabase/migracion-2026-10-duracion.sql) — **duración** de cada actividad (sin necesidad de fechas).
 > 11. [`supabase/migracion-2026-10-edicion.sql`](supabase/migracion-2026-10-edicion.sql) — **enlaces de edición** con nombre, **historial de cambios** y **subcapítulos**.
 > 12. [`supabase/migracion-2026-10-precedencias.sql`](supabase/migracion-2026-10-precedencias.sql) — **tipos de precedencia** (en serie, al tiempo, terminan al tiempo) con desfase.
+> 13. [`supabase/migracion-2026-10-iniciativas.sql`](supabase/migracion-2026-10-iniciativas.sql) — **iniciativas** (base de datos tipo Notion en `/iniciativas`: tablas `iniciativas` e `iniciativas_config`). Ver [INICIATIVAS-MICROSOFT.md](INICIATIVAS-MICROSOFT.md).
 >
 > Atajo: [`supabase/TODAS-octubre-2026.sql`](supabase/TODAS-octubre-2026.sql) trae todas las de octubre juntas (se puede correr aunque ya hayas corrido alguna).
 
