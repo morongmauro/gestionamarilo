@@ -13,7 +13,7 @@
     --shadow:0 2px 5px rgba(26,23,18,.05), 0 10px 24px rgba(26,23,18,.06);
     --shadow-lg:0 4px 10px rgba(26,23,18,.06), 0 18px 44px rgba(26,23,18,.14);
     --sans:"Montserrat",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif;
-    --sel:rgba(35,131,226,.14); --sel-brd:#2383E2; --cp:#7A5AF8;
+    --sel:rgba(35,131,226,.14); --sel-brd:#2383E2; --cp:#7A5AF8; --cf-pos:#2a78d6; --cf-neg:#e34948;
     /* Colores de etiquetas (pills), como las opciones de Notion */
     --c-gris:#E9E7E1; --c-gris-i:#4F4B44;
     --c-rojo:#FFE2DD; --c-rojo-i:#93302A;
@@ -33,7 +33,7 @@
     --good:#46B37E; --crit:#F0645E; --crit-bg:rgba(240,100,94,.14);
     --shadow:0 2px 6px rgba(0,0,0,.35), 0 12px 30px rgba(0,0,0,.45);
     --shadow-lg:0 6px 14px rgba(0,0,0,.4), 0 22px 50px rgba(0,0,0,.55);
-    --sel:rgba(35,131,226,.22); --cp:#A48BFF;
+    --sel:rgba(35,131,226,.22); --cp:#A48BFF; --cf-pos:#3987e5; --cf-neg:#e66767;
     --c-gris:#3A3833; --c-gris-i:#D9D5CC; --c-rojo:#5A2D2A; --c-rojo-i:#FFB3AC;
     --c-naranja:#5B3A1E; --c-naranja-i:#FFC89A; --c-amarillo:#59481A; --c-amarillo-i:#FFE08A;
     --c-verde:#23402D; --c-verde-i:#A6E3B9; --c-azul:#23384A; --c-azul-i:#A9D0EC;
@@ -48,7 +48,7 @@
     --good:#46B37E; --crit:#F0645E; --crit-bg:rgba(240,100,94,.14);
     --shadow:0 2px 6px rgba(0,0,0,.35), 0 12px 30px rgba(0,0,0,.45);
     --shadow-lg:0 6px 14px rgba(0,0,0,.4), 0 22px 50px rgba(0,0,0,.55);
-    --sel:rgba(35,131,226,.22); --cp:#A48BFF;
+    --sel:rgba(35,131,226,.22); --cp:#A48BFF; --cf-pos:#3987e5; --cf-neg:#e66767;
     --c-gris:#3A3833; --c-gris-i:#D9D5CC; --c-rojo:#5A2D2A; --c-rojo-i:#FFB3AC;
     --c-naranja:#5B3A1E; --c-naranja-i:#FFC89A; --c-amarillo:#59481A; --c-amarillo-i:#FFE08A;
     --c-verde:#23402D; --c-verde-i:#A6E3B9; --c-azul:#23384A; --c-azul-i:#A9D0EC;
@@ -388,6 +388,76 @@
   .flujo .neg{color:var(--crit)}
   .flujo .x{color:var(--faint);padding:2px 6px;font-size:13px}
   .flujo .x:hover{color:var(--crit)}
+  /* Hoja tipo Excel del flujo */
+  .hoja-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .hoja-t{font-size:13px;font-weight:800;display:flex;align-items:center;gap:8px}
+  .hoja-t .nm{width:20px;height:20px;border-radius:50%;background:var(--accent-soft);color:var(--accent-ink);font-size:10.5px;display:inline-flex;align-items:center;justify-content:center}
+  .hoja-top .sp{flex:1}
+  .excel-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+  .hoja-wrap{position:relative;border:1px solid var(--line);border-radius:10px;max-height:62vh}
+  table.hoja{border-collapse:separate;border-spacing:0;user-select:none}
+  .hoja th,.hoja td{padding:0;border-bottom:1px solid var(--line);border-right:1px solid var(--line);height:30px}
+  .hoja th{padding:6px 8px;position:sticky;top:0;z-index:2;background:var(--sunk)}
+  .hoja th .yr{display:block;font-size:10px;font-weight:600;color:var(--faint)}
+  .hoja th:first-child,.hoja td:first-child{position:sticky;left:0;z-index:1;background:var(--card)}
+  .hoja th:first-child{z-index:3;background:var(--sunk)}
+  .hoja td input{width:112px;height:30px;border:none;border-radius:0;padding:4px 8px;background:transparent;text-align:right;font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--ink);outline:none;cursor:cell}
+  .hoja td input.cpt{width:220px;text-align:left;font-weight:600}
+  .hoja td input:focus{background:var(--card);cursor:text}
+  .hoja td input:hover{border:none}
+  .hoja td.sel{background:var(--sel)}
+  .hoja td.sel input{background:transparent}
+  .hoja td.act{box-shadow:inset 0 0 0 2px var(--sel-brd)}
+  .hoja td.act input{background:var(--card)}
+  .hoja td.fillp{box-shadow:inset 0 0 0 1px var(--sel-brd);background:rgba(35,131,226,.06)}
+  .hoja td.rt{padding:4px 10px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right;color:var(--muted);background:var(--paper)}
+  .hoja td.rm{width:34px;text-align:center}
+  .hoja td.rm .x{opacity:0;letter-spacing:1px}
+  .hoja tr:hover td.rm .x{opacity:1}
+  .hoja tr.grp td{position:static;padding:6px 8px;background:var(--paper)}
+  .hoja tr.grp td:first-child{position:static}
+  .hoja tbody.tots td{padding:6px 10px;text-align:right;background:var(--paper)}
+  .hoja tbody.tots td:first-child{text-align:left;background:var(--paper)}
+  .hoja tr.tot.neto td{border-top:2px solid var(--line-2)}
+  .fillh{position:absolute;width:9px;height:9px;background:var(--sel-brd);border:1.5px solid var(--card);cursor:crosshair;z-index:4;border-radius:2px}
+  .fillh[hidden]{display:none}
+  .atajos div{display:flex;gap:10px;justify-content:space-between;padding:4px 10px;font-size:12px}
+  .atajos b{font-weight:800;white-space:nowrap}
+  .atajos span{color:var(--muted);text-align:right}
+  table.esc{width:100%;border-collapse:collapse;font-size:12.5px}
+  .esc th{font-size:11px;font-weight:800;color:var(--muted);text-align:right;padding:6px 8px;background:var(--sunk)}
+  .esc th:first-child,.esc td:first-child{text-align:left}
+  .esc td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .esc tr.res td{font-weight:800;font-size:13px}
+  .esc td.good{color:var(--good)} .esc td.bad,.esc b.bad{color:var(--crit)} .esc b.good,.sens-notes b.good{color:var(--good)} .sens-notes b.bad{color:var(--crit)}
+  .esc input.pct{width:54px;text-align:right;border:1px solid var(--line-2);border-radius:6px;padding:4px 6px;background:var(--paper);margin-right:3px;font-variant-numeric:tabular-nums}
+  .esc input.pct:disabled{border-color:transparent;background:transparent}
+  .sens-notes{margin-top:10px;font-size:12.5px;display:flex;flex-direction:column;gap:4px}
+  .cf-chart{margin-top:14px}
+  .cf-chart:empty{display:none}
+  .cf-h{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;font-size:12.5px;margin-bottom:6px}
+  .cf-leg{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);font-weight:600;flex-wrap:wrap}
+  .cf-leg .sw{width:10px;height:10px;border-radius:3px;display:inline-block;margin-left:6px}
+  .cf-leg .sw.pos{background:var(--cf-pos)} .cf-leg .sw.neg{background:var(--cf-neg)}
+  .cf-leg .ln{width:16px;height:2px;background:var(--ink);display:inline-block;margin-left:8px;border-radius:2px}
+  .cf-box{position:relative}
+  .cf-box svg{display:block;overflow:visible}
+  .cf-grid line{stroke:var(--line);stroke-width:1}
+  .cf-grid text,.cf-x text{fill:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+  .cf-zero{stroke:var(--line-2);stroke-width:1.25}
+  .cf-box path.pos{fill:var(--cf-pos)} .cf-box path.neg{fill:var(--cf-neg)}
+  .cf-line{fill:none;stroke:var(--ink);stroke-width:2;stroke-linejoin:round}
+  .cf-dot{fill:var(--ink);stroke:var(--card);stroke-width:2}
+  .cf-pb line{stroke:var(--muted);stroke-width:1;stroke-dasharray:4 4}
+  .cf-pb text{fill:var(--muted);font-size:11px;font-weight:600}
+  .cf-hit{fill:transparent}
+  .cf-hit.on{fill:var(--ink);fill-opacity:.05}
+  .cf-tip{position:absolute;z-index:5;pointer-events:none;background:var(--card);border:1px solid var(--line-2);box-shadow:var(--shadow);border-radius:10px;padding:8px 10px;font-size:12px;min-width:200px;color:var(--ink)}
+  .cf-tip[hidden]{display:none}
+  .cf-tip div{display:flex;justify-content:space-between;gap:14px;font-variant-numeric:tabular-nums}
+  .cf-tip div span{color:var(--muted)}
+  .cf-tip div.sep{border-top:1px solid var(--line);margin-top:4px;padding-top:4px}
+
   .estado-sel{font-size:12px;font-weight:700;padding:6px 10px;border-radius:999px;border:none;cursor:pointer;font-family:inherit}
   @media(max-width:1000px){.case-grid{grid-template-columns:1fr}.case-side{position:static}}
 
@@ -481,6 +551,22 @@
   .h-item .cp{color:var(--faint)}
   .secret{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--sunk);padding:8px 12px;border-radius:10px;font-size:13px;user-select:all;word-break:break-all}
   code.u{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;background:var(--sunk);padding:2px 6px;border-radius:6px;word-break:break-all}
+
+  /* Importar desde Excel */
+  .imp-card{width:min(1000px,100%);max-height:calc(100vh - 32px);display:flex;flex-direction:column;background:var(--card);border-radius:22px;box-shadow:var(--shadow-lg);padding:18px 20px}
+  .imp-h{display:flex;align-items:baseline;gap:10px}
+  .imp-h h2{font-size:18px;font-weight:800}
+  .imp-h .sp{flex:1}
+  .imp-h .x{font-size:18px;color:var(--faint);padding:2px 8px;border-radius:8px}
+  .imp-opts{display:flex;flex-wrap:wrap;gap:8px 18px;margin:12px 0 8px;font-size:12.5px;color:var(--muted);font-weight:600}
+  .imp-opts select{margin-left:6px;border:1px solid var(--line-2);border-radius:8px;padding:5px 8px;background:var(--paper);color:var(--ink);font-family:inherit}
+  .imp-opts .chk-l{display:flex;align-items:center;gap:6px}
+  .imp-info{font-size:12.5px;background:var(--accent-soft);color:var(--ink);padding:9px 12px;border-radius:10px;margin-bottom:10px}
+  .imp-tbl{overflow:auto;min-height:0;flex:1;border:1px solid var(--line);border-radius:10px}
+  .imp-tbl table{font-size:12.5px}
+  .imp-tbl th{position:sticky;top:0;z-index:1}
+  .imp-tbl select{font-size:12px}
+  .imp-f{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 
   /* Aviso de demostración */
   .demo-pill{position:fixed;right:14px;bottom:14px;z-index:30;background:var(--accent);color:#1C1A17;font-size:11.5px;font-weight:800;padding:7px 14px;border-radius:999px;box-shadow:var(--shadow)}

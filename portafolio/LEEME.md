@@ -15,6 +15,33 @@ correo y contraseña, y todos ven los mismos datos.
 
 Además: **Historial** (quién cambió qué y cuándo) y **Usuarios** (solo administradores).
 
+## Caso de negocio: se trabaja como en Excel
+
+El flujo año a año (hasta 15 años) es una hoja de cálculo:
+
+| Acción | Cómo |
+|---|---|
+| Moverse | Flechas, Enter (Shift+Enter sube), Tab |
+| Seleccionar un rango | Arrastrar con el mouse o Shift + flechas |
+| Copiar y pegar con Excel | Ctrl+C / Ctrl+V; también una tabla completa con títulos |
+| Llenar | Cuadrito azul en la esquina (con 2 celdas sigue la serie), Ctrl+D, Ctrl+R |
+| Borrar | Supr |
+| Deshacer / rehacer | Ctrl+Z / Ctrl+Y |
+| Atajos al escribir | `1,2M`, `300k`, `=150*12`, `+5%` (sobre el año anterior), `(1.200)` negativo |
+| Por fila (···) | Repetir el primer valor, crecer un % anual, repartir un total |
+
+Las cifras se ven en pesos, miles o millones. Al lado, VPN, TIR, payback y ROI
+se recalculan mientras se escribe, junto con un gráfico del flujo y el
+acumulado, tres escenarios (pesimista, base, optimista) y el margen de
+seguridad (cuánto pueden caer los beneficios antes de que el VPN sea negativo).
+
+**Excel de ida y vuelta**: «Subir Excel» lee un .xlsx o .csv, detecta la fila
+de años (Año 0… o 2026…), los conceptos, el tipo de cada fila (por la columna
+«Tipo», por los títulos de sección o por las palabras) y descarta los totales;
+muestra una vista previa para corregir antes de importar. «Descargar Excel»
+entrega el caso con fórmulas reales (SUMA, VNA, TIR) y la narrativa; se puede
+editar en Excel y volver a subir. «Plantilla vacía» trae 10 años.
+
 ## Usuarios y roles
 
 - **Administrador**: todo, incluido crear usuarios, cambiar roles, desactivar acceso y restablecer contraseñas.
@@ -39,6 +66,35 @@ ADMIN_EMAIL=tu@correo.com ADMIN_PASSWORD=Clave2026 npm start
 Abre `http://localhost:8080` y entra con ese correo. Los datos quedan en
 `portafolio/data/portafolio.json`. En Windows, copia `.env.example` como
 `.env`, llena `ADMIN_EMAIL` y `ADMIN_PASSWORD`, y corre `npm start`.
+
+## Mostrarla ya: GitHub + Vercel (demostración con datos de prueba)
+
+Mientras TI monta Azure, se puede publicar una copia de demostración. **Solo
+con datos de prueba**: los datos reales van en Azure SQL.
+
+1. **GitHub**: el código ya está en el repositorio. Une la rama de trabajo a
+   `main` con un pull request (o deja que Vercel publique la rama como
+   vista previa).
+2. **Base de prueba**: en [supabase.com](https://supabase.com) crea un
+   proyecto nuevo y gratuito, aparte del de tu app personal. En *Connect*
+   copia la cadena *Transaction pooler* (puerto 6543): es `DATABASE_URL`.
+3. **Vercel** → *Add New → Project* → importa este repositorio.
+   *Root Directory*: `portafolio`. *Framework*: Other. Variables:
+
+   | Variable | Valor |
+   |---|---|
+   | `DB` | `postgres` |
+   | `DATABASE_URL` | la cadena del paso 2 |
+   | `SESSION_SECRET` | una cadena larga aleatoria |
+   | `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` | tu usuario administrador |
+   | `ORG_NAME` | nombre de la oficina |
+   | `MODO_DEMO` | `true` (muestra «solo datos de prueba») |
+
+4. *Deploy* y abre el link. Las tablas se crean solas en el primer ingreso.
+
+Probado: la app corre como función de Vercel (simulada localmente) sobre
+PostgreSQL 16 real, con 20 ediciones simultáneas sin pérdidas. No se publicó
+en una cuenta de Vercel real desde aquí.
 
 ## Dónde vive cada cosa (todo en Azure)
 
@@ -149,7 +205,11 @@ Todo es HTML, CSS y JavaScript sin compilación:
 | `public/js/tabla.js` | Sección Proyectos |
 | `public/js/proyecto.js` | Página de cada proyecto |
 | `public/js/cronograma.js` | Gantt |
-| `public/js/caso.js` + `finanzas.js` | Caso de negocio y sus cálculos |
+| `public/js/caso.js` + `finanzas.js` | Caso de negocio, escenarios y cálculos |
+| `public/js/hoja.js` | Hoja tipo Excel del flujo |
+| `public/js/importar.js`, `lib/excel.js` | Subir y descargar Excel |
+| `public/js/grafico.js` | Gráfico del flujo año a año |
+| `lib/store-pg.js`, `api/index.js`, `vercel.json` | PostgreSQL y Vercel (demostración) |
 | `public/js/agenda.js` | Agenda de comités |
 | `public/js/usuarios.js` | Usuarios e historial |
 | `public/js/app.js` | Ingreso, navegación y sincronización |
@@ -157,3 +217,10 @@ Todo es HTML, CSS y JavaScript sin compilación:
 Una sección nueva es un archivo `public/js/<nombre>.js` que registra
 `App.views.<nombre>`, un enlace en la barra de `index.html` y, si guarda
 datos, una entrada en `SCHEMAS` de `lib/validate.js`.
+
+## Seguridad de las dependencias
+
+`npm audit` reporta un aviso alto en `@azure/msal-node` (lo trae `mssql`
+mediante `@azure/identity`): afecta el flujo de inicio de sesión con código de
+autorización, que esta app no usa (entra a Azure con identidad administrada).
+El aviso de `uuid` (lo trae `exceljs`) se corrigió forzando `uuid` 11.

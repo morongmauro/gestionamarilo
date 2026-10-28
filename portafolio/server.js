@@ -46,7 +46,7 @@ function readBody(req) {
   }
   return new Promise((resolve, reject) => {
     let size = 0; const chunks = [];
-    req.on('data', c => { size += c.length; if (size > 2 * 1024 * 1024) { reject(new HttpError(413, 'Demasiado grande')); req.destroy(); } else chunks.push(c); });
+    req.on('data', c => { size += c.length; if (size > 8 * 1024 * 1024) { reject(new HttpError(413, 'Demasiado grande')); req.destroy(); } else chunks.push(c); });
     req.on('end', () => {
       if (!chunks.length) return resolve({});
       try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8'))); } catch { reject(new HttpError(400, 'JSON inválido')); }
@@ -268,6 +268,24 @@ route('POST', '/api/lake/enviar', 'admin', async (req, ctx) => {
   if (!lake.configured()) throw new HttpError(400, 'El envío al data lake no está configurado (falta LAKE_ACCOUNT en la configuración del servidor)');
   try { return await enviarAlLago('manual', ctx.user); }
   catch (e) { throw new HttpError(502, 'No se pudo escribir en el data lake: ' + e.message); }
+});
+
+// ---------- Excel del caso de negocio ----------
+route('POST', '/api/excel/leer', 'editor', async (req, ctx) => {
+  const b64 = String(ctx.body.archivo || '');
+  if (!b64) throw new HttpError(400, 'Falta el archivo');
+  const buf = Buffer.from(b64, 'base64');
+  if (buf.length > 4 * 1024 * 1024) throw new HttpError(413, 'El archivo pasa de 4 MB');
+  return require('./lib/excel').leer(buf);
+});
+route('GET', '/api/cases/:id/excel', 'usuario', async (req, ctx) => {
+  const excel = require('./lib/excel');
+  if (ctx.params.id === 'plantilla') return { __raw: Buffer.from(await excel.exportar({}, '', true)), type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', file: 'plantilla-caso-de-negocio.xlsx' };
+  const caso = await store.get('cases', ctx.params.id); if (!caso) throw new HttpError(404, 'Caso no encontrado');
+  const p = await store.get('projects', caso.project_id);
+  const nombre = p ? (p.props || {})[(await titleColumn()).id] || 'Proyecto' : 'Proyecto';
+  const file = `caso-${nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w-]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase().slice(0, 60) || 'proyecto'}.xlsx`;
+  return { __raw: Buffer.from(await excel.exportar(caso, nombre, false)), type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', file };
 });
 
 // ---------- Agenda: archivo .ics para Outlook ----------

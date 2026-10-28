@@ -7,17 +7,27 @@
 
   function vpn(netos, r) { return netos.reduce((a, v, t) => a + v / Math.pow(1 + r, t), 0); }
 
+  // TIR como en Excel: busca primero la tasa positiva más baja que deja el VPN en cero;
+  // si no hay, la negativa más cercana a cero. Con varios cambios de signo en el flujo
+  // puede haber más de una TIR: calc() lo avisa en «tirMultiple».
   function tir(netos) {
     if (!netos.some(v => v < 0) || !netos.some(v => v > 0)) return null;
-    let lo = -0.99, hi = 10, flo = vpn(netos, lo), fhi = vpn(netos, hi);
-    if (flo * fhi > 0) return null;
-    for (let i = 0; i < 200; i++) {
-      const mid = (lo + hi) / 2, f = vpn(netos, mid);
-      if (Math.abs(f) < 1e-6) return mid;
-      if (f * flo < 0) { hi = mid; fhi = f; } else { lo = mid; flo = f; }
+    const grid = [];
+    for (let r = 0; r < 1; r += 0.01) grid.push(r);
+    for (let r = 1; r < 10; r += 0.1) grid.push(r);
+    for (let r = 10; r <= 1000; r += 5) grid.push(r);
+    const neg = []; for (let r = -0.01; r > -0.99; r -= 0.01) neg.push(r); neg.push(-0.99);
+    const bisect = (lo, hi) => { let flo = vpn(netos, lo); for (let i = 0; i < 200; i++) { const mid = (lo + hi) / 2, f = vpn(netos, mid); if (Math.abs(f) < 1e-7) return mid; if (f * flo < 0) hi = mid; else { lo = mid; flo = f; } } return (lo + hi) / 2; };
+    for (const lista of [grid, [0, ...neg]]) {
+      for (let i = 1; i < lista.length; i++) {
+        const a = vpn(netos, lista[i - 1]), b = vpn(netos, lista[i]);
+        if (a === 0) return lista[i - 1];
+        if (a * b < 0) return bisect(Math.min(lista[i - 1], lista[i]), Math.max(lista[i - 1], lista[i]));
+      }
     }
-    return (lo + hi) / 2;
+    return null;
   }
+  const cambiosDeSigno = netos => { let n = 0, prev = 0; netos.forEach(v => { if (v !== 0) { if (prev && Math.sign(v) !== Math.sign(prev)) n++; prev = v; } }); return n; };
 
   function calc(caso) {
     const anios = Math.max(1, Math.min(15, Math.round(num(caso && caso.anios) || 5)));
@@ -46,11 +56,32 @@
       totalInversion, totalCosto, totalBeneficio,
       vpn: netos.some(v => v !== 0) ? vpn(netos, r) : null,
       tir: tir(netos),
+      tirMultiple: cambiosDeSigno(netos) > 1,
       payback,
       roi: egresos > 0 ? (totalBeneficio - egresos) / egresos : null,
     };
   }
 
-  const api = { calc, vpn, tir };
+  // Escenario: ajusta beneficios, costos e inversión en % y puede retrasar los beneficios N años
+  function ajustar(caso, a) {
+    a = a || {};
+    const k = t => 1 + (num(t === 'beneficio' ? a.b : t === 'inversion' ? a.i : a.c)) / 100;
+    const flujos = ((caso && caso.flujos) || []).map(f => {
+      let v = (f.valores || []).map(x => num(x) * k(f.tipo));
+      if (f.tipo === 'beneficio' && a.retraso > 0) v = Array(a.retraso).fill(0).concat(v);
+      return Object.assign({}, f, { valores: v });
+    });
+    return Object.assign({}, caso, { flujos });
+  }
+  // Cuánto pueden caer los beneficios (fracción) antes de que el VPN sea negativo.
+  // Negativo = cuánto tendrían que subir para que el VPN llegue a cero.
+  function margen(caso) {
+    const f = calc(caso), r = num(caso && caso.tasa) / 100;
+    const pv = arr => arr.reduce((a, v, t) => a + v / Math.pow(1 + r, t), 0);
+    const pb = pv(f.beneficios), pe = pv(f.inversion.map((v, t) => v + f.costos[t]));
+    return pb > 0 ? 1 - pe / pb : null;
+  }
+
+  const api = { calc, vpn, tir, ajustar, margen };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Finanzas = api;
 })(this);

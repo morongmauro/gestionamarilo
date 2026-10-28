@@ -32,10 +32,12 @@ App.guard = async fn => { try { return await fn(); } catch (e) { console.error(e
 
 /* ---------- API ---------- */
 App.api = async (method, url, body) => {
+  const json = body === undefined ? undefined : JSON.stringify(body);
   const r = await fetch(url, {
     method, credentials: 'same-origin',
+    keepalive: method !== 'GET' && !!json && json.length < 60000, // termina de guardar aunque se cierre la pestaña
     headers: method === 'GET' ? { Accept: 'application/json' } : { 'Content-Type': 'application/json', 'X-Portafolio': '1' },
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: json,
   });
   const j = await r.json().catch(() => ({}));
   if (r.status === 401 && !url.startsWith('/api/auth/')) { App.onLoggedOut && App.onLoggedOut(); }
