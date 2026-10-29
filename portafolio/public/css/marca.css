@@ -368,3 +368,41 @@ html[data-estilo="claro"] .me span,html[data-estilo="superior"] .me span{color:v
 .ap-op button{flex:1;min-width:76px;font-size:12px;font-weight:600;padding:7px 10px;border-radius:var(--r-pill);background:var(--sunk);color:var(--ink)}
 .ap-op button.on{background:var(--ink);color:var(--paper)}
 .me .av{color:#fff}
+
+/* ---------- 15 · Jerarquía del tablero y gráficas con degradado ----------
+   Lienzo lavanda muy suave + tarjetas blancas = cada bloque se separa del fondo.
+   Bloques numerados (1 Lo esencial · 2 Valor · 3 Ejecución · 4 Detalle) dicen qué leer y en qué orden. */
+:root{
+  /* Paleta categórica suave (validada: banda de luminosidad, croma, daltonismo y visión normal).
+     El contraste contra blanco queda bajo 3:1: por eso cada gráfica tiene leyenda, detalle al pasar
+     el mouse y vista en tabla. */
+  --cat-ahorro:#5B9BEA; --cat-ingresos:#F08A5D; --cat-eficiencia:#3FC293; --cat-tiempo:#DDA02E; --cat-riesgo:#EE8FB6; --cat-otro:#8E7CE0;
+}
+html[data-estilo="marco"]:not([data-theme="dark"]){--paper:#F2F1F6}
+@media (prefers-color-scheme:dark){html[data-estilo="marco"]:not([data-theme]){--paper:#0D0718}}
+.gdefs{position:absolute;width:0;height:0;overflow:hidden}
+.dash-sec{display:flex;align-items:baseline;gap:10px;margin:14px 2px -4px;flex-wrap:wrap}
+.dash-sec:first-of-type{margin-top:0}
+.dash-sec .n{align-self:center;display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--paper);font-size:11px;font-weight:800}
+.dash-sec b{font-family:var(--font-display);font-size:var(--fs-lg);font-weight:800;letter-spacing:-.01em}
+.dash-sec span:last-child{font-size:var(--fs-xs);color:var(--muted)}
+/* La tarjeta principal: lo primero que se lee */
+.card-hero{background:radial-gradient(120% 140% at 100% 0%,color-mix(in srgb,var(--amarillo) 14%,transparent) 0%,transparent 55%),var(--card);box-shadow:0 2px 6px rgba(22,11,41,.05),0 16px 40px rgba(22,11,41,.10);border:1px solid color-mix(in srgb,var(--amarillo) 30%,transparent)}
+.card-hero::before{content:"";position:absolute;left:22px;right:22px;top:0;height:4px;border-radius:0 0 4px 4px;background:linear-gradient(90deg,var(--amarillo),color-mix(in srgb,var(--amarillo) 30%,transparent))}
+.card-atn{background:linear-gradient(180deg,color-mix(in srgb,var(--crit-bg) 70%,var(--card)) 0,var(--card) 110px)}
+/* Íconos de los indicadores */
+.xk .ki{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:8px;background:linear-gradient(135deg,color-mix(in srgb,var(--c) 30%,var(--card)),color-mix(in srgb,var(--c) 12%,var(--card)))}
+.xk .ki svg{width:14px;height:14px;fill:none;stroke:color-mix(in srgb,var(--c) 70%,var(--ink));stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+/* Leyendas y puntos con el mismo degradado de las barras */
+.lgd .sw{background:linear-gradient(180deg,var(--c),color-mix(in srgb,var(--c) 45%,var(--card)))}
+.cat-dot{background:linear-gradient(135deg,var(--c,currentColor),color-mix(in srgb,var(--c,currentColor) 55%,var(--card)))}
+/* Composición de lo captado (dentro de la tarjeta principal) */
+.compo{margin-top:18px;padding-top:14px;border-top:1px dashed var(--line-2)}
+.compo-t{font-size:var(--fs-2xs);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.compo-bar{display:flex;gap:2px;height:14px;border-radius:7px;overflow:hidden}
+.compo-bar i{display:block;min-width:4px;transform-origin:left}
+.compo-l{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:8px;font-size:var(--fs-xs);color:var(--muted)}
+.compo-l span{display:inline-flex;align-items:center;gap:6px}
+.compo-l i{width:10px;height:10px;border-radius:3px;background:linear-gradient(180deg,var(--c),color-mix(in srgb,var(--c) 45%,var(--card)))}
+.compo-l b{color:var(--ink);font-variant-numeric:tabular-nums}
+.compo-l em{font-style:normal;color:var(--faint)}

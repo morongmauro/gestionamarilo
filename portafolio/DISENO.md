@@ -123,6 +123,12 @@ Severidad: **C** crítica · **A** alta · **M** media · **B** baja. Esfuerzo: 
 
 ---
 
+## Disposición del tablero (orden de lectura)
+
+- **Estilo por defecto:** barra lateral morada + lienzo lavanda muy claro (`#F2F1F6`) + tarjetas blancas. Siempre arranca en tema claro; el oscuro solo si la persona lo elige en «Apariencia».
+- **Cuatro bloques numerados**, en el orden en que se deben leer: ① Lo esencial (cifra, alertas, indicadores) · ② El valor en el tiempo · ③ Ejecución y decisiones · ④ Detalle por iniciativa.
+- **La tarjeta principal se destaca:** borde y brillo amarillo suave, sombra más profunda y la composición de lo captado. «Requiere atención» lleva un tinte rojo muy suave arriba.
+
 ## Fase 6 · Sistema de diseño
 
 Fuente: `public/css/marca.css`. Referencia viva: **Sistema de diseño** dentro de la app.
@@ -133,7 +139,7 @@ Fuente: `public/css/marca.css`. Referencia viva: **Sistema de diseño** dentro d
 | **Secundarios** | Amarillo claro `#FFEDB2` · amarillo suave `#FFF3C7` · amarillo tinta `#6E5300` (texto sobre suave) |
 | **Neutros** | Lienzo `#F5F5F6` · tarjeta `#FFFFFF` · hundido `#F0F0F1` · texto secundario `#55545E` (7,4:1) · terciario `#6C6D6D` (5,2:1) |
 | **Semánticos** (relleno · tinta · fondo) | Éxito `#16935A` · `#0E7D49` · `#E2F3EA` / Advertencia `#E07A12` · `#A84A08` · `#FDEBD7` / Crítico `#D21A3A` · `#D21A3A` · `#FBE3E7` / Información `#3367CD` · `#2752A8` · `#E6EDFA` |
-| **Gráficas** | Categórica fija por tipo de valor (ahorro, ingresos, eficiencia, tiempo, riesgo, otro); secuencia de azules para etapas; gris para pausado. Sin doble eje. |
+| **Gráficas** | Paleta categórica suave en orden fijo por tipo de valor: ahorro `#5B9BEA`, ingresos `#F08A5D`, eficiencia `#3FC293`, tiempo `#DDA02E`, riesgo `#EE8FB6`, otro `#8E7CE0` (validada: luminosidad, croma, daltonismo y visión normal). Degradado del color firme en la punta del dato a pastel en la base. Como el contraste con el blanco queda bajo 3:1, cada gráfica lleva leyenda, detalle al pasar el mouse y vista en tabla. Secuencia de azules para etapas; gris para pausado. Sin doble eje. |
 | **Tipografía** | Montserrat 400–800 en todo (como la web de Amarilo): 800 en títulos y cifras, 600 en etiquetas, 400 en texto. Alternativa: Segoe UI / system-ui |
 | **Escala** | 11 · 12 · 13 · 14 · 16 · 20 · 24 · 32 · 48 px; altura de línea 1,5 (texto) y 1,1 (títulos) |
 | **Espaciado** | Base 4: 4 · 8 · 12 · 16 · 20 · 24 · 32 · 40 · 56 |

@@ -8,11 +8,11 @@
   let snapshot = '';
 
   // Apariencia de cada persona: siempre arranca en claro; el oscuro solo si se elige
-  const AP = Object.assign({ tema: 'claro', estilo: 'claro' }, App.store.get('apariencia', {}));
+  const AP = Object.assign({ tema: 'claro', estilo: 'marco' }, App.store.get('apariencia', {}));
   function aplicarApariencia() {
     const h = document.documentElement;
     if (AP.tema === 'auto') h.removeAttribute('data-theme'); else h.setAttribute('data-theme', AP.tema === 'oscuro' ? 'dark' : 'light');
-    h.setAttribute('data-estilo', ['claro', 'superior', 'marco'].includes(AP.estilo) ? AP.estilo : 'claro');
+    h.setAttribute('data-estilo', ['claro', 'superior', 'marco'].includes(AP.estilo) ? AP.estilo : 'marco');
   }
   aplicarApariencia();
   App.apariencia = (k, v) => { if (k) { AP[k] = v; App.store.set('apariencia', AP); aplicarApariencia(); } return Object.assign({}, AP); };

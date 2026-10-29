@@ -97,6 +97,18 @@
   const hideTip = () => { if (tip) tip.hidden = true; };
   const row = (c, lbl, val, bold) => `<div class="r"><span>${c ? `<i style="--c:${c}"></i>` : ''}${esc(lbl)}</span>${bold ? `<b>${esc(val)}</b>` : esc(val)}</div>`;
   const cvar = k => `var(--cat-${k})`;
+  // Degradados: el color firme queda en la punta del dato y se aclara hacia la base (pastel).
+  // La identidad sigue siendo el color de la leyenda; el degradado solo da profundidad.
+  function gdefs() {
+    const v = (id, c, o1, o2, h) => `<linearGradient id="${id}" x1="0" y1="0" x2="${h ? 1 : 0}" y2="${h ? 0 : 1}"><stop offset="0" style="stop-color:${c};stop-opacity:${o1}"/><stop offset="1" style="stop-color:${c};stop-opacity:${o2}"/></linearGradient>`;
+    const d = (id, c) => `<linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:${c}"/><stop offset="1" style="stop-color:${c};stop-opacity:.55"/></linearGradient>`;
+    return `<svg class="gdefs" aria-hidden="true" focusable="false"><defs>
+      ${App.CATS.map(c => v('dg-' + c.id, cvar(c.id), 1, 0.4) + d('dgd-' + c.id, cvar(c.id))).join('')}
+      ${v('dg-ink', 'var(--ink)', 1, 0.72)}${v('dg-area', 'var(--cat-ahorro)', 0.32, 0)}
+      ${['good', 'warning', 'critical'].map(k => v('dg-st-' + k, `var(--st-${k})`, 0.55, 1, true)).join('')}
+      ${[1, 2, 3, 4, 5, 'paus'].map(k => v('dg-ord-' + k, `var(--ord-${k})`, 0.7, 1, true)).join('')}
+    </defs></svg>`;
+  }
 
   /* ---------- salud de cada proyecto (para «Requiere atención» y la matriz) ---------- */
   // Reglas a la vista: nada se decide en secreto. Cada señal dice de dónde sale.
@@ -133,10 +145,10 @@
     const frase = d.esperadoY > 0
       ? `En ${d.Y} el portafolio ha capturado <b>${esc(m(d.captadoY))}</b>, el <b>${Math.round(pc * 100)}%</b> de lo esperado a la fecha. <b>${d.reales.length} de ${d.filas.length}</b> iniciativas están en realización${nAt ? ` y <b>${nAt} ${nAt === 1 ? 'tiene' : 'tienen'} alertas</b> de ejecución o de valor` : ' y ninguna tiene alertas'}.`
       : d.Y > d.hoyY ? `${d.Y} aún no empieza: se proyectan <b>${esc(m(d.proyectadoY))}</b> para el año.` : `Aún no hay proyectos en realización con valor esperado en ${d.Y}.`;
-    return `<div class="dash-card span-8"><div class="exec">
+    return `<div class="dash-card span-8 card-hero"><div class="exec">
         <svg class="ring" width="132" height="132" viewBox="0 0 136 136" role="img" aria-label="Cumplimiento ${pc == null ? 'sin dato' : Math.round(pc * 100) + '%'}${st ? ', ' + st[2] : ''}">
           <circle class="trk" cx="68" cy="68" r="${R}" style="stroke:${col};stroke-opacity:.16"/>
-          <circle class="val draw" pathLength="1" cx="68" cy="68" r="${R}" style="stroke:${col};stroke-dasharray:${fill} 1;stroke-dashoffset:0"/>
+          <circle class="val draw" pathLength="1" cx="68" cy="68" r="${R}" style="stroke:${st ? `url(#dg-st-${st[0]})` : col};stroke-dasharray:${fill} 1;stroke-dashoffset:0"/>
           <text x="68" y="70" text-anchor="middle" style="font-size:26px;font-weight:800;fill:var(--ink)">${pc == null ? '—' : Math.round(pc * 100) + '%'}</text>
           <text x="68" y="88" text-anchor="middle" style="font-size:9.5px;font-weight:700;fill:var(--muted)">cumplimiento</text>
         </svg>
@@ -145,7 +157,17 @@
           <div class="big" data-count="${d.captadoY}">${esc(m(d.captadoY))}</div>
           <p class="frase">${frase}</p>
           <div class="det">Esperado a la fecha: <b>${esc(m(d.esperadoY))}</b> · Proyectado para todo ${d.Y}: <b>${esc(m(d.proyectadoY))}</b> · prorrateado por los meses corridos de los proyectos en realización</div>
+          ${compos(d)}
         </div></div></div>`;
+  }
+
+  // De qué está hecho lo captado (por tipo de valor)
+  function compos(d) {
+    const it = d.cats.map(k => ({ k, v: d.filas.reduce((a, x) => a + x.captado(k, d.Y), 0) })).filter(z => z.v > 0).sort((a, b) => b.v - a.v);
+    const tot = it.reduce((a, z) => a + z.v, 0); if (!tot) return '';
+    return `<div class="compo"><div class="compo-t">Lo captado se compone de</div>
+      <div class="compo-bar" role="img" aria-label="${esc(it.map(z => `${App.catLabel(z.k)} ${Math.round(z.v / tot * 100)}%`).join(', '))}">${it.map((z, i) => `<i class="growx" style="flex:${z.v};background:linear-gradient(180deg,var(--cat-${z.k}),color-mix(in srgb,var(--cat-${z.k}) 55%,var(--card)));animation-delay:${200 + i * 60}ms" title="${esc(App.catLabel(z.k))}: ${esc(m(z.v))}"></i>`).join('')}</div>
+      <div class="compo-l">${it.map(z => `<span><i style="--c:var(--cat-${z.k})"></i>${esc(App.catLabel(z.k))} <b>${esc(m(z.v))}</b> <em>${Math.round(z.v / tot * 100)}%</em></span>`).join('')}</div></div>`;
   }
 
   /* ---------- 1b · requiere atención ---------- */
@@ -154,7 +176,7 @@
     const filas = sg.filter(z => z.out.length).map(z => { const o = z.out.slice().sort((a, b) => b.sev - a.sev); return { z, o: o[0], mas: o.length - 1 }; })
       .sort((a, b) => b.o.sev - a.o.sev || b.mas - a.mas).slice(0, 6);
     const nAt = sg.filter(z => z.max >= 2).length;
-    return `<div class="dash-card span-4"><h3>Requiere atención</h3><div class="sub">${nAt ? `${nAt} de ${sg.length} iniciativas con alertas; primero lo más grave.` : 'Lo que necesita una decisión o seguimiento.'}</div>
+    return `<div class="dash-card span-4 card-atn"><h3>Requiere atención</h3><div class="sub">${nAt ? `${nAt} de ${sg.length} iniciativas con alertas; primero lo más grave.` : 'Lo que necesita una decisión o seguimiento.'}</div>
       ${filas.length ? `<div class="atn">${filas.map(({ z, o, mas }) => { const [c, i, l] = SEV[o.sev];
         return `<a href="${o.href}" title="${esc(z.out.map(x => '• ' + x.txt).join('\n'))}"><span class="badge ${c}">${ico(i)}${l}</span><span style="min-width:0"><span class="p" style="display:block">${esc(App.projectName(z.x.p))}</span><span class="r">${esc(o.txt)}${mas ? ` · <b>+${mas} más</b>` : ''}</span></span><svg class="go" aria-hidden="true"><use href="#i-flecha"/></svg></a>`; }).join('')}</div>`
         : `<div class="atn-ok">${ico('i-check')}Todo al día: sin alertas con estos filtros.</div>`}</div>`;
@@ -167,7 +189,8 @@
     const nCasos = d.filas.filter(x => x.caso && x.caso.moneda !== 'USD').length;
     const ices = d.filas.map(x => x.ice).filter(v => v != null);
     const nAt = sg.filter(z => z.max >= 2).length;
-    const k = (l, v, s, cls, t) => `<div class="xk ${cls || ''}"${t ? ` title="${esc(t)}"` : ''}><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+    const IC = { [`Proyectado ${d.Y}`]: ['casos', 'ahorro'], 'Inversión de los casos': ['proyectos', 'ingresos'], 'VPN del portafolio': ['tablero', 'eficiencia'], 'ICE promedio': ['sistema', 'otro'], 'Iniciativas con alertas': ['alerta', 'riesgo'] };
+    const k = (l, v, s, cls, t) => `<div class="xk ${cls || ''}"${t ? ` title="${esc(t)}"` : ''}><div class="l">${IC[l] ? `<span class="ki" style="--c:var(--cat-${IC[l][1]})"><svg aria-hidden="true"><use href="#i-${IC[l][0]}"/></svg></span>` : ''}${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
     return `<div class="dash-card span-12 xks">
       ${k(`Proyectado ${d.Y}`, esc(m(d.proyectadoY)), `por captar: ${esc(m(Math.max(0, d.proyectadoY - d.captadoY)))}`, '', 'Suma del valor anual de los casos de negocio (o del Income) para el año')}
       ${k('Inversión de los casos', esc(m(inv)), `${nCasos} caso${nCasos === 1 ? '' : 's'} de negocio`, '', 'Suma de las filas de inversión de los casos de negocio en pesos')}
@@ -217,11 +240,11 @@
         const v = a.cats[k], y1 = y(acc + v), y2 = y(acc), h = Math.max(0, y2 - y1 - (j ? 2 : 0));
         const last = j === segs.length - 1, r = Math.min(4, h / 2);
         bars += last
-          ? `<path class="grow" style="fill:${cvar(k)};animation-delay:${i * 40}ms" d="M${x0} ${y1 + h}V${y1 + r}Q${x0} ${y1} ${x0 + r} ${y1}H${x0 + bw - r}Q${x0 + bw} ${y1} ${x0 + bw} ${y1 + r}V${y1 + h}Z"/>`
-          : `<rect class="grow" style="fill:${cvar(k)};animation-delay:${i * 40}ms" x="${x0}" y="${y1}" width="${bw}" height="${h}"/>`;
+          ? `<path class="grow" style="fill:url(#dg-${k});animation-delay:${i * 40}ms" d="M${x0} ${y1 + h}V${y1 + r}Q${x0} ${y1} ${x0 + r} ${y1}H${x0 + bw - r}Q${x0 + bw} ${y1} ${x0 + bw} ${y1 + r}V${y1 + h}Z"/>`
+          : `<rect class="grow" style="fill:url(#dg-${k});animation-delay:${i * 40}ms" x="${x0}" y="${y1}" width="${bw}" height="${h}"/>`;
         acc += v;
       });
-      if (a.captado > 0) { const yc = y(a.captado), h = y(0) - yc, r = Math.min(3, h / 2); bars += `<path class="grow" style="fill:var(--ink);animation-delay:${i * 40 + 120}ms" d="M${x0 + bw + 3} ${y(0)}V${yc + r}Q${x0 + bw + 3} ${yc} ${x0 + bw + 3 + r} ${yc}H${x0 + bw + 3 + cw - r}Q${x0 + bw + 3 + cw} ${yc} ${x0 + bw + 3 + cw} ${yc + r}V${y(0)}Z"/>`; }
+      if (a.captado > 0) { const yc = y(a.captado), h = y(0) - yc, r = Math.min(3, h / 2); bars += `<path class="grow" style="fill:url(#dg-ink);animation-delay:${i * 40 + 120}ms" d="M${x0 + bw + 3} ${y(0)}V${yc + r}Q${x0 + bw + 3} ${yc} ${x0 + bw + 3 + r} ${yc}H${x0 + bw + 3 + cw - r}Q${x0 + bw + 3 + cw} ${yc} ${x0 + bw + 3 + cw} ${yc + r}V${y(0)}Z"/>`; }
       if (a.y === d.Y && tot(a) > 0) bars += `<text class="lbl fade" x="${x0 + bw / 2}" y="${y(tot(a)) - 7}" text-anchor="middle">${esc(mm(tot(a)))}</text>`;
     });
     const sel = d.anios.indexOf(d.Y);
@@ -256,7 +279,7 @@
       <svg class="viz" viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Curva de captura">
         <g class="grid">${tk.map(v => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/>`).join('')}</g>
         <g class="axis">${tk.map(v => `<text x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${esc(mm(v))}</text>`).join('')}${App.d.MES3.map((t, i) => `<text x="${x(i)}" y="${H - 10}" text-anchor="middle">${t}</text>`).join('')}</g>
-        ${capArea ? `<path class="fade" d="${capArea}" style="fill:var(--cat-ahorro);fill-opacity:.1"/>` : ''}
+        ${capArea ? `<path class="fade" d="${capArea}" style="fill:url(#dg-area)"/>` : ''}
         <path class="draw" pathLength="1" d="${espLine}" style="fill:none;stroke:var(--viz-muted);stroke-width:2;stroke-dasharray:5 5;stroke-linecap:round"/>
         ${capLine ? `<path class="draw" pathLength="1" d="${capLine}" style="fill:none;stroke:var(--cat-ahorro);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round"/>` : ''}
         ${hoyX != null ? `<line class="today" x1="${hoyX}" x2="${hoyX}" y1="${T}" y2="${H - B}"/><text class="lbl2" x="${hoyX + 5}" y="${T + 10}">Hoy</text>` : ''}
@@ -277,7 +300,7 @@
     const arc = (a0, a1) => { const big = a1 - a0 > Math.PI ? 1 : 0, p = (rr, a) => `${cx + rr * Math.cos(a)} ${cy + rr * Math.sin(a)}`;
       return `M${p(R, a0)}A${R} ${R} 0 ${big} 1 ${p(R, a1)}L${p(r, a1)}A${r} ${r} 0 ${big} 0 ${p(r, a0)}Z`; };
     const segs = items.map((z, i) => { const a0 = ang, a1 = ang + 2 * Math.PI * z.v / tot - (items.length > 1 ? 0.0001 : 0.0001); ang = a1;
-      return `<path class="pop seg" data-k="${z.k}" style="fill:${cvar(z.k)};stroke:var(--card);stroke-width:2;animation-delay:${i * 70}ms" d="${arc(a0, Math.min(a1, a0 + 2 * Math.PI - 0.0001))}"/>`; }).join('');
+      return `<path class="pop seg" data-k="${z.k}" style="fill:url(#dgd-${z.k});stroke:var(--card);stroke-width:2;animation-delay:${i * 70}ms" d="${arc(a0, Math.min(a1, a0 + 2 * Math.PI - 0.0001))}"/>`; }).join('');
     return `<div class="dash-card span-5"><h3>Mezcla del valor ${d.Y}</h3><div class="sub">Qué tipo de valor trae el portafolio este año.</div>
       <div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">
         <svg width="192" height="192" viewBox="0 0 192 192" role="img" aria-label="Mezcla del valor por tipo">${segs}
@@ -295,7 +318,7 @@
     return `<div class="dash-card"><h3>Cumplimiento por proyecto · ${d.Y}</h3><div class="sub">Barra: captado. Raya: esperado a la fecha. Primero los más rezagados.</div>
       <div class="bul">${rows.map((x, i) => { const st = estadoDe(x.pc);
         return `<a class="nm" href="#/proyectos/${x.p.id}/caso" title="${esc(App.projectName(x.p))}">${esc(App.projectName(x.p))}</a>
-          <div class="trk" data-bul="${x.p.id}"><div class="bg" style="width:100%"></div><div class="fg growx" style="width:${x.cap / max * 100}%;background:var(--st-${st[0]});animation-delay:${i * 60}ms"></div><div class="tk" style="left:calc(${x.esp / max * 100}% - 1px)"></div></div>
+          <div class="trk" data-bul="${x.p.id}"><div class="bg" style="width:100%"></div><div class="fg growx" style="width:${x.cap / max * 100}%;background:linear-gradient(90deg,color-mix(in srgb,var(--st-${st[0]}) 50%,transparent),var(--st-${st[0]}));animation-delay:${i * 60}ms"></div><div class="tk" style="left:calc(${x.esp / max * 100}% - 1px)"></div></div>
           <div class="pc"><span class="st-ico ${st[0]}" title="${esc(st[2])}">${st[1]}</span>${Math.round(x.pc * 100)}%</div>`; }).join('')}</div></div>`;
   }
 
@@ -349,7 +372,7 @@
     let acc = 0;
     return `<div class="dash-card"><h3>Estado del portafolio</h3><div class="sub">${d.filas.length} proyectos en la vista, por etapa.</div>
       <svg class="viz" viewBox="0 0 1000 46" preserveAspectRatio="none" height="46" role="img" aria-label="Proyectos por estado">${cuenta.map((z, i) => { const w = z.n / total * 1000, x0 = acc; acc += w;
-        return `<rect class="growx" data-est="${esc(z.o.name)}" x="${x0 + (i ? 1 : 0)}" y="4" width="${Math.max(0, w - (i ? 2 : 0))}" height="38" rx="6" style="fill:${color(z.o)};animation-delay:${i * 60}ms"/>`; }).join('')}${sinE ? `<rect x="${acc + 1}" y="4" width="${sinE / total * 1000 - 1}" height="38" rx="6" style="fill:var(--sunk)"/>` : ''}</svg>
+        return `<rect class="growx" data-est="${esc(z.o.name)}" x="${x0 + (i ? 1 : 0)}" y="4" width="${Math.max(0, w - (i ? 2 : 0))}" height="38" rx="6" style="fill:${color(z.o).replace(/var\(--(ord-[^)]+)\)/, 'url(#dg-$1)')};animation-delay:${i * 60}ms"/>`; }).join('')}${sinE ? `<rect x="${acc + 1}" y="4" width="${sinE / total * 1000 - 1}" height="38" rx="6" style="fill:var(--sunk)"/>` : ''}</svg>
       <div class="lgd" style="margin-top:8px">${cuenta.map(z => `<span><i class="sw" style="--c:${color(z.o)}"></i>${esc(z.o.name)} <b style="color:var(--ink)">${z.n}</b></span>`).join('')}${sinE ? `<span><i class="sw" style="--c:var(--sunk)"></i>Sin estado <b style="color:var(--ink)">${sinE}</b></span>` : ''}</div>
       <div class="chips2">
         <div class="chip2"><span class="st-ico ${atras ? 'critical' : 'good'}">${atras ? '✕' : '✓'}</span><b>${atras}</b> con actividades atrasadas</div>
@@ -399,7 +422,12 @@
       const W7 = Math.max(320, (grid.clientWidth >= 1100 ? grid.clientWidth * 7 / 12 - 14 : grid.clientWidth) - 36);
       const W6 = Math.max(320, (grid.clientWidth >= 1100 ? grid.clientWidth / 2 - 7 : grid.clientWidth) - 36);
       const sg = senales(d);
-      grid.innerHTML = hero(d, sg) + atencion(d, sg) + indicadores(d, sg) + porAnio(d, W) + matriz(d, sg) + `<div class="span-5 dash-col">${cumplimiento(d)}${estado(d)}</div>` + curva(d, W7) + mezcla(d) + iceValor(d, W) + tabla(d);
+      const sec = (n, t, h) => `<div class="span-12 dash-sec"><span class="n">${n}</span><b>${t}</b><span>${h}</span></div>`;
+      grid.innerHTML = gdefs()
+        + sec(1, 'Lo esencial', 'Cuánto valor se ha capturado y qué necesita atención') + hero(d, sg) + atencion(d, sg) + indicadores(d, sg)
+        + sec(2, 'El valor en el tiempo', 'De dónde viene el valor y cómo avanza la captura') + porAnio(d, W) + curva(d, W7) + mezcla(d)
+        + sec(3, 'Ejecución y decisiones', 'Qué acelerar, replantear o revisar') + matriz(d, sg) + `<div class="span-5 dash-col">${cumplimiento(d)}${estado(d)}</div>` + iceValor(d, W)
+        + sec(4, 'Detalle por iniciativa', 'Todas las cifras, para ordenar y comparar') + tabla(d);
       // la cifra principal cuenta hasta su valor
       const big = $('.big[data-count]', grid);
       if (big && grid.classList.contains('anim') && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
