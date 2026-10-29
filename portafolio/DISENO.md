@@ -2,12 +2,14 @@
 
 Auditoría, dirección creativa y sistema de diseño de la herramienta. La referencia viva de todo lo que está aquí está dentro de la app, en **Sistema de diseño** (`#/sistema`): muestra los colores, los contrastes, la tipografía y los componentes reales.
 
-> **Sobre la marca.** En este repositorio **no hay** manual de marca, logo, tipografías ni lineamientos oficiales de Amarilo. Por eso, en este documento:
-> - **Respaldado:** el nombre «Amarilo» y el propósito del producto (contexto del proyecto).
-> - **Observado:** el amarillo `#FFD000`, los neutros cálidos y Montserrat ya venían de la app de gestión.
-> - **Propuesto:** todo lo demás (símbolo provisional, Inter para la interfaz, reglas de uso del amarillo, paleta semántica). Hay que validarlo con Mercadeo.
+> **Sobre la marca.** El manual de marca de Amarilo es interno y no está en este repositorio. La marca se tomó de la **web pública amarilo.com.co** (revisada el 29 de octubre de 2026):
+> - **Logo:** los SVG públicos del sitio (`/images/logo-white.svg` y `/images/logo-footer.svg`), guardados como `public/marca/amarilo-blanco.svg` y `amarilo-negro.svg`. El símbolo (`marca.svg`) son las dos escuadras amarillas de ese logo.
+> - **Colores:** las variables del sitio (`--am-color-primary` #FFC600, amarillo del logo #FFC900, `--am-color-dark` #160B29, `--am-color-light-1` #F0F0F1, `--am-color-light-2` #D9D9D9, `--am-color-mute` #6C6D6D, `--am-color-success` #0E7D49, `--am-color-error` #D21A3A, `--am-color-primary-3` #FFEDB2).
+> - **Tipografía:** Montserrat, que es la del sitio.
+> - **Estilo:** botones en píldora; amarillo para la acción principal y morado oscuro para la secundaria; figuras de contorno amarillas (escuadras y círculos).
+> - **Propuesto aquí** (la web no lo define): naranja de advertencia, azul de información, escala tipográfica, espaciado, radios y sombras.
 >
-> El logo oficial se pone en `public/marca/marca.svg` (con el mismo nombre de archivo) y el nombre de la organización en `ORG_NAME`. No hay que tocar código.
+> Todo hay que validarlo con Mercadeo contra el manual. Si entregan archivos oficiales, se reemplazan en `public/marca/` con el mismo nombre; el nombre de la organización va en `ORG_NAME`.
 
 ---
 
@@ -37,7 +39,7 @@ Severidad: **C** crítica · **A** alta · **M** media · **B** baja. Esfuerzo: 
 | 5 | Contraste insuficiente | Texto terciario 3,05:1, verde 3,38:1, rojo 4,14:1 (mínimo AA: 4,5:1) | Personas con baja visión, pantallas con brillo bajo | Lectura difícil; incumple accesibilidad | A | Tintas de texto propias para cada estado | Bajo | ✅ Hecho |
 | 6 | La advertencia era amarilla (`#fab219`), como la marca | Mismo tono para identidad y alerta | Todos | Se confunde marca con problema | M | Advertencia en naranja, siempre con ícono | Bajo | ✅ Hecho |
 | 7 | Los íconos eran caracteres de texto | `◔` del Tablero se veía como un punto; estilos mezclados | Todos | Navegación menos reconocible | M | Un solo juego de íconos de línea | Bajo | ✅ Hecho |
-| 8 | Sin identidad de Amarilo | Logo «P» y nombre «Portafolio» | Presidencia | Parece una plantilla genérica | A | Marco de marca: nombre, producto y símbolo (provisional) | Bajo | ✅ Hecho · falta el logo oficial |
+| 8 | Sin identidad de Amarilo | Logo «P» y nombre «Portafolio» | Presidencia | Parece una plantilla genérica | A | Logo, colores, tipografía y estilo de la web pública de Amarilo | Bajo | ✅ Hecho · validar con Mercadeo |
 | 9 | Pantalla en blanco al cargar; el error de conexión no ofrecía salida | Sin estado de carga ni botón de reintento | Todos | Incertidumbre («¿se dañó?») | M | Pantalla de carga con marca; error con explicación y «Reintentar» | Bajo | ✅ Hecho |
 | 10 | No se sabía si la información estaba al día | Solo «En línea» | Directivos | Desconfianza en las cifras | M | «Sincronizado hh:mm» en la barra lateral | Bajo | ✅ Hecho |
 | 11 | El aviso «Demostración» flotaba sobre el contenido | Tapaba la leyenda de la dona | Todos | Información oculta | B | Etiqueta fija en la barra lateral | Bajo | ✅ Hecho |
@@ -82,11 +84,11 @@ Severidad: **C** crítica · **A** alta · **M** media · **B** baja. Esfuerzo: 
 
 | Elemento | Antes | Ahora |
 |---|---|---|
-| Identidad | «P» genérica | Marco oscuro con Amarilo + producto + símbolo |
+| Identidad | «P» genérica | Logo de Amarilo, morado #160B29 y amarillo #FFC900 de su web |
 | Navegación | Píldora negra, íconos de texto | Marco oscuro, indicador amarillo, íconos de línea |
-| Tipografía | Montserrat para todo (ancha en tablas) | Montserrat en títulos y cifras, Inter en la interfaz, cifras de ancho fijo |
+| Tipografía | Montserrat sin escala definida | Montserrat (la de la web de Amarilo) con escala, pesos y cifras de ancho fijo |
 | Color | Amarillo también como advertencia; grises claros con bajo contraste | Amarillo solo para identidad y énfasis; semánticos con tinta AA |
-| Radios | Todo en píldora | Escala 6–18 px; píldora solo para chips y badges |
+| Radios | Sin escala | Escala 6–18 px; píldora en botones (como la web) |
 | Tarjetas | Sombra difusa | Sombra suave + borde nítido |
 | Estados | Solo color en varios lugares | Ícono + palabra + color |
 | Carga y error | Pantalla en blanco | Pantalla de carga, esqueletos, error con acción |
@@ -97,13 +99,13 @@ Severidad: **C** crítica · **A** alta · **M** media · **B** baja. Esfuerzo: 
 
 ### Tres conceptos
 
-1. **Cimiento cálido.** Neutros arena y tinta casi negra, como planos y materiales de obra. Un marco oscuro da solidez y el amarillo es la firma: aparece poco y por eso se nota. Lenguaje editorial, de informe de junta.
+1. **Cimiento Amarilo** (antes «Cimiento cálido»). El morado oscuro de la marca como marco y tinta, grises fríos como lienzo y el amarillo como firma: aparece poco y por eso se nota. Lenguaje editorial, de informe de junta, con las escuadras del logo como único motivo gráfico.
 2. **Horizonte.** Fondos azul noche, degradados y brillos; tarjetas de vidrio. Comunica tecnología y futuro.
 3. **Obra viva.** Fotografía de proyectos y comunidades, texturas de plano arquitectónico y tarjetas modulares como bloques constructivos. Muy humano y narrativo.
 
 ### Evaluación (1 a 5)
 
-| Criterio | Cimiento cálido | Horizonte | Obra viva |
+| Criterio | Cimiento Amarilo | Horizonte | Obra viva |
 |---|:-:|:-:|:-:|
 | Afinidad con Amarilo (amarillo, cercanía, construcción) | 5 | 2 | 5 |
 | Legibilidad | 5 | 3 | 3 |
@@ -114,7 +116,7 @@ Severidad: **C** crítica · **A** alta · **M** media · **B** baja. Esfuerzo: 
 | Facilidad de implementación | 5 | 3 | 2 |
 | **Total** | **34** | 20 | 24 |
 
-**Recomendada: Cimiento cálido.**
+**Recomendada: Cimiento Amarilo.**
 - Es la que mejor sostiene las tres exigencias a la vez: la confianza de Presidencia, la lectura rápida de cifras y la identidad.
 - «Horizonte» se parece a cualquier startup y su contraste es frágil.
 - «Obra viva» es la más emotiva, pero necesita fotografía oficial y le resta densidad a los datos. Se puede tomar de ella un toque humano más adelante: una imagen por proyecto en su página, cuando haya material oficial.
@@ -127,16 +129,16 @@ Fuente: `public/css/marca.css`. Referencia viva: **Sistema de diseño** dentro d
 
 | Tema | Definición |
 |---|---|
-| **Colores primarios** | Amarillo `#FFD000` (identidad y énfasis) · Tinta `#17150F` |
-| **Secundarios** | Amarillo suave `#FFF4C2` · amarillo tinta `#6E5300` (texto sobre suave) · marco `#17150F` |
-| **Neutros** | Lienzo `#F6F5F1` · tarjeta `#FFFFFF` · hundido `#F1EFE9` · texto secundario `#5F5A4C` (6,8:1) · terciario `#767062` (4,9:1) |
-| **Semánticos** (relleno · tinta · fondo) | Éxito `#1F9D63` · `#1E7F52` · `#E3F3EA` / Advertencia `#E07A12` · `#A84A08` · `#FDEBD7` / Crítico `#D63E37` · `#B8322B` · `#FBE4E2` / Información `#2A78D6` · `#1F5FAF` · `#E3EEFB` |
+| **Colores primarios** | Amarillo `#FFC900` (identidad y énfasis) · Morado oscuro `#160B29` (títulos, texto, marco, botón principal; 18,9:1) |
+| **Secundarios** | Amarillo claro `#FFEDB2` · amarillo suave `#FFF3C7` · amarillo tinta `#6E5300` (texto sobre suave) |
+| **Neutros** | Lienzo `#F5F5F6` · tarjeta `#FFFFFF` · hundido `#F0F0F1` · texto secundario `#55545E` (7,4:1) · terciario `#6C6D6D` (5,2:1) |
+| **Semánticos** (relleno · tinta · fondo) | Éxito `#16935A` · `#0E7D49` · `#E2F3EA` / Advertencia `#E07A12` · `#A84A08` · `#FDEBD7` / Crítico `#D21A3A` · `#D21A3A` · `#FBE3E7` / Información `#3367CD` · `#2752A8` · `#E6EDFA` |
 | **Gráficas** | Categórica fija por tipo de valor (ahorro, ingresos, eficiencia, tiempo, riesgo, otro); secuencia de azules para etapas; gris para pausado. Sin doble eje. |
-| **Tipografía** | Montserrat 500–800 (títulos, cifras) · Inter 400–700 (interfaz, tablas). Alternativa: Segoe UI / system-ui |
+| **Tipografía** | Montserrat 400–800 en todo (como la web de Amarilo): 800 en títulos y cifras, 600 en etiquetas, 400 en texto. Alternativa: Segoe UI / system-ui |
 | **Escala** | 11 · 12 · 13 · 14 · 16 · 20 · 24 · 32 · 48 px; altura de línea 1,5 (texto) y 1,1 (títulos) |
 | **Espaciado** | Base 4: 4 · 8 · 12 · 16 · 20 · 24 · 32 · 40 · 56 |
 | **Retícula** | 12 columnas con 16 px entre tarjetas; barra lateral de 236 px (68 px plegada); márgenes de 16 px |
-| **Radios** | 6 (etiquetas) · 8 (campos) · 10 (botones) · 14 (bloques internos) · 18 (tarjetas) · píldora (chips) |
+| **Radios** | 6 (etiquetas) · 8 (campos) · 14 (bloques internos) · 18 (tarjetas) · píldora (botones, filtros y chips, como la web) |
 | **Bordes** | 1 px `rgba(23,21,15,.08)`; separadores de tabla con la misma línea |
 | **Sombras** | Tarjeta: suave + borde nítido · Flotante (menú, panel): profunda |
 | **Iconografía** | Línea de 1,7 px, extremos redondeados, 24 px; siempre con texto en la navegación |
@@ -155,7 +157,7 @@ Fuente: `public/css/marca.css`. Referencia viva: **Sistema de diseño** dentro d
 | **Foco** | Anillo azul de 2 px visible en claro y oscuro; todo se puede usar con teclado |
 
 ### Pendiente para cerrar con Mercadeo
-1. Logo oficial (SVG) y nombre exacto del producto.
-2. Valor exacto del amarillo y de la paleta corporativa (si hay secundarios oficiales, se mapean a los tokens).
-3. Tipografía corporativa con licencia web, si existe. Hoy se usan Montserrat e Inter de Google Fonts.
+1. Visto bueno del uso del logo en la herramienta interna (área de protección, tamaño mínimo, versión para fondo oscuro) y nombre exacto del producto.
+2. Confirmar el amarillo oficial: la web usa #FFC900 en el logo y #FFC600 en su variable principal.
+3. Confirmar si el morado #160B29 es color corporativo o solo de la web.
 4. Fotografía oficial de proyectos (para una futura capa de «Obra viva» en la página de cada iniciativa).

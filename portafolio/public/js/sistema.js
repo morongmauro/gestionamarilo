@@ -32,24 +32,27 @@
   const ICONOS = ['tablero', 'proyectos', 'cronograma', 'casos', 'agenda', 'historial', 'usuarios', 'sistema', 'alerta', 'check', 'x', 'info', 'flecha', 'filtro', 'ajustes'];
 
   function render(main) {
-    main.innerHTML = `<div class="dash-head"><button class="burger" data-act="burger" aria-label="Menú">☰</button><div><div class="eyebrow">Amarilo · Portafolio de Generación de Valor</div><h1>Sistema de diseño</h1><div class="sub">Dirección «Cimiento cálido» · referencia viva de colores, tipografía y componentes</div></div></div>
+    main.innerHTML = `<div class="dash-head"><button class="burger" data-act="burger" aria-label="Menú">☰</button><div><div class="eyebrow">Amarilo · Portafolio de Generación de Valor</div><h1>Sistema de diseño</h1><div class="sub">Dirección «Cimiento Amarilo» · referencia viva de colores, tipografía y componentes</div></div></div>
 
-      ${sec('Marca', 'Qué está respaldado y qué es propuesta. En el repositorio no hay manual de marca, logo ni tipografías oficiales de Amarilo: todo lo de marca aquí es una interpretación para validar con Mercadeo.', `
+      ${sec('Marca', 'Qué está respaldado y qué es propuesta. El logo, los colores y la tipografía se tomaron de la web pública amarilo.com.co (sus variables de color --am-color-*). No es el manual de marca: hay que validarlo con Mercadeo.', `
         <div class="ds-row" style="gap:18px;align-items:flex-start">
-          <div class="ds-box" style="width:120px;height:120px;border-radius:18px"><img src="/marca/marca.svg" alt="Símbolo provisional" width="64" height="64"><span>Símbolo provisional</span></div>
+          <div class="ds-box" style="width:150px;height:130px;border-radius:18px;background:#160B29"><img src="/marca/amarilo-blanco.svg" alt="Logo Amarilo, versión para fondo oscuro" width="70" height="64"><span style="color:#B9B3C7">Fondo oscuro</span></div>
+          <div class="ds-box" style="width:150px;height:130px;border-radius:18px;background:#fff"><img src="/marca/amarilo-negro.svg" alt="Logo Amarilo, versión para fondo claro" width="70" height="64"><span style="color:#55545E">Fondo claro</span></div>
           <div style="flex:1;min-width:260px">
-            <div class="alert info"><svg aria-hidden="true"><use href="#i-info"/></svg><div><b>Reemplazable sin tocar código</b><span>El logo oficial va en <code>public/marca/marca.svg</code> (mismo nombre) y el nombre de la organización en la variable <code>ORG_NAME</code>.</span></div></div>
+            <div class="alert info"><svg aria-hidden="true"><use href="#i-info"/></svg><div><b>Reemplazable sin tocar código</b><span>Logos en <code>public/marca/</code> (<code>amarilo-blanco.svg</code>, <code>amarilo-negro.svg</code> y el símbolo <code>marca.svg</code>). Si Mercadeo entrega los archivos oficiales, se reemplazan con el mismo nombre.</span></div></div>
             <table class="lst"><thead><tr><th>Elemento</th><th>Origen</th><th>Estado</th></tr></thead><tbody>
               <tr><td>Nombre «Amarilo»</td><td>Contexto del proyecto</td><td><span class="badge good"><svg><use href="#i-check"/></svg>Confirmado</span></td></tr>
-              <tr><td>Amarillo #FFD000</td><td>Producto actual (app de gestión)</td><td><span class="badge warn"><svg><use href="#i-alerta"/></svg>Validar valor exacto</span></td></tr>
-              <tr><td>Montserrat (títulos) · Inter (interfaz)</td><td>Propuesta</td><td><span class="badge info"><svg><use href="#i-info"/></svg>Propuesta</span></td></tr>
-              <tr><td>Símbolo de la barra lateral</td><td>Provisional</td><td><span class="badge crit"><svg><use href="#i-x"/></svg>Cambiar por el oficial</span></td></tr>
+              <tr><td>Logo (símbolo + AMARILO)</td><td>Web pública (archivos SVG del sitio)</td><td><span class="badge warn"><svg><use href="#i-alerta"/></svg>Validar con Mercadeo</span></td></tr>
+              <tr><td>Amarillo #FFC900 · morado #160B29</td><td>Web pública (--am-color-primary, --am-color-dark)</td><td><span class="badge warn"><svg><use href="#i-alerta"/></svg>Validar con el manual</span></td></tr>
+              <tr><td>Montserrat</td><td>Web pública (fuente de todo el sitio)</td><td><span class="badge good"><svg><use href="#i-check"/></svg>Coincide</span></td></tr>
+              <tr><td>Grises, éxito #0E7D49, error #D21A3A</td><td>Web pública (--am-color-*)</td><td><span class="badge warn"><svg><use href="#i-alerta"/></svg>Validar con el manual</span></td></tr>
+              <tr><td>Naranja de advertencia, azul de información</td><td>Propuesta (la web no los define)</td><td><span class="badge info"><svg><use href="#i-info"/></svg>Propuesta</span></td></tr>
             </tbody></table>
           </div>
         </div>
         <div class="ds-note"><b>Regla del amarillo:</b> es identidad y énfasis puntual (marca, sección activa, subrayado de la cifra principal, botón de acción estratégica). Nunca comunica un estado: «advertencia» es naranja, para que nadie confunda la marca con una alerta.</div>`)}
 
-      ${sec('Color', 'Neutros cálidos para la calma y la lectura; tinta casi negra para la solidez. El contraste se mide aquí mismo sobre la tarjeta.', `
+      ${sec('Color', 'Los de la web de Amarilo: amarillo #FFC900, morado oscuro #160B29 para títulos y marco, grises fríos para fondos. El contraste se mide aquí mismo sobre la tarjeta.', `
         <h4 class="ds-h">Marca y neutros</h4><div class="ds-grid">
           ${sw('--amarillo', 'Amarillo Amarilo', 'Identidad y énfasis', '--nav-bg', false)}
           ${sw('--amarillo-ink', 'Amarillo tinta', 'Texto sobre amarillo suave', '--amarillo-soft')}
@@ -58,7 +61,7 @@
           ${sw('--faint', 'Texto terciario', 'Notas y ayudas')}
           ${sw('--paper', 'Lienzo', 'Fondo de la aplicación', '--card', false)}
           ${sw('--sunk', 'Hundido', 'Campos, chips, zonas', '--card', false)}
-          ${sw('--nav-bg', 'Marco', 'Barra lateral e ingreso', '--card', false)}
+          ${sw('--morado', 'Morado Amarilo', 'Títulos, marco, botón principal', '--card')}
         </div>
         <h4 class="ds-h">Semánticos (siempre con ícono y texto)</h4><div class="ds-grid">
           ${sw('--good-ink', 'Éxito', 'En meta, completado')}
@@ -72,7 +75,7 @@
         <div class="ds-row" style="margin-top:10px;gap:4px">${[1, 2, 3, 4, 5].map(i => `<div style="flex:1;height:28px;border-radius:6px;background:var(--ord-${i})" title="--ord-${i}"></div>`).join('')}<div style="flex:1;height:28px;border-radius:6px;background:var(--ord-paus)" title="--ord-paus"></div></div>
         <div class="muted" style="font-size:11px;margin-top:4px">Etapas: planeación → escalamiento · gris: pausado</div>`)}
 
-      ${sec('Tipografía', 'Montserrat da carácter a títulos y cifras; Inter da legibilidad a tablas y formularios. Cifras con ancho fijo para comparar columnas.', `<div class="ds-type">
+      ${sec('Tipografía', 'Montserrat en todo, como la web de Amarilo: negrita para títulos y cifras, regular para el texto. Cifras con ancho fijo para comparar columnas.', `<div class="ds-type">
         <div><code>Display · 48 / 800</code><span class="display" style="font-size:48px;font-weight:800;letter-spacing:-.035em;line-height:1">$664 M</span></div>
         <div><code>Título 1 · 32 / 800</code><span class="display" style="font-size:32px;font-weight:800;letter-spacing:-.03em">Tablero ejecutivo</span></div>
         <div><code>Título 2 · 24 / 800</code><span class="display" style="font-size:24px;font-weight:800;letter-spacing:-.025em">Casos de negocio</span></div>

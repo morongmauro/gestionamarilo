@@ -1,8 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- Símbolo PROVISIONAL del producto (no es el logo oficial de Amarilo).
-       Reemplázalo por el logo oficial que entregue Mercadeo: mismo nombre de archivo. -->
-  <rect width="64" height="64" rx="16" fill="#FFD000"/>
-  <path d="M15 44h34" stroke="#17150F" stroke-width="3.5" stroke-linecap="round" opacity=".35"/>
-  <path d="M16 40l10-9 7 5 15-15" fill="none" stroke="#17150F" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="48" cy="21" r="4.5" fill="#17150F"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="8.2 -4.4 52.4 52.4">
+  <!-- Símbolo de Amarilo (las dos escuadras del logo público de amarilo.com.co).
+       Validar con Mercadeo; reemplazar por el archivo oficial si lo entregan. -->
+  <path d="M51.2056 0H17.5927H12.7328V4.84725V38.3729H17.5927V4.84725H51.2056V0Z" fill="#FFC900"/>
+  <path d="M17.6598 43.2375H51.2727H56.1326V38.3902V4.86377H51.2727V38.3902H17.6598V43.2375Z" fill="#FFC900"/>
 </svg>
