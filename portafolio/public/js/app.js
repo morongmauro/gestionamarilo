@@ -191,6 +191,10 @@
       if (st.setup) return showLogin('setup', st);
       if (!st.user) return showLogin('login', st);
       await enter();
-    } catch (e) { booted(); $('#login').hidden = false; $('#loginForm').innerHTML = `<div class="alert critical" role="alert"><svg aria-hidden="true"><use href="#i-alerta"/></svg><div><b>No hay conexión con el servidor</b><span>${esc(e.message)}. Revisa tu conexión y recarga la página; si sigue, avísale a TI.</span></div></div><button class="btn primary" type="button" id="reintentar">Reintentar</button>`; $('#reintentar').onclick = () => location.reload(); }
+    } catch (e) {
+      booted(); $('#login').hidden = false;
+      // 503 = el servidor responde pero no arrancó (configuración); lo demás, red
+      const cfg = e.status === 503;
+      $('#loginForm').innerHTML = `<div class="alert critical" role="alert"><svg aria-hidden="true"><use href="#i-alerta"/></svg><div><b>${cfg ? 'La aplicación no está bien configurada' : 'No hay conexión con el servidor'}</b><span>${esc(String(e.message).replace(/^La aplicación no pudo arrancar:\s*/, ''))}. ${cfg ? 'Quien la publicó debe corregir la configuración (variables de entorno) y volver a publicar.' : 'Revisa tu conexión y recarga la página; si sigue, avísale a TI.'}</span></div></div><button class="btn primary" type="button" id="reintentar">Reintentar</button>`; $('#reintentar').onclick = () => location.reload(); }
   })();
 })();

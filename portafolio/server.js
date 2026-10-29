@@ -499,7 +499,8 @@ async function prepare() {
   const memoria = store.kind === 'memoria';
   // Sin base de datos, cada copia de la app arranca vacía: el administrador y la clave
   // de sesión salen de la configuración para que todas las copias reconozcan la sesión.
-  if (memoria && !(process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD)) throw new Error('Para la demostración sin base de datos define ADMIN_EMAIL y ADMIN_PASSWORD');
+  if (memoria && !(process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD)) throw new Error('Para la demostración sin base de datos define las variables ADMIN_EMAIL y ADMIN_PASSWORD');
+  if (process.env.ADMIN_PASSWORD) { const malo = auth.checkPasswordRules(process.env.ADMIN_PASSWORD); if (malo) throw new Error(`La variable ADMIN_PASSWORD no sirve: ${malo.charAt(0).toLowerCase() + malo.slice(1)} (por ejemplo: Prueba2026)`); }
   if (!secret && memoria) secret = crypto.createHash('sha256').update(`pf-demo|${process.env.ADMIN_EMAIL}|${process.env.ADMIN_PASSWORD}`).digest('base64');
   if (!secret) {
     secret = await store.getConfig('session_secret');
