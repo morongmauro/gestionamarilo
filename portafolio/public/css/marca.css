@@ -93,7 +93,7 @@ h1,h2,h3,.display{font-family:var(--font-display)}
 .side-top{padding:2px 4px 14px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:8px}
 .logo{background:none;width:auto;height:auto;border-radius:0;overflow:visible}
 .logo img{display:block}
-.logo .lg-full{width:46px;height:42px}
+.logo .lg-full{width:46px;height:42px;color:#fff}
 .logo .lg-sym{display:none;width:30px;height:30px}
 .app.col .logo .lg-full{display:none}.app.col .logo .lg-sym{display:block}
 @media(max-width:900px){.app.col .logo .lg-full{display:block}.app.col .logo .lg-sym{display:none}}
@@ -188,7 +188,7 @@ table.lst tr.clic{transition:background var(--t-fast)}
 .skel::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:skel 1.3s infinite}
 @keyframes skel{to{transform:translateX(100%)}}
 .boot{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--paper);color:var(--muted);font-size:var(--fs-sm);font-weight:500}
-.boot img{animation:latir 1.6s var(--ease) infinite}
+.boot svg{animation:latir 1.6s var(--ease) infinite;color:var(--ink)}
 .boot i{width:160px;height:3px;border-radius:3px;background:var(--sunk);position:relative;overflow:hidden}
 .boot i::after{content:"";position:absolute;inset:0;width:40%;background:var(--amarillo);border-radius:3px;animation:barra 1.2s var(--ease) infinite}
 @keyframes latir{50%{transform:scale(.94)}}
@@ -322,3 +322,49 @@ table.lst tr.clic{transition:background var(--t-fast)}
 .ds-icons svg{width:24px;height:24px;fill:none;stroke:var(--ink);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .tt-demo{position:relative;display:inline-block;background:var(--ink);color:var(--paper);font-size:var(--fs-xs);padding:6px 10px;border-radius:var(--r-sm)}
 .ds-h{font-size:var(--fs-2xs);font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px}
+
+/* ---------- 14 · Estilos de la interfaz (cada persona elige en «Apariencia») ----------
+   claro    · barra lateral blanca (por defecto: limpio, se ve bien proyectado)
+   superior · menú arriba, todo el ancho para el contenido
+   marco    · barra lateral en el morado de la marca */
+html[data-estilo="claro"] .nav-side,html[data-estilo="superior"] .nav-side{background:var(--card);color:var(--ink);box-shadow:var(--shadow);border:var(--card-brd)}
+html[data-estilo="claro"] .side-top,html[data-estilo="superior"] .side-top{border-bottom-color:var(--line)}
+html[data-estilo="claro"] .logo .lg-full,html[data-estilo="superior"] .logo .lg-full{color:var(--ink)}
+html[data-estilo="claro"] .side-brand .prod,html[data-estilo="superior"] .side-brand .prod{color:var(--ink);border-left-color:var(--line-2)}
+html[data-estilo="claro"] .side-col{background:var(--sunk);color:var(--muted)}
+html[data-estilo="claro"] .tab,html[data-estilo="superior"] .tab{color:var(--muted)}
+html[data-estilo="claro"] .tab:hover,html[data-estilo="superior"] .tab:hover{background:var(--hover);color:var(--ink)}
+html[data-estilo="claro"] .tab.active,html[data-estilo="superior"] .tab.active{background:var(--amarillo-soft);color:var(--ink)}
+html[data-estilo="claro"] .tab.active .ic,html[data-estilo="superior"] .tab.active .ic{stroke:var(--ink)}
+html[data-estilo="claro"] .side-sep{background:var(--line)}
+html[data-estilo="claro"] .side-proj-h{color:var(--muted)}
+html[data-estilo="claro"] .sp-item{color:var(--ink)}
+html[data-estilo="claro"] .sp-item:hover{background:var(--hover)}
+html[data-estilo="claro"] .sp-item.on{background:var(--amarillo-soft);color:var(--ink)}
+html[data-estilo="claro"] .sp-item .pc{color:var(--muted)}
+html[data-estilo="claro"] .side-foot,html[data-estilo="superior"] .side-foot{color:var(--muted)}
+html[data-estilo="claro"] .me:hover,html[data-estilo="superior"] .me:hover{background:var(--hover)}
+html[data-estilo="claro"] .me b,html[data-estilo="superior"] .me b{color:var(--ink)}
+html[data-estilo="claro"] .me span,html[data-estilo="superior"] .me span{color:var(--muted)}
+@media(min-width:901px){
+  html[data-estilo="superior"] .app{display:block}
+  html[data-estilo="superior"] .nav-side{position:sticky;top:10px;z-index:40;width:auto;height:auto;flex-direction:row;align-items:center;gap:10px;padding:8px 10px 8px 16px;margin-bottom:18px;border-radius:16px}
+  html[data-estilo="superior"] .side-top{border:none;margin:0;padding:0 14px 0 0;flex-shrink:0;border-right:1px solid var(--line)!important}
+  html[data-estilo="superior"] .side-col,html[data-estilo="superior"] .side-sep,html[data-estilo="superior"] .side-proj{display:none}
+  html[data-estilo="superior"] .tabs{flex-direction:row;gap:2px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
+  html[data-estilo="superior"] .tab{width:auto;padding:8px 12px;font-size:13px;gap:8px}
+  html[data-estilo="superior"] .tab .ic{width:17px;height:17px}
+  html[data-estilo="superior"] .tab:is([data-sec="historial"],[data-sec="sistema"],[data-sec="usuarios"]) .lb{display:none}
+  html[data-estilo="superior"] .tab:is([data-sec="historial"],[data-sec="sistema"],[data-sec="usuarios"]){padding:8px 10px}
+  html[data-estilo="superior"] .tab.active::before{left:12px;right:12px;top:auto;bottom:-8px;width:auto;height:3px;border-radius:3px 3px 0 0}
+  html[data-estilo="superior"] .side-foot{padding:0 4px;flex-shrink:0}
+  html[data-estilo="superior"] .side-foot #liveTxt{display:none}
+  html[data-estilo="superior"] .me{width:auto;margin:0;padding:4px;flex-shrink:0}
+  html[data-estilo="superior"] .me .tx{display:none}
+  html[data-estilo="superior"] main{max-width:1600px;margin:0 auto}
+}
+/* Panel «Apariencia» */
+.ap-op{display:flex;gap:6px;flex-wrap:wrap;padding:0 10px 8px}
+.ap-op button{flex:1;min-width:76px;font-size:12px;font-weight:600;padding:7px 10px;border-radius:var(--r-pill);background:var(--sunk);color:var(--ink)}
+.ap-op button.on{background:var(--ink);color:var(--paper)}
+.me .av{color:#fff}

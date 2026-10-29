@@ -7,6 +7,23 @@
   const { $, $$, esc } = App;
   let snapshot = '';
 
+  // Apariencia de cada persona: siempre arranca en claro; el oscuro solo si se elige
+  const AP = Object.assign({ tema: 'claro', estilo: 'claro' }, App.store.get('apariencia', {}));
+  function aplicarApariencia() {
+    const h = document.documentElement;
+    if (AP.tema === 'auto') h.removeAttribute('data-theme'); else h.setAttribute('data-theme', AP.tema === 'oscuro' ? 'dark' : 'light');
+    h.setAttribute('data-estilo', ['claro', 'superior', 'marco'].includes(AP.estilo) ? AP.estilo : 'claro');
+  }
+  aplicarApariencia();
+  App.apariencia = (k, v) => { if (k) { AP[k] = v; App.store.set('apariencia', AP); aplicarApariencia(); } return Object.assign({}, AP); };
+  function panelApariencia(anchor) {
+    const op = (k, lista) => `<div class="ap-op">${lista.map(([v, l]) => `<button data-ap="${k}" data-v="${v}" class="${AP[k] === v ? 'on' : ''}" aria-pressed="${AP[k] === v}">${l}</button>`).join('')}</div>`;
+    const p = App.openPop(anchor, `<div class="lbl">Tema</div>${op('tema', [['claro', 'Claro'], ['oscuro', 'Oscuro'], ['auto', 'Como el equipo']])}
+      <div class="lbl">Estilo</div>${op('estilo', [['claro', 'Barra blanca'], ['superior', 'Menú arriba'], ['marco', 'Barra morada']])}
+      <div class="hint" style="padding:0 10px 6px">Se guarda en este navegador.</div>`, { width: 300, nofocus: true });
+    p.onclick = ev => { const b = ev.target.closest('[data-ap]'); if (!b) return; App.apariencia(b.dataset.ap, b.dataset.v); panelApariencia(anchor); };
+  }
+
   // Se quita la pantalla de carga cuando ya hay algo que mostrar
   const booted = () => { const b = $('#boot'); if (b) b.remove(); };
 
@@ -114,7 +131,8 @@
   $('#scrim').addEventListener('click', () => $('#app').classList.remove('open'));
   if (App.store.get('side.col', false)) $('#app').classList.add('col');
   $('#sideCol').addEventListener('click', () => { const c = $('#app').classList.toggle('col'); App.store.set('side.col', c); });
-  $('#meBtn').addEventListener('click', e => App.menu(e.currentTarget, [{ id: 'clave', label: '⚿ Cambiar contraseña' }, '-', { id: 'salir', label: '⎋ Cerrar sesión' }], async m => {
+  $('#meBtn').addEventListener('click', e => App.menu(e.currentTarget, [{ id: 'ap', label: '◐ Apariencia' }, { id: 'clave', label: '⚿ Cambiar contraseña' }, '-', { id: 'salir', label: '⎋ Cerrar sesión' }], async m => {
+    if (m === 'ap') return setTimeout(() => panelApariencia($('#meBtn')), 0);
     if (m === 'salir') { await App.api('POST', '/api/auth/logout').catch(() => {}); showLogin('login'); }
     if (m === 'clave') cambiarClave();
   }, 220));
