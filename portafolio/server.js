@@ -306,6 +306,14 @@ route('GET', '/api/sesiones/:id/ics', 'usuario', async (req, ctx) => {
   return { __raw: exporter.toICS(s, c && c.name, names, process.env.TZ_OFFSET), type: 'text/calendar; charset=utf-8', file: `comite-${s.fecha}.ics` };
 });
 
+// ---------- Demostración: volver a los datos de ejemplo ----------
+route('POST', '/api/demo/cargar', 'admin', async (req, ctx) => {
+  if (process.env.MODO_DEMO !== 'true') throw new HttpError(403, 'Solo en la copia de demostración (MODO_DEMO=true)');
+  const r = await require('./lib/demo').cargar(store);
+  await log(ctx.user, 'restableció', 'projects', '', 'Datos de ejemplo', []);
+  return r;
+});
+
 // ---------- Plan de trabajo: varios cambios de una vez ----------
 // El navegador calcula las fechas en cascada (mismas reglas de la app de gestión:
 // días hábiles de Colombia, precedencias FC/CC/FF/CF con desfase) y manda solo lo
@@ -510,6 +518,12 @@ async function prepare() {
   if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD && !(await store.list('users')).length) {
     await createUser({ name: process.env.ADMIN_NAME || 'Administrador', email: process.env.ADMIN_EMAIL, password: process.env.ADMIN_PASSWORD, role: 'admin' }, false);
     console.log(`Administrador creado: ${process.env.ADMIN_EMAIL}`);
+  }
+  // Demostración: la primera vez, con la base vacía, se cargan datos de ejemplo
+  if (process.env.MODO_DEMO === 'true' && !(await store.getConfig('demo_cargada')) && !(await store.list('projects')).length) {
+    await store.setConfig('demo_cargada', { at: now(), cargando: true });
+    await require('./lib/demo').cargar(store);
+    console.log('Datos de ejemplo cargados');
   }
 }
 

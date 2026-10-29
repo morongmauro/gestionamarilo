@@ -26,6 +26,7 @@
       </tbody></table></div>
       <div class="card-box" style="margin-bottom:16px"><h3 style="font-size:14px;font-weight:800;margin-bottom:6px">Roles</h3>
         ${Object.entries(ROLES).map(([k, l]) => `<div style="font-size:12.5px;margin:3px 0"><b>${l}:</b> <span class="muted">${ROL_HELP[k]}</span></div>`).join('')}</div>
+      ${App.S.demo ? `<div class="card-box" style="margin-bottom:16px"><h3 style="font-size:14px;font-weight:800;margin-bottom:6px">Datos de ejemplo</h3><div class="muted" style="font-size:12.5px;margin-bottom:10px">Esta es la copia de demostración. Puedes volver a los datos inventados cuando quieras (por ejemplo, antes de mostrarla): se borra lo que haya y se cargan de nuevo, con fechas desde hoy.</div><button class="btn" data-demo="1">↺ Restablecer datos de ejemplo</button></div>` : ''}
       <div class="card-box" style="margin-bottom:16px" id="lakeBox"><h3 style="font-size:14px;font-weight:800;margin-bottom:6px">Data lake de Azure</h3><div class="muted" style="font-size:12.5px">Consultando…</div></div>
       <div class="card-box"><h3 style="font-size:14px;font-weight:800;margin-bottom:6px">Exportación por API</h3>
         <div class="muted" style="font-size:12.5px;margin-bottom:10px">Otra forma de llevar los datos al lago: Data Factory o Databricks leen estas direcciones con el encabezado <code class="u">Authorization: Bearer EXPORT_TOKEN</code> (variable de entorno). Como administrador también puedes descargarlas aquí.</div>
@@ -35,6 +36,10 @@
     main.onclick = e => {
       if (e.target.closest('.burger')) return App.toggleSide();
       if (e.target.closest('[data-lake=enviar]')) return enviarLago(e.target.closest('[data-lake=enviar]'));
+      if (e.target.closest('[data-demo]')) {
+        if (!confirm('¿Borrar todo lo de esta copia de demostración y volver a cargar los datos de ejemplo?')) return;
+        return App.guard(async () => { await App.api('POST', '/api/demo/cargar'); await App.reload(); App.toast('Datos de ejemplo cargados'); });
+      }
       const b = e.target.closest('[data-u]'); if (!b) return;
       if (b.dataset.u === 'new') return nuevo(b);
       const id = b.closest('[data-id]') && b.closest('[data-id]').dataset.id; const u = users.find(x => x.id === id);

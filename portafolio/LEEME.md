@@ -85,34 +85,27 @@ Abre `http://localhost:8080` y entra con ese correo. Los datos quedan en
 `portafolio/data/portafolio.json`. En Windows, copia `.env.example` como
 `.env`, llena `ADMIN_EMAIL` y `ADMIN_PASSWORD`, y corre `npm start`.
 
-## Mostrarla ya: GitHub + Vercel (demostración con datos de prueba)
+## Mostrarla ya: Vercel con datos de ejemplo (aparte de la app de gestión)
 
-Mientras TI monta Azure, se puede publicar una copia de demostración. **Solo
-con datos de prueba**: los datos reales van en Azure SQL.
+Es un proyecto de Vercel **distinto** al de la app de gestión, con su propia base de datos y sus propios usuarios. No comparte nada con ella.
 
-1. **GitHub**: el código ya está en el repositorio. Une la rama de trabajo a
-   `main` con un pull request (o deja que Vercel publique la rama como
-   vista previa).
-2. **Base de prueba**: en [supabase.com](https://supabase.com) crea un
-   proyecto nuevo y gratuito, aparte del de tu app personal. En *Connect*
-   copia la cadena *Transaction pooler* (puerto 6543): es `DATABASE_URL`.
-3. **Vercel** → *Add New → Project* → importa este repositorio.
-   *Root Directory*: `portafolio`. *Framework*: Other. Variables:
+1. **Vercel** → *Add New → Project* → importa el repositorio del portafolio.
+   - *Root Directory*: `portafolio` (si el código está en esa carpeta).
+   - *Framework*: Other.
+2. **Base de datos de prueba**: en el proyecto nuevo de Vercel → *Storage* → *Create Database* → **Neon** (Postgres, plan gratuito) → *Connect*. Vercel pone sola la variable `DATABASE_URL` (o `POSTGRES_URL`); la app la detecta.
+3. **Variables** (*Settings → Environment Variables*):
 
    | Variable | Valor |
    |---|---|
-   | `DB` | `postgres` |
-   | `DATABASE_URL` | la cadena del paso 2 |
+   | `MODO_DEMO` | `true` (aviso «Demostración» y datos de ejemplo) |
    | `SESSION_SECRET` | una cadena larga aleatoria |
    | `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` | tu usuario administrador |
-   | `ORG_NAME` | nombre de la oficina |
-   | `MODO_DEMO` | `true` (muestra «solo datos de prueba») |
+   | `ORG_NAME` | `Amarilo` (opcional) |
 
-4. *Deploy* y abre el link. Las tablas se crean solas en el primer ingreso.
+4. *Deploy* y abre el link. En el primer ingreso se crean las tablas, tu usuario y **los datos de ejemplo**: cinco iniciativas inventadas con casos de negocio, valor captado, cronogramas, comités y compromisos, con fechas desde hoy. No se crean otros usuarios (en un enlace público no debe haber cuentas con contraseñas conocidas); invítalos desde «Usuarios».
+5. Para volver a empezar antes de una presentación: «Usuarios» → **Restablecer datos de ejemplo**.
 
-Probado: la app corre como función de Vercel (simulada localmente) sobre
-PostgreSQL 16 real, con 20 ediciones simultáneas sin pérdidas. No se publicó
-en una cuenta de Vercel real desde aquí.
+Probado aquí sobre PostgreSQL 16 vacío: arranca, crea el administrador, carga los datos de ejemplo y restablece. No se publicó en una cuenta de Vercel real desde aquí.
 
 ## Dónde vive cada cosa (todo en Azure)
 

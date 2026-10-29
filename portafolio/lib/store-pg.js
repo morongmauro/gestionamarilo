@@ -17,8 +17,8 @@ class PgStore {
   }
   async init() {
     if (!this.client) {
-      const url = process.env.DATABASE_URL;
-      if (!url) throw new Error('Falta DATABASE_URL (la cadena de conexión de Postgres)');
+      const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+      if (!url) throw new Error('Falta DATABASE_URL o POSTGRES_URL (la cadena de conexión de Postgres)');
       const local = /localhost|127\.0\.0\.1/.test(url);
       this.client = new Pool({
         connectionString: url,
