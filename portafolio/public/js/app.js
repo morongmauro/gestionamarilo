@@ -79,6 +79,7 @@
     const d = await App.api('GET', '/api/estado');
     snapshot = JSON.stringify(d);
     App.S.demo = !!d.demo;
+    App.S.almacenamiento = d.almacenamiento;
     Object.assign(App.S, { me: d.me, org: d.org, columns: d.columns, projects: d.projects, activities: d.activities, sections: d.sections || [], cases: d.cases, sessions: d.sessions, committees: d.committees, people: d.people, tablero: d.tablero || { income_unidad: 1e6 } });
   }
   App.reload = async () => { try { await loadState(); App.render(); } catch (e) { console.error(e); } };
@@ -94,6 +95,12 @@
     $('#meRole').textContent = { admin: 'Administrador', editor: 'Editor', lector: 'Solo lectura' }[App.S.me.role];
     $('#tabUsuarios').hidden = !App.isAdmin();
     $('#demoTag').hidden = !App.S.demo; live(true);
+    if (App.S.almacenamiento === 'memoria') {
+      $('#demoTag').textContent = 'Demo sin base';
+      $('#demoTag').title = 'Demostración sin base de datos: puedes ver y editar, pero los cambios se pierden cuando la app se reinicia (tras unos minutos sin uso).';
+      let visto = false; try { visto = !!sessionStorage.getItem('pf.avisoMemoria'); sessionStorage.setItem('pf.avisoMemoria', '1'); } catch (e) {}
+      if (!visto) { setTimeout(() => App.toast('Demostración sin base de datos: los cambios se pierden cuando la app se reinicia'), 1200); }
+    }
     booted();
     if (!location.hash) location.hash = '#/tablero'; else App.render();
   }

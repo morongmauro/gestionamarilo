@@ -8,7 +8,10 @@
 // ============================================================
 const crypto = require('crypto');
 
-const id = () => crypto.randomUUID();
+// Identificadores fijos: cada carga produce los mismos. Así, en la demostración sin base de
+// datos, todas las copias de la app tienen los mismos proyectos y los enlaces siempre sirven.
+let contador = 0;
+const id = () => { const h = crypto.createHash('sha256').update('pf-demo:' + (++contador)).digest('hex'); return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`; };
 const iso = d => d.toISOString().slice(0, 10);
 const hoyUTC = () => { const t = new Date(); return new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate())); };
 const dias = (base, n) => { const d = new Date(base); d.setUTCDate(d.getUTCDate() + n); return d; };
@@ -35,6 +38,7 @@ const PROYECTOS = [
 const MIEMBROS = [{ nombre: 'Ana Gómez', area: 'Procesos', rol: 'Líder' }, { nombre: 'Carlos Ruiz', area: 'Planeación', rol: 'Analista' }, { nombre: 'Laura Pérez', area: 'Producto', rol: 'Product owner' }];
 
 async function cargar(store) {
+  contador = 0;
   const hoy = hoyUTC(), Y = hoy.getUTCFullYear(), mesHoy = hoy.getUTCMonth() + 1, ahora = new Date().toISOString();
   const meta = { created_at: ahora, updated_at: ahora, updated_by_name: 'Datos de ejemplo' };
   // Se borra lo anterior (solo se llama en modo demostración)

@@ -87,6 +87,10 @@ Abre `http://localhost:8080` y entra con ese correo. Los datos quedan en
 
 ## Mostrarla ya: Vercel con datos de ejemplo (aparte de la app de gestión)
 
+**Lo más rápido: sin base de datos.** En Vercel → *Add New → Project* → importa el repositorio → *Framework*: Other → variables `MODO_DEMO` = `true`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` y `ADMIN_NAME` → *Deploy*. Arranca con los datos de ejemplo y se puede ver y editar todo. Ojo: **lo que edites se pierde** cuando Vercel reinicia la app (después de unos minutos sin uso); la app lo avisa con la etiqueta «Demo sin base». Sirve para mirarla y mostrarla. Para que los cambios se guarden, conecta una base como se explica abajo.
+
+**Con base de datos (los cambios se guardan):**
+
 Es un proyecto de Vercel **distinto** al de la app de gestión, con su propia base de datos y sus propios usuarios. No comparte nada con ella.
 
 1. **Vercel** → *Add New → Project* → importa el repositorio del portafolio.

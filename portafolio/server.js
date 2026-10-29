@@ -170,7 +170,7 @@ route('POST', '/api/auth/clave', 'usuario', async (req, ctx) => {
 });
 
 // ---------- Usuarios (solo administradores) ----------
-async function createUser(b, mustChange) {
+async function createUser(b, mustChange, idFijo) {
   const email = String(b.email || '').trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new HttpError(400, 'Correo inválido');
   const name = String(b.name || '').trim().slice(0, 120);
@@ -178,7 +178,7 @@ async function createUser(b, mustChange) {
   if (!auth.ROLES.includes(b.role)) throw new HttpError(400, 'Rol inválido');
   const err = auth.checkPasswordRules(b.password); if (err) throw new HttpError(400, err);
   if ((await store.list('users')).some(u => u.email === email)) throw new HttpError(409, 'Ya existe un usuario con ese correo');
-  return store.insert('users', { id: newId(), email, name, role: b.role, active: true, pass: auth.hashPassword(b.password), must_change: !!mustChange, sv: 0, created_at: now(), updated_at: now() });
+  return store.insert('users', { id: idFijo || newId(), email, name, role: b.role, active: true, pass: auth.hashPassword(b.password), must_change: !!mustChange, sv: 0, created_at: now(), updated_at: now() });
 }
 route('GET', '/api/usuarios', 'admin', async () => (await store.list('users')).map(auth.publicUser));
 route('POST', '/api/usuarios', 'admin', async (req, ctx) => {
@@ -496,6 +496,11 @@ async function prepare() {
   await store.init();
   // Clave de sesión: la del entorno o una generada y guardada en la base
   let secret = process.env.SESSION_SECRET;
+  const memoria = store.kind === 'memoria';
+  // Sin base de datos, cada copia de la app arranca vacía: el administrador y la clave
+  // de sesión salen de la configuración para que todas las copias reconozcan la sesión.
+  if (memoria && !(process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD)) throw new Error('Para la demostración sin base de datos define ADMIN_EMAIL y ADMIN_PASSWORD');
+  if (!secret && memoria) secret = crypto.createHash('sha256').update(`pf-demo|${process.env.ADMIN_EMAIL}|${process.env.ADMIN_PASSWORD}`).digest('base64');
   if (!secret) {
     secret = await store.getConfig('session_secret');
     if (!secret) { secret = crypto.randomBytes(48).toString('base64'); await store.setConfig('session_secret', secret); }
@@ -516,7 +521,8 @@ async function prepare() {
   }
   // Primer administrador desde variables de entorno
   if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD && !(await store.list('users')).length) {
-    await createUser({ name: process.env.ADMIN_NAME || 'Administrador', email: process.env.ADMIN_EMAIL, password: process.env.ADMIN_PASSWORD, role: 'admin' }, false);
+    const idFijo = store.kind === 'memoria' ? 'admin-' + crypto.createHash('sha256').update(String(process.env.ADMIN_EMAIL).trim().toLowerCase()).digest('hex').slice(0, 24) : null;
+    await createUser({ name: process.env.ADMIN_NAME || 'Administrador', email: process.env.ADMIN_EMAIL, password: process.env.ADMIN_PASSWORD, role: 'admin' }, false, idFijo);
     console.log(`Administrador creado: ${process.env.ADMIN_EMAIL}`);
   }
   // Demostración: la primera vez, con la base vacía, se cargan datos de ejemplo
