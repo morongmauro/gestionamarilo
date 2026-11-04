@@ -80,6 +80,7 @@
     snapshot = JSON.stringify(d);
     App.S.demo = !!d.demo;
     App.S.almacenamiento = d.almacenamiento;
+    App.S.direccion = d.direccion || null;
     Object.assign(App.S, { me: d.me, org: d.org, columns: d.columns, projects: d.projects, activities: d.activities, sections: d.sections || [], cases: d.cases, sessions: d.sessions, committees: d.committees, people: d.people, tablero: d.tablero || { income_unidad: 1e6 } });
   }
   App.reload = async () => { try { await loadState(); App.render(); } catch (e) { console.error(e); } };
@@ -95,6 +96,7 @@
     $('#meRole').textContent = { admin: 'Administrador', editor: 'Editor', lector: 'Solo lectura' }[App.S.me.role];
     $('#tabUsuarios').hidden = !App.isAdmin();
     $('#demoTag').hidden = !App.S.demo; live(true);
+    if (App.vista) App.vista.aplicar();
     if (App.S.almacenamiento === 'memoria') {
       $('#demoTag').textContent = 'Demo sin base';
       $('#demoTag').title = 'Demostración sin base de datos: puedes ver y editar, pero los cambios se pierden cuando la app se reinicia (tras unos minutos sin uso).';
@@ -178,6 +180,7 @@
       const s = JSON.stringify(d);
       if (s === snapshot || editing()) return;
       snapshot = s;
+      App.S.direccion = d.direccion || null;
       Object.assign(App.S, { columns: d.columns, projects: d.projects, activities: d.activities, sections: d.sections || [], cases: d.cases, sessions: d.sessions, committees: d.committees, people: d.people, me: d.me, tablero: d.tablero || { income_unidad: 1e6 } });
       if (!App.drawerOpen()) App.render();
     } catch (e) { if (e.status !== 401) live(false); }

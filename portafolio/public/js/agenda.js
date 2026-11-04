@@ -18,7 +18,8 @@
   const visibles = () => App.S.sessions.filter(s => s.fecha && !A.hidden.includes(s.comite_id || '_'));
   const byDate = (a, b) => (a.fecha + (a.hora_ini || '')).localeCompare(b.fecha + (b.hora_ini || ''));
 
-  function section(main) {
+  function section(main, params) {
+    if (params && params[0] === 'preparar') return App.Mejoras.preparar(main, params[1]);
     const ro = !App.canEdit(), today = App.d.today();
     const [y, m] = mes.split('-').map(Number);
     const first = `${mes}-01`, gridStart = App.d.add(first, -App.d.dow(first));
@@ -145,12 +146,14 @@
       <h4>Orden del día y temas</h4><textarea class="fld" data-s="temas" rows="4" ${dis} placeholder="1. Avance de proyectos…">${esc(s.temas || '')}</textarea>
       <h4>Asistentes</h4><textarea class="fld" data-s="asistentes" rows="2" ${dis}>${esc(s.asistentes || '')}</textarea>
       <h4>Decisiones</h4><textarea class="fld" data-s="decisiones" rows="4" ${dis} placeholder="Lo que se decidió en la sesión">${esc(s.decisiones || '')}</textarea>
+      ${App.vista && App.vista.nueva ? '<div id="sDec" style="margin:12px 0"></div>' : ''}
       <h4>Compromisos</h4><div id="sComp">${compHTML()}</div>${ro ? '' : '<button class="btn sm" data-cadd="1" style="margin-top:4px">+ Compromiso</button>'}
       <datalist id="pplList">${App.S.people.map(u => `<option value="${esc(u.name)}">`).join('')}</datalist>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:22px"><a class="btn" href="/api/sesiones/${s.id}/ics" download>⇩ Agregar a Outlook (.ics)</a>${ro ? '' : '<button class="btn" data-rep="1">↻ Repetir…</button><span style="flex:1"></span><button class="btn danger" data-sdel="1">Eliminar sesión</button>'}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:22px"><a class="btn" href="/api/sesiones/${s.id}/ics" download>⇩ Agregar a Outlook (.ics)</a>${App.vista && App.vista.nueva ? `<a class="btn amarillo" href="#/agenda/preparar/${s.id}" data-prep="1">⎙ Preparar el comité</a>` : ''}${ro ? '' : '<button class="btn" data-rep="1">↻ Repetir…</button><span style="flex:1"></span><button class="btn danger" data-sdel="1">Eliminar sesión</button>'}</div>
       <div class="meta-line">${s.updated_by_name ? `Última edición: ${esc(s.updated_by_name)}, ${esc(App.d.ago(s.updated_at))}` : ''}</div>`, { onClose: () => App.render() });
 
     const saveComp = () => App.patch('sessions', id, { compromisos: comp }).catch(() => {});
+    if ($('#sDec', d)) App.Mejoras.decisionesEditor($('#sDec', d), s, ro);
     d.onchange = e => {
       const t = e.target;
       if (t.dataset.s) {
@@ -167,6 +170,7 @@
     d.onclick = e => {
       if (e.target.closest('[data-close]')) return App.closeDrawer();
       const gp = e.target.closest('[data-goproj]'); if (gp) { App.closeDrawer(); return App.go('#/proyectos/' + gp.dataset.goproj); }
+      if (e.target.closest('[data-prep]')) { App.closeDrawer(); return; }
       if (ro) return;
       if (e.target.closest('[data-addproj]')) return App.pickList(e.target.closest('[data-addproj]'), {
         items: App.projectsSorted().map(p => ({ id: p.id, label: App.projectName(p), color: App.projectColor(p) })),

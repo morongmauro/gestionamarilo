@@ -60,7 +60,8 @@ const T = {
 const SCHEMAS = {
   // Proyecto: sus columnas (las define la tabla, como en Notion) van en props
   // Además, lo del plan de trabajo: fecha meta, línea base e involucrados ({nombre, area, rol})
-  projects: { props: 'obj', position: 'num', fecha_meta: 'date', linea_base_at: 'stamp', miembros: 'arr' },
+  // Vista mejorada: «en una frase», área beneficiada, origen (cuando nace de una propuesta) y aprendizajes al cerrar
+  projects: { props: 'obj', position: 'num', fecha_meta: 'date', linea_base_at: 'stamp', miembros: 'arr', frase: 'str', area: 'str', origen: 'obj', aprendizajes: 'text' },
   // Actividades e hitos del cronograma (plan de trabajo, igual que en la app de gestión):
   // capítulo, duración en días hábiles, precedencias con su tipo (FC/CC/FF/CF y desfase),
   // fechas reales, línea base, entregable y área responsable
@@ -81,6 +82,7 @@ const SCHEMAS = {
   sessions: {
     comite_id: 'id', titulo: 'str', fecha: 'date', hora_ini: 'time', hora_fin: 'time', estado: 'str',
     lugar: 'str', enlace: 'str', proyectos: 'ids', temas: 'text', asistentes: 'text', decisiones: 'text', compromisos: 'arr',
+    decisiones_reg: 'arr', // decisiones estructuradas: { id, tipo, texto, project_id, responsable, fecha, estado }
   },
   // Tipos de comité
   committees: { name: 'str', color: 'str', frecuencia: 'str', descripcion: 'text', integrantes: 'text' },
@@ -120,4 +122,22 @@ function cleanColumns(columns) {
   return out;
 }
 
-module.exports = { cleanDoc, cleanColumns, cleanAny, ValidationError, SCHEMAS };
+// «Qué es la Dirección» (texto del inicio) y a quién llegan las propuestas
+function cleanDireccion(d) {
+  if (!d || typeof d !== 'object') bad('Datos inválidos');
+  const correo = T.str(d.correo_propuestas).trim();
+  if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) bad('Correo inválido');
+  return { que_es: String(d.que_es || '').slice(0, 2000), correo_propuestas: correo, responsable_propuestas: T.str(d.responsable_propuestas).trim() };
+}
+// Una propuesta de necesidad (entra al portafolio como idea)
+function cleanPropuesta(d) {
+  if (!d || typeof d !== 'object') bad('Datos inválidos');
+  const titulo = T.str(d.titulo).trim();
+  if (titulo.length < 4) bad('Escribe un título para la necesidad (mínimo 4 letras)');
+  const problema = T.text(d.problema).trim();
+  if (problema.length < 10) bad('Cuenta en una o dos frases qué problema u oportunidad hay');
+  const urg = ['baja', 'media', 'alta'].includes(d.urgencia) ? d.urgencia : 'media';
+  return { titulo, problema, beneficio: T.text(d.beneficio).trim().slice(0, 2000), area: T.str(d.area).trim(), urgencia: urg };
+}
+
+module.exports = { cleanDoc, cleanColumns, cleanAny, cleanDireccion, cleanPropuesta, ValidationError, SCHEMAS };

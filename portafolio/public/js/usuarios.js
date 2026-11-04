@@ -33,6 +33,7 @@
         <table class="lst"><tbody>${tablas.map(t => `<tr><td><b>${t}</b></td><td><code class="u">${esc(base)}/api/export/${t}?format=csv</code></td><td style="text-align:right;white-space:nowrap"><a class="btn sm" href="/api/export/${t}?format=csv" download>⇩ CSV</a> <a class="btn sm" href="/api/export/${t}" target="_blank" rel="noopener">JSON</a></td></tr>`).join('')}</tbody></table></div>`;
 
     lakeCard($('#lakeBox', main));
+    if (App.vista && App.vista.nueva) App.Mejoras.adminExtras(main);
     main.onclick = e => {
       if (e.target.closest('.burger')) return App.toggleSide();
       if (e.target.closest('[data-lake=enviar]')) return enviarLago(e.target.closest('[data-lake=enviar]'));

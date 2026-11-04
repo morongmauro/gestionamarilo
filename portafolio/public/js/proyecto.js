@@ -36,7 +36,8 @@
 
     if (tab === 'info') {
       const cols = App.S.columns.filter(c => c.id !== tc.id);
-      box.innerHTML = `<div class="card-box"><div class="props">${cols.map(c => { const v = (p.props || {})[c.id]; const vacio = v == null || v === '' || (Array.isArray(v) && !v.length);
+      const historia = App.vista && App.vista.nueva ? App.Mejoras.historia(p, { pl, caso, f, prox, ro, d: filaDe(id) }) : '';
+      box.innerHTML = historia + `<div class="card-box"><div class="props">${cols.map(c => { const v = (p.props || {})[c.id]; const vacio = v == null || v === '' || (Array.isArray(v) && !v.length);
         return `<div class="k"><span class="ic">${App.Tabla.TYPES[c.type].icon}</span>${esc(c.name)}</div><div class="v ${vacio && c.type !== 'check' ? 'empty' : ''}" data-col="${c.id}">${vacio && c.type !== 'check' ? `<div class="c-in">${ro ? '—' : 'Vacío'}</div>` : App.Tabla.renderValue(c, v)}</div>`; }).join('')}</div>
         <div class="meta-line">Creado ${esc(App.d.ago(p.created_at))}${p.updated_by_name ? ` · Última edición: ${esc(p.updated_by_name)}, ${esc(App.d.ago(p.updated_at))}` : ''}${ro ? '' : ' · Las columnas se administran desde la tabla de Proyectos'}</div></div>`;
     } else if (tab === 'cronograma') {
@@ -52,6 +53,7 @@
     main.onclick = e => {
       if (e.target.closest('.burger')) return App.toggleSide();
       const s = e.target.closest('[data-ses]'); if (s) return App.Agenda.openSession(s.dataset.ses);
+      const fr = e.target.closest('[data-h=frase]'); if (fr && !ro) return App.editText(fr, p.frase || '', { placeholder: 'En una frase: qué cambia con esta iniciativa', width: 420, onSave: v => App.guard(async () => { await App.patch('projects', id, { frase: String(v || '').slice(0, 500) }); App.render(); }) });
       if (tab === 'info' && !ro) { const v = e.target.closest('.props .v'); if (v && !e.target.closest('a')) return App.Tabla.openEditor(v, id, v.dataset.col); }
       const b = e.target.closest('[data-p]'); if (!b || ro) return;
       const a = b.dataset.p;
@@ -64,6 +66,11 @@
         if (m === 'del') confirmDelete(id);
       });
     };
+  }
+
+  // Proyectado y captado del año para la ficha (misma regla que el tablero)
+  function filaDe(id) {
+    try { const d = App.Dash && App.Dash.datos ? App.Dash.datos() : null; return d ? d.filas.find(x => x.p.id === id) || null : null; } catch (e) { return null; }
   }
 
   function confirmDelete(id) {

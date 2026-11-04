@@ -41,9 +41,10 @@
         return 0;
       };
       const captado = (cat, y, mes) => (caso && !esUSD ? (caso.captado || []) : []).filter(x => x.categoria === cat && x.mes.startsWith(y + '-') && (!mes || +x.mes.slice(5) <= mes)).reduce((a, x) => a + (Number(x.valor) || 0), 0);
+      const capVer = (cat, y) => (caso && !esUSD ? (caso.captado || []) : []).filter(x => x.categoria === cat && x.mes.startsWith(y + '-') && x.estado === 'verificado').reduce((a, x) => a + (Number(x.valor) || 0), 0);
       const vpn = caso && !esUSD ? Finanzas.calc(caso).vpn : null;
       const catsP = App.CATS.map(c => c.id).filter(id => [hoyY, hoyY + 1, hoyY + 2].some(y => anual(id, y) > 0));
-      return { p, caso, real, fuente, anual, captado, vpn, ice: App.iceOf(p), estado: ec ? (p.props || {})[ec.id] || '' : '', catPrincipal: catsP[0] || (fuente === 'income' ? catInc : null), y0, nAnios };
+      return { p, caso, real, fuente, anual, captado, capVer, vpn, ice: App.iceOf(p), estado: ec ? (p.props || {})[ec.id] || '' : '', catPrincipal: catsP[0] || (fuente === 'income' ? catInc : null), y0, nAnios };
     }).filter(x => F.alcance !== 'real' || x.real);
     // años con datos
     let yMin = hoyY, yMax = hoyY + 4;
@@ -57,6 +58,7 @@
     const proyectadoY = sumP((x, k) => x.anual(k, Y));
     const esperadoY = sumP((x, k) => x.anual(k, Y), reales) * corrido(Y) / 12;
     const captadoY = sumP((x, k) => x.captado(k, Y));
+    const verifY = sumP((x, k) => x.capVer(k, Y));
     // curva mensual del año Y (acumulada)
     const curva = Array.from({ length: 12 }, (_, i) => ({
       mes: i + 1,
@@ -69,7 +71,7 @@
       const esp = x.real ? proy * corrido(Y) / 12 : 0;
       return { ...x, proy, cap, esp, pc: esp > 0 ? cap / esp : null };
     });
-    return { hoy, hoyY, hoyM, Y, anios, cats, porAnio, proyectadoY, esperadoY, captadoY, curva, mesHasta, filas, reales, usd, unidad, corrido: corrido(Y) };
+    return { hoy, hoyY, hoyM, Y, anios, cats, porAnio, proyectadoY, esperadoY, captadoY, verifY, curva, mesHasta, filas, reales, usd, unidad, corrido: corrido(Y) };
   }
   const estadoDe = pc => (pc == null ? null : pc >= 0.9 ? ['good', '✓', 'En meta'] : pc >= 0.7 ? ['warning', '!', 'Por debajo'] : ['critical', '✕', 'Rezagado']);
   const m = v => App.moneyShort(v);
@@ -136,8 +138,29 @@
   const SEV = { 3: ['crit', 'i-x', 'Crítico'], 2: ['warn', 'i-alerta', 'Atención'], 1: ['info', 'i-info', 'Próximo'] };
   const ico = id => `<svg aria-hidden="true"><use href="#${id}"/></svg>`;
 
+  // Vista mejorada: resultados y proyección en dos grupos, sin el ICE promedio
+  function indicadores2(d, sg) {
+    const sg2 = App.Mejoras.sigla;
+    const vpn = d.filas.reduce((a, x) => a + (x.vpn || 0), 0);
+    const inv = d.filas.reduce((a, x) => a + (x.caso && x.caso.moneda !== 'USD' ? Finanzas.calc(x.caso).totalInversion || 0 : 0), 0);
+    const nAt = sg.filter(z => z.max >= 2).length, pc = d.esperadoY > 0 ? d.captadoY / d.esperadoY : null;
+    const k = (ic, c, l, v, s, cls) => `<div class="xk ${cls || ''}"><div class="l"><span class="ki" style="--c:var(--cat-${c})"><svg aria-hidden="true"><use href="#i-${ic}"/></svg></span>${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+    return `<div class="dash-card span-12 xks dos"><div class="xk-g">Resultados · lo que ya pasó</div>
+      ${k('casos', 'eficiencia', 'Verificado ' + d.Y, esc(m(d.verifY)), 'con fuente, validador y fecha')}
+      ${k('alerta', 'tiempo', 'Preliminar ' + d.Y, esc(m(d.captadoY - d.verifY)), 'registrado, sin evidencia aún')}
+      ${k('tablero', 'ahorro', 'Cumplimiento a la fecha', pc == null ? '—' : Math.round(pc * 100) + '%', `esperado ${esc(m(d.esperadoY))}`)}
+      ${k('alerta', 'riesgo', 'Iniciativas con alertas', `${nAt}<span style="font-size:14px;color:var(--muted);font-weight:600"> / ${d.filas.length}</span>`, nAt ? 'ver «Requiere atención»' : 'sin alertas', nAt ? 'alerta' : '')}
+      <div class="xk-g">Proyección · lo que dicen los casos de negocio</div>
+      ${k('casos', 'ahorro', 'Proyectado ' + d.Y, esc(m(d.proyectadoY)), `por captar: ${esc(m(Math.max(0, d.proyectadoY - d.captadoY)))}`)}
+      ${k('proyectos', 'ingresos', 'Inversión de los casos', esc(m(inv)), 'horizonte completo, no solo el año')}
+      ${k('tablero', 'eficiencia', sg2('VPN') + ' del portafolio', esc(m(vpn)), 'suma de los casos, cada uno con su tasa')}
+      ${k('sistema', 'otro', 'Casos aprobados', String(d.filas.filter(x => x.caso && x.caso.estado === 'Aprobado').length), `de ${d.filas.filter(x => x.caso).length} con caso`)}
+    </div>`;
+  }
+
   /* ---------- 1 · cifra principal + resumen en una frase ---------- */
   function hero(d, sg) {
+    const NV = App.vista && App.vista.nueva;
     const pc = d.esperadoY > 0 ? d.captadoY / d.esperadoY : null, st = estadoDe(pc);
     const R = 54, fill = Math.max(0, Math.min(1, pc || 0));
     const col = st ? `var(--st-${st[0]})` : 'var(--viz-muted)';
@@ -158,6 +181,7 @@
           <p class="frase">${frase}</p>
           <div class="det">Esperado a la fecha: <b>${esc(m(d.esperadoY))}</b> · Proyectado para todo ${d.Y}: <b>${esc(m(d.proyectadoY))}</b> · prorrateado por los meses corridos de los proyectos en realización</div>
           ${compos(d)}
+          ${NV ? `<div class="vp"><span class="ver"><i></i>Verificado <b>${esc(m(d.verifY))}</b></span><span class="pre"><i></i>Preliminar <b>${esc(m(d.captadoY - d.verifY))}</b></span><button class="vp-link" data-evid="1" aria-expanded="false">¿De dónde sale esta cifra?</button></div><div class="evid" id="evidBox" hidden>${App.Mejoras.evidenciaHTML(d.Y, d.filas)}</div>` : ''}
         </div></div></div>`;
   }
 
@@ -402,12 +426,13 @@
 
   /* ---------- sección ---------- */
   function render(main) {
+    const NV = App.vista && App.vista.nueva;
     const d = datos();
     const ec = App.estadoCol();
     const key = JSON.stringify([F.anio, F.estado, F.tipo, F.alcance, F.tabla]);
     const anim = key !== lastKey; lastKey = key;
     const nF = (F.estado ? 1 : 0) + (F.tipo ? 1 : 0);
-    main.innerHTML = `<div class="dash-head"><button class="burger" data-act="burger" aria-label="Menú">☰</button><div><div class="eyebrow">Portafolio de Generación de Valor</div><h1>Tablero ejecutivo</h1><div class="sub">Datos al ${esc(App.d.fmt(d.hoy))} · ${d.filas.length} iniciativa${d.filas.length === 1 ? '' : 's'} en la vista · cifras en pesos colombianos</div></div><span class="sp"></span>
+    main.innerHTML = `<div class="dash-head"><button class="burger" data-act="burger" aria-label="Menú">☰</button><div><div class="eyebrow">${NV ? 'Dirección de Generación de Valor' : 'Portafolio de Generación de Valor'}</div><h1>${NV ? 'Lo que el portafolio está generando en ' + d.Y : 'Tablero ejecutivo'}</h1><div class="sub">Datos al ${esc(App.d.fmt(d.hoy))} · ${d.filas.length} iniciativa${d.filas.length === 1 ? '' : 's'} en la vista · cifras en pesos colombianos</div></div><span class="sp"></span>
       <div class="dash-f" role="group" aria-label="Filtros del tablero">
         <select data-f="anio" aria-label="Año">${d.anios.map(y => `<option ${y === d.Y ? 'selected' : ''}>${y}</option>`).join('')}</select>
         <div class="seg"><button data-f-alc="todos" class="${F.alcance !== 'real' ? 'on' : ''}" aria-pressed="${F.alcance !== 'real'}">Todas</button><button data-f-alc="real" class="${F.alcance === 'real' ? 'on' : ''}" aria-pressed="${F.alcance === 'real'}">En realización</button></div>
@@ -423,7 +448,14 @@
       const W6 = Math.max(320, (grid.clientWidth >= 1100 ? grid.clientWidth / 2 - 7 : grid.clientWidth) - 36);
       const sg = senales(d);
       const sec = (n, t, h) => `<div class="span-12 dash-sec"><span class="n">${n}</span><b>${t}</b><span>${h}</span></div>`;
-      grid.innerHTML = gdefs()
+      grid.innerHTML = NV ? gdefs()
+        + App.Mejoras.queEs()
+        + sec(1, 'Lo esencial', 'Cuánto valor se ha capturado, con su evidencia, y qué necesita atención') + hero(d, sg) + atencion(d, sg) + indicadores2(d, sg)
+        + sec(2, 'Decisiones y ejecución', 'Qué decidió el comité, qué viene y cómo van las iniciativas') + App.Mejoras.enRealizacion(d) + App.Mejoras.decisionesRecientes()
+        + sec(3, 'El valor en el tiempo', 'De dónde viene el valor y cómo avanza la captura') + porAnio(d, W) + curva(d, W7) + `<div class="span-5 dash-col">${cumplimiento(d)}${estado(d)}</div>`
+        + (App.canEdit() ? sec(4, 'Qué hacer', 'Sugerencia según potencial y salud de ejecución; la decisión es del comité') + matriz(d, sg) : '')
+        + sec(App.canEdit() ? 5 : 4, 'Detalle por iniciativa', 'Todas las cifras, para ordenar y comparar') + tabla(d)
+      : gdefs()
         + sec(1, 'Lo esencial', 'Cuánto valor se ha capturado y qué necesita atención') + hero(d, sg) + atencion(d, sg) + indicadores(d, sg)
         + sec(2, 'El valor en el tiempo', 'De dónde viene el valor y cómo avanza la captura') + porAnio(d, W) + curva(d, W7) + mezcla(d)
         + sec(3, 'Ejecución y decisiones', 'Qué acelerar, replantear o revisar') + matriz(d, sg) + `<div class="span-5 dash-col">${cumplimiento(d)}${estado(d)}</div>` + iceValor(d, W)
@@ -458,6 +490,8 @@
         p.onchange = ev => { if (!ev.target.hasAttribute('data-unidad')) return; const v = Number(ev.target.value); App.closePop(true); App.guard(async () => { App.S.tablero = await App.api('PUT', '/api/config/tablero', { income_unidad: v }); App.render(); }); };
         return;
       }
+      const ev = e.target.closest('[data-evid]'); if (ev) { const b = $('#evidBox', main); b.hidden = !b.hidden; ev.setAttribute('aria-expanded', !b.hidden); ev.textContent = b.hidden ? '¿De dónde sale esta cifra?' : 'Ocultar la evidencia'; return; }
+      const qe = e.target.closest('[data-qe=editar]'); if (qe) return App.Mejoras.editarQueEs(qe);
       if (e.target.closest('[data-dash=tabla]')) { F.tabla = !F.tabla; saveF(); return App.render(); }
       const yr = e.target.closest('[data-anio]'); if (yr) { F.anio = +yr.dataset.anio; saveF(); hideTip(); return App.render(); }
       const o = e.target.closest('[data-orden]'); if (o) { F.orden = o.dataset.orden; saveF(); lastKey = key; return App.render(); }
@@ -495,5 +529,6 @@
     window.onresize = () => { clearTimeout(render._rz); render._rz = setTimeout(() => { if (location.hash.startsWith('#/tablero')) { grid.classList.remove('anim'); draw(); } }, 200); };
   }
 
+  App.Dash = { datos };
   App.views.tablero = { render };
 })();

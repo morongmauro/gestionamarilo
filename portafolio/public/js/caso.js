@@ -185,7 +185,8 @@
           <tr class="tot"><td>Captado</td>${r.totMes.map((v, i) => `<td class="n" data-captm="${i}">${esc(fmt(v))}</td>`).join('')}<td class="n" data-capt="_tot"><b>${esc(fmt(r.captado))}</b></td><td></td></tr>
           <tr class="tot"><td>Esperado</td>${r.ms.map(() => `<td class="n faint">${esc(fmt(r.espMes))}</td>`).join('')}<td class="n faint">${esc(fmt(r.espMes * 12))}</td><td></td></tr>
         </tbody></table></div>` : '<div class="faint" style="font-size:12.5px">Agrega beneficios al flujo para registrar lo captado.</div>'}
-        ${ro ? '' : `<div style="margin-top:8px"><select class="fld" data-capnew style="width:auto"><option value="">+ Otro tipo de valor…</option>${App.CATS.filter(x => !r.cats.includes(x.id)).map(x => `<option value="${x.id}">${esc(x.label)}</option>`).join('')}</select></div>`}`;
+        ${ro ? '' : `<div style="margin-top:8px"><select class="fld" data-capnew style="width:auto"><option value="">+ Otro tipo de valor…</option>${App.CATS.filter(x => !r.cats.includes(x.id)).map(x => `<option value="${x.id}">${esc(x.label)}</option>`).join('')}</select></div>`}<div id="cEvid"></div>`;
+      if (App.vista && App.vista.nueva) App.Mejoras.evidenciaEditor($('#cEvid', box), cap, anioCap, ro, saveCap);
     }
     renderCap();
     $('#cCapt', el).addEventListener('change', e => {

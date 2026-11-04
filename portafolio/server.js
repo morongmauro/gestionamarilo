@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const auth = require('./lib/auth');
-const { cleanDoc, cleanColumns, ValidationError } = require('./lib/validate');
+const { cleanDoc, cleanColumns, cleanDireccion, cleanPropuesta, ValidationError } = require('./lib/validate');
 const defaults = require('./lib/defaults');
 const exporter = require('./lib/export');
 const lake = require('./lib/lake');
@@ -227,6 +227,7 @@ route('GET', '/api/estado', 'usuario', async (req, ctx) => {
     demo: process.env.MODO_DEMO === 'true',
     columns: await projectColumns(),
     tablero: (await store.getConfig('tablero')) || { income_unidad: 1e6 },
+    direccion: (await store.getConfig('direccion')) || null,
     projects, activities, sections, cases, sessions, committees,
     people: users.filter(u => u.active !== false).map(u => ({ id: u.id, name: u.name, email: u.email })),
   };
@@ -246,6 +247,35 @@ route('PUT', '/api/config/tablero', 'editor', async (req, ctx) => {
   if (![1, 1e3, 1e6].includes(u)) throw new HttpError(400, 'Unidad inválida');
   const v = { income_unidad: u }; await store.setConfig('tablero', v); return v;
 });
+
+// ---------- «Qué es la Dirección» y propuestas de necesidades (vista mejorada) ----------
+route('PUT', '/api/config/direccion', 'admin', async (req, ctx) => {
+  const v = cleanDireccion(ctx.body); await store.setConfig('direccion', v); return v;
+});
+// Cualquier persona con acceso puede proponer una necesidad: entra como idea al portafolio
+route('POST', '/api/ideas', 'usuario', async (req, ctx) => {
+  const d = cleanPropuesta(ctx.body);
+  const cols = await projectColumns();
+  const t = cols.find(c => c.type === 'title') || { id: 'proyecto' };
+  const ec = cols.find(c => c.type === 'select' && /estado/i.test(c.name));
+  const idea = ec && (ec.options || []).find(o => /idea|propuesta/i.test(o.name));
+  const traz = cols.find(c => c.log) || cols.find(c => c.id === 'trazabilidad');
+  const props = { [t.id]: d.titulo };
+  if (ec && idea) props[ec.id] = idea.name;
+  if (traz) props[traz.id] = `${fechaCorta()}: Propuesta por ${ctx.user.name}${d.area ? ' (' + d.area + ')' : ''} · urgencia ${d.urgencia}. ${d.problema}${d.beneficio ? ' Beneficio esperado: ' + d.beneficio : ''}`;
+  const all = await store.list('projects');
+  const doc = { id: newId(), props, position: all.reduce((m, x) => Math.max(m, x.position ?? 0), -1) + 1, frase: d.beneficio.slice(0, 500), area: d.area,
+    origen: { tipo: 'propuesta', nombre: ctx.user.name, correo: ctx.user.email, urgencia: d.urgencia, problema: d.problema, fecha: now() },
+    created_at: now(), updated_at: now(), updated_by: ctx.user.id, updated_by_name: ctx.user.name };
+  await store.insert('projects', doc);
+  await log(ctx.user, 'propuso', 'projects', doc.id, d.titulo);
+  return doc;
+});
+function fechaCorta(d = new Date()) {
+  const M = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+  const l = new Date(d.toLocaleString('en-US', { timeZone: process.env.ZONA_HORARIA || 'America/Bogota' }));
+  return `${l.getDate()} ${M[l.getMonth()]}`;
+}
 
 // ---------- Exportación para el data lake ----------
 route('GET', '/api/export', 'export', async () => ({ tablas: exporter.TABLAS, formatos: ['json', 'csv'] }));
@@ -414,9 +444,17 @@ route('PATCH', `/api/${COLL_RX}/:id`, 'editor', async (req, ctx) => {
   const coll = ctx.params.coll, id = ctx.params.id;
   const patch = cleanDoc(coll, ctx.body, true);
   delete patch.project_id; // un registro no cambia de proyecto
+  let cols = null, ec = null, traz = null;
+  if (coll === 'projects' && patch.props) { cols = await projectColumns(); ec = cols.find(c => c.type === 'select' && /estado/i.test(c.name)); traz = cols.find(c => c.log) || cols.find(c => c.id === 'trazabilidad'); }
   const doc = await store.update(coll, id, cur => {
     const next = { ...cur, ...patch, updated_at: now(), updated_by: ctx.user.id, updated_by_name: ctx.user.name };
     if (patch.props) next.props = { ...(cur.props || {}), ...patch.props }; // se mezclan columna por columna
+    // Trazabilidad automática: cada cambio de estado deja su entrada en la bitácora
+    if (ec && traz && ec.id in patch.props && (cur.props || {})[ec.id] !== patch.props[ec.id] && !(traz.id in patch.props)) {
+      const linea = `${fechaCorta()}: Estado ${(cur.props || {})[ec.id] || 'sin estado'} → ${patch.props[ec.id] || 'sin estado'} (${ctx.user.name})`;
+      const prev = String(next.props[traz.id] || '');
+      next.props[traz.id] = (linea + (prev ? '\n' + prev : '')).slice(0, 20000);
+    }
     return next;
   });
   if (!doc) throw new HttpError(404, 'No encontrado');
