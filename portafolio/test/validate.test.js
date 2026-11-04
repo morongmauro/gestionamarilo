@@ -8,6 +8,8 @@ test('cleanDoc descarta campos desconocidos y conserva la evidencia del captado'
   assert.equal(d.hack, undefined);
   assert.equal(d.captado[0].estado, 'verificado');
   assert.equal(d.captado[0].fuente, 'SAP');
+  const v = V.cleanDoc('cases', { validacion: { 2026: { hasta: '2026-10', por: 'Ana' } } }, true);
+  assert.equal(v.validacion['2026'].hasta, '2026-10');
 });
 test('projects acepta frase, área y origen; sessions acepta decisiones estructuradas', () => {
   const p = V.cleanDoc('projects', { frase: 'Clasificar cotizaciones en una hora', area: 'Comercial', origen: { tipo: 'propuesta' }, __proto__: { x: 1 } }, true);

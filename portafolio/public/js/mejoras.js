@@ -45,44 +45,51 @@
   }
 
   /* ---------- evidencia detrás de la cifra ---------- */
-  // Un registro de captado cuenta como «verificado» cuando tiene estado verificado
-  const verificado = x => x && x.estado === 'verificado';
+  // Una validación por iniciativa y año: «validado hasta tal mes, por tal persona».
+  // Todo lo captado hasta ese mes cuenta como verificado; lo posterior, como preliminar.
+  const validacionDe = (caso, anio) => (caso && caso.validacion && caso.validacion[String(anio)]) || null;
+  const verificado = (c, caso) => { if (!c || !c.mes) return false; const v = validacionDe(caso, c.mes.slice(0, 4)); return !!(v && v.hasta && c.mes <= v.hasta); };
   function capturasDelAnio(Y, filas) {
     const out = [];
     filas.forEach(x => { if (!x.caso || x.caso.moneda === 'USD') return;
       (x.caso.captado || []).forEach(c => { if (c.mes && c.mes.startsWith(Y + '-') && Number(c.valor)) out.push({ p: x.p, c, caso: x.caso }); }); });
     return out.sort((a, b) => b.c.mes.localeCompare(a.c.mes) || Number(b.c.valor) - Number(a.c.valor));
   }
+  const mesLargo = m => (m ? `${App.d.MES3[Number(m.slice(5)) - 1]} ${m.slice(0, 4)}` : '');
   function evidenciaHTML(Y, filas) {
     const caps = capturasDelAnio(Y, filas);
     if (!caps.length) return '<div class="faint" style="padding:8px 0">Aún no hay capturas registradas en este año.</div>';
     const por = new Map();
-    caps.forEach(({ p, c }) => { const g = por.get(p.id) || { p, n: 0, ver: 0, pre: 0, fuentes: new Set(), val: new Set(), ult: '' }; g.n++; if (verificado(c)) g.ver += Number(c.valor); else g.pre += Number(c.valor); if (c.fuente) g.fuentes.add(c.fuente); if (c.validador) g.val.add(c.validador); if (c.mes > g.ult) g.ult = c.mes; por.set(p.id, g); });
+    caps.forEach(({ p, c, caso }) => { const g = por.get(p.id) || { p, caso, ver: 0, pre: 0, ult: '' }; if (verificado(c, caso)) g.ver += Number(c.valor); else g.pre += Number(c.valor); if (c.mes > g.ult) g.ult = c.mes; por.set(p.id, g); });
     const gs = [...por.values()].sort((a, b) => (b.ver + b.pre) - (a.ver + a.pre));
-    return `<table class="lst ev-tbl"><thead><tr><th>Iniciativa</th><th class="n">Capturado</th><th class="n">Verificado</th><th class="n">Preliminar</th><th>Capturas</th><th>Fuentes</th><th>Validó</th></tr></thead><tbody>
-      ${gs.map(g => `<tr><td><a href="#/proyectos/${g.p.id}/caso">${esc(App.projectName(g.p))}</a></td><td class="n"><b>${esc(App.moneyShort(g.ver + g.pre))}</b></td><td class="n good">${esc(App.moneyShort(g.ver))}</td><td class="n">${esc(App.moneyShort(g.pre))}</td><td>${g.n} · última ${esc(App.d.MES3[Number(g.ult.slice(5)) - 1])}</td><td>${g.fuentes.size ? esc([...g.fuentes].join(', ')) : '<span class="faint">sin fuente</span>'}</td><td>${g.val.size ? esc([...g.val].join(', ')) : '<span class="faint">—</span>'}</td></tr>`).join('')}
-    </tbody></table><div class="faint" style="font-size:12px;margin-top:8px">Una captura queda «verificada» cuando en el caso de negocio se registra su fuente, quién la validó y la fecha. Lo demás se muestra como preliminar. Clic en la iniciativa para ver cada captura.</div>`;
+    return `<table class="lst ev-tbl"><thead><tr><th>Iniciativa</th><th class="n">Capturado</th><th class="n">Verificado</th><th class="n">Preliminar</th><th>Validación</th></tr></thead><tbody>
+      ${gs.map(g => { const v = validacionDe(g.caso, Y);
+        return `<tr><td><a href="#/proyectos/${g.p.id}/caso">${esc(App.projectName(g.p))}</a></td><td class="n"><b>${esc(App.moneyShort(g.ver + g.pre))}</b></td><td class="n good">${esc(App.moneyShort(g.ver))}</td><td class="n">${esc(App.moneyShort(g.pre))}</td>
+          <td>${v && v.hasta ? `hasta ${esc(mesLargo(v.hasta))}${v.por ? ' · ' + esc(v.por) : ''}${v.fecha ? ' · ' + esc(App.d.fmtShort(v.fecha)) : ''}${v.url ? ` · <a href="${esc(v.url)}" target="_blank" rel="noopener">soporte ↗</a>` : ''}` : '<span class="faint">sin validar · capturado hasta ' + esc(mesLargo(g.ult)) + '</span>'}</td></tr>`; }).join('')}
+    </tbody></table><div class="faint" style="font-size:12px;margin-top:8px">Verificado = capturado hasta el mes que el área validó. Se marca en el caso de negocio con un clic: «validado hasta…, por…».</div>`;
   }
-  // Editor de evidencia dentro del caso de negocio (lo llama caso.js)
-  function evidenciaEditor(box, cap, anio, ro, onSave) {
-    const items = cap.map((c, i) => ({ c, i })).filter(z => z.c.mes && z.c.mes.startsWith(anio + '-') && Number(z.c.valor)).sort((a, b) => a.c.mes.localeCompare(b.c.mes));
+  // Validación dentro del caso de negocio (lo llama caso.js): una línea, no una tabla
+  function evidenciaEditor(box, caso, anio, ro) {
+    const caps = (caso.captado || []).filter(c => c.mes && c.mes.startsWith(anio + '-') && Number(c.valor));
+    const meses = [...new Set(caps.map(c => c.mes))].sort();
+    const v = validacionDe(caso, anio) || {};
     const dis = ro ? 'disabled' : '';
-    box.innerHTML = `<h3 class="hoja-t" style="margin-top:18px"><span class="nm">✓</span>Evidencia de lo captado · ${anio}</h3>
-      <div class="help" style="margin:4px 0 10px">Para que una captura sume como <b>verificada</b> en el inicio, registra de dónde sale la cifra, quién la validó en el área y cuándo. Sin eso se muestra como preliminar.</div>
-      ${items.length ? `<div class="flujo-wrap"><table class="lst ev-tbl"><thead><tr><th>Mes</th><th>Tipo</th><th class="n">Valor</th><th>Estado</th><th>Fuente (sistema o documento)</th><th>Enlace</th><th>Validó</th><th>Fecha</th></tr></thead><tbody>
-        ${items.map(({ c, i }) => `<tr><td>${esc(App.d.MES3[Number(c.mes.slice(5)) - 1])}</td><td>${esc(App.catLabel(c.categoria))}</td><td class="n"><b>${esc(App.moneyShort(Number(c.valor)))}</b></td>
-          <td><select class="fld" data-ev="${i}" data-evk="estado" ${dis}><option value="preliminar" ${verificado(c) ? '' : 'selected'}>Preliminar</option><option value="verificado" ${verificado(c) ? 'selected' : ''}>Verificado</option></select></td>
-          <td><input class="fld" data-ev="${i}" data-evk="fuente" value="${esc(c.fuente || '')}" placeholder="SAP, informe de cartera…" ${dis}></td>
-          <td><input class="fld" data-ev="${i}" data-evk="url" value="${esc(c.url || '')}" placeholder="https://…sharepoint…" ${dis}></td>
-          <td><input class="fld" data-ev="${i}" data-evk="validador" value="${esc(c.validador || '')}" placeholder="Nombre del área" ${dis}></td>
-          <td><input class="fld" type="date" data-ev="${i}" data-evk="fecha_validacion" value="${esc(c.fecha_validacion || '')}" ${dis}></td></tr>`).join('')}
-      </tbody></table></div>` : '<div class="faint" style="font-size:12.5px">Cuando registres un valor captado en este año, aquí podrás anotar su evidencia.</div>'}`;
+    const ver = caps.filter(c => verificado(c, caso)).reduce((a, c) => a + Number(c.valor), 0), tot = caps.reduce((a, c) => a + Number(c.valor), 0);
+    box.innerHTML = `<div class="val-box"><div class="val-t">Validación del valor captado · ${anio}</div>
+      ${meses.length ? `<div class="val-r">
+        <label>Validado hasta<select class="fld" data-val="hasta" ${dis}><option value="">— sin validar —</option>${meses.map(m => `<option value="${m}" ${m === v.hasta ? 'selected' : ''}>${esc(mesLargo(m))}</option>`).join('')}</select></label>
+        <label>Por<input class="fld" data-val="por" value="${esc(v.por || '')}" placeholder="Quién lo confirmó en el área" list="pplList" ${dis}></label>
+        <label>Soporte (opcional)<input class="fld" data-val="url" value="${esc(v.url || '')}" placeholder="Enlace al informe o correo" ${dis}></label>
+      </div>
+      <div class="val-s">${v.hasta ? `<span class="badge good">Verificado ${esc(App.moneyShort(ver))}</span> de ${esc(App.moneyShort(tot))} capturados${v.fecha ? ` · validado el ${esc(App.d.fmtShort(v.fecha))}` : ''}` : `<span class="badge warn">Preliminar ${esc(App.moneyShort(tot))}</span> · nada validado todavía`}</div>`
+      : '<div class="faint" style="font-size:12.5px">Cuando registres valor captado en este año, aquí lo marcas como validado en un clic.</div>'}</div>`;
     box.onchange = e => {
-      const t = e.target; if (t.dataset.ev == null) return;
-      const c = cap[+t.dataset.ev]; if (!c) return;
-      c[t.dataset.evk] = t.value;
-      if (t.dataset.evk === 'estado' && t.value === 'verificado' && !(c.fuente || '').trim()) App.toast('Verificado necesita al menos la fuente', true);
-      onSave();
+      const t = e.target; if (!t.dataset.val) return;
+      const val = Object.assign({}, caso.validacion || {}); const cur = Object.assign({}, val[String(anio)] || {});
+      cur[t.dataset.val] = t.value;
+      if (t.dataset.val === 'hasta') { if (t.value) { cur.fecha = hoy(); if (!cur.por) cur.por = App.S.me.name; } else { delete cur.fecha; } }
+      val[String(anio)] = cur; caso.validacion = val;
+      App.patch('cases', caso.id, { validacion: val }).then(() => evidenciaEditor(box, caso, anio, ro)).catch(() => {});
     };
   }
 
@@ -151,7 +158,7 @@
   function historia(p, { pl, caso, f, prox, ro, d }) {
     const Y = Number(hoy().slice(0, 4));
     const caps = (caso && caso.moneda !== 'USD' ? caso.captado || [] : []).filter(c => c.mes && c.mes.startsWith(Y + '-'));
-    const ver = caps.filter(verificado).reduce((a, c) => a + (Number(c.valor) || 0), 0), pre = caps.filter(c => !verificado(c)).reduce((a, c) => a + (Number(c.valor) || 0), 0);
+    const ver = caps.filter(c => verificado(c, caso)).reduce((a, c) => a + (Number(c.valor) || 0), 0), pre = caps.filter(c => !verificado(c, caso)).reduce((a, c) => a + (Number(c.valor) || 0), 0);
     const ultima = decisionesDe(p.id)[0];
     const hab = habilitador(p);
     const porque = caso && (caso.problema || caso.objetivo);
@@ -168,7 +175,7 @@
         <div><span class="l">Proyectado ${Y}</span><b>${esc(App.moneyShort(d ? d.proy : 0))}</b></div>
         <div><span class="l">${sigla('VPN')}</span>${f && f.vpn != null ? `<b class="${f.vpn < 0 ? 'crit' : ''}">${esc(App.moneyShort(f.vpn, caso.moneda))}</b> <span class="faint">· ${sigla('TIR')} ${f.tir != null ? esc(App.pct(f.tir)) : '—'}</span>` : '<span class="faint">sin caso</span>'}</div>
         <div><span class="l">Captado ${Y}</span><b>${esc(App.moneyShort(ver + pre))}</b> <span class="faint">· verificado ${esc(App.moneyShort(ver))} · preliminar ${esc(App.moneyShort(pre))}</span></div>
-        <div><span class="l">Evidencia</span>${caps.length ? `<a href="#/proyectos/${p.id}/caso">${caps.filter(verificado).length} de ${caps.length} capturas verificadas →</a>` : '<span class="faint">sin capturas este año</span>'}</div>
+        <div><span class="l">Evidencia</span>${caps.length ? `<a href="#/proyectos/${p.id}/caso">${validacionDe(caso, Y) && validacionDe(caso, Y).hasta ? 'validado hasta ' + esc(mesLargo(validacionDe(caso, Y).hasta)) + ' por ' + esc(validacionDe(caso, Y).por || '') : 'sin validar'} →</a>` : '<span class="faint">sin capturas este año</span>'}</div>
       </div></div>
       <div class="hs-acc">${prox ? `<a class="btn amarillo" href="#/agenda/preparar/${prox.id}">Preparar el comité</a>` : ''}${ro ? '' : `<a class="btn" href="#/proyectos/${p.id}/caso">Registrar captura</a>`}${hab && hab.email ? `<a class="btn ghost" href="mailto:${esc(hab.email)}?subject=${encodeURIComponent(App.projectName(p))}">Escribir a ${esc(hab.name.split(' ')[0])}</a>` : ''}</div>
     </div>`;
@@ -206,7 +213,7 @@
             <div class="prep-g">
               <div><span class="l">Avance</span>${pl.acts.length ? `<b>${pl.avance}%</b> · ${esc(App.d.fmt(pl.ini))} – ${esc(App.d.fmt(pl.fin))}` : '<span class="faint">sin cronograma</span>'}</div>
               <div><span class="l">Caso</span>${caso ? `${esc(caso.estado || 'Borrador')}${f.vpn != null ? ` · VPN ${esc(App.moneyShort(f.vpn, caso.moneda))} · TIR ${f.tir != null ? esc(App.pct(f.tir)) : '—'}` : ''}` : '<span class="faint">sin caso</span>'}</div>
-              <div><span class="l">Captado ${Y}</span><b>${esc(App.moneyShort(cap))}</b> <span class="faint">· ${caps.filter(verificado).length} de ${caps.length} verificadas</span></div>
+              <div><span class="l">Captado ${Y}</span><b>${esc(App.moneyShort(cap))}</b> <span class="faint">· ${validacionDe(caso, Y) && validacionDe(caso, Y).hasta ? 'validado hasta ' + esc(mesLargo(validacionDe(caso, Y).hasta)) : 'sin validar'}</span></div>
               <div><span class="l">Alertas</span>${alertas.length ? `<span class="crit">${esc(alertas.join(' · '))}</span>` : '<span class="good">sin alertas</span>'}</div>
               <div><span class="l">Próximos hitos</span>${hitosHTML(p.id)}</div>
               <div><span class="l">Última decisión</span>${ult ? `${esc(ult.tipo)}: ${esc(ult.texto)} <span class="faint">(${esc(App.d.fmtShort(ult.fecha || ult.s.fecha))})</span>` : '<span class="faint">ninguna</span>'}</div>
@@ -248,14 +255,14 @@
   function desactualizados() {
     const lim = new Date(Date.now() - 21 * 86400e3).toISOString(), Y = hoy().slice(0, 4), mesPasado = hoy().slice(0, 7);
     const viejos = App.S.projects.filter(p => App.enRealizacion(p) && (p.updated_at || p.created_at || '') < lim);
-    const sinEv = App.S.cases.map(c => { const xs = (c.captado || []).filter(x => x.mes && x.mes.startsWith(Y + '-') && x.mes < mesPasado && Number(x.valor) && !verificado(x)); return xs.length ? { c, n: xs.length, total: xs.reduce((a, x) => a + Number(x.valor), 0) } : null; }).filter(Boolean);
+    const sinEv = App.S.cases.map(c => { const xs = (c.captado || []).filter(x => x.mes && x.mes.startsWith(Y + '-') && x.mes < mesPasado && Number(x.valor) && !verificado(x, c)); return xs.length ? { c, desde: xs.map(x => x.mes).sort()[0], total: xs.reduce((a, x) => a + Number(x.valor), 0) } : null; }).filter(Boolean);
     const vencidos = App.S.sessions.flatMap(s => (s.compromisos || []).filter(k => !k.hecho && k.fecha && k.fecha < hoy() && (k.texto || '').trim()).map(k => ({ k, s })));
     const ideas = App.S.projects.filter(p => p.origen && p.origen.tipo === 'propuesta' && (p.created_at || '') < new Date(Date.now() - 10 * 86400e3).toISOString() && /idea/i.test(((p.props || {})[(App.estadoCol() || {}).id] || '')));
     const item = (href, t, s) => `<a class="des" href="${href}"><b>${esc(t)}</b><span>${esc(s)}</span></a>`;
     return `<div class="card-box" style="margin-bottom:16px"><h3 style="font-size:14px;font-weight:800;margin-bottom:4px">Qué está desactualizado</h3><div class="muted" style="font-size:12.5px;margin-bottom:10px">Se calcula solo. Cuando esta lista está vacía, el portafolio está al día.</div>
       ${!viejos.length && !sinEv.length && !vencidos.length && !ideas.length ? '<div class="atn-ok">Todo al día.</div>' : ''}
       ${viejos.map(p => item('#/proyectos/' + p.id, App.projectName(p), 'en realización sin cambios desde ' + App.d.ago(p.updated_at || p.created_at))).join('')}
-      ${sinEv.map(({ c, n, total }) => { const p = App.byId('projects', c.project_id); return p ? item(`#/proyectos/${p.id}/caso`, App.projectName(p), `${n} captura${n > 1 ? 's' : ''} de ${Y} sin evidencia (${App.moneyShort(total)})`) : ''; }).join('')}
+      ${sinEv.map(({ c, desde, total }) => { const p = App.byId('projects', c.project_id); return p ? item(`#/proyectos/${p.id}/caso`, App.projectName(p), `captado sin validar desde ${App.d.MES3[Number(desde.slice(5)) - 1]} (${App.moneyShort(total)})`) : ''; }).join('')}
       ${vencidos.map(({ k, s }) => item('#/agenda', k.texto, `compromiso vencido el ${App.d.fmtShort(k.fecha)} · ${k.responsable || 'sin responsable'} · ${App.Agenda.tituloOf(s)}`)).join('')}
       ${ideas.map(p => item('#/proyectos/' + p.id, App.projectName(p), 'propuesta sin respuesta hace más de 10 días · ' + (p.origen.nombre || ''))).join('')}
     </div>`;
@@ -270,6 +277,6 @@
     box.addEventListener('click', e => { const b = e.target.closest('[data-qe=editar]'); if (b) editarQueEs(b); });
   }
 
-  App.Mejoras = { sigla, queEs, editarQueEs, verificado, capturasDelAnio, evidenciaHTML, evidenciaEditor, decisionesRecientes, decisionesEditor, decisionesDe, hitos, hitosHTML, enRealizacion, historia, preparar, proponer, desactualizados, adminExtras };
+  App.Mejoras = { sigla, queEs, editarQueEs, verificado, validacionDe, capturasDelAnio, evidenciaHTML, evidenciaEditor, decisionesRecientes, decisionesEditor, decisionesDe, hitos, hitosHTML, enRealizacion, historia, preparar, proponer, desactualizados, adminExtras };
   App.views.proponer = { render: proponer };
 })();

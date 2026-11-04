@@ -77,6 +77,7 @@ const SCHEMAS = {
     problema: 'text', objetivo: 'text', alcance: 'text', fuera_alcance: 'text', beneficios_cual: 'text',
     riesgos: 'text', supuestos: 'text', recomendacion: 'text',
     tasa: 'num', anios: 'num', anio_inicio: 'num', moneda: 'str', flujos: 'arr', escenarios: 'obj', captado: 'arr',
+    validacion: 'obj', // { '2026': { hasta: 'AAAA-MM', por, fecha, url, nota } } · lo captado hasta ese mes cuenta como verificado
   },
   // Sesiones de comité (agenda)
   sessions: {

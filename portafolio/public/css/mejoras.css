@@ -45,7 +45,13 @@ abbr.sg{text-decoration:underline dotted;text-underline-offset:3px;cursor:help}
 .evid{grid-column:1/-1;margin-top:14px;padding-top:12px;border-top:1px dashed var(--line-2)}
 .evid[hidden]{display:none}
 .ev-tbl td,.ev-tbl th{font-size:var(--fs-xs);padding:6px 8px}
-.ev-tbl .fld{padding:4px 6px;font-size:12px;min-width:90px}
+.val-box{margin-top:18px;padding:14px 16px;border-radius:12px;background:var(--sunk)}
+.val-t{font-size:var(--fs-sm);font-weight:800;margin-bottom:8px}
+.val-r{display:grid;grid-template-columns:200px minmax(0,1fr) minmax(0,1.4fr);gap:10px}
+.val-r label{display:flex;flex-direction:column;gap:4px;font-size:var(--fs-2xs);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.val-r .fld{font-size:13px}
+.val-s{margin-top:10px;font-size:var(--fs-sm)}
+@media(max-width:800px){.val-r{grid-template-columns:1fr}}
 
 /* Decisiones y próximos comités */
 .decs{display:flex;flex-direction:column;gap:6px}
