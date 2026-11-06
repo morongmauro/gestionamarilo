@@ -1,5 +1,7 @@
 # Desplegar el portafolio en Google Cloud
 
+> El repositorio también trae archivos para Azure (`infra/main.bicep`, el flujo de GitHub Actions y el almacenamiento Azure SQL) de una versión anterior. No hacen falta en Google Cloud y no estorban; se pueden borrar cuando TI confirme la ruta.
+
 La aplicación no necesita cambios para correr en Google Cloud: ya habla Postgres
 (`lib/store-pg.js`) y ya tiene `Dockerfile`. Lo que cambia es **dónde** corre y
 **quién** configura cada pieza.
@@ -51,7 +53,7 @@ Si algún día alguien necesita sacar la información para otro sistema, ya exis
 Dos opciones; se elige una y se deja:
 
 - **Manual:** quien tenga permiso corre el mismo `gcloud run deploy` del paso 4.
-- **Automática:** Cloud Build conectado al repositorio de GitHub (rama `main`) publica solo cada vez que hay cambios. TI lo configura una vez en Cloud Build → Activadores.
+- **Automática:** Cloud Build conectado al repositorio de GitHub (rama `main`) publica solo cada vez que hay cambios. TI lo configura una vez en Cloud Build → Activadores, apuntando al archivo `cloudbuild.yaml` que ya está en el repositorio (solo cambia la región y el nombre de la instancia).
 
 En ninguno de los dos casos hay que tocar la base de datos.
 

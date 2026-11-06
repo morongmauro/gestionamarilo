@@ -133,3 +133,13 @@ html[data-vista="nueva"] main:not(.ro) .historia .frase:hover{background:var(--h
 .des{display:grid;grid-template-columns:minmax(0,1fr);padding:7px 8px;border-radius:8px;color:inherit;text-decoration:none;font-size:var(--fs-sm)}
 .des span{font-size:var(--fs-xs);color:var(--muted)}
 .des:hover{background:var(--hover)}
+
+/* Tarjetas: blancas, sin contorno de color ni degradado. Lo que resalta es el contenido. */
+html[data-vista="nueva"] .dash-card,html[data-vista="nueva"] .card-box{border:0;box-shadow:var(--shadow)}
+html[data-vista="nueva"] .card-hero{background:var(--card);border:0;box-shadow:0 2px 6px rgba(22,11,41,.05),0 16px 40px rgba(22,11,41,.09)}
+html[data-vista="nueva"] .card-hero::before{display:none}
+html[data-vista="nueva"] .card-atn{background:var(--card)}
+html[data-vista="nueva"] .que-es{background:var(--card)}
+/* Variante «acento»: un tinte muy suave solo en las dos tarjetas protagonistas (se activa con data-cards="acento") */
+html[data-vista="nueva"][data-cards="acento"] .card-hero{background:linear-gradient(135deg,color-mix(in srgb,var(--amarillo) 9%,var(--card)),var(--card) 60%)}
+html[data-vista="nueva"][data-cards="acento"] .que-es{background:linear-gradient(135deg,color-mix(in srgb,var(--amarillo) 7%,var(--card)),var(--card) 55%)}

@@ -1,0 +1,26 @@
+# Google Cloud Build · publica el portafolio en Cloud Run cada vez que hay cambios en main.
+# TI lo conecta una vez: Cloud Build → Activadores → repositorio de GitHub → este archivo.
+# Sustituciones: _REGION (ej. us-east1) y _CLOUDSQL (PROYECTO:REGION:INSTANCIA).
+# Los secretos (DATABASE_URL, SESSION_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD) viven en Secret Manager.
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ['build', '-t', '${_REGION}-docker.pkg.dev/$PROJECT_ID/portafolio/app:$SHORT_SHA', '.']
+  - name: gcr.io/cloud-builders/docker
+    args: ['push', '${_REGION}-docker.pkg.dev/$PROJECT_ID/portafolio/app:$SHORT_SHA']
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - portafolio
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/portafolio/app:$SHORT_SHA
+      - --region=${_REGION}
+      - --add-cloudsql-instances=${_CLOUDSQL}
+      - --set-secrets=DATABASE_URL=DATABASE_URL:latest,SESSION_SECRET=SESSION_SECRET:latest,ADMIN_EMAIL=ADMIN_EMAIL:latest,ADMIN_PASSWORD=ADMIN_PASSWORD:latest
+      - --set-env-vars=ORG_NAME=Amarilo,NODE_ENV=production
+      - --allow-unauthenticated
+substitutions:
+  _REGION: us-east1
+  _CLOUDSQL: PROYECTO:us-east1:portafolio
+options:
+  logging: CLOUD_LOGGING_ONLY
