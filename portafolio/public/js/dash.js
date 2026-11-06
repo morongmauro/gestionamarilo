@@ -396,7 +396,7 @@
     const sinE = d.filas.filter(x => !x.estado).length;
     const total = d.filas.length || 1;
     const hoy = App.d.today();
-    const atras = d.filas.filter(x => App.planOf(x.p.id).atrasadas > 0).length, sinCron = d.filas.filter(x => !App.planOf(x.p.id).acts.length).length;
+    const atras = d.filas.filter(x => App.planOf(x.p.id).atrasadas > 0).length, sinPlan = d.filas.filter(x => !App.planOf(x.p.id).acts.length), sinCron = sinPlan.filter(x => App.sinPlan(x.p).aplica).length, sinAplica = sinPlan.length - sinCron;
     const casosE = ['Aprobado', 'En revisión', 'Borrador'].map(e => ({ e, n: d.filas.filter(x => x.caso && (x.caso.estado || 'Borrador') === e).length }));
     let acc = 0;
     return `<div class="dash-card"><h3>Estado del portafolio</h3><div class="sub">${d.filas.length} proyectos en la vista, por etapa.</div>
@@ -405,8 +405,8 @@
       <div class="lgd" style="margin-top:8px">${cuenta.map(z => `<span><i class="sw" style="--c:${color(z.o)}"></i>${esc(z.o.name)} <b style="color:var(--ink)">${z.n}</b></span>`).join('')}${sinE ? `<span><i class="sw" style="--c:var(--sunk)"></i>Sin estado <b style="color:var(--ink)">${sinE}</b></span>` : ''}</div>
       <div class="chips2">
         <div class="chip2"><span class="st-ico ${atras ? 'critical' : 'good'}">${atras ? '✕' : '✓'}</span><b>${atras}</b> con actividades atrasadas</div>
-        <div class="chip2"><b>${d.filas.length - atras - sinCron}</b> con cronograma al día</div>
-        <div class="chip2"><b>${sinCron}</b> sin cronograma</div>
+        <div class="chip2"><b>${d.filas.length - atras - sinPlan.length}</b> con cronograma al día</div>
+        <div class="chip2"><b>${sinCron}</b> en ejecución sin cronograma</div>${sinAplica ? `<div class="chip2"><b>${sinAplica}</b> en operación o pausa, sin cronograma</div>` : ''}
         ${casosE.map(c => `<div class="chip2"><span class="pill cl-${App.Caso.estadoColor(c.e)}">${c.e}</span><b>${c.n}</b> casos</div>`).join('')}
       </div></div>`;
   }

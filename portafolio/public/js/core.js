@@ -255,6 +255,16 @@ App.catOf = row => row.categoria || App.inferCat(row.concepto);
 App.catDeTipoValor = v => { const n = String(v || '').toLowerCase(); return /ingres/.test(n) ? 'ingresos' : /eficien/.test(n) ? 'eficiencia' : /riesg|cumpl/.test(n) ? 'riesgo' : /ahorr/.test(n) ? 'ahorro' : /tiemp/.test(n) ? 'tiempo' : 'otro'; };
 // ICE = Impacto × Confianza × Facilidad (cada uno de 1 a 10)
 App.iceOf = p => { const v = (p.props || {}); const i = Number(v.impacto), c = Number(v.confianza), f = Number(v.facilidad); return i > 0 && c > 0 && f > 0 ? Math.round(i * c * f) : null; };
+// Qué decir cuando una iniciativa no tiene cronograma: depende de su etapa, no es un descuido
+App.sinPlan = p => {
+  const e = String(((p && p.props) || {})[(App.estadoCol() || {}).id] || '');
+  if (/cancel/i.test(e)) return { corto: 'Cancelada', largo: 'Iniciativa cancelada: no aplica cronograma.', aplica: false };
+  if (/standby|paus|suspend|detenid/i.test(e)) return { corto: 'En pausa', largo: 'En pausa: el cronograma se retoma cuando se reactive.', aplica: false };
+  if (/realiz|seguim|operac|produc|piloto|escal|cerrad|implement/i.test(e)) return { corto: 'En operación, sin cronograma', largo: 'Ya está en operación o seguimiento: se gestiona por resultados, no por cronograma.', aplica: false };
+  if (/idea|propuest/i.test(e)) return { corto: 'Idea, aún sin plan', largo: 'Es una idea: el cronograma se arma cuando se apruebe el caso.', aplica: false };
+  if (/planea/i.test(e)) return { corto: 'Plan en construcción', largo: 'En planeación: el cronograma se está armando.', aplica: true };
+  return { corto: 'Cronograma pendiente', largo: 'En ejecución sin cronograma registrado.', aplica: true };
+};
 // Proyecto en realización: su estado dice ejecución, escalamiento, implementación, operación o cerrado, o ya tiene valor captado
 App.enRealizacion = p => {
   const ec = App.estadoCol(), e = ec ? String((p.props || {})[ec.id] || '') : '';

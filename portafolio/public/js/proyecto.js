@@ -23,7 +23,7 @@
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${ec ? `<span class="pill cl-${App.optColor(ec, estado)}" data-p="estado" style="cursor:${ro ? 'default' : 'pointer'}">${esc(estado || 'Sin ' + ec.name.toLowerCase())}</span>` : ''}</div>
         <div class="p-title" data-p="titulo">${esc(App.projectName(p))}</div>
         <div class="facts">
-          <span>Cronograma: <b>${pl.ini ? `${esc(App.d.fmt(pl.ini))} – ${esc(App.d.fmt(pl.fin))}` : 'sin fechas'}</b></span>
+          <span>Cronograma: <b>${pl.ini ? `${esc(App.d.fmt(pl.ini))} – ${esc(App.d.fmt(pl.fin))}` : esc(App.sinPlan(p).corto)}</b></span>
           ${pl.acts.length ? `<span><span class="bar-mini"><i style="width:${pl.avance}%"></i></span><b>${pl.avance}%</b> de avance${pl.atrasadas ? ` · <b style="color:var(--crit-ink)">${pl.atrasadas} atrasada${pl.atrasadas > 1 ? 's' : ''}</b>` : ''}</span>` : ''}
           <span>Caso: ${caso ? `<span class="pill cl-${App.Caso.estadoColor(caso.estado)}">${esc(caso.estado || 'Borrador')}</span>${f.vpn != null ? ` <b>VPN ${esc(App.moneyShort(f.vpn, caso.moneda))}</b>` : ''}` : '<b>sin caso</b>'}</span>
           <span title="${esc((App.ICE.detalle(p).notas || []).join(' · '))}">ICE: <b>${App.iceOf(p) ?? '—'}</b>${App.ICE.detalle(p).origen === 'caso' ? ' <span class="faint">del caso</span>' : ''}</span>

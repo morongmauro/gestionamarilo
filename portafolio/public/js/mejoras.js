@@ -137,7 +137,7 @@
     return App.actsOf(pid).filter(a => a.hito && (a.avance || 0) < 100 && a.fin).sort((a, b) => a.fin.localeCompare(b.fin)).slice(0, n);
   }
   function hitosHTML(pid) {
-    const h = hitos(pid); if (!h.length) return '<span class="faint">sin hitos marcados en el plan</span>';
+    const h = hitos(pid); if (!h.length) { const p = App.byId('projects', pid); const sp = p && !App.actsOf(pid).length ? App.sinPlan(p) : null; return `<span class="faint">${sp ? (sp.aplica ? 'hitos por definir' : 'sin hitos: ' + esc(sp.corto.toLowerCase())) : 'sin hitos marcados en el plan'}</span>`; }
     return h.map(a => `<span class="hito ${a.fin < hoy() ? 'tarde' : ''}"><b>${esc(App.d.fmtShort(a.fin))}</b> ${esc(a.name)}</span>`).join('');
   }
 
@@ -149,7 +149,7 @@
     return `<div class="dash-card span-8 card-real"><h3>Iniciativas en realización</h3><div class="sub">Estado, avance y lo que viene en cada una.</div>
       <div class="reales">${filas.map(x => { const pl = App.planOf(x.p.id), ultima = decisionesDe(x.p.id)[0];
         return `<a class="real" href="#/proyectos/${x.p.id}"><span class="nm"><b>${esc(App.projectName(x.p))}</b>${ec ? `<span class="pill cl-${App.optColor(ec, x.estado)}">${esc(x.estado || '')}</span>` : ''}${x.p.frase ? `<span class="fr">${esc(x.p.frase)}</span>` : ''}</span>
-          <span class="av">${pl.acts.length ? `<span class="bar-mini"><i style="width:${pl.avance}%"></i></span><b>${pl.avance}%</b>${pl.atrasadas ? `<span class="crit"> · ${pl.atrasadas} atrasada${pl.atrasadas > 1 ? 's' : ''}</span>` : ''}` : '<span class="faint">sin cronograma</span>'}</span>
+          <span class="av">${pl.acts.length ? `<span class="bar-mini"><i style="width:${pl.avance}%"></i></span><b>${pl.avance}%</b>${pl.atrasadas ? `<span class="crit"> · ${pl.atrasadas} atrasada${pl.atrasadas > 1 ? 's' : ''}</span>` : ''}` : `<span class="faint" title="${esc(App.sinPlan(x.p).largo)}">${esc(App.sinPlan(x.p).corto)}</span>`}</span>
           <span class="hi">${hitosHTML(x.p.id)}</span>
           <span class="dm">${ultima ? `<span class="dec-t">${esc(ultima.tipo)}</span> ${esc(ultima.texto)}` : '<span class="faint">sin decisiones registradas</span>'}</span></a>`; }).join('')}</div></div>`;
   }
@@ -166,7 +166,7 @@
       <div class="hs"><div class="hs-k">En una frase</div><div class="hs-v frase ${p.frase ? '' : 'empty'}" data-h="frase">${p.frase ? esc(p.frase) : (ro ? '—' : 'Escribe en una frase qué cambia con esta iniciativa')}</div></div>
       <div class="hs"><div class="hs-k">Por qué existe</div><div class="hs-v">${porque ? `${caso.problema ? `<p><b>Problema u oportunidad.</b> ${esc(caso.problema)}</p>` : ''}${caso.objetivo ? `<p><b>Objetivo.</b> ${esc(caso.objetivo)}</p>` : ''}` : `<span class="faint">Sin caso de negocio todavía${ro ? '' : ' · <a href="#/proyectos/' + p.id + '/caso">crearlo</a>'}</span>`}</div></div>
       <div class="hs"><div class="hs-k">Dónde va</div><div class="hs-v hs-grid">
-        <div><span class="l">Avance</span>${pl.acts.length ? `<span class="bar-mini"><i style="width:${pl.avance}%"></i></span> <b>${pl.avance}%</b>${pl.atrasadas ? ` <span class="crit">· ${pl.atrasadas} atrasada${pl.atrasadas > 1 ? 's' : ''}</span>` : ''}` : '<span class="faint">sin cronograma</span>'}</div>
+        <div><span class="l">Avance</span>${pl.acts.length ? `<span class="bar-mini"><i style="width:${pl.avance}%"></i></span> <b>${pl.avance}%</b>${pl.atrasadas ? ` <span class="crit">· ${pl.atrasadas} atrasada${pl.atrasadas > 1 ? 's' : ''}</span>` : ''}` : `<span class="faint">${esc(App.sinPlan(p).largo)}</span>`}</div>
         <div><span class="l">Próximos hitos</span><span class="hitos">${hitosHTML(p.id)}</span></div>
         <div><span class="l">Próximo comité</span>${prox ? `<a href="#/agenda/preparar/${prox.id}"><b>${esc(App.d.fmtShort(prox.fecha))}</b> · ${esc(App.Agenda.tituloOf(prox))}</a>` : '<span class="faint">ninguno programado</span>'}</div>
         <div><span class="l">Última decisión</span>${ultima ? `<span class="dec-t">${esc(ultima.tipo)}</span> ${esc(ultima.texto)} <span class="faint">· ${esc(App.d.fmtShort(ultima.fecha || ultima.s.fecha))}</span>` : '<span class="faint">ninguna registrada</span>'}</div>
@@ -212,7 +212,7 @@
           return `<div class="prep-p"><div class="prep-h"><h2>${esc(App.projectName(p))}</h2>${ec ? `<span class="pill cl-${App.optColor(ec, (p.props || {})[ec.id])}">${esc((p.props || {})[ec.id] || '')}</span>` : ''}</div>
             ${p.frase ? `<p class="fr">${esc(p.frase)}</p>` : ''}
             <div class="prep-g">
-              <div><span class="l">Avance</span>${pl.acts.length ? `<b>${pl.avance}%</b> · ${esc(App.d.fmt(pl.ini))} – ${esc(App.d.fmt(pl.fin))}` : '<span class="faint">sin cronograma</span>'}</div>
+              <div><span class="l">Avance</span>${pl.acts.length ? `<b>${pl.avance}%</b> · ${esc(App.d.fmt(pl.ini))} – ${esc(App.d.fmt(pl.fin))}` : `<span class="faint">${esc(App.sinPlan(p).corto)}</span>`}</div>
               <div><span class="l">Caso</span>${caso ? `${esc(caso.estado || 'Borrador')}${f.vpn != null ? ` · VPN ${esc(App.moneyShort(f.vpn, caso.moneda))} · TIR ${f.tir != null ? esc(App.pct(f.tir)) : '—'}` : ''}` : '<span class="faint">sin caso</span>'}</div>
               <div><span class="l">Captado ${Y}</span><b>${esc(App.moneyShort(cap))}</b> <span class="faint">· ${validacionDe(caso, Y) && validacionDe(caso, Y).hasta ? 'validado hasta ' + esc(mesLargo(validacionDe(caso, Y).hasta)) : 'sin validar'}</span></div>
               <div><span class="l">Alertas</span>${alertas.length ? `<span class="crit">${esc(alertas.join(' · '))}</span>` : '<span class="good">sin alertas</span>'}</div>
