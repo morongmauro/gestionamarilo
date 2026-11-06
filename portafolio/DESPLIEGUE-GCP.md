@@ -26,7 +26,7 @@ Cuando se agrega algo nuevo al sitio (por ejemplo la validación del captado o l
 
 Esto vale igual para Supabase y para Google Cloud: la diferencia entre los dos no es el código, es quién administra la instancia y dónde queda la información (en Google Cloud, dentro del proyecto de la empresa).
 
-La única excepción son las **vistas para Power BI o Looker** (`sql/vistas.sql`): si quieren leer la base directamente con columnas en vez de JSON, esas vistas sí se escriben para Postgres y se actualizan cuando aparece un campo nuevo que quieran ver en el reporte. Alternativa sin SQL: la exportación por API (`/api/export/...`) y el envío diario al data lake, que ya existen.
+Si algún día alguien necesita sacar la información para otro sistema, ya existen la exportación por API (`/api/export/...`) y el envío diario al data lake, sin SQL.
 
 ## Pasos (una sola vez)
 
