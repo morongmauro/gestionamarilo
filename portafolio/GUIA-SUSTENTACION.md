@@ -1,4 +1,4 @@
-# Guía para sustentar el Portafolio de Generación de Valor (y la oficina de agentes)
+# Guía para sustentar el sitio del Portafolio de Generación de Valor
 
 Para quien ideó y dirige la solución, no para quien la programa. Todo lo que hay aquí sale del código real y de las decisiones tomadas en su construcción. Fecha: 6 de noviembre de 2026.
 
@@ -17,15 +17,15 @@ Convención: 🟢 implementado · 🟡 parcial · 🟠 simulado o demostrativo �
 5. **Cómo funciona conceptualmente.** Entra una necesidad → se convierte en iniciativa con caso → se planea y ejecuta → pasa por comité → se captura y valida el valor → el inicio lo muestra con evidencia. Sección 3.
 6. **Qué información usa.** La que registra el equipo (iniciativas, casos, cronogramas, sesiones, captado), la que validan las áreas (captado hasta tal mes) y la que vino de Notion (76 iniciativas importadas con sus campos). Nada viene todavía de sistemas fuente.
 7. **Qué produce.** La cifra del año dividida en verificado y preliminar, alertas, prioridad ICE, decisiones registradas, vista para preparar el comité, exportaciones.
-8. **Las decisiones que defiendo.** Sección 6. Las tres centrales: una sola fuente de verdad; evidencia detrás de cada cifra; los agentes de IA solo proponen.
-9. **Qué está funcionando, qué falta y qué es demostración.** Sección 5. En especial: la demostración en Vercel usa datos inventados; los datos reales se importan en la instancia de la empresa; la conexión con Microsoft y el asistente de IA están diseñados, no activos.
-10. **Qué cuesta y qué viene.** Infraestructura entre 10 y 30 USD al mes, sin licencias por usuario. Próximos pasos: criterio de «captura verificada», puesta en Google Cloud con TI, y decidir sobre el asistente de IA.
+8. **Las decisiones que defiendo.** Sección 6. Las tres centrales: una sola fuente de verdad; evidencia detrás de cada cifra; validación ágil en una línea.
+9. **Qué está funcionando, qué falta y qué es demostración.** Sección 5. En especial: la demostración en Vercel usa datos inventados; los datos reales se importan en la instancia de la empresa.
+10. **Qué cuesta y qué viene.** Infraestructura entre 10 y 30 USD al mes, sin licencias por usuario. Próximos pasos: criterio de «captura verificada» y puesta en Google Cloud con TI.
 
 ### B. DEBO ENTENDER (conceptualmente)
 
 - **Arquitectura:** una aplicación web (página en el navegador + servidor pequeño) y una base de datos. Sin piezas exóticas. Sección 4.
 - **De dónde vienen los datos y cómo se actualizan:** se registran en la interfaz; cada cambio queda con nombre y hora; la pantalla se sincroniza sola cada 20 segundos entre usuarios.
-- **Integraciones:** hoy, importación de Notion (CSV), Excel de ida y vuelta para el caso, archivo de calendario para Outlook, exportación por API. Diseñadas y no activas: Microsoft 365 (solo lectura) y el modelo de IA.
+- **Integraciones:** hoy, importación de Notion (CSV), Excel de ida y vuelta para el caso, archivo de calendario para Outlook, exportación por API. No hay conexiones automáticas con otros sistemas.
 - **Automatizaciones:** cálculos (VPN, TIR, esperado a la fecha, alertas, ruta crítica, ICE), bitácora automática al cambiar de estado, lista de desactualizados, pruebas automáticas de los cálculos.
 - **Permisos:** tres roles; lector no edita; solo administrador maneja usuarios y la configuración.
 - **Seguridad:** contraseñas con hash robusto, sesiones firmadas, freno a intentos de acceso, validación de todo lo que llega del navegador, encabezados de seguridad. Sección 8 dice qué puedo afirmar y qué no.
@@ -42,8 +42,6 @@ Convención: 🟢 implementado · 🟡 parcial · 🟠 simulado o demostrativo �
 - **Documento JSON:** cómo se guarda cada registro; por eso agregar un campo no exige cambiar la base.
 - **API:** la forma en que la página pide y envía datos al servidor; también la que usan las exportaciones.
 - **Vercel:** el servicio gratuito donde corre la demostración con datos inventados.
-- **Microsoft Graph y Entra ID:** la puerta de Microsoft 365 y el registro de aplicaciones que TI haría para leer correo y calendario.
-- **Llave de API de IA:** una clave con crédito prepagado y tope mensual; no es una cuenta personal.
 - **PKCE / cookie HttpOnly / hash:** nombres de mecanismos de seguridad que ya están puestos; basta con saber que existen.
 - **Ruta crítica, VPN, TIR, payback, ICE:** glosario al final.
 
@@ -54,7 +52,6 @@ Convención: 🟢 implementado · 🟡 parcial · 🟠 simulado o demostrativo �
 - Cómo funciona el intérprete que adapta el cronograma a la política de seguridad del navegador.
 - Qué librerías se usan (son dos) ni sus versiones.
 - Cómo se configuran las variables de entorno, el contenedor o Cloud Build paso a paso: eso lo hace TI con la guía.
-- Los detalles de la oficina 3D de los agentes (Three.js, cámaras, materiales): es una demostración visual.
 
 ---
 
@@ -82,7 +79,7 @@ Convención: 🟢 implementado · 🟡 parcial · 🟠 simulado o demostrativo �
 
 **¿Qué valor genera?** Credibilidad ante presidencia (evidencia), tiempo del equipo (sin PowerPoint), trazabilidad (decisiones y cambios), gobierno de la información (nube de la empresa, roles), y una entrada ordenada de necesidades.
 
-**¿Qué todavía NO hace?** No se conecta a sistemas fuente (el captado se registra a mano). No lee Outlook ni Teams (diseñado, pendiente de TI). No tiene asistente de IA (diseñado, pendiente de decisión). No tiene tendencia de varios años (un año de datos). No tiene confidencialidad por iniciativa.
+**¿Qué todavía NO hace?** No se conecta a sistemas fuente (el captado se registra a mano). No envía recordatorios por correo. No tiene tendencia de varios años (un año de datos). No tiene confidencialidad por iniciativa.
 
 **¿Estado actual?** Código completo y probado en local con los 76 proyectos reales; demostración pública en Vercel con datos inventados; pendiente la puesta en Google Cloud por TI; pendiente definir el criterio de «captura verificada» y quién valida en cada área.
 
@@ -113,7 +110,7 @@ Problema: ideas por pasillo → Usuario: cualquier persona con acceso → Entrad
 2. **Interfaz (la página).** Muestra el inicio, la tabla, las fichas, el cronograma, el caso y la agenda; hace los cálculos de pantalla y se sincroniza cada 20 segundos. Existe para que todo se vea y se edite en un solo lugar. Recordar: tiene dos vistas, la actual y la mejorada, con un botón para cambiar.
 3. **Servidor (la lógica).** Un programa pequeño que valida lo que llega, aplica permisos, guarda, registra el historial y expone la exportación. Existe para que nadie escriba datos inválidos ni sin permiso. Recordar: es el único que habla con la base de datos; las claves viven ahí, nunca en el navegador.
 4. **Base de datos.** Guarda cada registro como un documento. Hoy un archivo en la demostración; en producción Cloud SQL (PostgreSQL) en Google Cloud. Existe para persistir y respaldar. Recordar: agregar campos nuevos no exige tocar la base.
-5. **Integraciones.** Importación de Notion, Excel de ida y vuelta, archivo de calendario, exportación por API y envío a un data lake. Diseñadas y apagadas: Microsoft 365 y el modelo de IA. Recordar: ninguna integración escribe en sistemas externos.
+5. **Integraciones.** Importación de Notion, Excel de ida y vuelta, archivo de calendario, exportación por API y envío a un data lake. Recordar: ninguna integración escribe en sistemas externos.
 6. **Infraestructura.** Vercel para la demostración; Google Cloud (Cloud Run, Cloud SQL, Secret Manager, Cloud Build) para producción, administrado por TI. Recordar: el código y las versiones son de la Dirección; la infraestructura es de TI.
 
 **Si en la reunión te preguntan cómo está construido, puedes responder:** «Es una aplicación web sencilla: una página que se abre en el navegador, un servidor pequeño que valida y guarda, y una base de datos PostgreSQL en Google Cloud administrada por TI. Sin plataformas propietarias ni licencias; cualquier desarrollador la entiende y TI puede auditarla. Los cálculos financieros y de cronograma los hace la propia aplicación con lo que el equipo registra.»
@@ -158,11 +155,10 @@ Problema: ideas por pasillo → Usuario: cualquier persona con acceso → Entrad
 | Elemento | Qué es en realidad | Frase segura |
 |---|---|---|
 | Demostración pública en Vercel | Datos inventados con marca de agua; se reinicia | «Lo que está en Vercel es una demostración con datos inventados; los reales van en la instancia de la empresa.» |
-| Oficina de agentes (3D) | Mockup con respuestas simuladas si no hay llave de IA; con llave, llama al modelo; la conexión a Microsoft está escrita pero no probada contra un inquilino real | «Es un prototipo para mostrar la idea; el asistente real iría dentro del portafolio.» |
 | Publicación en Google Cloud | Guía y archivo escritos; no se ha ejecutado en un proyecto real | «Está documentado y listo para que TI lo ejecute; aún no está publicado allá.» |
 
 ### 🔵 Propuesto
-Asistente de IA dentro del portafolio (con llave y tope mensual, solo propone, una persona aplica) · Conexión de solo lectura a Outlook, Calendario y SharePoint (solicitud a TI redactada) · Tendencia multianual · Comparador de iniciativas · Recordatorios por correo · Acceso con la cuenta corporativa (SSO) · Confidencialidad por iniciativa · Integración con sistemas fuente para el captado · Retirar la vista anterior.
+Tendencia multianual · Comparador de iniciativas · Recordatorios por correo · Acceso con la cuenta corporativa (SSO) · Confidencialidad por iniciativa · Integración con sistemas fuente para el captado · Retirar la vista anterior.
 
 ### ⚪ No confirmado
 Si la demostración en Vercel ya tiene la última versión · Si TI acepta Cloud Run y Cloud SQL tal como están propuestos · Validación de Mercadeo sobre logo y colores · Revisión de seguridad por TI · Si las 76 iniciativas ya se importaron en una instancia distinta a la prueba local.
@@ -181,10 +177,8 @@ Si la demostración en Vercel ya tiene la última versión · Si TI acepta Cloud
 | Decisiones registradas una por una | Texto libre en el acta | «¿Qué decidimos y se cumplió?» | Puede duplicar el acta si se sigue haciendo en Word | «La vista de preparación más las decisiones registradas reemplazan el acta de decisiones.» | Sí, si reemplaza el acta |
 | Vista mejorada opcional con vuelta atrás | Miedo a perder lo construido | Comparar y volver sin riesgo | Dos vistas que mantener | «Nada se perdió; cuando el equipo adopte la nueva, retiramos la anterior.» | Parcial: retirar la anterior en 1–2 meses |
 | Cronograma idéntico al de la herramienta del equipo | Dos formas de planear | Una sola forma de trabajar | Depende de un adaptador técnico delicado | «El equipo ya lo conoce.» | Debería revisarse a mediano plazo: unificar en una sola herramienta |
-| Agentes de IA que solo proponen | Riesgo de que la IA envíe algo | Control y confianza de TI | Más clics | «Nada sale sin una persona que lo apruebe.» | Sí |
 | Sin frameworks ni dependencias pesadas | Mantenibilidad | Cualquier desarrollador lo entiende; TI puede auditarlo | Menos «moderno» a los ojos de algunos | «Simple a propósito: se audita y se mantiene fácil.» | Sí |
 | Demostración pública con datos inventados | Mostrar sin exponer | Vercel gratis, marca de agua | Alguien puede confundirla | «Los datos reales nunca han estado en la demostración.» | Sí |
-| Oficina 3D de agentes como prototipo aparte | Impacto en la demo | Comunicar la idea | No aporta al uso diario | «Fue para explicar la idea; el asistente real va dentro del portafolio.» | Parcial: no invertir más ahí |
 | Dos pistas de despliegue (Azure y Google Cloud) en el repositorio | Historia del proyecto | Se decidió Google Cloud después | Confunde | «Los archivos de Azure se retiran cuando TI confirme.» | Debería revisarse: limpiar |
 
 ---
@@ -238,13 +232,13 @@ Si la demostración en Vercel ya tiene la última versión · Si TI acepta Cloud
 5. **¿De dónde vienen los datos?** Del equipo y las áreas; 76 iniciativas importadas de Notion. *Alta.* Escalar: formatos de importación.
 6. **¿Qué tan actualizado está?** Hora de sincronización en pantalla, fecha en cada ficha, lista de desactualizados. *Alta.*
 7. **¿Qué está terminado?** Sección 5. La operación y el inicio sí; Google Cloud, Microsoft e IA no. *Alta.*
-8. **¿Qué falta?** Criterio de validación, publicación en Google Cloud, decidir sobre IA. *Alta.*
+8. **¿Qué falta?** Criterio de validación y publicación en Google Cloud. *Alta.*
 9. **¿Cuánto trabajo manual requiere?** Captado mensual y validación en una línea por iniciativa; decisiones en la sesión. 1–2 h/semana del líder. *Media (estimación).*
 10. **¿Quién lo mantiene?** La Dirección el código y la configuración; TI la infraestructura. Una persona basta. *Alta.* Escalar: plan de continuidad técnico.
 11. **¿Cómo escala?** Probado con 81 iniciativas; pensado para decenas de usuarios. Cloud Run escala solo. *Media.* Escalar: más de 100 usuarios o miles de registros.
 12. **¿Qué riesgos tiene?** Validación que no llega; todo lector ve todo; dependencia de TI para publicar. *Alta.*
 13. **¿Cómo sabemos si genera valor?** Porcentaje de capturas validadas, decisiones por sesión, propuestas respondidas, comités preparados desde el sitio, uso por presidencia. *Media (métricas definidas, no medidas aún).*
-14. **¿Qué necesitamos para continuar?** Que TI publique en Google Cloud; acuerdo de validación con las áreas; decisión sobre el asistente de IA. *Alta.*
+14. **¿Qué necesitamos para continuar?** Que TI publique en Google Cloud y un acuerdo de validación con las áreas. *Alta.*
 15. **¿Cuál es el siguiente paso?** Esta semana: criterio de validación y solicitud a TI. 30 días: en producción con datos reales y un comité preparado desde el sitio. *Alta.*
 
 ---
@@ -296,13 +290,13 @@ Si la demostración en Vercel ya tiene la última versión · Si TI acepta Cloud
 3. **Oportunidad (30 s).** *Digo:* «Si cada peso se puede abrir hasta su evidencia, presidencia decide con confianza y el equipo deja de armar presentaciones.» *Evito:* prometer integraciones.
 4. **Solución (30 s).** *Digo:* «Una herramienta de la empresa, en su nube, con roles: caso de negocio, cronograma, comités y valor captado por iniciativa.» *Muestro:* el inicio en la vista mejorada, sin tocar nada.
 5. **Cómo funciona (40 s).** *Digo:* «Entra la necesidad, se vuelve iniciativa con caso, se ejecuta, pasa por comité, se captura y se valida el valor.» *Muestro:* el bloque «Qué es la Dirección» y los pasos del inicio.
-6. **Demostración (2 min).** *Momento wow:* clic en **«¿De dónde sale esta cifra?»**: la cifra se abre por iniciativa, con verificado y preliminar y quién validó. Luego abrir una alerta → ficha → «Última decisión» → «Preparar el comité» → página imprimible. *Evito:* el tour pantalla por pantalla, el cronograma completo, la oficina 3D.
+6. **Demostración (2 min).** *Momento wow:* clic en **«¿De dónde sale esta cifra?»**: la cifra se abre por iniciativa, con verificado y preliminar y quién validó. Luego abrir una alerta → ficha → «Última decisión» → «Preparar el comité» → página imprimible. *Evito:* el tour pantalla por pantalla y el cronograma completo.
 7. **Valor (30 s).** *Digo:* «Credibilidad, tiempo, trazabilidad y una puerta de entrada para las áreas.» *Muestro:* el formulario «Proponer una necesidad».
 8. **Estado actual (30 s).** *Digo:* «Código completo y probado con las 76 iniciativas reales; demostración pública con datos inventados; pendiente publicarlo en Google Cloud con TI.» *Evito:* decir que ya está en producción.
 9. **Qué aprendimos (20 s).** *Digo:* «Menos es más: la validación mes a mes era un trámite; la dejamos en una línea. Y la evidencia vale más que la cifra.»
-10. **Qué falta (20 s).** *Digo:* «Acordar quién valida en cada área, publicarlo con TI, y decidir sobre el asistente de IA.»
+10. **Qué falta (20 s).** *Digo:* «Acordar quién valida en cada área y publicarlo con TI.»
 11. **Próximo paso (20 s).** *Digo:* «En 30 días: en producción con datos reales y el primer comité preparado desde el sitio.»
-12. **Decisión o apoyo (20 s).** *Digo:* «Necesito tres cosas: que TI publique en Google Cloud, que los vicepresidentes nombren quién valida en su área, y luz verde para evaluar el asistente de IA con una llave con tope mensual.»
+12. **Decisión o apoyo (20 s).** *Digo:* «Necesito dos cosas: que TI publique en Google Cloud y que los vicepresidentes nombren quién valida en su área.»
 
 ---
 
@@ -314,11 +308,11 @@ Si la demostración en Vercel ya tiene la última versión · Si TI acepta Cloud
 **VALOR:** Credibilidad, tiempo, trazabilidad, gobierno de la información, puerta de entrada.
 **CÓMO FUNCIONA:** 1 necesidad → 2 iniciativa con caso → 3 cronograma y ejecución → 4 comité con decisiones → 5 captado validado y visible en el inicio.
 **IMPLEMENTADO:** inicio con evidencia · ficha, caso y cronograma · comités con decisiones y preparación · importación de Notion (76) · ICE automático · roles e historial.
-**FALTA:** publicar en Google Cloud (TI) · criterio y responsables de validación · asistente de IA (decisión) · Microsoft 365 (TI) · confidencialidad por iniciativa.
+**FALTA:** publicar en Google Cloud (TI) · criterio y responsables de validación · confidencialidad por iniciativa · tendencia multianual · recordatorios.
 **DATOS:** del equipo y las áreas, e importados de Notion; nada automático de sistemas fuente todavía.
 **RIESGOS:** validaciones que no llegan · todo lector ve todo · dependencia de TI para publicar.
 **PRÓXIMO PASO:** producción con datos reales en 30 días y un comité preparado desde el sitio.
-**DECISIÓN QUE NECESITO:** publicación por TI; responsables de validación por área; luz verde para evaluar la IA.
+**DECISIÓN QUE NECESITO:** publicación por TI; responsables de validación por área.
 **PREGUNTAS DIFÍCILES:** ¿Es confiable la cifra? → «La verificada sí; la preliminar está marcada como tal.» · ¿Está en producción? → «Probado con datos reales; falta que TI lo publique.» · ¿Cuánto cuesta? → «10 a 30 USD al mes, sin licencias.» · ¿Es seguro? → «Tiene los controles básicos; pido revisión de TI.» · ¿Y si te vas? → «Código en el repositorio de la empresa, datos en Google Cloud, documentado.»
 
 ---
@@ -331,25 +325,25 @@ Si la demostración en Vercel ya tiene la última versión · Si TI acepta Cloud
 3. **Qué es «esperado a la fecha» y qué dispara una alerta.** Conceptual. Prueba: ¿por qué una iniciativa puede estar al 104 % y otra rezagada?
 4. **El flujo de una iniciativa de idea a valor validado.** Total. Prueba: ¿puedo dibujarlo en cinco cajas?
 5. **Qué hace la matriz «¿Qué hacer?» y por qué es una sugerencia.** Conceptual. Prueba: ¿quién decide?
-6. **Qué está implementado, qué es demostración y qué es propuesta.** Total. Prueba: ¿qué contesto si preguntan si lee Outlook?
+6. **Qué está implementado, qué es demostración y qué es propuesta.** Total. Prueba: ¿qué contesto si preguntan si ya está en producción?
 7. **Dónde viven los datos y quién controla qué (Dirección vs TI).** Conceptual. Prueba: ¿qué cambia en la base cuando agregamos un campo?
 8. **Las tres decisiones centrales y su trade-off.** Total. Prueba: ¿qué sacrificamos con la validación en una línea?
 9. **Qué puedo afirmar de seguridad y qué no.** Conceptual. Prueba: ¿digo «es seguro» o «tiene estos controles»?
-10. **Costos, próximos pasos y lo que necesito de la reunión.** Total. Prueba: ¿puedo pedir tres cosas concretas?
+10. **Costos, próximos pasos y lo que necesito de la reunión.** Total. Prueba: ¿puedo pedir dos cosas concretas?
 
 ### 5 cosas que no necesito estudiar
 1. Cómo se calcula la TIR o la ruta crítica por dentro: basta con saber que lo hace el sistema con reglas visibles.
 2. Cómo se adapta el cronograma a la política de seguridad del navegador: detalle técnico delicado que no cambia el producto.
 3. La estructura de archivos y módulos del código: para eso está el repositorio y el desarrollador.
 4. La configuración de Cloud Run, Cloud SQL y Secret Manager: la ejecuta TI con la guía.
-5. La oficina 3D de agentes: es un prototipo de comunicación; el asistente real sería otra cosa.
+5. El envío al data lake de Azure: quedó de la versión anterior y en Google Cloud lo reemplaza la exportación por API.
 
 ### 5 cosas que debo validar con un perfil técnico
 1. Revisión de seguridad del código y de la configuración en Google Cloud (no hay evidencia de una revisión formal).
 2. Que la publicación en Cloud Run funciona en el proyecto real (la guía está escrita; no se ha ejecutado allá).
 3. Comportamiento con más de 100 iniciativas o 50 usuarios simultáneos (probado con 81 iniciativas y un usuario).
 4. Qué logs y datos personales quedan registrados en el servidor y por cuánto tiempo.
-5. Si la conexión a Microsoft 365, escrita para la oficina de agentes, funciona con el inquilino de Amarilo (no se ha probado contra uno real).
+5. Que la importación de Notion deja intactas las iniciativas ya editadas a mano (actualiza por nombre; conviene probar con una copia).
 
 ---
 
