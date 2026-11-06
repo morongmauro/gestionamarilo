@@ -31,13 +31,14 @@
       const real = App.enRealizacion(p);
       const esUSD = caso && caso.moneda === 'USD'; if (esUSD) usd++;
       const conBen = caso && !esUSD && (caso.flujos || []).some(f => f.tipo === 'beneficio' && (f.valores || []).some(Number));
-      const inc = Number((p.props || {}).income) || 0;
-      const fuente = conBen ? 'caso' : inc > 0 ? 'income' : null;
+      const inc = Number((p.props || {}).income) || 0, vc = Number((p.props || {}).valor_crear) || 0;
+      const fuente = conBen ? 'caso' : inc > 0 ? 'income' : vc > 0 ? 'valor' : null;
       const y0 = caso ? App.anioCero(caso) : hoyY, nAnios = caso ? Math.round(caso.anios || 5) + 1 : 0;
       const catInc = App.catDeTipoValor(tv ? (p.props || {})[tv.id] : '');
       const anual = (cat, y) => {
         if (fuente === 'caso') { const t = y - y0; if (t < 0 || t >= nAnios) return 0; return caso.flujos.filter(f => f.tipo === 'beneficio' && App.catOf(f) === cat).reduce((a, f) => a + (Number((f.valores || [])[t]) || 0), 0); }
         if (fuente === 'income') return cat === catInc && y >= hoyY && y < hoyY + 5 ? inc * unidad : 0;
+        if (fuente === 'valor') return cat === catInc && y >= hoyY && y < hoyY + 5 ? vc / 5 : 0; // «Valor a crear/capturar» total, repartido en 5 años
         return 0;
       };
       const captado = (cat, y, mes) => (caso && !esUSD ? (caso.captado || []) : []).filter(x => x.categoria === cat && x.mes.startsWith(y + '-') && (!mes || +x.mes.slice(5) <= mes)).reduce((a, x) => a + (Number(x.valor) || 0), 0);
@@ -222,7 +223,7 @@
       ${k(`Proyectado ${d.Y}`, esc(m(d.proyectadoY)), `por captar: ${esc(m(Math.max(0, d.proyectadoY - d.captadoY)))}`, '', 'Suma del valor anual de los casos de negocio (o del Income) para el año')}
       ${k('Inversión de los casos', esc(m(inv)), `${nCasos} caso${nCasos === 1 ? '' : 's'} de negocio`, '', 'Suma de las filas de inversión de los casos de negocio en pesos')}
       ${k('VPN del portafolio', esc(m(vpn)), 'valor presente neto sumado', '', 'Suma del VPN de cada caso de negocio, con su tasa de descuento')}
-      ${k('ICE promedio', ices.length ? Math.round(ices.reduce((a, b) => a + b, 0) / ices.length) : '—', `${ices.length} de ${d.filas.length} con ICE`, '', 'Impacto × Confianza × Facilidad (cada uno de 1 a 10)')}
+      ${k('ICE promedio', ices.length ? Math.round(ices.reduce((a, b) => a + b, 0) / ices.length) : '—', `${ices.length} de ${d.filas.length} con ICE`, '', 'ICE = Income × Confianza ÷ Esfuerzo × 1,25; sale del caso de negocio cuando lo hay')}
       ${k('Iniciativas con alertas', `${nAt}<span style="font-size:14px;color:var(--muted);font-weight:600"> / ${d.filas.length}</span>`, nAt ? 'ver «Requiere atención»' : 'sin alertas', nAt ? 'alerta' : '')}
     </div>`;
   }
@@ -246,7 +247,7 @@
         ${caja('revisar', '■', 'Revisar continuidad', 'bajo potencial con alertas, pausada o VPN negativo')}${caja('sostener', '→', 'Sostener', 'bajo potencial, sana')}
         <div></div><div class="ax-x">Salud de ejecución →</div>
       </div>
-      <details class="regla"><summary>¿Cómo se calcula?</summary>Potencial alto: ICE igual o mayor a la mediana del portafolio (${med ?? '—'}). Con alertas: captura bajo 90% de lo esperado, actividades atrasadas, ruta crítica en riesgo, fin después de la fecha meta, VPN negativo o compromisos de comité vencidos. Sin ICE cuenta como potencial bajo.</details></div>`;
+      <details class="regla"><summary>¿Cómo se calcula?</summary>Potencial alto: ICE igual o mayor a la mediana del portafolio (${med ?? '—'}). Con alertas: captura bajo 90% de lo esperado, actividades atrasadas, ruta crítica en riesgo, fin después de la fecha meta, VPN negativo o compromisos de comité vencidos. Sin ICE cuenta como potencial bajo. ${esc(App.ICE.explicacion)}</details></div>`;
   }
 
   /* ---------- 2 · valor por año (apilado por tipo) + captado ---------- */
