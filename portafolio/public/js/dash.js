@@ -102,8 +102,11 @@
   // Degradados: el color firme queda en la punta del dato y se aclara hacia la base (pastel).
   // La identidad sigue siendo el color de la leyenda; el degradado solo da profundidad.
   function gdefs() {
-    const v = (id, c, o1, o2, h) => `<linearGradient id="${id}" x1="0" y1="0" x2="${h ? 1 : 0}" y2="${h ? 0 : 1}"><stop offset="0" style="stop-color:${c};stop-opacity:${o1}"/><stop offset="1" style="stop-color:${c};stop-opacity:${o2}"/></linearGradient>`;
-    const d = (id, c) => `<linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:${c}"/><stop offset="1" style="stop-color:${c};stop-opacity:.55"/></linearGradient>`;
+    const NV = App.vista && App.vista.nueva; // vista mejorada: color plano con transparencia, sin degradado
+    const v = (id, c, o1, o2, h) => NV ? vPlano(id, c, Math.min(o1, o2) === 0 ? 0.14 : (o1 + o2) / 2 > 0.8 ? 0.72 : 0.62) : vDeg(id, c, o1, o2, h);
+    const vPlano = (id, c, o) => `<linearGradient id="${id}"><stop offset="0" style="stop-color:${c};stop-opacity:${o}"/><stop offset="1" style="stop-color:${c};stop-opacity:${o}"/></linearGradient>`;
+    const vDeg = (id, c, o1, o2, h) => `<linearGradient id="${id}" x1="0" y1="0" x2="${h ? 1 : 0}" y2="${h ? 0 : 1}"><stop offset="0" style="stop-color:${c};stop-opacity:${o1}"/><stop offset="1" style="stop-color:${c};stop-opacity:${o2}"/></linearGradient>`;
+    const d = (id, c) => NV ? vPlano(id, c, 0.62) : `<linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:${c}"/><stop offset="1" style="stop-color:${c};stop-opacity:.55"/></linearGradient>`;
     return `<svg class="gdefs" aria-hidden="true" focusable="false"><defs>
       ${App.CATS.map(c => v('dg-' + c.id, cvar(c.id), 1, 0.4) + d('dgd-' + c.id, cvar(c.id))).join('')}
       ${v('dg-ink', 'var(--ink)', 1, 0.72)}${v('dg-area', 'var(--cat-ahorro)', 0.32, 0)}
@@ -190,7 +193,7 @@
     const it = d.cats.map(k => ({ k, v: d.filas.reduce((a, x) => a + x.captado(k, d.Y), 0) })).filter(z => z.v > 0).sort((a, b) => b.v - a.v);
     const tot = it.reduce((a, z) => a + z.v, 0); if (!tot) return '';
     return `<div class="compo"><div class="compo-t">Lo captado se compone de</div>
-      <div class="compo-bar" role="img" aria-label="${esc(it.map(z => `${App.catLabel(z.k)} ${Math.round(z.v / tot * 100)}%`).join(', '))}">${it.map((z, i) => `<i class="growx" style="flex:${z.v};background:linear-gradient(180deg,var(--cat-${z.k}),color-mix(in srgb,var(--cat-${z.k}) 55%,var(--card)));animation-delay:${200 + i * 60}ms" title="${esc(App.catLabel(z.k))}: ${esc(m(z.v))}"></i>`).join('')}</div>
+      <div class="compo-bar" role="img" aria-label="${esc(it.map(z => `${App.catLabel(z.k)} ${Math.round(z.v / tot * 100)}%`).join(', '))}">${it.map((z, i) => `<i class="growx" style="flex:${z.v};background:${App.vista && App.vista.nueva ? `color-mix(in srgb,var(--cat-${z.k}) 65%,transparent);box-shadow:inset 0 0 0 1px var(--cat-${z.k})` : `linear-gradient(180deg,var(--cat-${z.k}),color-mix(in srgb,var(--cat-${z.k}) 55%,var(--card)))`};animation-delay:${200 + i * 60}ms" title="${esc(App.catLabel(z.k))}: ${esc(m(z.v))}"></i>`).join('')}</div>
       <div class="compo-l">${it.map(z => `<span><i style="--c:var(--cat-${z.k})"></i>${esc(App.catLabel(z.k))} <b>${esc(m(z.v))}</b> <em>${Math.round(z.v / tot * 100)}%</em></span>`).join('')}</div></div>`;
   }
 
@@ -248,6 +251,7 @@
 
   /* ---------- 2 · valor por año (apilado por tipo) + captado ---------- */
   function porAnio(d, W) {
+    const NV = App.vista && App.vista.nueva;
     const H = 270, L = 64, R = 12, T = 22, B = 30;
     const present = d.cats.filter(k => d.porAnio.some(a => a.cats[k] > 0));
     const tot = a => present.reduce((s, k) => s + a.cats[k], 0);
@@ -264,11 +268,11 @@
         const v = a.cats[k], y1 = y(acc + v), y2 = y(acc), h = Math.max(0, y2 - y1 - (j ? 2 : 0));
         const last = j === segs.length - 1, r = Math.min(4, h / 2);
         bars += last
-          ? `<path class="grow" style="fill:url(#dg-${k});animation-delay:${i * 40}ms" d="M${x0} ${y1 + h}V${y1 + r}Q${x0} ${y1} ${x0 + r} ${y1}H${x0 + bw - r}Q${x0 + bw} ${y1} ${x0 + bw} ${y1 + r}V${y1 + h}Z"/>`
-          : `<rect class="grow" style="fill:url(#dg-${k});animation-delay:${i * 40}ms" x="${x0}" y="${y1}" width="${bw}" height="${h}"/>`;
+          ? `<path class="grow" style="fill:url(#dg-${k});${NV ? `stroke:var(--cat-${k});stroke-width:1.2;` : ''}animation-delay:${i * 40}ms" d="M${x0} ${y1 + h}V${y1 + r}Q${x0} ${y1} ${x0 + r} ${y1}H${x0 + bw - r}Q${x0 + bw} ${y1} ${x0 + bw} ${y1 + r}V${y1 + h}Z"/>`
+          : `<rect class="grow" style="fill:url(#dg-${k});${NV ? `stroke:var(--cat-${k});stroke-width:1.2;` : ''}animation-delay:${i * 40}ms" x="${x0}" y="${y1}" width="${bw}" height="${h}"/>`;
         acc += v;
       });
-      if (a.captado > 0) { const yc = y(a.captado), h = y(0) - yc, r = Math.min(3, h / 2); bars += `<path class="grow" style="fill:url(#dg-ink);animation-delay:${i * 40 + 120}ms" d="M${x0 + bw + 3} ${y(0)}V${yc + r}Q${x0 + bw + 3} ${yc} ${x0 + bw + 3 + r} ${yc}H${x0 + bw + 3 + cw - r}Q${x0 + bw + 3 + cw} ${yc} ${x0 + bw + 3 + cw} ${yc + r}V${y(0)}Z"/>`; }
+      if (a.captado > 0) { const yc = y(a.captado), h = y(0) - yc, r = Math.min(3, h / 2); bars += `<path class="grow" style="fill:url(#dg-ink);${NV ? 'stroke:var(--ink);stroke-width:1.2;' : ''}animation-delay:${i * 40 + 120}ms" d="M${x0 + bw + 3} ${y(0)}V${yc + r}Q${x0 + bw + 3} ${yc} ${x0 + bw + 3 + r} ${yc}H${x0 + bw + 3 + cw - r}Q${x0 + bw + 3 + cw} ${yc} ${x0 + bw + 3 + cw} ${yc + r}V${y(0)}Z"/>`; }
       if (a.y === d.Y && tot(a) > 0) bars += `<text class="lbl fade" x="${x0 + bw / 2}" y="${y(tot(a)) - 7}" text-anchor="middle">${esc(mm(tot(a)))}</text>`;
     });
     const sel = d.anios.indexOf(d.Y);
@@ -342,7 +346,7 @@
     return `<div class="dash-card"><h3>Cumplimiento por proyecto · ${d.Y}</h3><div class="sub">Barra: captado. Raya: esperado a la fecha. Primero los más rezagados.</div>
       <div class="bul">${rows.map((x, i) => { const st = estadoDe(x.pc);
         return `<a class="nm" href="#/proyectos/${x.p.id}/caso" title="${esc(App.projectName(x.p))}">${esc(App.projectName(x.p))}</a>
-          <div class="trk" data-bul="${x.p.id}"><div class="bg" style="width:100%"></div><div class="fg growx" style="width:${x.cap / max * 100}%;background:linear-gradient(90deg,color-mix(in srgb,var(--st-${st[0]}) 50%,transparent),var(--st-${st[0]}));animation-delay:${i * 60}ms"></div><div class="tk" style="left:calc(${x.esp / max * 100}% - 1px)"></div></div>
+          <div class="trk" data-bul="${x.p.id}"><div class="bg" style="width:100%"></div><div class="fg growx" style="width:${x.cap / max * 100}%;background:${App.vista && App.vista.nueva ? `color-mix(in srgb,var(--st-${st[0]}) 65%,transparent);box-shadow:inset 0 0 0 1px var(--st-${st[0]})` : `linear-gradient(90deg,color-mix(in srgb,var(--st-${st[0]}) 50%,transparent),var(--st-${st[0]}))`};animation-delay:${i * 60}ms"></div><div class="tk" style="left:calc(${x.esp / max * 100}% - 1px)"></div></div>
           <div class="pc"><span class="st-ico ${st[0]}" title="${esc(st[2])}">${st[1]}</span>${Math.round(x.pc * 100)}%</div>`; }).join('')}</div></div>`;
   }
 

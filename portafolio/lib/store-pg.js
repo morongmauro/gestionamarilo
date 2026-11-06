@@ -1,5 +1,5 @@
 // ============================================================
-// ALMACENAMIENTO EN POSTGRESQL · Supabase, Neon, Azure Database for PostgreSQL
+// ALMACENAMIENTO EN POSTGRESQL · Cloud SQL (Google Cloud), Supabase, Neon, Azure Database for PostgreSQL
 // Pensado para la demostración en Vercel con datos de prueba.
 // Los datos reales van en Azure SQL (store-sql.js).
 // Dos tablas: pf_docs (una fila por registro, con su colección) y pf_config.
@@ -19,7 +19,8 @@ class PgStore {
     if (!this.client) {
       const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
       if (!url) throw new Error('Falta DATABASE_URL o POSTGRES_URL (la cadena de conexión de Postgres)');
-      const local = /localhost|127\.0\.0\.1/.test(url);
+      // Sin TLS en local y por el socket de Cloud SQL (Google Cloud): host=/cloudsql/PROYECTO:REGION:INSTANCIA
+      const local = /localhost|127\.0\.0\.1|\/cloudsql\//.test(url);
       this.client = new Pool({
         connectionString: url,
         ssl: local || process.env.PG_SSL === 'false' ? false : { rejectUnauthorized: false },
