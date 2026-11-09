@@ -70,7 +70,7 @@
 
   // Proyectado y captado del año para la ficha (misma regla que el tablero)
   function filaDe(id) {
-    try { const d = App.Dash && App.Dash.datos ? App.Dash.datos() : null; return d ? d.filas.find(x => x.p.id === id) || null : null; } catch (e) { return null; }
+    try { const d = App.Dash && App.Dash.datos ? App.Dash.datos({ anio: null, estado: '', tipo: '', alcance: 'todos' }) : null; return d ? d.filas.find(x => x.p.id === id) || null : null; } catch (e) { return null; }
   }
 
   function confirmDelete(id) {

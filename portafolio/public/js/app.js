@@ -30,6 +30,8 @@
   /* ---------- ingreso ---------- */
   function showLogin(mode, info = {}) {
     $('#app').hidden = true; $('#login').hidden = false; booted();
+    // una ventana abierta (p. ej. cambiar contraseña) no queda encima del ingreso
+    document.querySelectorAll('.modal-bg').forEach(m => m.parentNode.removeChild(m));
     App.closeDrawer(); App.closePop(true);
     const f = $('#loginForm');
     const org = esc(info.org || App.S.org || 'Amarilo');
@@ -109,7 +111,7 @@
 
   /* ---------- navegación ---------- */
   function route() {
-    const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);
+    const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(x => { try { return decodeURIComponent(x); } catch { return x; } });
     return { sec: parts[0] || 'proyectos', params: parts.slice(1) };
   }
   App.render = () => {
@@ -117,7 +119,7 @@
     const { sec, params } = route();
     const main = $('#main');
     main.className = App.canEdit() ? '' : 'ro';
-    main.onclick = main.onchange = main.oninput = main.onmousedown = main.ondblclick = null;
+    main.onclick = main.onchange = main.oninput = main.onmousedown = main.ondblclick = main.onmousemove = main.onmouseleave = null;
     main.ondragstart = main.ondragend = main.ondragover = main.ondrop = null;
     const keep = window.scrollY;
     if (sec === 'proyectos' && params[0]) App.Proyecto.render(main, params);
@@ -155,6 +157,7 @@
     document.body.appendChild(bg);
     const f = $('form', bg); $('input', f).focus();
     bg.addEventListener('click', e => { if (e.target === bg || e.target.closest('[data-x]')) bg.remove(); });
+    bg.addEventListener('keydown', e => { if (e.key === 'Escape') bg.remove(); });
     f.onsubmit = async e => {
       e.preventDefault(); const d = Object.fromEntries(new FormData(f).entries());
       try { if (d.nueva !== d.nueva2) throw new Error('Las dos contraseñas no coinciden'); await App.api('POST', '/api/auth/clave', { actual: d.actual, nueva: d.nueva }); bg.remove(); App.toast('Contraseña actualizada'); }

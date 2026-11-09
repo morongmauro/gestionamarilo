@@ -14,11 +14,13 @@
 (function () {
   const { $, $$, esc } = App;
   const F = Object.assign({ anio: null, estado: '', tipo: '', alcance: 'todos', orden: 'cumpl', tabla: false }, App.store.get('dash', {}));
+  const FT = F;
   const saveF = () => App.store.set('dash', F);
   let lastKey = '';
 
   /* ---------- cálculo ---------- */
-  function datos() {
+  // F = filtros del tablero; la ficha del proyecto pasa los suyos (año actual, sin filtros)
+  function datos(F = FT) {
     const hoy = App.d.today(), hoyY = +hoy.slice(0, 4), hoyM = +hoy.slice(5, 7);
     // Meses cerrados del año: lo captado se registra por mes, así que el mes en curso aún no cuenta como esperado
     const corrido = y => (y < hoyY ? 12 : y > hoyY ? 0 : hoyM - 1);

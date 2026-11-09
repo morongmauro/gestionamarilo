@@ -444,7 +444,7 @@
   .cf-tip div.sep{border-top:1px solid var(--line);margin-top:4px;padding-top:4px}
 
   .estado-sel{font-size:12px;font-weight:700;padding:6px 10px;border-radius:999px;border:none;cursor:pointer;font-family:inherit}
-  @media(max-width:1000px){.case-grid{grid-template-columns:1fr}.case-side{position:static}}
+  @media(max-width:1000px){.case-grid{grid-template-columns:minmax(0,1fr)}.case-side{position:static}}
 
   /* ============ AGENDA ============ */
   .ag-grid{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:16px;align-items:start}
@@ -680,8 +680,11 @@
     body{padding:0;background:#fff}
     .nav-side,.burger,.page-h .btn,.ptabs,.no-print,#toast{display:none!important}
     .app{display:block}
-    .case-grid{grid-template-columns:1fr}
+    .case-grid{grid-template-columns:minmax(0,1fr)}
     .case-side{position:static}
     .card-box,.kpi{box-shadow:none;border:1px solid #ddd}
     textarea.fld{border:none;resize:none}
   }
+
+/* Teléfono: las tablas anchas se desplazan dentro de su caja, no empujan la página */
+@media(max-width:600px){table.lst{display:block;max-width:100%;overflow-x:auto}}

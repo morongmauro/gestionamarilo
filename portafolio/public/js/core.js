@@ -67,12 +67,23 @@ App.planOf = pid => {
 };
 
 const replaceIn = (coll, doc) => { const i = App.S[coll].findIndex(x => x.id === doc.id); if (i >= 0) App.S[coll][i] = doc; else App.S[coll].push(doc); };
-App.create = async (coll, data) => { const doc = await App.api('POST', '/api/' + coll, data); replaceIn(coll, doc); return doc; };
+// Doble clic: una creación idéntica que ya va en camino no se manda dos veces
+const creando = new Map();
+App.create = (coll, data) => {
+  const k = coll + '|' + JSON.stringify(data);
+  if (creando.has(k)) return creando.get(k);
+  const p = App.api('POST', '/api/' + coll, data).then(doc => { replaceIn(coll, doc); return doc; }).finally(() => creando.delete(k));
+  creando.set(k, p);
+  return p;
+};
+// Si dos cambios al mismo registro responden en desorden, solo cuenta la respuesta del último
+const turno = {};
 // Cambio optimista: se ve de inmediato y se guarda en segundo plano
 App.patch = async (coll, id, patch) => {
   const cur = App.byId(coll, id);
   if (cur) { Object.assign(cur, patch, patch.props ? { props: Object.assign({}, cur.props, patch.props) } : {}); }
-  try { const doc = await App.api('PATCH', `/api/${coll}/${id}`, patch); replaceIn(coll, doc); return doc; }
+  const k = coll + '/' + id, n = (turno[k] || 0) + 1; turno[k] = n;
+  try { const doc = await App.api('PATCH', `/api/${coll}/${id}`, patch); if (turno[k] === n) replaceIn(coll, doc); return doc; }
   catch (e) { App.toast(e.message, true); App.reload && App.reload(); throw e; }
 };
 App.remove = async (coll, id) => {

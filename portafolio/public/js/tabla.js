@@ -371,7 +371,8 @@
   }
   function downloadCSV() {
     const cols = visibleCols(), rows = rowsVisibles();
-    const cell = s => { s = String(s == null ? '' : s); return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    // Un texto que empieza por = + - @ Excel lo ejecuta como fórmula: se antepone ' (los números negativos quedan igual)
+    const cell = s => { s = String(s == null ? '' : s); if (/^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s)) s = "'" + s; return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
     const head = [...cols.map(c => c.name), 'Inicio', 'Fin', 'Avance %', 'Estado del caso', 'VPN'];
     const lines = [head.map(cell).join(';'), ...rows.map(r => { const pl = App.planOf(r.id), cs = App.caseOf(r.id), f = cs ? Finanzas.calc(cs) : null;
       return [...cols.map(c => { const v = (r.props || {})[c.id]; return Array.isArray(v) ? v.join(', ') : c.type === 'check' ? (v ? 'Sí' : 'No') : v; }), pl.ini || '', pl.fin || '', pl.acts.length ? pl.avance : '', cs ? cs.estado || 'Borrador' : '', f && f.vpn != null ? Math.round(f.vpn) : ''].map(cell).join(';'); })];

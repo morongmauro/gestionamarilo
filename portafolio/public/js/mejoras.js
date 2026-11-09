@@ -65,7 +65,7 @@
     return `<table class="lst ev-tbl"><thead><tr><th>Iniciativa</th><th class="n">Capturado</th><th class="n">Verificado</th><th class="n">Preliminar</th><th>Validación</th></tr></thead><tbody>
       ${gs.map(g => { const v = validacionDe(g.caso, Y);
         return `<tr><td><a href="#/proyectos/${g.p.id}/caso">${esc(App.projectName(g.p))}</a></td><td class="n"><b>${esc(App.moneyShort(g.ver + g.pre))}</b></td><td class="n good">${esc(App.moneyShort(g.ver))}</td><td class="n">${esc(App.moneyShort(g.pre))}</td>
-          <td>${v && v.hasta ? `hasta ${esc(mesLargo(v.hasta))}${v.por ? ' · ' + esc(v.por) : ''}${v.fecha ? ' · ' + esc(App.d.fmtShort(v.fecha)) : ''}${v.url ? ` · <a href="${esc(v.url)}" target="_blank" rel="noopener">soporte ↗</a>` : ''}` : '<span class="faint">sin validar · capturado hasta ' + esc(mesLargo(g.ult)) + '</span>'}</td></tr>`; }).join('')}
+          <td>${v && v.hasta ? `hasta ${esc(mesLargo(v.hasta))}${v.por ? ' · ' + esc(v.por) : ''}${v.fecha ? ' · ' + esc(App.d.fmtShort(v.fecha)) : ''}${v.url && /^https?:\/\//i.test(v.url) ? ` · <a href="${esc(v.url)}" target="_blank" rel="noopener">soporte ↗</a>` : ''}` : '<span class="faint">sin validar · capturado hasta ' + esc(mesLargo(g.ult)) + '</span>'}</td></tr>`; }).join('')}
     </tbody></table><div class="faint" style="font-size:12px;margin-top:8px">Verificado = capturado hasta el mes que el área validó. Se marca en el caso de negocio con un clic: «validado hasta…, por…».</div>`;
   }
   // Validación dentro del caso de negocio (lo llama caso.js): una línea, no una tabla
@@ -247,7 +247,8 @@
       try {
         const doc = await App.api('POST', '/api/ideas', Object.fromEntries(new FormData(f).entries()));
         App.S.projects.push(doc);
-        main.innerHTML = `<div class="card-box prop"><div class="empty-box"><b>Gracias. Tu propuesta quedó registrada como idea del portafolio.</b><a class="btn" href="#/proyectos/${doc.id}">Ver la idea</a> <a class="btn ghost" href="#/proponer">Proponer otra</a></div></div>`;
+        main.innerHTML = `<div class="card-box prop"><div class="empty-box"><b>Gracias. Tu propuesta quedó registrada como idea del portafolio.</b><a class="btn" href="#/proyectos/${doc.id}">Ver la idea</a> <button class="btn ghost" data-otra="1">Proponer otra</button></div></div>`;
+        const otra = main.querySelector('[data-otra]'); if (otra) otra.onclick = () => proponer(main);
       } catch (ex) { $('.err', f).textContent = ex.message; b.disabled = false; }
     };
   }

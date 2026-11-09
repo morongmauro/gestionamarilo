@@ -11,8 +11,10 @@
   async function usuarios(main) {
     if (!App.isAdmin()) { main.innerHTML = '<div class="empty-box"><b>Solo los administradores ven esta sección</b></div>'; return; }
     main.innerHTML = '<div class="empty-box">Cargando…</div>';
+    const ruta = location.hash; // si mientras carga se cambia de página, no se pinta encima
     let users;
-    try { users = await App.api('GET', '/api/usuarios'); } catch (e) { main.innerHTML = `<div class="empty-box"><b>${esc(e.message)}</b></div>`; return; }
+    try { users = await App.api('GET', '/api/usuarios'); } catch (e) { if (location.hash === ruta) main.innerHTML = `<div class="empty-box"><b>${esc(e.message)}</b></div>`; return; }
+    if (location.hash !== ruta) return;
     users.sort((a, b) => a.name.localeCompare(b.name));
     const base = location.origin;
     const tablas = ['proyectos', 'actividades', 'casos', 'flujos', 'sesiones', 'compromisos', 'comites'];
@@ -90,10 +92,11 @@
       <div class="hint">Al entrar por primera vez, la app le pide cambiarla.</div>
       <div class="row" style="padding:4px"><button class="btn primary" data-n="ok">Crear usuario</button></div>`, { width: 340 });
     p.onclick = e => {
-      if (!e.target.closest('[data-n=ok]')) return;
+      const ok = e.target.closest('[data-n=ok]'); if (!ok || ok.disabled) return;
+      ok.disabled = true;
       const v = k => $(`[data-n=${k}]`, p).value.trim();
       const body = { name: v('name'), email: v('email'), role: v('role'), password: v('password') };
-      App.guard(async () => { await App.api('POST', '/api/usuarios', body); App.closePop(true); credenciales(body.name, body.email, body.password); App.reload(); });
+      App.guard(async () => { await App.api('POST', '/api/usuarios', body); App.closePop(true); credenciales(body.name, body.email, body.password); App.reload(); }).finally(() => { ok.disabled = false; });
     };
   }
   function credenciales(name, email, pw) {
@@ -112,8 +115,10 @@
   let quien = '';
   async function historial(main) {
     main.innerHTML = '<div class="empty-box">Cargando…</div>';
+    const ruta = location.hash;
     let items;
-    try { items = await App.api('GET', '/api/historial'); } catch (e) { main.innerHTML = `<div class="empty-box"><b>${esc(e.message)}</b></div>`; return; }
+    try { items = await App.api('GET', '/api/historial'); } catch (e) { if (location.hash === ruta) main.innerHTML = `<div class="empty-box"><b>${esc(e.message)}</b></div>`; return; }
+    if (location.hash !== ruta) return;
     const personas = [...new Set(items.map(h => h.user_name))].sort();
     const vis = items.filter(h => !quien || h.user_name === quien);
     let day = '';

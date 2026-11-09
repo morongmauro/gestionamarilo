@@ -508,10 +508,11 @@
       if (ro) return;
       if (ev.target.closest('[data-add]')) { leer(); ms.push({ nombre: '', area: '', rol: '' }); $('#pdInv', d).innerHTML = pintarLista(); const l = $$('#pdInv input[data-k=nombre]'); if (l.length) l[l.length - 1].focus(); }
       const q = ev.target.closest('[data-q]'); if (q) { leer(); ms.splice(Number(q.closest('tr').dataset.i), 1); $('#pdInv', d).innerHTML = pintarLista(); }
-      if (ev.target.closest('[data-ok]')) {
-        leer();
+      const okb = ev.target.closest('[data-ok]');
+      if (okb && !okb.disabled) {
+        okb.disabled = true; leer();
         const limpios = ms.filter(m => m.nombre).map(m => ({ nombre: m.nombre.slice(0, 120), area: (m.area || '').slice(0, 120), rol: (m.rol || '').slice(0, 120) }));
-        App.guard(async () => { await App.patch('projects', p.id, { miembros: limpios }); App.closeDrawer(); toast('✓ Involucrados guardados'); if (cur && cur.pid === p.id) { cur.M = modelo(p.id); pintar(); } });
+        App.guard(async () => { await App.patch('projects', p.id, { miembros: limpios }); App.closeDrawer(); toast('✓ Involucrados guardados'); if (cur && cur.pid === p.id) { cur.M = modelo(p.id); pintar(); } }).finally(() => { okb.disabled = false; });
       }
     });
   }

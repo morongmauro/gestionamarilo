@@ -351,7 +351,7 @@ html[data-estilo="claro"] .me span,html[data-estilo="superior"] .me span{color:v
   html[data-estilo="superior"] .nav-side{position:sticky;top:10px;z-index:40;width:auto;height:auto;flex-direction:row;align-items:center;gap:10px;padding:8px 10px 8px 16px;margin-bottom:18px;border-radius:16px}
   html[data-estilo="superior"] .side-top{border:none;margin:0;padding:0 14px 0 0;flex-shrink:0;border-right:1px solid var(--line)!important}
   html[data-estilo="superior"] .side-col,html[data-estilo="superior"] .side-sep,html[data-estilo="superior"] .side-proj{display:none}
-  html[data-estilo="superior"] .tabs{flex-direction:row;gap:2px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
+  html[data-estilo="superior"] .tabs{flex-direction:row;flex-wrap:wrap;gap:2px;flex:1;min-width:0}
   html[data-estilo="superior"] .tab{width:auto;padding:8px 12px;font-size:13px;gap:8px}
   html[data-estilo="superior"] .tab .ic{width:17px;height:17px}
   html[data-estilo="superior"] .tab:is([data-sec="historial"],[data-sec="sistema"],[data-sec="usuarios"]) .lb{display:none}

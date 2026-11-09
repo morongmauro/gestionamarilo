@@ -78,7 +78,7 @@
       const s = e.target.closest('[data-ses]'); if (s) return openSession(s.dataset.ses);
       const nw = e.target.closest('[data-new]'); if (nw) return openNewSession(nw.dataset.new || (mes === today.slice(0, 7) ? today : `${mes}-01`));
     };
-    main.ondblclick = e => { const d = e.target.closest('[data-day]'); if (d && App.canEdit() && !e.target.closest('[data-ses]')) openNewSession(d.dataset.day); };
+    main.ondblclick = e => { const d = e.target.closest('[data-day]'); if (d && App.canEdit() && !e.target.closest('[data-ses], [data-new]')) openNewSession(d.dataset.day); };
     main.onchange = e => {
       const dn = e.target.closest('[data-done]'); if (!dn) return;
       const s = App.byId('sessions', dn.dataset.done); const comp = JSON.parse(JSON.stringify(s.compromisos || []));
@@ -99,7 +99,8 @@
       <div class="lbl">Frecuencia</div><input type="text" data-k="frecuencia" value="${esc(c.frecuencia || '')}" placeholder="Ej.: quincenal, primer martes del mes" style="margin:0 4px 6px;width:calc(100% - 8px)">
       <div class="lbl">Integrantes</div><textarea data-k="integrantes" rows="3" placeholder="Nombres, uno por línea" style="margin:0 4px 6px;width:calc(100% - 8px)">${esc(c.integrantes || '')}</textarea>
       <div class="lbl">Descripción</div><textarea data-k="descripcion" rows="2" style="margin:0 4px 6px;width:calc(100% - 8px)">${esc(c.descripcion || '')}</textarea>
-      <div class="sep"></div><button class="mi danger" data-p="del">🗑 Eliminar comité</button>`, { width: 300, onClose: () => {
+      <div class="sep"></div><button class="mi danger" data-p="del">🗑 Eliminar comité</button>`, { width: 300, onClose: cancel => {
+        if (cancel) return; // Escape cancela
         const patch = {}; $$('[data-k]', p).forEach(f => { if ((c[f.dataset.k] || '') !== f.value) patch[f.dataset.k] = f.value; });
         if (patch.name === '') delete patch.name;
         if (Object.keys(patch).length) App.patch('committees', id, patch).then(() => App.render()).catch(() => {});
@@ -154,13 +155,19 @@
 
     const saveComp = () => App.patch('sessions', id, { compromisos: comp }).catch(() => {});
     if ($('#sDec', d)) App.Mejoras.decisionesEditor($('#sDec', d), s, ro);
+    const cabecera = () => {
+      const s2 = App.byId('sessions', id); if (!s2) return; const c2 = comite(s2);
+      const top = $('.d-top > div', d); if (top) top.innerHTML = `<span class="pill cl-${colorOf(s2)}">${esc(c2 ? c2.name : 'Sin comité')}</span><span class="tag ${s2.estado === 'Cancelada' ? '' : 'warn'}">${esc(s2.estado || 'Programada')}</span>`;
+      const h = $('h2', d); if (h) { h.textContent = tituloOf(s2); const fl = h.nextElementSibling; if (fl) fl.textContent = App.d.fmtLong(s2.fecha) + (s2.hora_ini ? ' · ' + s2.hora_ini + (s2.hora_fin ? ' a ' + s2.hora_fin : '') : ''); }
+    };
     d.onchange = e => {
       const t = e.target;
       if (t.dataset.s) {
         const f = t.dataset.s; let v = t.value;
         if (f === 'fecha' && !v) { t.value = s.fecha; return; }
         if (f === 'comite_id') v = v || null;
-        App.patch('sessions', id, { [f]: v }).then(() => { if (['comite_id', 'estado', 'fecha', 'titulo', 'hora_ini', 'hora_fin'].includes(f)) { if (f === 'fecha') mes = v.slice(0, 7); openSession(id); } }).catch(() => {});
+        // Solo se actualiza el encabezado: redibujar todo el panel borraría lo que se está escribiendo
+        App.patch('sessions', id, { [f]: v }).then(() => { if (f === 'fecha') mes = v.slice(0, 7); cabecera(); }).catch(() => {});
       } else if (t.dataset.ci != null) {
         const k = comp[+t.dataset.ci]; k[t.dataset.ck] = t.type === 'checkbox' ? t.checked : t.value;
         if (t.type === 'checkbox') $('#sComp', d).innerHTML = compHTML();
