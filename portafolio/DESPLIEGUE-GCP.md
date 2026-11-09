@@ -30,7 +30,17 @@ Esto vale igual para Supabase y para Google Cloud: la diferencia entre los dos n
 
 Si algún día alguien necesita sacar la información para otro sistema, ya existen la exportación por API (`/api/export/...`) y el envío diario al data lake, sin SQL.
 
-## Pasos (una sola vez)
+## La vía corta: el script para TI
+
+Todo lo de la sección siguiente lo hace `scripts/gcp/configurar.sh` en un solo paso (APIs, Cloud SQL, base, usuario, secretos, permisos y primer despliegue). TI lo corre desde la carpeta del repositorio con `gcloud` autenticado:
+
+```
+PROYECTO=amarilo-portafolio REGION=us-east1 ADMIN_EMAIL=correo@amarilo.com bash scripts/gcp/configurar.sh
+```
+
+Al final imprime la dirección web, la contraseña temporal del administrador y el nombre de conexión de Cloud SQL (para el activador de Cloud Build). Se puede repetir sin dañar nada. La solicitud formal para TI, con quién hace qué, está en la página «Solicitud a TI · Google Cloud».
+
+## Pasos (una sola vez), si TI prefiere hacerlo a mano
 
 1. **TI crea el proyecto** en Google Cloud (o usa uno existente) y activa Cloud SQL, Cloud Run y Secret Manager.
 2. **TI crea la instancia de Cloud SQL para PostgreSQL**, una base `portafolio` y un usuario. Entrega la cadena de conexión en uno de estos formatos:

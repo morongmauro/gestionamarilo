@@ -454,7 +454,6 @@
       const sg = senales(d);
       const sec = (n, t, h) => `<div class="span-12 dash-sec"><span class="n">${n}</span><b>${t}</b><span>${h}</span></div>`;
       grid.innerHTML = NV ? gdefs()
-        + App.Mejoras.queEs()
         + sec(1, 'Lo esencial', 'Cuánto valor se ha capturado, con su evidencia, y qué necesita atención') + hero(d, sg) + atencion(d, sg) + indicadores2(d, sg)
         + sec(2, 'Decisiones y ejecución', 'Qué decidió el comité, qué viene y cómo van las iniciativas') + App.Mejoras.enRealizacion(d) + App.Mejoras.decisionesRecientes()
         + sec(3, 'El valor en el tiempo', 'De dónde viene el valor y cómo avanza la captura') + porAnio(d, W) + curva(d, W7) + `<div class="span-5 dash-col">${cumplimiento(d)}${estado(d)}</div>`
