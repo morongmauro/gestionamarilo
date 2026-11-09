@@ -4,6 +4,9 @@
 // Data Factory, Fabric o Databricks la copien al lago.
 // ============================================================
 const Finanzas = require('../public/js/finanzas');
+// Listas de registros guardados (flujos, captado, compromisos): se ignoran filas dañadas
+const regs = v => (Array.isArray(v) ? v : []).filter(x => x && typeof x === 'object');
+const valores = fl => (Array.isArray(fl.valores) ? fl.valores : []);
 
 const TABLAS = ['proyectos', 'actividades', 'casos', 'flujos', 'captado', 'sesiones', 'compromisos', 'comites'];
 const CATS = { ahorro: 'Ahorro', ingresos: 'Nuevos ingresos', eficiencia: 'Eficiencia', tiempo: 'Tiempo', riesgo: 'Riesgo evitado', otro: 'Otro' };
@@ -53,16 +56,16 @@ function build(tabla, d) {
         vpn: f.vpn ?? '', tir: f.tir ?? '', payback_anios: f.payback ?? '', roi: f.roi ?? '',
         problema: c.problema || '', objetivo: c.objetivo || '', alcance: c.alcance || '', riesgos: c.riesgos || '', recomendacion: c.recomendacion || '', ...meta(c) };
     });
-    case 'flujos': return d.cases.flatMap(c => (c.flujos || []).flatMap(fl => (fl.valores || []).map((v, t) => ({
+    case 'flujos': return d.cases.flatMap(c => regs(c.flujos).flatMap(fl => valores(fl).slice(0, Finanzas.calc(c).anios + 1).map((v, t) => ({
       proyecto_id: c.project_id, proyecto: nombre(c.project_id), concepto: fl.concepto || '', tipo: fl.tipo || '',
       tipo_valor: fl.tipo === 'beneficio' ? CATS[fl.categoria] || '' : '', anio: t, anio_calendario: c.anio_inicio ? c.anio_inicio + t : '', valor: Number(v) || 0 }))));
-    case 'captado': return d.cases.flatMap(c => (c.captado || []).map(k => ({
+    case 'captado': return d.cases.flatMap(c => regs(c.captado).map(k => ({
       proyecto_id: c.project_id, proyecto: nombre(c.project_id), mes: k.mes || '', tipo_valor: CATS[k.categoria] || 'Otro', valor: Number(k.valor) || 0 })));
     case 'sesiones': return d.sessions.map(s => ({
       sesion_id: s.id, comite_id: s.comite_id || '', comite: comite(s.comite_id), titulo: s.titulo || '', fecha: s.fecha || '',
       hora_inicio: s.hora_ini || '', hora_fin: s.hora_fin || '', estado: s.estado || '', lugar: s.lugar || '', enlace: s.enlace || '',
       proyectos: (s.proyectos || []).map(nombre).join(', '), temas: s.temas || '', decisiones: s.decisiones || '', ...meta(s) }));
-    case 'compromisos': return d.sessions.flatMap(s => (s.compromisos || []).map(k => ({
+    case 'compromisos': return d.sessions.flatMap(s => regs(s.compromisos).map(k => ({
       sesion_id: s.id, comite: comite(s.comite_id), fecha_sesion: s.fecha || '', compromiso: k.texto || '',
       responsable: k.responsable || '', fecha_compromiso: k.fecha || '', cumplido: k.hecho ? 1 : 0 })));
     case 'comites': return d.committees.map(c => ({ comite_id: c.id, comite: c.name, frecuencia: c.frecuencia || '', descripcion: c.descripcion || '', integrantes: c.integrantes || '', ...meta(c) }));
@@ -89,7 +92,12 @@ function headersOf(tabla, d) {
 function toCSV(rows, headers) {
   const heads = headers || [...new Set(rows.flatMap(r => Object.keys(r)))];
   if (!heads.length) return '';
-  const cell = v => { const s = String(v ?? ''); return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  // Un texto que empieza por = + - @ Excel lo ejecuta como fórmula: se antepone ' (los números negativos quedan igual)
+  const cell = v => {
+    let s = String(v ?? '');
+    if (/^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s)) s = "'" + s;
+    return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
   return [heads.map(cell).join(','), ...rows.map(r => heads.map(h => cell(r[h])).join(','))].join('\r\n');
 }
 
@@ -98,9 +106,10 @@ function toICS(s, comiteNombre, proyectos, offset) {
   const off = /^[+-]\d{2}:\d{2}$/.test(offset || '') ? offset : '-05:00';
   const utc = (fecha, hora) => {
     const d = new Date(`${fecha}T${hora || '08:00'}:00${off}`);
+    if (isNaN(d)) throw Object.assign(new Error('La sesión tiene una fecha u hora inválida: corrígela antes de descargar el .ics'), { status: 400 });
     return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
   };
-  const escI = t => String(t || '').replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+  const escI = t => String(t || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r\n|\r|\n/g, '\\n');
   const fold = l => { const out = []; while (l.length > 74) { out.push(l.slice(0, 74)); l = ' ' + l.slice(74); } out.push(l); return out.join('\r\n'); };
   const desc = [s.temas && `Temas:\n${s.temas}`, proyectos.length && `Proyectos:\n- ${proyectos.join('\n- ')}`, s.enlace && `Enlace: ${s.enlace}`].filter(Boolean).join('\n\n');
   const lines = [

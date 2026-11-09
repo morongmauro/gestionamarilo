@@ -8,11 +8,21 @@ const BAD_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 class ValidationError extends Error { constructor(m) { super(m); this.status = 400; } }
 const bad = m => { throw new ValidationError(m); };
 
+// Texto seguro para cualquier base: sin el carácter nulo (Postgres lo rechaza) y sin
+// mitades de emoji, ni las que vengan sueltas ni las que deje el recorte a n caracteres
+function txt(v, n) {
+  let s = String(v).replace(/\u0000/g, '').replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '\uFFFD');
+  if (s.length > n) { s = s.slice(0, n); if (/[\uD800-\uDBFF]$/.test(s)) s = s.slice(0, -1); }
+  return s;
+}
+// Fecha real del calendario (descarta 2026-02-30 o 2026-13-01)
+const fechaReal = v => { if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false; const d = new Date(v + 'T00:00:00Z'); return !isNaN(d) && d.toISOString().slice(0, 10) === v; };
+
 // JSON libre pero acotado (para props de proyectos, flujos del caso, compromisos)
 function cleanAny(v, depth = 0) {
   if (v === null) return null;
   const t = typeof v;
-  if (t === 'string') return v.slice(0, 20000);
+  if (t === 'string') return txt(v, 20000);
   if (t === 'number') return Number.isFinite(v) ? v : null;
   if (t === 'boolean') return v;
   if (depth >= 6) return undefined;
@@ -20,8 +30,9 @@ function cleanAny(v, depth = 0) {
   if (t === 'object') {
     const o = {};
     let n = 0;
-    for (const [k, x] of Object.entries(v)) {
+    for (let [k, x] of Object.entries(v)) {
       if (BAD_KEYS.has(k) || n >= 300 || k.length > 100) continue;
+      k = txt(k, 100);
       const c = cleanAny(x, depth + 1);
       if (c !== undefined) { o[k] = c; n++; }
     }
@@ -31,10 +42,10 @@ function cleanAny(v, depth = 0) {
 }
 
 const T = {
-  str: v => (v == null ? '' : String(v).slice(0, 500)),
-  text: v => (v == null ? '' : String(v).slice(0, 20000)),
-  date: v => (v == null || v === '' ? null : /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : bad('Fecha inválida (AAAA-MM-DD)')),
-  time: v => (v == null || v === '' ? null : /^\d{2}:\d{2}$/.test(v) ? v : bad('Hora inválida (HH:MM)')),
+  str: v => (v == null ? '' : txt(v, 500)),
+  text: v => (v == null ? '' : txt(v, 20000)),
+  date: v => (v == null || v === '' ? null : fechaReal(v) ? v : bad('Fecha inválida (AAAA-MM-DD)')),
+  time: v => (v == null || v === '' ? null : /^([01]\d|2[0-3]):[0-5]\d$/.test(v) ? v : bad('Hora inválida (HH:MM)')),
   num: v => (v == null || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : bad('Número inválido')),
   pct: v => Math.max(0, Math.min(100, Math.round(Number(v) || 0))),
   bool: v => !!v,
@@ -42,6 +53,8 @@ const T = {
   ids: v => (Array.isArray(v) ? [...new Set(v.map(String))].slice(0, 300) : []),
   obj: v => (v && typeof v === 'object' && !Array.isArray(v) ? cleanAny(v) : {}),
   arr: v => (Array.isArray(v) ? cleanAny(v) : []),
+  // Lista de registros (flujos, captado, compromisos…): solo objetos; un null o un texto suelto rompería los cálculos
+  objs: v => (Array.isArray(v) ? cleanAny(v.filter(x => x && typeof x === 'object' && !Array.isArray(x))) : []),
   stamp: v => (v == null || v === '' ? null : !isNaN(Date.parse(v)) ? new Date(v).toISOString() : bad('Fecha y hora inválidas')),
   dur: v => (v == null || v === '' ? null : Number.isInteger(Number(v)) && Number(v) >= 1 && Number(v) <= 999 ? Number(v) : bad('Duración inválida (1 a 999 días hábiles)')),
   // { idPrecedente: { t: 'FC'|'CC'|'FF'|'CF', d: desfase, u: 'h' hábiles | 'c' corridos } }
@@ -61,7 +74,7 @@ const SCHEMAS = {
   // Proyecto: sus columnas (las define la tabla, como en Notion) van en props
   // Además, lo del plan de trabajo: fecha meta, línea base e involucrados ({nombre, area, rol})
   // Vista mejorada: «en una frase», área beneficiada, origen (cuando nace de una propuesta) y aprendizajes al cerrar
-  projects: { props: 'obj', position: 'num', fecha_meta: 'date', linea_base_at: 'stamp', miembros: 'arr', frase: 'str', area: 'str', origen: 'obj', aprendizajes: 'text' },
+  projects: { props: 'obj', position: 'num', fecha_meta: 'date', linea_base_at: 'stamp', miembros: 'objs', frase: 'str', area: 'str', origen: 'obj', aprendizajes: 'text' },
   // Actividades e hitos del cronograma (plan de trabajo, igual que en la app de gestión):
   // capítulo, duración en días hábiles, precedencias con su tipo (FC/CC/FF/CF y desfase),
   // fechas reales, línea base, entregable y área responsable
@@ -76,14 +89,14 @@ const SCHEMAS = {
     project_id: 'id', estado: 'str', sponsor: 'str', fecha_comite: 'date',
     problema: 'text', objetivo: 'text', alcance: 'text', fuera_alcance: 'text', beneficios_cual: 'text',
     riesgos: 'text', supuestos: 'text', recomendacion: 'text',
-    tasa: 'num', anios: 'num', anio_inicio: 'num', moneda: 'str', flujos: 'arr', escenarios: 'obj', captado: 'arr',
+    tasa: 'num', anios: 'num', anio_inicio: 'num', moneda: 'str', flujos: 'objs', escenarios: 'obj', captado: 'objs',
     validacion: 'obj', // { '2026': { hasta: 'AAAA-MM', por, fecha, url, nota } } · lo captado hasta ese mes cuenta como verificado
   },
   // Sesiones de comité (agenda)
   sessions: {
     comite_id: 'id', titulo: 'str', fecha: 'date', hora_ini: 'time', hora_fin: 'time', estado: 'str',
-    lugar: 'str', enlace: 'str', proyectos: 'ids', temas: 'text', asistentes: 'text', decisiones: 'text', compromisos: 'arr',
-    decisiones_reg: 'arr', // decisiones estructuradas: { id, tipo, texto, project_id, responsable, fecha, estado }
+    lugar: 'str', enlace: 'str', proyectos: 'ids', temas: 'text', asistentes: 'text', decisiones: 'text', compromisos: 'objs',
+    decisiones_reg: 'objs', // decisiones estructuradas: { id, tipo, texto, project_id, responsable, fecha, estado }
   },
   // Tipos de comité
   committees: { name: 'str', color: 'str', frecuencia: 'str', descripcion: 'text', integrantes: 'text' },

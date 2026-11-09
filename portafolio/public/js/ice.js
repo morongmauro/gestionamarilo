@@ -48,7 +48,8 @@
   }
   // Columnas antiguas (1 a 10): se convierten a la misma escala
   function desdeAntiguas(p) {
-    const v = p.props || {}; const i = Number(v.impacto), c = Number(v.confianza), f = Number(v.facilidad);
+    const v = p.props || {}; const lim = x => Math.min(10, Number(x)); // escala 1 a 10 (un 11 daría ICE infinito)
+    const i = lim(v.impacto), c = lim(v.confianza), f = lim(v.facilidad);
     if (!(i > 0 && c > 0 && f > 0)) return null;
     return { income: FIB[Math.min(8, Math.round(i * 8 / 10))], conf: redondeaPct(c * 10), esf: redondeaPct(110 - f * 10), origen: 'antiguo', notas: ['Convertido de Impacto, Confianza y Facilidad (1 a 10)'] };
   }

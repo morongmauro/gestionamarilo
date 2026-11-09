@@ -61,15 +61,17 @@ async function exportar(caso, nombreProyecto, plantilla) {
   const N = anios + 1, ini = caso.anio_inicio || null;
   const flujos = plantilla
     ? [{ tipo: 'inversion', concepto: 'Inversión inicial', valores: [] }, { tipo: 'costo', concepto: 'Costos de operación', valores: [] }, { tipo: 'beneficio', concepto: 'Beneficio esperado', valores: [] }]
-    : ['inversion', 'costo', 'beneficio'].flatMap(t => (caso.flujos || []).filter(f => f.tipo === t));
+    : ['inversion', 'costo', 'beneficio'].flatMap(t => (Array.isArray(caso.flujos) ? caso.flujos : []).filter(f => f && typeof f === 'object' && f.tipo === t));
   const f = Finanzas.calc(plantilla ? { anios, flujos } : caso);
   const fmt = '#,##0;[Red]-#,##0';
+  // La misma tasa que usa la app: sin tasa, 0 % (la plantilla sugiere 12 %)
+  const tasaCaso = plantilla ? 12 : Number(caso.tasa) || 0;
   const ws = wb.addWorksheet('Flujo', { views: [{ state: 'frozen', xSplit: 2, ySplit: 5 }] });
   ws.columns = [{ width: 13 }, { width: 34 }, ...Array.from({ length: N + 1 }, () => ({ width: 15 }))];
 
   ws.getCell('A1').value = plantilla ? 'Caso de negocio · plantilla' : `Caso de negocio · ${nombreProyecto}`;
   ws.getCell('A1').font = { bold: true, size: 14 };
-  ws.getCell('A2').value = 'Tasa de descuento'; ws.getCell('C2').value = (caso.tasa ?? 12) / 100; ws.getCell('C2').numFmt = '0.0%';
+  ws.getCell('A2').value = 'Tasa de descuento'; ws.getCell('C2').value = tasaCaso / 100; ws.getCell('C2').numFmt = '0.0%';
   ws.getCell('D2').value = `Moneda: ${caso.moneda || 'COP'} · cifras en unidades (no en miles ni millones)`;
   ws.getCell('A3').value = plantilla ? 'Llena una fila por concepto. En «Tipo» escribe Inversión, Costo o Beneficio. Puedes agregar filas y años; luego súbelo en la app con «Subir Excel».' : 'Puedes editar este archivo en Excel y volver a subirlo en la app con «Subir Excel».';
   ws.getCell('A3').font = { italic: true, color: { argb: 'FF6E6858' } };
@@ -85,8 +87,8 @@ async function exportar(caso, nombreProyecto, plantilla) {
     const row = ws.getRow(r);
     row.getCell(1).value = TIPO_TXT[fl.tipo] || 'Costo';
     row.getCell(2).value = fl.concepto || '';
-    for (let t = 0; t < N; t++) { const v = Number((fl.valores || [])[t]) || 0; const cell = row.getCell(3 + t); cell.value = plantilla ? null : v; cell.numFmt = fmt; }
-    const sum = (fl.valores || []).slice(0, N).reduce((a, b) => a + (Number(b) || 0), 0);
+    for (let t = 0; t < N; t++) { const v = Number((Array.isArray(fl.valores) ? fl.valores : [])[t]) || 0; const cell = row.getCell(3 + t); cell.value = plantilla ? null : v; cell.numFmt = fmt; }
+    const sum = (Array.isArray(fl.valores) ? fl.valores : []).slice(0, N).reduce((a, b) => a + (Number(b) || 0), 0);
     row.getCell(3 + N).value = { formula: `SUM(${yc(0)}${r}:${last}${r})`, result: plantilla ? 0 : sum };
     row.getCell(3 + N).numFmt = fmt; row.getCell(3 + N).font = { bold: true };
     r++;
@@ -119,7 +121,7 @@ async function exportar(caso, nombreProyecto, plantilla) {
   const ws2 = wb.addWorksheet('Caso');
   ws2.columns = [{ width: 34 }, { width: 100 }];
   const datos = [['Proyecto', plantilla ? '' : nombreProyecto], ['Estado', caso.estado || 'Borrador'], ['Sponsor', caso.sponsor || ''], ['Fecha de comité', caso.fecha_comite || ''],
-    ['Moneda', caso.moneda || 'COP'], ['Tasa de descuento (%)', caso.tasa ?? 12], ['Horizonte (años)', anios], ['Año 0', ini || ''],
+    ['Moneda', caso.moneda || 'COP'], ['Tasa de descuento (%)', tasaCaso], ['Horizonte (años)', anios], ['Año 0', ini || ''],
     ...SECCIONES.map(([k, l]) => [l, plantilla ? '' : caso[k] || ''])];
   datos.forEach(([k, v], i) => { const row = ws2.getRow(i + 1); row.getCell(1).value = k; row.getCell(1).font = { bold: true }; row.getCell(2).value = v; row.getCell(2).alignment = { wrapText: true, vertical: 'top' }; });
   return wb.xlsx.writeBuffer();

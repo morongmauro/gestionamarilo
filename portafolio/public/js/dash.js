@@ -20,8 +20,8 @@
   /* ---------- cálculo ---------- */
   function datos() {
     const hoy = App.d.today(), hoyY = +hoy.slice(0, 4), hoyM = +hoy.slice(5, 7);
-    const diasMes = new Date(Date.UTC(hoyY, hoyM, 0)).getUTCDate();
-    const corrido = y => (y < hoyY ? 12 : y > hoyY ? 0 : hoyM - 1 + (+hoy.slice(8)) / diasMes); // meses corridos del año
+    // Meses cerrados del año: lo captado se registra por mes, así que el mes en curso aún no cuenta como esperado
+    const corrido = y => (y < hoyY ? 12 : y > hoyY ? 0 : hoyM - 1);
     const unidad = (App.S.tablero && App.S.tablero.income_unidad) || 1e6;
     const ec = App.estadoCol(), tv = App.S.columns.find(c => c.id === 'tipo_valor') || App.S.columns.find(c => /tipo de valor/i.test(c.name));
     const cats = App.CATS.map(c => c.id).filter(id => !F.tipo || id === F.tipo);

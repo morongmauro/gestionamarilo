@@ -12,19 +12,31 @@
   function parseCSV(txt) {
     const rows = []; let row = [], cell = '', q = false;
     txt = txt.replace(/^﻿/, '');
+    // Separador: coma, o punto y coma (Excel en español exporta así)
+    const l0 = txt.split(/\r?\n/)[0] || '';
+    const sep = (l0.match(/;/g) || []).length > (l0.match(/,/g) || []).length ? ';' : ',';
     for (let i = 0; i < txt.length; i++) {
       const c = txt[i];
       if (q) { if (c === '"') { if (txt[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; }
       else if (c === '"') q = true;
-      else if (c === ',') { row.push(cell); cell = ''; }
+      else if (c === sep) { row.push(cell); cell = ''; }
       else if (c === '\n' || c === '\r') { if (c === '\r' && txt[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
       else cell += c;
     }
     if (cell || row.length) { row.push(cell); rows.push(row); }
+    if (!rows.length) return [];
     const head = rows.shift().map(h => h.replace(/\s+/g, ' ').trim());
     return rows.filter(r => r.some(x => x.trim())).map(r => Object.fromEntries(head.map((h, i) => [h, (r[i] || '').trim()])));
   }
-  const num = s => { s = String(s || '').replace(/[^\d,.\-]/g, ''); if (!s) return null; if (/^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) s = s.replace(/\./g, '').replace(',', '.'); else s = s.replace(/,/g, ''); const n = Number(s); return Number.isFinite(n) ? n : null; };
+  // Números como los escribe Notion en Colombia: 1.234.567,89 · 1,5 (coma decimal) · 1,234,567.89 · 1234.5
+  const num = s => {
+    s = String(s || '').replace(/[^\d,.\-]/g, ''); if (!s) return null;
+    if (/^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) s = s.replace(/\./g, '').replace(',', '.');
+    else if (/^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(s)) s = s.replace(/,/g, '');
+    else if (/^-?\d+,\d+$/.test(s)) s = s.replace(',', '.');
+    else if (!/^-?\d+(\.\d+)?$/.test(s)) return null;
+    const n = Number(s); return Number.isFinite(n) ? n : null;
+  };
   const pct = s => { const n = num(s); return n == null ? null : n; };
   const lista = s => String(s || '').split(/[,;\n]/).map(x => x.trim()).filter(Boolean);
   // Columnas que se crean (id, nombre, tipo, oculta en la tabla)
@@ -80,10 +92,12 @@
     }).filter(p => p[tc.id]);
     await App.api('PUT', '/api/config/columnas', { columns: cols });
     let n = 0, creados = 0, actualizados = 0;
+    // Por nombre: los que ya existen se actualizan (también si el archivo repite un nombre)
+    const porNombre = new Map(App.S.projects.map(p => [(p.props || {})[tc.id], p.id]));
     for (const props of docs) {
-      const ya = App.S.projects.find(p => (p.props || {})[tc.id] === props[tc.id]);
-      if (ya) { await App.api('PATCH', '/api/projects/' + ya.id, { props }); actualizados++; }
-      else { await App.api('POST', '/api/projects', { props }); creados++; }
+      const ya = porNombre.get(props[tc.id]);
+      if (ya) { await App.api('PATCH', '/api/projects/' + ya, { props }); actualizados++; }
+      else { const nuevo = await App.api('POST', '/api/projects', { props }); porNombre.set(props[tc.id], nuevo.id); creados++; }
       n++; if (onProgreso) onProgreso(n, docs.length);
     }
     return { creados, actualizados };

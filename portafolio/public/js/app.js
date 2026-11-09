@@ -193,6 +193,8 @@
       App.S.org = st.org;
       if (st.setup) return showLogin('setup', st);
       if (!st.user) return showLogin('login', st);
+      // Con contraseña temporal el servidor no entrega datos: primero se cambia
+      if (st.user.must_change) return showLogin('cambiar');
       await enter();
     } catch (e) {
       booted(); $('#login').hidden = false;

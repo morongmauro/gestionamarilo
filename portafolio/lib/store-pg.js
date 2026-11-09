@@ -26,6 +26,9 @@ class PgStore {
         ssl: local || process.env.PG_SSL === 'false' ? false : { rejectUnauthorized: false },
         max: Number(process.env.PG_POOL_MAX) || 3, // en Vercel cada instancia abre pocas conexiones
       });
+      // Cloud SQL y los proxies cortan las conexiones inactivas: sin este manejador,
+      // ese corte tumba el proceso. La conexión dañada sale del pool y la próxima consulta abre otra.
+      this.client.on('error', e => console.error('Postgres (conexión inactiva):', e.message));
     }
     await this.q(`
       CREATE TABLE IF NOT EXISTS pf_docs (

@@ -7,11 +7,13 @@ const fs = require('fs');
 const path = require('path');
 
 const clone = o => (o == null ? o : JSON.parse(JSON.stringify(o)));
+// Diccionario sin prototipo: un id como «constructor» o «__proto__» es una llave más, no un método de Object
+const dict = (o = {}) => Object.assign(Object.create(null), o);
 
 class FileStore {
   constructor(file) {
     this.file = path.resolve(file);
-    this.db = { colls: {}, config: {} };
+    this.db = { colls: dict(), config: dict() };
     this.queue = Promise.resolve();
     this.kind = 'archivo';
   }
@@ -19,19 +21,23 @@ class FileStore {
     fs.mkdirSync(path.dirname(this.file), { recursive: true });
     if (fs.existsSync(this.file)) {
       const raw = JSON.parse(fs.readFileSync(this.file, 'utf8'));
-      this.db = { colls: raw.colls || {}, config: raw.config || {} };
+      const colls = dict();
+      for (const [k, v] of Object.entries(raw.colls || {})) colls[k] = dict(v);
+      this.db = { colls, config: dict(raw.config) };
     }
   }
   _persist() {
     const snapshot = JSON.stringify(this.db);
-    this.queue = this.queue.then(() => {
+    // Si una escritura falla, la siguiente igual se intenta (la cola no queda trabada)
+    const p = this.queue.catch(() => {}).then(() => {
       const tmp = this.file + '.tmp';
       fs.writeFileSync(tmp, snapshot);
       fs.renameSync(tmp, this.file);
     });
-    return this.queue;
+    this.queue = p;
+    return p;
   }
-  _c(coll) { return (this.db.colls[coll] = this.db.colls[coll] || {}); }
+  _c(coll) { return (this.db.colls[coll] = this.db.colls[coll] || dict()); }
   async list(coll) { return Object.values(this._c(coll)).map(clone); }
   async get(coll, id) { return clone(this._c(coll)[id] || null); }
   async insert(coll, doc) { this._c(coll)[doc.id] = clone(doc); await this._persist(); return clone(doc); }

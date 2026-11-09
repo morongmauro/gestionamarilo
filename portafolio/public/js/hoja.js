@@ -44,7 +44,8 @@
       if (t.o === '(') { const v = expr(); const c = eat(); return c && c.o === ')' ? v : null; } return null; };
     const term = () => { let v = factor(); while (v != null && peek() && (peek().o === '*' || peek().o === '/')) { const o = eat().o, r = factor(); if (r == null || (o === '/' && r === 0)) return null; v = o === '*' ? v * r : v / r; } return v; };
     function expr() { let v = term(); while (v != null && peek() && (peek().o === '+' || peek().o === '-')) { const o = eat().o, r = term(); if (r == null) return null; v = o === '+' ? v + r : v - r; } return v; }
-    const v = expr();
+    // Una expresión absurdamente anidada agota la pila: se trata como texto no entendido
+    let v; try { v = expr(); } catch { return null; }
     return p === toks.length && v != null && Number.isFinite(v) ? v : null;
   }
   // texto de una celda → valor guardado (en pesos). prev = valor del año anterior
@@ -95,13 +96,16 @@
           const r = nav.length; nav.push(idx);
           const ben = rows[idx].tipo === 'beneficio' && App.catOf;
           const cat = ben ? App.catOf(rows[idx]) : null;
-          return `<tr data-row="${r}"><td data-r="${r}" data-c="0" class="${ben ? 'con-cat' : ''}"><input class="cpt" value="${esc(rows[idx].concepto || '')}" placeholder="Concepto" spellcheck="false" ${o.ro ? 'readonly' : ''}>${ben ? `<button class="catb cat-${cat}" data-cat="${idx}" tabindex="-1" title="Tipo de valor (cambiar)"><i></i>${esc(App.catLabel(cat))}</button>` : ''}</td>` +
+          return `<tr data-row="${r}"><td data-r="${r}" data-c="0" class="${ben ? 'con-cat' : ''}"><input class="cpt" value="${esc(rows[idx].concepto || '')}" placeholder="Concepto" spellcheck="false" ${o.ro ? 'readonly' : ''}>${ben ? `<button class="catb cat-${esc(cat)}" data-cat="${idx}" tabindex="-1" title="Tipo de valor (cambiar)"><i></i>${esc(App.catLabel(cat))}</button>` : ''}</td>` +
             Array.from({ length: NC() }, (_, t) => `<td data-r="${r}" data-c="${t + 1}"><input value="${esc(show(val(idx, t)))}" inputmode="decimal" spellcheck="false" ${o.ro ? 'readonly' : ''}></td>`).join('') +
             `<td class="rt" data-rt="${idx}">${esc(App.num(rowTotal(idx) / o.escala, dec))}</td><td class="rm">${o.ro ? '' : `<button class="x" data-rowmenu="${idx}" title="Opciones de la fila" tabindex="-1">···</button>`}</td></tr>`;
         }).join('');
         return `<tr class="grp"><td colspan="${NC() + 3}">${lbl}${o.ro ? '' : `<button data-addrow="${tipo}" tabindex="-1">+ fila</button>`}</td></tr>${trs}`;
       }).join('');
+      // Al reemplazar la tabla, el navegador dispara «focusout» en la celda vieja: no debe guardarse
+      S.rendering = true;
       el.innerHTML = `<table class="flujo hoja"><thead>${head}</thead><tbody>${body}</tbody><tbody class="tots">${totalsHTML(rows)}</tbody></table><div class="fillh" hidden></div>`;
+      S.rendering = false;
       paint();
     }
     function refreshTotals(src) {
@@ -137,6 +141,8 @@
       const td = inp.parentElement, r = +td.dataset.r, c = +td.dataset.c, idx = nav[r];
       if (idx == null) return true;
       if (c === 0) { if ((rows[idx].concepto || '') !== inp.value) { const before = snapshot(); rows[idx].concepto = inp.value; finish(before); } return true; }
+      // Sin cambios en el texto: no se relee lo que se ve (redondeado) para no perder decimales
+      if (inp.value === S.focusSnap && S.focusSnap === show(val(idx, c - 1))) { refreshTotals(); return true; }
       const v = parseCell(inp.value, c > 1 ? val(idx, c - 2) : 0, o.escala);
       if (v == null) { if (!quiet) App.toast(`No entendí «${inp.value}». Escribe un número, 1,2M, 300k, =150*12 o +5%`, true); inp.value = show(val(idx, c - 1)); refreshTotals(); return false; }
       if (v !== val(idx, c - 1)) { const before = snapshot(); setVal(idx, c - 1, v); finish(before); }
@@ -187,7 +193,9 @@
         return op(() => { for (let r = g.r0; r <= g.r1; r++) for (let c = g.c0; c <= g.c1; c++) { if (c === 0) rows[nav[r]].concepto = grid[0][0]; else { const v = parseCell(grid[0][0], c > 1 ? val(nav[r], c - 2) : 0, o.escala); if (v != null) setVal(nav[r], c - 1, v); } } });
       }
       // Tabla completa de Excel: se salta la fila de títulos y se toma la primera columna como concepto
-      if (grid.length > 1 && grid[0].length > 1 && grid[0].every(s => !s.trim() || !isNum(s)) && grid.slice(1).some(l => l.slice(1).some(s => s.trim() && isNum(s)))) grid = grid.slice(1);
+      // (los años de los títulos, como 2026, también cuentan como títulos)
+      const esAnio = s => /^\s*(19|20|21)\d\d\s*$/.test(s);
+      if (grid.length > 1 && grid[0].length > 1 && grid[0].every(s => !s.trim() || !isNum(s) || esAnio(s)) && grid[0].some(s => s.trim() && (!isNum(s) || esAnio(s))) && !grid[0].slice(1).some(s => s.trim() && isNum(s) && !esAnio(s)) && grid.slice(1).some(l => l.slice(1).some(s => s.trim() && isNum(s)))) grid = grid.slice(1);
       if (c0 >= 1 && grid.every(l => l.length > 1 && l[0].trim() && !isNum(l[0]))) c0 = 0;
       const width = Math.max(...grid.map(l => l.length));
       const needYears = c0 + width - 1; // columnas de valores necesarias
@@ -208,7 +216,8 @@
         });
         S.sel = { r0, c0, r1: r0 + grid.length - 1, c1: c0 + width - 1 };
       });
-      App.toast(`Pegado: ${grid.length} ${grid.length === 1 ? 'fila' : 'filas'} × ${width} ${width === 1 ? 'columna' : 'columnas'}`);
+      const fuera = Math.max(0, needYears - (MAXY + 1));
+      App.toast(`Pegado: ${grid.length} ${grid.length === 1 ? 'fila' : 'filas'} × ${width} ${width === 1 ? 'columna' : 'columnas'}` + (fuera ? ` · ${fuera} ${fuera === 1 ? 'año quedó' : 'años quedaron'} por fuera (máximo ${MAXY + 1} años)` : ''), !!fuera);
       if (needYears > NC()) o.onYears(Math.min(MAXY + 1, needYears));
     }
     function applyFill(target) {
@@ -218,6 +227,7 @@
       if (!down && !right) return;
       op(() => {
         if (right) {
+          if (g.c1 < 1) return false; // desde «Concepto» no hay valores que extender
           const cS = Math.max(1, g.c0);
           for (let r = g.r0; r <= g.r1; r++) {
             const idx = nav[r], w = g.c1 - cS + 1;
@@ -260,7 +270,11 @@
             } else {
               const tot = parseCell($('[data-h=tot]', p).value, 0, o.escala), a = Math.max(0, +$('[data-h=a]', p).value || 0), b = Math.min(NC() - 1, +$('[data-h=b]', p).value || 0);
               if (tot == null || b < a) return App.toast('Revisa el total y los años', true);
-              App.closePop(true); op(() => { for (let t = 0; t < NC(); t++) setVal(idx, t, t >= a && t <= b ? Math.round(tot / (b - a + 1)) : val(idx, t)); });
+              App.closePop(true); op(() => {
+                // Partes iguales; lo que sobra del redondeo va al último año, para que la suma dé el total
+                const n = b - a + 1, parte = Math.round(tot / n);
+                for (let t = 0; t < NC(); t++) setVal(idx, t, t >= a && t <= b ? (t === b ? tot - parte * (n - 1) : parte) : val(idx, t));
+              });
             }
           };
         }
@@ -282,7 +296,7 @@
       if (!S.keep && !S.drag) S.sel = { r0: r, c0: c, r1: r, c1: c };
       S.focusSnap = inp.value; inp.select(); paint();
     });
-    el.addEventListener('focusout', e => { const inp = e.target; if (inp.tagName === 'INPUT' && inp.parentElement.dataset.r && el.contains(inp)) commitInput(inp); });
+    el.addEventListener('focusout', e => { const inp = e.target; if (S.rendering) return; if (inp.tagName === 'INPUT' && inp.parentElement.dataset.r && el.contains(inp)) commitInput(inp); });
     el.oninput = e => {
       const inp = e.target; if (inp.tagName !== 'INPUT') return;
       const td = inp.parentElement, c = +td.dataset.c, idx = nav[+td.dataset.r];

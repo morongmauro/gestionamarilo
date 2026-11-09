@@ -4,6 +4,9 @@
 // ============================================================
 (function (root) {
   const num = v => (Number.isFinite(Number(v)) ? Number(v) : 0);
+  // Solo filas de flujo válidas (un registro dañado no debe tumbar el cálculo ni los exportes)
+  const filas = caso => ((caso && caso.flujos) || []).filter(f => f && typeof f === 'object');
+  const vals = f => (Array.isArray(f.valores) ? f.valores : []);
 
   function vpn(netos, r) { return netos.reduce((a, v, t) => a + v / Math.pow(1 + r, t), 0); }
 
@@ -34,9 +37,9 @@
     const n = anios + 1; // año 0 .. año N
     const z = () => Array.from({ length: n }, () => 0);
     const inversion = z(), costos = z(), beneficios = z();
-    for (const f of (caso && caso.flujos) || []) {
+    for (const f of filas(caso)) {
       const dest = f.tipo === 'beneficio' ? beneficios : f.tipo === 'inversion' ? inversion : costos;
-      for (let t = 0; t < n; t++) dest[t] += num((f.valores || [])[t]);
+      for (let t = 0; t < n; t++) dest[t] += num(vals(f)[t]);
     }
     const netos = beneficios.map((b, t) => b - costos[t] - inversion[t]);
     const acumulado = []; netos.reduce((a, v, t) => (acumulado[t] = a + v), 0);
@@ -44,11 +47,12 @@
     const sum = a => a.reduce((x, y) => x + y, 0);
     const totalInversion = sum(inversion), totalCosto = sum(costos), totalBeneficio = sum(beneficios);
     let payback = null;
+    // Payback: cuándo el acumulado queda en positivo para siempre (después del último año en negativo).
+    // Si nunca es negativo, 0; si sigue negativo al final del horizonte, no hay payback.
     if (netos.some(v => v !== 0)) {
-      if (acumulado[0] >= 0 && netos[0] >= 0) payback = 0;
-      else for (let t = 1; t < n; t++) {
-        if (acumulado[t] >= 0 && acumulado[t - 1] < 0) { payback = t - 1 + (-acumulado[t - 1]) / (netos[t] || 1); break; }
-      }
+      let k = -1; for (let t = 0; t < n; t++) if (acumulado[t] < 0) k = t;
+      if (k < 0) payback = 0;
+      else if (k < n - 1) payback = k + (-acumulado[k]) / (netos[k + 1] || 1);
     }
     const egresos = totalInversion + totalCosto;
     return {
@@ -66,8 +70,8 @@
   function ajustar(caso, a) {
     a = a || {};
     const k = t => 1 + (num(t === 'beneficio' ? a.b : t === 'inversion' ? a.i : a.c)) / 100;
-    const flujos = ((caso && caso.flujos) || []).map(f => {
-      let v = (f.valores || []).map(x => num(x) * k(f.tipo));
+    const flujos = filas(caso).map(f => {
+      let v = vals(f).map(x => num(x) * k(f.tipo));
       if (f.tipo === 'beneficio' && a.retraso > 0) v = Array(a.retraso).fill(0).concat(v);
       return Object.assign({}, f, { valores: v });
     });

@@ -42,8 +42,8 @@ function makeToken(user) {
 function readToken(token) {
   if (!token || typeof token !== 'string' || !token.includes('.')) return null;
   const [payload, mac] = token.split('.');
-  const expected = sign(payload);
-  if (mac.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(mac), Buffer.from(expected))) return null;
+  const a = Buffer.from(mac), b = Buffer.from(sign(payload));
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
   try {
     const p = JSON.parse(Buffer.from(payload, 'base64url').toString());
     if (!p.e || p.e < Date.now()) return null;
@@ -55,7 +55,10 @@ function parseCookies(req) {
   const out = {};
   (req.headers.cookie || '').split(';').forEach(p => {
     const i = p.indexOf('=');
-    if (i > 0) out[p.slice(0, i).trim()] = decodeURIComponent(p.slice(i + 1).trim());
+    if (i <= 0) return;
+    const v = p.slice(i + 1).trim();
+    // Una cookie ajena mal codificada (p. ej. «50%») no debe tumbar la petición
+    try { out[p.slice(0, i).trim()] = decodeURIComponent(v); } catch { out[p.slice(0, i).trim()] = v; }
   });
   return out;
 }
@@ -69,25 +72,41 @@ function clearCookie(req) {
   return `${COOKIE}=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0${isHttps(req) ? '; Secure' : ''}`;
 }
 
-// Freno a la fuerza bruta: 8 intentos fallidos por correo+IP cada 15 minutos
+// Freno a la fuerza bruta, en dos niveles (ventana de 15 minutos):
+// - 8 intentos fallidos por correo + IP: frena a quien adivina desde un equipo.
+// - 100 intentos fallidos por correo, vengan de donde vengan: frena a quien cambia de IP
+//   (o falsifica el encabezado). Así un tercero ya no bloquea la cuenta de otro con 8 intentos.
+const VENTANA = 15 * 60 * 1000, POR_EQUIPO = 8, POR_CUENTA = 100;
 const intentos = new Map();
-function loginBloqueado(key) {
-  const x = intentos.get(key);
-  if (!x) return false;
-  if (Date.now() - x.t > 15 * 60 * 1000) { intentos.delete(key); return false; }
-  return x.n >= 8;
+function cuenta(k) {
+  const x = intentos.get(k);
+  if (x && Date.now() - x.t > VENTANA) { intentos.delete(k); return 0; }
+  return x ? x.n : 0;
 }
-function loginFallido(key) {
-  if (intentos.size > 5000) for (const [k, v] of intentos) if (Date.now() - v.t > 15 * 60 * 1000) intentos.delete(k);
-  const x = intentos.get(key);
-  if (!x || Date.now() - x.t > 15 * 60 * 1000) intentos.set(key, { n: 1, t: Date.now() });
-  else x.n++;
+function suma(k) {
+  const x = intentos.get(k);
+  if (!x || Date.now() - x.t > VENTANA) intentos.set(k, { n: 1, t: Date.now() }); else x.n++;
 }
-function loginOk(key) { intentos.delete(key); }
+const claves = (email, ip) => ['c|' + email, 'e|' + email + '|' + ip];
+function loginBloqueado(email, ip) {
+  const [c, e] = claves(email, ip);
+  return cuenta(c) >= POR_CUENTA || cuenta(e) >= POR_EQUIPO;
+}
+function loginFallido(email, ip) {
+  if (intentos.size > 5000) for (const [k, v] of intentos) if (Date.now() - v.t > VENTANA) intentos.delete(k);
+  if (intentos.size > 20000) intentos.clear(); // tope de memoria ante un ataque masivo
+  claves(email, ip).forEach(suma);
+}
+function loginOk(email, ip) { intentos.delete(claves(email, ip)[1]); }
+// IP de quien llama: la primera de X-Forwarded-For (Vercel y Cloud Run la ponen) o la del socket
+function ipDe(req) {
+  const f = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+  return (f || (req.socket && req.socket.remoteAddress) || '').slice(0, 64);
+}
 
 const publicUser = u => u && ({ id: u.id, name: u.name, email: u.email, role: u.role, active: u.active !== false, must_change: !!u.must_change, created_at: u.created_at, last_login: u.last_login || null });
 
 module.exports = {
   COOKIE, ROLES, hashPassword, verifyPassword, checkPasswordRules, setSecret, makeToken, readToken,
-  parseCookies, sessionCookie, clearCookie, loginBloqueado, loginFallido, loginOk, publicUser,
+  parseCookies, sessionCookie, clearCookie, loginBloqueado, loginFallido, loginOk, ipDe, publicUser,
 };

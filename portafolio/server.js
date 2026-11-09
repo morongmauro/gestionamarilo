@@ -32,6 +32,11 @@ function send(res, status, body, headers = {}) {
   res.writeHead(status, { 'Content-Type': isText ? 'text/plain; charset=utf-8' : 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...headers });
   res.end(isText ? body : JSON.stringify(body));
 }
+// El cuerpo debe ser un objeto JSON: «null», un número o un texto suelto no tienen campos que leer
+function comoObjeto(v) {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) throw new HttpError(400, 'JSON inválido: se esperaba un objeto');
+  return v;
+}
 function readBody(req) {
   // En Vercel el cuerpo ya viene leído en req.body (y el flujo ya se consumió:
   // leerlo otra vez dejaría la petición colgada)
@@ -41,15 +46,15 @@ function readBody(req) {
     if (pre === undefined || pre === null || pre === '') return Promise.resolve({});
     try {
       if (Buffer.isBuffer(pre)) pre = pre.toString('utf8');
-      return Promise.resolve(typeof pre === 'string' ? (pre ? JSON.parse(pre) : {}) : (pre || {}));
-    } catch { return Promise.reject(new HttpError(400, 'JSON inválido')); }
+      return Promise.resolve(comoObjeto(typeof pre === 'string' ? (pre ? JSON.parse(pre) : {}) : (pre || {})));
+    } catch (e) { return Promise.reject(e instanceof HttpError ? e : new HttpError(400, 'JSON inválido')); }
   }
   return new Promise((resolve, reject) => {
     let size = 0; const chunks = [];
     req.on('data', c => { size += c.length; if (size > 8 * 1024 * 1024) { reject(new HttpError(413, 'Demasiado grande')); req.destroy(); } else chunks.push(c); });
     req.on('end', () => {
       if (!chunks.length) return resolve({});
-      try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8'))); } catch { reject(new HttpError(400, 'JSON inválido')); }
+      try { resolve(comoObjeto(JSON.parse(Buffer.concat(chunks).toString('utf8')))); } catch (e) { reject(e instanceof HttpError ? e : new HttpError(400, 'JSON inválido')); }
     });
     req.on('error', reject);
   });
@@ -141,24 +146,30 @@ route('POST', '/api/auth/setup', 'publico', async (req, ctx) => {
 });
 
 route('POST', '/api/auth/login', 'publico', async (req, ctx) => {
-  const email = String(ctx.body.email || '').trim().toLowerCase();
-  // El freno va por correo (un encabezado de IP se puede falsificar)
-  const key = email;
-  if (auth.loginBloqueado(key)) throw new HttpError(429, 'Demasiados intentos. Espera 15 minutos.');
+  const email = String(ctx.body.email || '').trim().toLowerCase().slice(0, 254);
+  // Freno por correo + IP, y un tope más alto por correo (ver lib/auth.js)
+  const ip = auth.ipDe(req);
+  if (auth.loginBloqueado(email, ip)) throw new HttpError(429, 'Demasiados intentos. Espera 15 minutos.');
   const user = (await store.list('users')).find(u => u.email === email);
   // Si el correo no existe se verifica igual contra una clave falsa: así el tiempo de respuesta no lo delata
   const okPass = auth.verifyPassword(ctx.body.password || '', user ? user.pass : DUMMY_HASH);
   if (!user || user.active === false || !okPass) {
-    auth.loginFallido(key);
+    auth.loginFallido(email, ip);
     throw new HttpError(401, 'Correo o contraseña incorrectos');
   }
-  auth.loginOk(key);
+  auth.loginOk(email, ip);
   const u = await store.update('users', user.id, d => ({ ...d, last_login: now() }));
   ctx.setCookie = auth.sessionCookie(req, auth.makeToken(u));
   return { user: auth.publicUser(u) };
 });
 
-route('POST', '/api/auth/logout', 'publico', async (req, ctx) => { ctx.setCookie = auth.clearCookie(req); return { ok: true }; });
+route('POST', '/api/auth/logout', 'publico', async (req, ctx) => {
+  ctx.setCookie = auth.clearCookie(req);
+  // Cerrar sesión invalida las sesiones abiertas de ese usuario (una cookie copiada deja de servir).
+  // En la demostración sin base no: cada copia de la app tiene su propio usuario y la cerraría a medias.
+  if (ctx.user && store.kind !== 'memoria') await store.update('users', ctx.user.id, d => ({ ...d, sv: (d.sv || 0) + 1 }));
+  return { ok: true };
+});
 
 route('POST', '/api/auth/clave', 'usuario', async (req, ctx) => {
   const { actual, nueva } = ctx.body;
@@ -357,8 +368,8 @@ route('POST', '/api/plan/:pid', 'editor', async (req, ctx) => {
   if (!proyecto) throw new HttpError(404, 'El proyecto no existe');
   const lista = (v, n) => { const l = Array.isArray(v) ? v : []; if (l.length > n) throw new HttpError(413, 'Demasiados cambios de una vez'); return l; };
   const cambios = { sections: b.sections || {}, activities: b.activities || {} };
-  let n = 0;
-  // Primero capítulos (las actividades nuevas pueden caer en un capítulo nuevo); al final, lo borrado
+  // 1) Se revisa todo antes de escribir: si un registro no sirve, no se guarda nada a medias
+  const ups = [], rems = [];
   for (const coll of ['sections', 'activities']) {
     for (const raw of lista(cambios[coll].upsert, 2000)) {
       const id = String((raw && raw.id) || '');
@@ -366,17 +377,8 @@ route('POST', '/api/plan/:pid', 'editor', async (req, ctx) => {
       const data = cleanDoc(coll, raw, true);
       delete data.project_id;
       const cur = await store.get(coll, id);
-      if (cur) {
-        if (cur.project_id !== pid) throw new HttpError(400, 'El registro es de otro proyecto');
-        if (!Object.keys(data).length) continue;
-        const doc = await store.update(coll, id, c => ({ ...c, ...data, updated_at: now(), updated_by: ctx.user.id, updated_by_name: ctx.user.name }));
-        if (b.registrar !== false) await log(ctx.user, 'editó', coll, id, await labelOf(coll, doc), Object.keys(data));
-      } else {
-        const doc = { name: coll === 'sections' ? 'Capítulo' : 'Nueva actividad', ...data, project_id: pid, id, created_at: now(), updated_at: now(), updated_by: ctx.user.id, updated_by_name: ctx.user.name };
-        await store.insert(coll, doc);
-        if (b.registrar !== false) await log(ctx.user, 'creó', coll, id, await labelOf(coll, doc));
-      }
-      n++;
+      if (cur && cur.project_id !== pid) throw new HttpError(400, 'El registro es de otro proyecto');
+      ups.push({ coll, id, data, cur });
     }
   }
   for (const coll of ['activities', 'sections']) {
@@ -384,10 +386,38 @@ route('POST', '/api/plan/:pid', 'editor', async (req, ctx) => {
       const cur = await store.get(coll, String(id));
       if (!cur) continue;
       if (cur.project_id !== pid) throw new HttpError(400, 'El registro es de otro proyecto');
-      await store.remove(coll, cur.id);
-      if (b.registrar !== false) await log(ctx.user, 'eliminó', coll, cur.id, await labelOf(coll, cur));
-      n++;
+      rems.push({ coll, cur });
     }
+  }
+  // Comentarios de actividades borradas: se guardan aparte para que «Deshacer» los devuelva
+  const papelera = Object.assign(Object.create(null), (await store.getConfig('papelera_comentarios')) || {});
+  let papeleraCambio = false;
+  // 2) Se aplica. Primero capítulos (las actividades nuevas pueden caer en un capítulo nuevo); al final, lo borrado
+  let n = 0;
+  for (const { coll, id, data, cur } of ups) {
+    if (cur) {
+      if (!Object.keys(data).length) continue;
+      const doc = await store.update(coll, id, c => ({ ...c, ...data, updated_at: now(), updated_by: ctx.user.id, updated_by_name: ctx.user.name }));
+      if (b.registrar !== false) await log(ctx.user, 'editó', coll, id, await labelOf(coll, doc), Object.keys(data));
+    } else {
+      const doc = { name: coll === 'sections' ? 'Capítulo' : 'Nueva actividad', ...data, project_id: pid, id, created_at: now(), updated_at: now(), updated_by: ctx.user.id, updated_by_name: ctx.user.name };
+      if (coll === 'activities' && papelera[id]) { doc.comentarios = papelera[id].comentarios; delete papelera[id]; papeleraCambio = true; }
+      await store.insert(coll, doc);
+      if (b.registrar !== false) await log(ctx.user, 'creó', coll, id, await labelOf(coll, doc));
+    }
+    n++;
+  }
+  for (const { coll, cur } of rems) {
+    if (coll === 'activities' && (cur.comentarios || []).length) { papelera[cur.id] = { comentarios: cur.comentarios, at: now() }; papeleraCambio = true; }
+    await store.remove(coll, cur.id);
+    // Un borrado siempre queda en el historial, aunque el cambio venga marcado como automático
+    await log(ctx.user, 'eliminó', coll, cur.id, await labelOf(coll, cur));
+    n++;
+  }
+  if (papeleraCambio) {
+    const ids = Object.keys(papelera).sort((x, y) => String(papelera[y].at).localeCompare(String(papelera[x].at)));
+    for (const id of ids.slice(100)) delete papelera[id]; // se guardan los 100 más recientes
+    await store.setConfig('papelera_comentarios', papelera);
   }
   const [activities, sections] = await Promise.all(['activities', 'sections'].map(c => store.list(c)));
   return { cambios: n, activities: activities.filter(a => a.project_id === pid), sections: sections.filter(x => x.project_id === pid) };
@@ -435,8 +465,11 @@ route('POST', `/api/${COLL_RX}`, 'editor', async (req, ctx) => {
     const same = coll === 'projects' ? all : all.filter(a => a.project_id === data.project_id);
     if (data.position == null) data.position = same.reduce((m, x) => Math.max(m, x.position ?? 0), -1) + 1;
   }
-  const doc = { ...data, id: newId(), created_at: now(), updated_at: now(), updated_by: ctx.user.id, updated_by_name: ctx.user.name };
-  await store.insert(coll, doc);
+  // El caso usa un id fijo por proyecto: si llegan dos creaciones a la vez, la base rechaza la segunda
+  const doc = { ...data, id: coll === 'cases' ? 'caso-' + data.project_id : newId(), created_at: now(), updated_at: now(), updated_by: ctx.user.id, updated_by_name: ctx.user.name };
+  if (coll === 'cases' && (await store.get('cases', doc.id))) return store.get('cases', doc.id);
+  try { await store.insert(coll, doc); }
+  catch (e) { const ya = coll === 'cases' && (await store.get('cases', doc.id)); if (ya) return ya; throw e; }
   await log(ctx.user, 'creó', coll, doc.id, await labelOf(coll, doc));
   return doc;
 });
@@ -506,11 +539,14 @@ async function handle(req, res) {
     if (r.nivel === 'export') {
       const hdr = String(req.headers.authorization || '');
       const tok = process.env.EXPORT_TOKEN;
-      const okToken = tok && hdr.startsWith('Bearer ') && hdr.length === 7 + tok.length && crypto.timingSafeEqual(Buffer.from(hdr.slice(7)), Buffer.from(tok));
+      const dado = Buffer.from(hdr.slice(7)), esperado = Buffer.from(tok || '');
+      const okToken = tok && hdr.startsWith('Bearer ') && dado.length === esperado.length && crypto.timingSafeEqual(dado, esperado);
       if (!okToken && !(ctx.user && ctx.user.role === 'admin')) throw new HttpError(401, 'Necesitas el token de exportación');
     } else if (!canAccess(r.nivel, ctx.user)) {
       throw new HttpError(ctx.user ? 403 : 401, ctx.user ? 'Tu rol no permite esta acción' : 'Inicia sesión');
     }
+    // Contraseña temporal: hasta cambiarla solo puede consultar su estado, cambiarla o salir
+    if (ctx.user && ctx.user.must_change && r.nivel !== 'publico' && url.pathname !== '/api/auth/clave') throw new HttpError(403, 'Primero cambia tu contraseña temporal');
     const out = await r.handler(req, ctx);
     const headers = ctx.setCookie ? { 'Set-Cookie': ctx.setCookie } : {};
     if (out && out.__raw !== undefined) return send(res, 200, out.__raw, { ...headers, 'Content-Type': out.type, 'Content-Disposition': `attachment; filename="${out.file}"` });
@@ -561,7 +597,7 @@ async function prepare() {
   // Primer administrador desde variables de entorno
   if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD && !(await store.list('users')).length) {
     const idFijo = store.kind === 'memoria' ? 'admin-' + crypto.createHash('sha256').update(String(process.env.ADMIN_EMAIL).trim().toLowerCase()).digest('hex').slice(0, 24) : null;
-    await createUser({ name: process.env.ADMIN_NAME || 'Administrador', email: process.env.ADMIN_EMAIL, password: process.env.ADMIN_PASSWORD, role: 'admin' }, false, idFijo);
+    await createUser({ name: process.env.ADMIN_NAME || 'Administrador', email: process.env.ADMIN_EMAIL, password: process.env.ADMIN_PASSWORD, role: 'admin' }, store.kind !== 'memoria', idFijo);
     console.log(`Administrador creado: ${process.env.ADMIN_EMAIL}`);
   }
   // Demostración: la primera vez, con la base vacía, se cargan datos de ejemplo
@@ -587,12 +623,13 @@ async function main() {
   // Envío nocturno al data lake (una vez al día, a la hora LAKE_HOUR)
   if (lake.configured() && lake.describe().hora != null) {
     setInterval(async () => {
-      const { fecha, hora } = lake.localNow();
-      if (hora !== lake.describe().hora) return;
-      const u = await store.getConfig('lake_ultimo');
-      if (u && u.fecha === fecha && u.origen === 'automático' && u.ok) return;
-      try { const r = await enviarAlLago('automático'); console.log(`Data lake: ${r.archivos.length} tablas enviadas (${r.fecha})`); }
-      catch (e) { console.error('Data lake:', e.message); }
+      try {
+        const { fecha, hora } = lake.localNow();
+        if (hora !== lake.describe().hora) return;
+        const u = await store.getConfig('lake_ultimo');
+        if (u && u.fecha === fecha && u.origen === 'automático' && u.ok) return;
+        const r = await enviarAlLago('automático'); console.log(`Data lake: ${r.archivos.length} tablas enviadas (${r.fecha})`);
+      } catch (e) { console.error('Data lake:', e.message); }
     }, 60 * 1000);
   }
   const port = Number(process.env.PORT) || 8080;
