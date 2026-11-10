@@ -1,14 +1,10 @@
 /* ============================================================
    TABLERO DEL PORTAFOLIO
-   - Valor a captar por año (casos de negocio, o Income si no hay caso)
-     y valor captado (lo que el equipo registra mes a mes).
-   - Esperado a la fecha: el valor del año repartido por meses, según
-     los meses que van corridos.
-   - Tipo de valor: ahorro, nuevos ingresos, eficiencia, tiempo, riesgo, otro.
-   - ICE y estado de cada proyecto.
-   Colores validados (paleta categórica en orden fijo, escala ordinal de
-   estados, colores de estado con ícono y texto). Cada gráfica tiene
-   detalle al pasar el mouse y la tabla de abajo es su vista en tabla.
+   - datos(): valor a captar por año (casos de negocio, o Income si no hay
+     caso), valor captado mes a mes y esperado a la fecha (meses cerrados).
+   - senales(): alertas de cada iniciativa (captura, cronograma, ruta
+     crítica, fecha meta, VPN, compromisos, próximos comités).
+   - render(): la página en orden de lectura (ver más abajo).
    ============================================================ */
 'use strict';
 (function () {
@@ -16,7 +12,6 @@
   const F = Object.assign({ anio: null, estado: '', tipo: '', alcance: 'todos', orden: 'cumpl', tabla: false }, App.store.get('dash', {}));
   const FT = F;
   const saveF = () => App.store.set('dash', F);
-  let lastKey = '';
 
   /* ---------- cálculo ---------- */
   // F = filtros del tablero; la ficha del proyecto pasa los suyos (año actual, sin filtros)
@@ -101,23 +96,6 @@
   }
   const hideTip = () => { if (tip) tip.hidden = true; };
   const row = (c, lbl, val, bold) => `<div class="r"><span>${c ? `<i style="--c:${c}"></i>` : ''}${esc(lbl)}</span>${bold ? `<b>${esc(val)}</b>` : esc(val)}</div>`;
-  const cvar = k => `var(--cat-${k})`;
-  // Degradados: el color firme queda en la punta del dato y se aclara hacia la base (pastel).
-  // La identidad sigue siendo el color de la leyenda; el degradado solo da profundidad.
-  function gdefs() {
-    const NV = App.vista && App.vista.nueva; // vista mejorada: color plano con transparencia, sin degradado
-    const v = (id, c, o1, o2, h) => NV ? vPlano(id, c, Math.min(o1, o2) === 0 ? 0.14 : (o1 + o2) / 2 > 0.8 ? 0.72 : 0.62) : vDeg(id, c, o1, o2, h);
-    const vPlano = (id, c, o) => `<linearGradient id="${id}"><stop offset="0" style="stop-color:${c};stop-opacity:${o}"/><stop offset="1" style="stop-color:${c};stop-opacity:${o}"/></linearGradient>`;
-    const vDeg = (id, c, o1, o2, h) => `<linearGradient id="${id}" x1="0" y1="0" x2="${h ? 1 : 0}" y2="${h ? 0 : 1}"><stop offset="0" style="stop-color:${c};stop-opacity:${o1}"/><stop offset="1" style="stop-color:${c};stop-opacity:${o2}"/></linearGradient>`;
-    const d = (id, c) => NV ? vPlano(id, c, 0.62) : `<linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:${c}"/><stop offset="1" style="stop-color:${c};stop-opacity:.55"/></linearGradient>`;
-    return `<svg class="gdefs" aria-hidden="true" focusable="false"><defs>
-      ${App.CATS.map(c => v('dg-' + c.id, cvar(c.id), 1, 0.4) + d('dgd-' + c.id, cvar(c.id))).join('')}
-      ${v('dg-ink', 'var(--ink)', 1, 0.72)}${v('dg-area', 'var(--cat-ahorro)', 0.32, 0)}
-      ${['good', 'warning', 'critical'].map(k => v('dg-st-' + k, `var(--st-${k})`, 0.55, 1, true)).join('')}
-      ${[1, 2, 3, 4, 5, 'paus'].map(k => v('dg-ord-' + k, `var(--ord-${k})`, 0.7, 1, true)).join('')}
-    </defs></svg>`;
-  }
-
   /* ---------- salud de cada proyecto (para «Requiere atención» y la matriz) ---------- */
   // Reglas a la vista: nada se decide en secreto. Cada señal dice de dónde sale.
   function senales(d) {
@@ -142,399 +120,207 @@
     });
   }
   const SEV = { 3: ['crit', 'i-x', 'Crítico'], 2: ['warn', 'i-alerta', 'Atención'], 1: ['info', 'i-info', 'Próximo'] };
-  const ico = id => `<svg aria-hidden="true"><use href="#${id}"/></svg>`;
 
-  // Vista mejorada: resultados y proyección en dos grupos, sin el ICE promedio
-  function indicadores2(d, sg) {
-    const sg2 = App.Mejoras.sigla;
-    const vpn = d.filas.reduce((a, x) => a + (x.vpn || 0), 0);
-    const inv = d.filas.reduce((a, x) => a + (x.caso && x.caso.moneda !== 'USD' ? Finanzas.calc(x.caso).totalInversion || 0 : 0), 0);
-    const nAt = sg.filter(z => z.max >= 2).length, pc = d.esperadoY > 0 ? d.captadoY / d.esperadoY : null;
-    const k = (ic, c, l, v, s, cls) => `<div class="xk ${cls || ''}"><div class="l"><span class="ki" style="--c:var(--cat-${c})"><svg aria-hidden="true"><use href="#i-${ic}"/></svg></span>${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
-    return `<div class="dash-card span-12 xks dos"><div class="xk-g">Resultados · lo que ya pasó</div>
-      ${k('casos', 'eficiencia', 'Verificado ' + d.Y, esc(m(d.verifY)), 'con fuente, validador y fecha')}
-      ${k('alerta', 'tiempo', 'Preliminar ' + d.Y, esc(m(d.captadoY - d.verifY)), 'registrado, sin evidencia aún')}
-      ${k('tablero', 'ahorro', 'Cumplimiento a la fecha', pc == null ? '—' : Math.round(pc * 100) + '%', `esperado ${esc(m(d.esperadoY))}`)}
-      ${k('alerta', 'riesgo', 'Iniciativas con alertas', `${nAt}<span style="font-size:14px;color:var(--muted);font-weight:600"> / ${d.filas.length}</span>`, nAt ? 'ver «Requiere atención»' : 'sin alertas', nAt ? 'alerta' : '')}
-      <div class="xk-g">Proyección · lo que dicen los casos de negocio</div>
-      ${k('casos', 'ahorro', 'Proyectado ' + d.Y, esc(m(d.proyectadoY)), `por captar: ${esc(m(Math.max(0, d.proyectadoY - d.captadoY)))}`)}
-      ${k('proyectos', 'ingresos', 'Inversión de los casos', esc(m(inv)), 'horizonte completo, no solo el año')}
-      ${k('tablero', 'eficiencia', sg2('VPN') + ' del portafolio', esc(m(vpn)), 'suma de los casos, cada uno con su tasa')}
-      ${k('sistema', 'otro', 'Casos aprobados', String(d.filas.filter(x => x.caso && x.caso.estado === 'Aprobado').length), `de ${d.filas.filter(x => x.caso).length} con caso`)}
-    </div>`;
+  /* ============================================================
+     TABLERO · en orden de lectura
+     1 Valor a crear (lo que proyectan los casos, año por año)
+     2 Captura por iniciativa (año elegido)
+     3 Proyectado vs. capturado (curva del año)
+     4 Qué requiere atención · 5 Calendario
+     Lo azul con → es enlace; las filas con › se abren; el resto es lectura.
+     ============================================================ */
+  const ORDEN_CAT = ['ingresos', 'ahorro', 'tiempo', 'eficiencia', 'riesgo', 'otro'];
+  const PALETA = ORDEN_CAT.map(k => `var(--cat-${k})`);
+  // OKRs de una iniciativa: la columna es texto; varios se separan con coma, punto y coma o salto de línea
+  const okrsDe = p => String((p.props || {}).okrs || '').split(/[,;\n]/).map(s => s.trim()).filter(s => s && !/^por definir$/i.test(s));
+  App.okrsDe = okrsDe;
+
+  // Series del gráfico de valor a crear, según cómo se agrupe
+  function series(d, modo) {
+    const total = (x, y) => d.cats.reduce((a, k) => a + x.anual(k, y), 0);
+    if (modo === 'okr') {
+      const nombres = [...new Set(d.filas.flatMap(x => okrsDe(x.p)))].sort((a, b) => a.localeCompare(b));
+      const grupos = nombres.map((n, i) => ({ key: n, label: n, color: PALETA[i % PALETA.length] }));
+      if (d.filas.some(x => !okrsDe(x.p).length)) grupos.push({ key: '', label: 'Sin OKR asignado', color: 'var(--viz-muted)' });
+      const val = (x, y, g) => { const l = okrsDe(x.p); return (l.length ? l.includes(g.key) : g.key === '') ? total(x, y) / Math.max(1, l.length) : 0; };
+      return { grupos, val, nota: 'Una iniciativa con varios OKR reparte su valor en partes iguales.' };
+    }
+    if (modo === 'etapa') {
+      const ec = App.estadoCol(), opts = ec ? (ec.options || []) : [];
+      const pausa = n => /paus|cancel|suspend|descart/i.test(n), activos = opts.filter(o => !pausa(o.name));
+      const color = o => (pausa(o.name) ? 'var(--ord-paus)' : `var(--ord-${Math.min(5, 1 + Math.round(activos.indexOf(o) * 4 / Math.max(1, activos.length - 1)))})`);
+      const grupos = opts.map(o => ({ key: o.name, label: o.name, color: color(o) }));
+      if (d.filas.some(x => !x.estado)) grupos.push({ key: '', label: 'Sin etapa', color: 'var(--viz-muted)' });
+      return { grupos, val: (x, y, g) => (x.estado === g.key ? total(x, y) : 0), nota: '' };
+    }
+    const grupos = ORDEN_CAT.filter(k => d.cats.includes(k)).map(k => ({ key: k, label: App.catLabel(k), color: `var(--cat-${k})` }));
+    return { grupos, val: (x, y, g) => x.anual(g.key, y), nota: '' };
   }
 
-  /* ---------- 1 · cifra principal + resumen en una frase ---------- */
-  function hero(d, sg) {
-    const NV = App.vista && App.vista.nueva;
-    const pc = d.esperadoY > 0 ? d.captadoY / d.esperadoY : null, st = estadoDe(pc);
-    const R = 54, fill = Math.max(0, Math.min(1, pc || 0));
-    const col = st ? `var(--st-${st[0]})` : 'var(--viz-muted)';
-    const nAt = sg.filter(z => z.max >= 2).length;
-    const frase = d.esperadoY > 0
-      ? `En ${d.Y} el portafolio ha capturado <b>${esc(m(d.captadoY))}</b>, el <b>${Math.round(pc * 100)}%</b> de lo esperado a la fecha. <b>${d.reales.length} de ${d.filas.length}</b> iniciativas están en realización${nAt ? ` y <b>${nAt} ${nAt === 1 ? 'tiene' : 'tienen'} alertas</b> de ejecución o de valor` : ' y ninguna tiene alertas'}.`
-      : d.Y > d.hoyY ? `${d.Y} aún no empieza: se proyectan <b>${esc(m(d.proyectadoY))}</b> para el año.` : `Aún no hay proyectos en realización con valor esperado en ${d.Y}.`;
-    return `<div class="dash-card span-8 card-hero"><div class="exec">
-        <svg class="ring" width="132" height="132" viewBox="0 0 136 136" role="img" aria-label="Cumplimiento ${pc == null ? 'sin dato' : Math.round(pc * 100) + '%'}${st ? ', ' + st[2] : ''}">
-          <circle class="trk" cx="68" cy="68" r="${R}" style="stroke:${col};stroke-opacity:.16"/>
-          <circle class="val draw" pathLength="1" cx="68" cy="68" r="${R}" style="stroke:${st ? `url(#dg-st-${st[0]})` : col};stroke-dasharray:${fill} 1;stroke-dashoffset:0"/>
-          <text x="68" y="70" text-anchor="middle" style="font-size:26px;font-weight:800;fill:var(--ink)">${pc == null ? '—' : Math.round(pc * 100) + '%'}</text>
-          <text x="68" y="88" text-anchor="middle" style="font-size:9.5px;font-weight:700;fill:var(--muted)">cumplimiento</text>
-        </svg>
-        <div style="min-width:0">
-          <div class="lbl">Valor captado en ${d.Y}${st ? ` · <span class="badge ${st[0] === 'good' ? 'good' : st[0] === 'warning' ? 'warn' : 'crit'}" style="vertical-align:1px">${ico(st[0] === 'good' ? 'i-check' : st[0] === 'warning' ? 'i-alerta' : 'i-x')}${esc(st[2])}</span>` : ''}</div>
-          <div class="big" data-count="${d.captadoY}">${esc(m(d.captadoY))}</div>
-          <p class="frase">${frase}</p>
-          <div class="det">Esperado a la fecha: <b>${esc(m(d.esperadoY))}</b> · Proyectado para todo ${d.Y}: <b>${esc(m(d.proyectadoY))}</b> · prorrateado por los meses ya cerrados de los proyectos en realización</div>
-          ${compos(d)}
-          ${NV ? `<div class="vp"><span class="ver"><i></i>Verificado <b>${esc(m(d.verifY))}</b></span><span class="pre"><i></i>Preliminar <b>${esc(m(d.captadoY - d.verifY))}</b></span><button class="vp-link" data-evid="1" aria-expanded="false">¿De dónde sale esta cifra?</button></div><div class="evid" id="evidBox" hidden>${App.Mejoras.evidenciaHTML(d.Y, d.filas)}</div>` : ''}
-        </div></div></div>`;
-  }
-
-  // De qué está hecho lo captado (por tipo de valor)
-  function compos(d) {
-    const it = d.cats.map(k => ({ k, v: d.filas.reduce((a, x) => a + x.captado(k, d.Y), 0) })).filter(z => z.v > 0).sort((a, b) => b.v - a.v);
-    const tot = it.reduce((a, z) => a + z.v, 0); if (!tot) return '';
-    return `<div class="compo"><div class="compo-t">Lo captado se compone de</div>
-      <div class="compo-bar" role="img" aria-label="${esc(it.map(z => `${App.catLabel(z.k)} ${Math.round(z.v / tot * 100)}%`).join(', '))}">${it.map((z, i) => `<i class="growx" style="flex:${z.v};background:${App.vista && App.vista.nueva ? `color-mix(in srgb,var(--cat-${z.k}) 65%,transparent);box-shadow:inset 0 0 0 1px var(--cat-${z.k})` : `linear-gradient(180deg,var(--cat-${z.k}),color-mix(in srgb,var(--cat-${z.k}) 55%,var(--card)))`};animation-delay:${200 + i * 60}ms" title="${esc(App.catLabel(z.k))}: ${esc(m(z.v))}"></i>`).join('')}</div>
-      <div class="compo-l">${it.map(z => `<span><i style="--c:var(--cat-${z.k})"></i>${esc(App.catLabel(z.k))} <b>${esc(m(z.v))}</b> <em>${Math.round(z.v / tot * 100)}%</em></span>`).join('')}</div></div>`;
-  }
-
-  /* ---------- 1b · requiere atención ---------- */
-  function atencion(d, sg) {
-    // Una fila por iniciativa (su alerta más grave) para no repetir nombres
-    const filas = sg.filter(z => z.out.length).map(z => { const o = z.out.slice().sort((a, b) => b.sev - a.sev); return { z, o: o[0], mas: o.length - 1 }; })
-      .sort((a, b) => b.o.sev - a.o.sev || b.mas - a.mas).slice(0, 6);
-    const nAt = sg.filter(z => z.max >= 2).length;
-    return `<div class="dash-card span-4 card-atn"><h3>Requiere atención</h3><div class="sub">${nAt ? `${nAt} de ${sg.length} iniciativas con alertas; primero lo más grave.` : 'Lo que necesita una decisión o seguimiento.'}</div>
-      ${filas.length ? `<div class="atn">${filas.map(({ z, o, mas }) => { const [c, i, l] = SEV[o.sev];
-        return `<a href="${o.href}" title="${esc(z.out.map(x => '• ' + x.txt).join('\n'))}"><span class="badge ${c}">${ico(i)}${l}</span><span style="min-width:0"><span class="p" style="display:block">${esc(App.projectName(z.x.p))}</span><span class="r">${esc(o.txt)}${mas ? ` · <b>+${mas} más</b>` : ''}</span></span><svg class="go" aria-hidden="true"><use href="#i-flecha"/></svg></a>`; }).join('')}</div>`
-        : `<div class="atn-ok">${ico('i-check')}Todo al día: sin alertas con estos filtros.</div>`}</div>`;
-  }
-
-  /* ---------- 1c · indicadores ---------- */
-  function indicadores(d, sg) {
-    const vpn = d.filas.reduce((a, x) => a + (x.vpn || 0), 0);
-    const inv = d.filas.reduce((a, x) => a + (x.caso && x.caso.moneda !== 'USD' ? Finanzas.calc(x.caso).totalInversion || 0 : 0), 0);
-    const nCasos = d.filas.filter(x => x.caso && x.caso.moneda !== 'USD').length;
-    const ices = d.filas.map(x => x.ice).filter(v => v != null);
-    const nAt = sg.filter(z => z.max >= 2).length;
-    const IC = { [`Proyectado ${d.Y}`]: ['casos', 'ahorro'], 'Inversión de los casos': ['proyectos', 'ingresos'], 'VPN del portafolio': ['tablero', 'eficiencia'], 'ICE promedio': ['sistema', 'otro'], 'Iniciativas con alertas': ['alerta', 'riesgo'] };
-    const k = (l, v, s, cls, t) => `<div class="xk ${cls || ''}"${t ? ` title="${esc(t)}"` : ''}><div class="l">${IC[l] ? `<span class="ki" style="--c:var(--cat-${IC[l][1]})"><svg aria-hidden="true"><use href="#i-${IC[l][0]}"/></svg></span>` : ''}${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
-    return `<div class="dash-card span-12 xks">
-      ${k(`Proyectado ${d.Y}`, esc(m(d.proyectadoY)), `por captar: ${esc(m(Math.max(0, d.proyectadoY - d.captadoY)))}`, '', 'Suma del valor anual de los casos de negocio (o del Income) para el año')}
-      ${k('Inversión de los casos', esc(m(inv)), `${nCasos} caso${nCasos === 1 ? '' : 's'} de negocio`, '', 'Suma de las filas de inversión de los casos de negocio en pesos')}
-      ${k('VPN del portafolio', esc(m(vpn)), 'valor presente neto sumado', '', 'Suma del VPN de cada caso de negocio, con su tasa de descuento')}
-      ${k('ICE promedio', ices.length ? Math.round(ices.reduce((a, b) => a + b, 0) / ices.length) : '—', `${ices.length} de ${d.filas.length} con ICE`, '', 'ICE = Income × Confianza ÷ Esfuerzo × 1,25; sale del caso de negocio cuando lo hay')}
-      ${k('Iniciativas con alertas', `${nAt}<span style="font-size:14px;color:var(--muted);font-weight:600"> / ${d.filas.length}</span>`, nAt ? 'ver «Requiere atención»' : 'sin alertas', nAt ? 'alerta' : '')}
-    </div>`;
-  }
-
-  /* ---------- 1d · matriz de decisión ---------- */
-  function matriz(d, sg) {
-    const conIce = sg.filter(z => z.x.ice != null).map(z => z.x.ice).sort((a, b) => a - b);
-    const med = conIce.length ? conIce[Math.floor(conIce.length / 2)] : null;
-    const Q = { acelerar: [], replantear: [], sostener: [], revisar: [] };
-    sg.forEach(z => {
-      const alto = med != null && z.x.ice != null && z.x.ice >= med;
-      const q = z.pausado || (z.x.vpn != null && z.x.vpn < 0) ? 'revisar' : alto ? (z.malo ? 'replantear' : 'acelerar') : (z.malo ? 'revisar' : 'sostener');
-      Q[q].push(z);
-    });
-    const val = z => (z.x.proy ? m(z.x.proy) + ` en ${d.Y}` : z.x.vpn != null ? 'VPN ' + m(z.x.vpn) : 'sin valor');
-    const caja = (k, ic, t, sub) => `<div class="q ${k}"><h4><span class="qi" aria-hidden="true">${ic}</span><span>${t}<em>${sub}</em></span></h4>${Q[k].length ? Q[k].sort((a, b) => (b.x.proy || 0) - (a.x.proy || 0)).map(z => `<a href="#/proyectos/${z.x.p.id}">${esc(App.projectName(z.x.p))}<span>${esc(val(z))}</span></a>`).join('') : '<div class="vac">Ninguna</div>'}</div>`;
-    return `<div class="dash-card span-7"><h3>¿Qué hacer con cada iniciativa?</h3><div class="sub">Sugerencia según potencial (ICE) y salud de ejecución. La decisión es del comité.</div>
-      <div class="mtx">
-        <div class="ax-y">Potencial (ICE) ↑</div>
-        ${caja('replantear', '↻', 'Replantear', 'alto potencial, con alertas')}${caja('acelerar', '↑', 'Acelerar', 'alto potencial, sana')}
-        ${caja('revisar', '■', 'Revisar continuidad', 'bajo potencial con alertas, pausada o VPN negativo')}${caja('sostener', '→', 'Sostener', 'bajo potencial, sana')}
-        <div></div><div class="ax-x">Salud de ejecución →</div>
+  function valorACrear(d) {
+    const S = series(d, F.agrupar || 'tipo');
+    let filas = d.anios.map(y => ({ y, v: Object.fromEntries(S.grupos.map(g => [g.key, d.filas.reduce((a, x) => a + S.val(x, y, g), 0)])) }));
+    filas.forEach(f => { f.t = S.grupos.reduce((a, g) => a + f.v[g.key], 0); });
+    // sin años vacíos en las puntas
+    while (filas.length > 1 && !filas[0].t) filas.shift();
+    while (filas.length > 1 && !filas.at(-1).t) filas.pop();
+    const grupos = S.grupos.filter(g => filas.some(f => f.v[g.key] > 0));
+    const tot = filas.reduce((a, f) => a + f.t, 0);
+    const pico = filas.slice().sort((a, b) => b.t - a.t).slice(0, 2).map(f => f.y).sort();
+    const actual = filas.find(f => f.y === d.hoyY);
+    const frase = tot
+      ? `El mayor valor llega en <b>${pico.join(' y ')}</b>.${actual ? ` <b>${d.hoyY}</b> proyecta <b>${esc(m(actual.t))}</b>.` : ''}`
+      : 'Aún no hay valor proyectado: agrega beneficios a los casos de negocio o el Income en la tabla del portafolio.';
+    const sumG = grupos.map(g => ({ g, v: filas.reduce((a, f) => a + f.v[g.key], 0) })).sort((a, b) => b.v - a.v);
+    valorACrear.ultimo = { filas, grupos };
+    return `<section class="t-card t-dest t-hero" aria-labelledby="t1">
+      <div class="t-hero-l">
+        <div class="t-eyb">Valor proyectado ${filas.length ? `${filas[0].y} – ${filas.at(-1).y}` : ''}</div>
+        <div class="t-big">${esc(m(tot))}</div>
+        <p class="t-frase">${frase}</p>
+        <div class="t-grupos">${sumG.slice(0, 7).map(({ g, v }) => `<div class="t-gr"><i style="background:${g.color}"></i><span title="${esc(g.label)}">${esc(g.label)}</span><b>${esc(m(v))}</b><small>${tot ? Math.round(v / tot * 100) : 0} %</small></div>`).join('')}${sumG.length > 7 ? `<div class="t-gr t-mas">y ${sumG.length - 7} más</div>` : ''}</div>
+        <div class="t-aviso">Sale de los casos de negocio (las iniciativas sin caso usan su Income). La captura real se mide abajo.${S.nota ? ' ' + esc(S.nota) : ''}</div>
       </div>
-      <details class="regla"><summary>¿Cómo se calcula?</summary>Potencial alto: ICE igual o mayor a la mediana del portafolio (${med ?? '—'}). Con alertas: captura bajo 90% de lo esperado, actividades atrasadas, ruta crítica en riesgo, fin después de la fecha meta, VPN negativo o compromisos de comité vencidos. Sin ICE cuenta como potencial bajo. ${esc(App.ICE.explicacion)}</details></div>`;
+      <div class="t-hero-r">
+        <div class="t-lgd">${grupos.slice(0, 7).map(g => `<span><i style="background:${g.color}"></i>${esc(g.label.length > 34 ? g.label.slice(0, 33) + '…' : g.label)}</span>`).join('')}</div>
+        <svg class="t-viz" id="tAnios" height="270" role="img" aria-label="Valor proyectado por año"></svg>
+      </div></section>`;
   }
-
-  /* ---------- 2 · valor por año (apilado por tipo) + captado ---------- */
-  function porAnio(d, W) {
-    const NV = App.vista && App.vista.nueva;
-    const H = 270, L = 64, R = 12, T = 22, B = 30;
-    const present = d.cats.filter(k => d.porAnio.some(a => a.cats[k] > 0));
-    const tot = a => present.reduce((s, k) => s + a.cats[k], 0);
-    const hi = Math.max(1, ...d.porAnio.map(a => Math.max(tot(a), a.captado)));
-    const tk = ticks(hi), top = tk.at(-1);
-    const y = v => T + (1 - v / top) * (H - T - B);
-    const band = (W - L - R) / d.anios.length, bw = Math.min(24, band * 0.36), cw = Math.min(12, band * 0.18);
-    const xs = i => L + band * i + band / 2;
-    let bars = '';
-    d.porAnio.forEach((a, i) => {
-      const x0 = xs(i) - (bw + cw + 3) / 2;
-      let acc = 0; const segs = present.filter(k => a.cats[k] > 0);
-      segs.forEach((k, j) => {
-        const v = a.cats[k], y1 = y(acc + v), y2 = y(acc), h = Math.max(0, y2 - y1 - (j ? 2 : 0));
-        const last = j === segs.length - 1, r = Math.min(4, h / 2);
-        bars += last
-          ? `<path class="grow" style="fill:url(#dg-${k});${NV ? `stroke:var(--cat-${k});stroke-width:1.2;` : ''}animation-delay:${i * 40}ms" d="M${x0} ${y1 + h}V${y1 + r}Q${x0} ${y1} ${x0 + r} ${y1}H${x0 + bw - r}Q${x0 + bw} ${y1} ${x0 + bw} ${y1 + r}V${y1 + h}Z"/>`
-          : `<rect class="grow" style="fill:url(#dg-${k});${NV ? `stroke:var(--cat-${k});stroke-width:1.2;` : ''}animation-delay:${i * 40}ms" x="${x0}" y="${y1}" width="${bw}" height="${h}"/>`;
-        acc += v;
-      });
-      if (a.captado > 0) { const yc = y(a.captado), h = y(0) - yc, r = Math.min(3, h / 2); bars += `<path class="grow" style="fill:url(#dg-ink);${NV ? 'stroke:var(--ink);stroke-width:1.2;' : ''}animation-delay:${i * 40 + 120}ms" d="M${x0 + bw + 3} ${y(0)}V${yc + r}Q${x0 + bw + 3} ${yc} ${x0 + bw + 3 + r} ${yc}H${x0 + bw + 3 + cw - r}Q${x0 + bw + 3 + cw} ${yc} ${x0 + bw + 3 + cw} ${yc + r}V${y(0)}Z"/>`; }
-      if (a.y === d.Y && tot(a) > 0) bars += `<text class="lbl fade" x="${x0 + bw / 2}" y="${y(tot(a)) - 7}" text-anchor="middle">${esc(mm(tot(a)))}</text>`;
+  function dibujarAnios(svg, d) {
+    const { filas, grupos } = valorACrear.ultimo, W = svg.clientWidth || 700, H = 270, T = 26, B = 30;
+    if (!filas.length) { svg.innerHTML = ''; return; }
+    const tk = ticks(Math.max(1, ...filas.map(f => f.t))), top = tk.at(-1);
+    const y = v => T + (1 - v / top) * (H - T - B), step = W / filas.length, bw = Math.min(78, step * 0.56);
+    let h = tk.slice(1).map(v => `<line x1="0" x2="${W}" y1="${y(v)}" y2="${y(v)}" class="t-grid"/>`).join('');
+    filas.forEach((f, i) => {
+      const cx = step * i + step / 2, x0 = cx - bw / 2, pasado = f.y < d.hoyY; let acc = 0;
+      const segs = grupos.filter(g => f.v[g.key] > 0);
+      segs.forEach((g, j) => { const v = f.v[g.key], y1 = y(acc + v), hh = Math.max(0, y(acc) - y1 - (j ? 2 : 0));
+        h += `<rect x="${x0}" y="${y1}" width="${bw}" height="${hh}" rx="${j === segs.length - 1 ? 4 : 0}" style="fill:${g.color}${pasado ? ';opacity:.45' : ''}"/>`; acc += v; });
+      if (f.y === d.hoyY) h += `<rect x="${x0 - 8}" y="${T - 4}" width="${bw + 16}" height="${H - T - B + 8}" rx="8" class="t-hoyb"/>`;
+      if (f.t) h += `<text x="${cx}" y="${y(f.t) - 8}" text-anchor="middle" class="t-val" style="font-size:${step < 80 ? 10 : 13}px">${esc(m(f.t))}</text>`;
+      h += `<text x="${cx}" y="${H - 10}" text-anchor="middle" class="t-ax ${f.y === d.hoyY ? 'on' : ''}">${f.y}${step < 90 ? '' : f.y === d.hoyY ? ' · hoy' : pasado ? ' · cerrado' : ''}</text>`;
+      h += `<rect class="hit" data-anio2="${i}" x="${step * i}" y="0" width="${step}" height="${H}"/>`;
     });
-    const sel = d.anios.indexOf(d.Y);
-    return `<div class="dash-card span-12"><div class="hd"><div><h3>Valor a captar por año y valor captado</h3><div class="sub">Columnas: lo que proyectan los casos de negocio (o el Income), por tipo de valor. Barra oscura: lo captado. Clic en un año para verlo en detalle.</div></div><span class="sp"></span><button class="tbl-toggle" data-dash="tabla">${F.tabla ? 'Ver gráfica' : 'Ver tabla'}</button></div>
-      <div class="lgd">${present.map(k => `<span><i class="sw" style="--c:${cvar(k)}"></i>${esc(App.catLabel(k))}</span>`).join('')}<span><i class="sw" style="--c:var(--ink)"></i>Captado (real)</span></div>
-      ${F.tabla ? `<div class="flujo-wrap"><table class="lst"><thead><tr><th>Año</th>${present.map(k => `<th class="n">${esc(App.catLabel(k))}</th>`).join('')}<th class="n">Proyectado</th><th class="n">Captado</th></tr></thead><tbody>${d.porAnio.map(a => `<tr${a.y === d.Y ? ' style="font-weight:700"' : ''}><td>${a.y}</td>${present.map(k => `<td class="n">${esc(mm(a.cats[k]))}</td>`).join('')}<td class="n"><b>${esc(mm(tot(a)))}</b></td><td class="n">${esc(mm(a.captado))}</td></tr>`).join('')}</tbody></table></div>`
-      : `<svg class="viz" viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Valor a captar por año y captado">
-        ${sel >= 0 ? `<rect class="band" x="${L + band * sel + 2}" y="${T - 14}" width="${band - 4}" height="${H - T - B + 14}" rx="10"/>` : ''}
-        <g class="grid">${tk.map(v => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/>`).join('')}</g>
-        <g class="axis">${tk.map(v => `<text x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${esc(mm(v))}</text>`).join('')}${d.anios.map((yy, i) => `<text x="${xs(i)}" y="${H - 10}" text-anchor="middle" style="${yy === d.Y ? 'fill:var(--ink);font-weight:800' : ''}">${yy}</text>`).join('')}</g>
-        <line class="zero" x1="${L}" x2="${W - R}" y1="${y(0)}" y2="${y(0)}"/>
-        ${bars}
-        ${d.anios.map((yy, i) => `<rect class="hit" data-anio="${yy}" data-i="${i}" x="${L + band * i}" y="${T - 14}" width="${band}" height="${H - T - B + 14}"/>`).join('')}
-      </svg>`}</div>`;
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.innerHTML = h;
   }
 
-  /* ---------- 3 · curva del año: esperado vs captado acumulado ---------- */
-  function curva(d, W) {
-    const H = 250, L = 64, R = 70, T = 16, B = 30;
-    const hi = Math.max(1, ...d.curva.map(c => Math.max(c.esperado, c.captado)));
-    const tk = ticks(hi), top = tk.at(-1);
-    const x = i => L + (W - L - R) * i / 11, y = v => T + (1 - v / top) * (H - T - B);
-    const hasta = d.mesHasta;
-    const pts = d.curva.slice(0, Math.max(hasta, 0));
-    const capLine = pts.map((c, i) => `${i ? 'L' : 'M'}${x(i)} ${y(c.captado)}`).join('');
-    const capArea = pts.length ? `${capLine}L${x(pts.length - 1)} ${y(0)}L${x(0)} ${y(0)}Z` : '';
-    const espLine = d.curva.map((c, i) => `${i ? 'L' : 'M'}${x(i)} ${y(c.esperado)}`).join('');
-    const hoyX = d.Y === d.hoyY ? x(d.hoyM - 1 + (+d.hoy.slice(8)) / 31) : null;
-    const lastC = pts.at(-1);
-    return `<div class="dash-card span-7"><h3>Curva de captura ${d.Y}</h3><div class="sub">Acumulado mes a mes de los proyectos en realización: lo esperado según los casos y lo captado.</div>
-      <div class="lgd"><span><i class="ln dash" style="--c:var(--viz-muted)"></i>Esperado acumulado</span><span><i class="ln" style="--c:var(--cat-ahorro)"></i>Captado acumulado</span></div>
-      <svg class="viz" viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Curva de captura">
-        <g class="grid">${tk.map(v => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/>`).join('')}</g>
-        <g class="axis">${tk.map(v => `<text x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${esc(mm(v))}</text>`).join('')}${App.d.MES3.map((t, i) => `<text x="${x(i)}" y="${H - 10}" text-anchor="middle">${t}</text>`).join('')}</g>
-        ${capArea ? `<path class="fade" d="${capArea}" style="fill:url(#dg-area)"/>` : ''}
-        <path class="draw" pathLength="1" d="${espLine}" style="fill:none;stroke:var(--viz-muted);stroke-width:2;stroke-dasharray:5 5;stroke-linecap:round"/>
-        ${capLine ? `<path class="draw" pathLength="1" d="${capLine}" style="fill:none;stroke:var(--cat-ahorro);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round"/>` : ''}
-        ${hoyX != null ? `<line class="today" x1="${hoyX}" x2="${hoyX}" y1="${T}" y2="${H - B}"/><text class="lbl2" x="${hoyX + 5}" y="${T + 10}">Hoy</text>` : ''}
-        ${lastC ? `<circle class="pop" cx="${x(pts.length - 1)}" cy="${y(lastC.captado)}" r="5" style="fill:var(--cat-ahorro);stroke:var(--card);stroke-width:2"/><text class="lbl fade" x="${x(pts.length - 1) + 9}" y="${y(lastC.captado) + 4}">${esc(mm(lastC.captado))}</text>` : ''}
-        <text class="lbl2 fade" x="${x(11) + 6}" y="${y(d.curva[11].esperado) + 4}">${esc(mm(d.curva[11].esperado))}</text>
-        <line class="xh" x1="0" x2="0" y1="${T}" y2="${H - B}" style="stroke:var(--ink);stroke-opacity:.25;stroke-width:1" visibility="hidden"/>
-        ${d.curva.map((c, i) => `<rect class="hit" data-mes="${i}" x="${x(i) - (W - L - R) / 22}" y="${T}" width="${(W - L - R) / 11}" height="${H - T - B}"/>`).join('')}
-      </svg></div>`;
+  function capturaIniciativas(d) {
+    const ver = x => d.cats.reduce((a, k) => a + x.capVer(k, d.Y), 0);
+    let rows = d.filas.filter(x => x.proy > 0 || x.cap > 0).map(x => ({ x, ver: ver(x) }));
+    const n = rows.length;
+    rows.sort(F.cpi === 'brecha' ? (a, b) => (b.x.esp - b.x.cap) - (a.x.esp - a.x.cap) : (a, b) => b.x.cap - a.x.cap || b.x.proy - a.x.proy);
+    rows = rows.slice(0, 8);
+    const max = Math.max(1, ...rows.map(r => Math.max(r.x.proy, r.x.cap, r.x.esp)));
+    const pct = v => `${Math.max(0, Math.min(100, v / max * 100))}%`;
+    return `<section class="t-card t-pad" aria-labelledby="t2">
+      ${n ? `<div class="t-lgd"><span><i style="background:var(--good)"></i>Verificado</span><span><i style="background:var(--ink)"></i>Capturado sin verificar</span><span><i class="t-sw-claro"></i>Proyectado ${d.Y}</span><span><i class="t-sw-marca"></i>Esperado a hoy</span></div>
+      <div class="t-cpi t-cpi-h"><span>Iniciativa · tipo de valor</span><span>0 — ${esc(m(max))}</span><span class="n">Capturado</span><span class="n">vs. esperado</span></div>
+      ${rows.map(({ x, ver: v }) => { const st = estadoDe(x.pc);
+        return `<a class="t-cpi" href="#/proyectos/${x.p.id}/caso"><span class="t-nm"><b>${esc(App.projectName(x.p))}</b><small>${x.catPrincipal ? `<i style="background:var(--cat-${x.catPrincipal})"></i>${esc(App.catLabel(x.catPrincipal))}` : 'sin tipo de valor'}</small></span>
+          <span class="t-bar"><i class="p" style="width:${pct(x.proy)}"></i><i class="c" style="width:${pct(x.cap)}"></i><i class="v" style="width:${pct(Math.min(v, x.cap))}"></i>${x.esp > 0 ? `<u style="left:${pct(x.esp)}"></u>` : ''}</span>
+          <span class="n"><b>${esc(mm(x.cap))}</b><small> / ${esc(mm(x.proy))}</small></span>
+          <span class="n">${st ? `<span class="t-pc ${st[0]}">${Math.round(x.pc * 100)} %</span>` : '<span class="faint">—</span>'}</span></a>`; }).join('')}`
+      : `<div class="t-vacio">Aún no hay valor proyectado ni capturado en ${d.Y}.</div>`}
+      <div class="t-pie"><button class="t-lnk" data-evid="1" aria-expanded="false">¿De dónde sale lo capturado?</button><a class="t-lnk" href="#/casos">Ver ${n > 8 ? `las ${n}` : 'todas'} en Casos de negocio →</a></div>
+      <div class="evid" id="evidBox" hidden>${App.Mejoras.evidenciaHTML(d.Y, d.filas)}</div></section>`;
   }
 
-  /* ---------- 4 · mezcla por tipo de valor (dona) ---------- */
-  function mezcla(d) {
-    const a = d.porAnio.find(z => z.y === d.Y) || { cats: {} };
-    const items = d.cats.map(k => ({ k, v: a.cats[k] || 0 })).filter(z => z.v > 0);
-    const tot = items.reduce((s, z) => s + z.v, 0);
-    if (!tot) return `<div class="dash-card span-5"><h3>Mezcla del valor ${d.Y}</h3><div class="dash-empty">No hay valor proyectado para ${d.Y} con estos filtros.</div></div>`;
-    const R = 78, r = 52, cx = 96, cy = 96; let ang = -Math.PI / 2;
-    const arc = (a0, a1) => { const big = a1 - a0 > Math.PI ? 1 : 0, p = (rr, a) => `${cx + rr * Math.cos(a)} ${cy + rr * Math.sin(a)}`;
-      return `M${p(R, a0)}A${R} ${R} 0 ${big} 1 ${p(R, a1)}L${p(r, a1)}A${r} ${r} 0 ${big} 0 ${p(r, a0)}Z`; };
-    const segs = items.map((z, i) => { const a0 = ang, a1 = ang + 2 * Math.PI * z.v / tot - (items.length > 1 ? 0.0001 : 0.0001); ang = a1;
-      return `<path class="pop seg" data-k="${z.k}" style="fill:url(#dgd-${z.k});stroke:var(--card);stroke-width:2;animation-delay:${i * 70}ms" d="${arc(a0, Math.min(a1, a0 + 2 * Math.PI - 0.0001))}"/>`; }).join('');
-    return `<div class="dash-card span-5"><h3>Mezcla del valor ${d.Y}</h3><div class="sub">Qué tipo de valor trae el portafolio este año.</div>
-      <div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">
-        <svg width="192" height="192" viewBox="0 0 192 192" role="img" aria-label="Mezcla del valor por tipo">${segs}
-          <text x="96" y="92" text-anchor="middle" style="font-size:20px;font-weight:800;fill:var(--ink)">${esc(m(tot))}</text>
-          <text x="96" y="112" text-anchor="middle" style="font-size:11px;font-weight:700;fill:var(--muted)">proyectado ${d.Y}</text></svg>
-        <div style="flex:1;min-width:160px;display:flex;flex-direction:column;gap:8px">${items.sort((p, q) => q.v - p.v).map(z => `<div style="display:flex;align-items:center;gap:8px;font-size:12.5px"><span class="cat-dot cat-${z.k}" style="margin:0"></span><span style="flex:1">${esc(App.catLabel(z.k))}</span><b style="font-variant-numeric:tabular-nums">${esc(m(z.v))}</b><span class="faint" style="width:42px;text-align:right;font-variant-numeric:tabular-nums">${Math.round(z.v / tot * 100)}%</span></div>`).join('')}</div>
-      </div></div>`;
+  function curvaDatos(d) {
+    const ver = Array.from({ length: 12 }, (_, i) => d.filas.reduce((a, x) => a + (x.caso && x.caso.moneda !== 'USD' ? (x.caso.captado || []).filter(c => c.mes && c.mes.startsWith(d.Y + '-') && +c.mes.slice(5) <= i + 1 && d.cats.includes(c.categoria) && App.Mejoras.verificado(c, x.caso)).reduce((s, c) => s + (Number(c.valor) || 0), 0) : 0), 0));
+    return d.curva.map((c, i) => ({ ...c, ver: ver[i] }));
+  }
+  function dibujarCurva(svg, d) {
+    const W = svg.clientWidth || 900, H = 210, L = 64, R = 86, T = 12, B = 26, cv = curvaDatos(d);
+    const tk = ticks(Math.max(1, ...cv.map(c => Math.max(c.esperado, c.captado)))), top = tk.at(-1);
+    // Cada mes se pinta al cierre; el mes en curso, en el día de hoy
+    const hx = d.Y === d.hoyY ? L + (W - L - R) * (d.hoyM - 1 + (+d.hoy.slice(8)) / 31) / 12 : null;
+    const xm = i => L + (W - L - R) * (i + 1) / 12, x0 = L, y = v => T + (1 - v / top) * (H - T - B);
+    const hasta = d.mesHasta, pts = cv.slice(0, Math.max(0, hasta));
+    const x = i => (hx != null && i === d.hoyM - 1 && i < hasta && i === pts.length - 1 ? hx : xm(i));
+    const xp = i => xm(i); // la línea proyectada llega a cada cierre de mes
+    const linea = (arr, k, fx = x) => `M${x0} ${y(0)}` + arr.map((c, i) => `L${fx(i)} ${y(c[k])}`).join('');
+    let h = tk.map(v => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="t-grid"/><text x="${L - 8}" y="${y(v) + 4}" text-anchor="end" class="t-ax">${esc(mm(v))}</text>`).join('');
+    h += App.d.MES3.map((t, i) => (W < 640 && i % 3 ? '' : `<text x="${L + (W - L - R) * (i + 0.5) / 12}" y="${H - 6}" text-anchor="middle" class="t-ax">${t}</text>`)).join('');
+    h += `<path d="${linea(cv, 'esperado', xp)}" class="t-l-proy"/>`;
+    if (pts.length) h += `<path d="${linea(pts, 'captado')}" class="t-l-cap"/><path d="${linea(pts, 'ver')}" class="t-l-ver"/>`;
+    if (hx != null) { h += `<line x1="${hx}" x2="${hx}" y1="${T}" y2="${H - B}" class="t-hoy"/><text x="${hx - 6}" y="${H - B - 6}" text-anchor="end" class="t-hoyt">Hoy</text>`; }
+    const fin = (i, v, cls, t, dy) => `<circle cx="${x(i)}" cy="${y(v)}" r="4" class="${cls}"/><text x="${x(i) + 8}" y="${y(v) + dy}" class="t-val">${t}</text>`;
+    h += `<circle cx="${xp(11)}" cy="${y(cv[11].esperado)}" r="4" class="t-p-proy"/><text x="${xp(11) + 8}" y="${y(cv[11].esperado) + 4}" class="t-val">${esc(m(cv[11].esperado))}</text>`;
+    if (pts.length) { const i = pts.length - 1, a = pts[i].captado, b = pts[i].ver, junto = Math.abs(y(a) - y(b)) < 16;
+      h += fin(i, a, 't-p-cap', esc(m(a)), junto ? -6 : 4) + fin(i, b, 't-p-ver', esc(m(b)), junto ? 14 : 4); }
+    h += cv.map((c, i) => `<rect class="hit" data-mes2="${i}" x="${L + (W - L - R) * i / 12}" y="${T}" width="${(W - L - R) / 12}" height="${H - T - B}"/>`).join('');
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.innerHTML = h;
   }
 
-  /* ---------- 5 · cumplimiento por proyecto ---------- */
-  function cumplimiento(d) {
-    const rows = d.filas.filter(x => x.esp > 0).sort((a, b) => (a.pc ?? 9) - (b.pc ?? 9));
-    if (!rows.length) return `<div class="dash-card"><h3>Cumplimiento por proyecto</h3><div class="dash-empty">${d.Y > d.hoyY ? `${d.Y} aún no empieza.` : 'Ningún proyecto en realización tiene valor esperado a la fecha con estos filtros.'}</div></div>`;
-    const max = Math.max(...rows.map(x => Math.max(x.esp, x.cap)));
-    return `<div class="dash-card"><h3>Cumplimiento por proyecto · ${d.Y}</h3><div class="sub">Barra: captado. Raya: esperado a la fecha. Primero los más rezagados.</div>
-      <div class="bul">${rows.map((x, i) => { const st = estadoDe(x.pc);
-        return `<a class="nm" href="#/proyectos/${x.p.id}/caso" title="${esc(App.projectName(x.p))}">${esc(App.projectName(x.p))}</a>
-          <div class="trk" data-bul="${x.p.id}"><div class="bg" style="width:100%"></div><div class="fg growx" style="width:${x.cap / max * 100}%;background:${App.vista && App.vista.nueva ? `color-mix(in srgb,var(--st-${st[0]}) 65%,transparent);box-shadow:inset 0 0 0 1px var(--st-${st[0]})` : `linear-gradient(90deg,color-mix(in srgb,var(--st-${st[0]}) 50%,transparent),var(--st-${st[0]}))`};animation-delay:${i * 60}ms"></div><div class="tk" style="left:calc(${x.esp / max * 100}% - 1px)"></div></div>
-          <div class="pc"><span class="st-ico ${st[0]}" title="${esc(st[2])}">${st[1]}</span>${Math.round(x.pc * 100)}%</div>`; }).join('')}</div></div>`;
+  function atencion2(sg) {
+    const filas = sg.filter(z => z.out.some(o => o.sev >= 2)).map(z => { const o = z.out.slice().sort((a, b) => b.sev - a.sev); return { z, o: o[0], mas: o.filter(q => q.sev >= 2).length - 1 }; })
+      .sort((a, b) => b.o.sev - a.o.sev || b.mas - a.mas);
+    return `<section class="t-card" aria-labelledby="t4">${filas.length ? filas.slice(0, 5).map(({ z, o, mas }) => { const [c, , l] = SEV[o.sev];
+      return `<a class="t-row" href="${o.href}"><span class="t-sev ${c}">${c === 'crit' ? '●' : '▲'} ${l}</span><span class="t-tx"><b>${esc(App.projectName(z.x.p))}</b><small>${esc(o.txt)}${mas > 0 ? ` · +${mas} más` : ''}</small></span><span class="t-ch">›</span></a>`; }).join('')
+      : '<div class="t-vacio">Todo al día: ninguna iniciativa tiene alertas.</div>'}
+      <div class="t-pie t-pie-row"><span class="t-tag">${filas.length} iniciativa${filas.length === 1 ? '' : 's'} con alertas</span><a class="t-lnk" href="#/proyectos">Ver el portafolio →</a></div></section>`;
   }
 
-  /* ---------- 6 · ICE vs valor ---------- */
-  function iceValor(d, W) { // ocupa todo el ancho
-    const pts = d.filas.filter(x => x.ice != null);
-    const sin = d.filas.length - pts.length;
-    if (!pts.length) return `<div class="dash-card span-12"><h3>Prioridad: ICE vs valor</h3><div class="dash-empty">Ningún proyecto tiene ICE todavía. Llena Impacto, Confianza y Facilidad (1 a 10) en la tabla de Proyectos.</div></div>`;
-    const H = 280, L = 64, R = 18, T = 18, B = 40;
-    const xmax = Math.max(100, ...pts.map(x => x.ice)) * 1.1, ymaxRaw = Math.max(1, ...pts.map(x => x.proy)), tk = ticks(ymaxRaw), ymax = tk.at(-1);
-    const X = v => L + v / xmax * (W - L - R), Y = v => T + (1 - v / ymax) * (H - T - B);
-    const med = a => { const s = a.slice().sort((p, q) => p - q); return s[Math.floor(s.length / 2)]; };
-    const mx = med(pts.map(x => x.ice)), my = med(pts.map(x => x.proy));
-    const top = pts.filter(x => x.proy > ymax * 0.05).sort((a, b) => b.proy - a.proy).slice(0, 3).map(x => x.p.id);
-    // etiquetas que no se encimen: si dos quedan muy cerca, la segunda baja una línea
-    const puestas = [];
-    const etiqueta = x => {
-      const nm = App.projectName(x.p), t = nm.length > 24 ? nm.slice(0, 23) + '…' : nm, right = X(x.ice) < W * 0.6;
-      const w = t.length * 6.2, x0 = right ? X(x.ice) + 10 : X(x.ice) - 10 - w;
-      let yy = Y(x.proy) + 4;
-      for (let k = 0; k < 6 && puestas.some(q => Math.abs(q.y - yy) < 14 && x0 < q.x1 && x0 + w > q.x0); k++) yy += 14;
-      puestas.push({ x0, x1: x0 + w, y: yy });
-      return `<text class="lbl2 fade" x="${right ? X(x.ice) + 10 : X(x.ice) - 10}" y="${yy}" text-anchor="${right ? 'start' : 'end'}">${esc(t)}</text>`;
-    };
-    const xt = ticks(xmax / 1.1, 4);
-    return `<div class="dash-card span-12"><h3>Prioridad: ICE vs valor ${d.Y}</h3><div class="sub">Arriba a la derecha: alto valor y alto ICE, los que conviene priorizar. Las líneas marcan la mediana del portafolio; se nombran los 3 de más valor.${sin ? ` ${sin} sin ICE no aparecen.` : ''}</div>
-      <div class="lgd"><span><i class="dt" style="--c:var(--cat-ahorro)"></i>En realización</span><span><i class="dt" style="--c:var(--viz-muted)"></i>Otros</span></div>
-      <svg class="viz" viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="ICE contra valor">
-        <g class="grid">${tk.map(v => `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/>`).join('')}</g>
-        <g class="axis">${tk.map(v => `<text x="${L - 8}" y="${Y(v) + 4}" text-anchor="end">${esc(mm(v))}</text>`).join('')}${xt.map(v => `<text x="${X(v)}" y="${H - 22}" text-anchor="middle">${v}</text>`).join('')}<text x="${(L + W - R) / 2}" y="${H - 5}" text-anchor="middle" style="font-weight:700">ICE (impacto × confianza × facilidad)</text></g>
-        <line x1="${X(mx)}" x2="${X(mx)}" y1="${T}" y2="${H - B}" style="stroke:var(--line-2);stroke-width:1"/><line x1="${L}" x2="${W - R}" y1="${Y(my)}" y2="${Y(my)}" style="stroke:var(--line-2);stroke-width:1"/>
-        ${pts.map((x, i) => `<circle class="pop" style="fill:${x.real ? 'var(--cat-ahorro)' : 'var(--viz-muted)'};stroke:var(--card);stroke-width:2;animation-delay:${i * 50}ms" cx="${X(x.ice)}" cy="${Y(x.proy)}" r="${top.includes(x.p.id) ? 7 : 5.5}"/>`).join('')}
-        ${pts.filter(x => top.includes(x.p.id)).sort((a, b) => b.proy - a.proy).map(etiqueta).join('')}
-        ${pts.map(x => `<circle class="hit" data-ice="${x.p.id}" cx="${X(x.ice)}" cy="${Y(x.proy)}" r="14"/>`).join('')}
-      </svg></div>`;
-  }
-
-  /* ---------- 7 · estado del portafolio ---------- */
-  function estado(d) {
-    const ec = App.estadoCol();
-    const opts = ec ? (ec.options || []) : [];
-    const pausa = n => /paus|cancel|suspend|descart/i.test(n);
-    const activos = opts.filter(o => !pausa(o.name));
-    const color = o => (pausa(o.name) ? 'var(--ord-paus)' : `var(--ord-${Math.min(5, 1 + Math.round(activos.indexOf(o) * 4 / Math.max(1, activos.length - 1)))})`);
-    const cuenta = opts.map(o => ({ o, n: d.filas.filter(x => x.estado === o.name).length })).filter(z => z.n);
-    const sinE = d.filas.filter(x => !x.estado).length;
-    const total = d.filas.length || 1;
-    const hoy = App.d.today();
-    const atras = d.filas.filter(x => App.planOf(x.p.id).atrasadas > 0).length, sinPlan = d.filas.filter(x => !App.planOf(x.p.id).acts.length), sinCron = sinPlan.filter(x => App.sinPlan(x.p).aplica).length, sinAplica = sinPlan.length - sinCron;
-    const casosE = ['Aprobado', 'En revisión', 'Borrador'].map(e => ({ e, n: d.filas.filter(x => x.caso && (x.caso.estado || 'Borrador') === e).length }));
-    let acc = 0;
-    return `<div class="dash-card"><h3>Estado del portafolio</h3><div class="sub">${d.filas.length} proyectos en la vista, por etapa.</div>
-      <svg class="viz" viewBox="0 0 1000 46" preserveAspectRatio="none" height="46" role="img" aria-label="Proyectos por estado">${cuenta.map((z, i) => { const w = z.n / total * 1000, x0 = acc; acc += w;
-        return `<rect class="growx" data-est="${esc(z.o.name)}" x="${x0 + (i ? 1 : 0)}" y="4" width="${Math.max(0, w - (i ? 2 : 0))}" height="38" rx="6" style="fill:${color(z.o).replace(/var\(--(ord-[^)]+)\)/, 'url(#dg-$1)')};animation-delay:${i * 60}ms"/>`; }).join('')}${sinE ? `<rect x="${acc + 1}" y="4" width="${sinE / total * 1000 - 1}" height="38" rx="6" style="fill:var(--sunk)"/>` : ''}</svg>
-      <div class="lgd" style="margin-top:8px">${cuenta.map(z => `<span><i class="sw" style="--c:${color(z.o)}"></i>${esc(z.o.name)} <b style="color:var(--ink)">${z.n}</b></span>`).join('')}${sinE ? `<span><i class="sw" style="--c:var(--sunk)"></i>Sin estado <b style="color:var(--ink)">${sinE}</b></span>` : ''}</div>
-      <div class="chips2">
-        <div class="chip2"><span class="st-ico ${atras ? 'critical' : 'good'}">${atras ? '✕' : '✓'}</span><b>${atras}</b> con actividades atrasadas</div>
-        <div class="chip2"><b>${d.filas.length - atras - sinPlan.length}</b> con cronograma al día</div>
-        <div class="chip2"><b>${sinCron}</b> en ejecución sin cronograma</div>${sinAplica ? `<div class="chip2"><b>${sinAplica}</b> en operación o pausa, sin cronograma</div>` : ''}
-        ${casosE.map(c => `<div class="chip2"><span class="pill cl-${App.Caso.estadoColor(c.e)}">${c.e}</span><b>${c.n}</b> casos</div>`).join('')}
-      </div></div>`;
-  }
-
-  /* ---------- 8 · tabla de proyectos ---------- */
-  function tabla(d) {
-    const ec = App.estadoCol();
-    const cols = [['nombre', 'Proyecto'], ['estado', 'Estado'], ['tipo', 'Tipo de valor'], ['ice', 'ICE'], ['proy', `Proyectado ${d.Y}`], ['cap', `Captado ${d.Y}`], ['cumpl', 'Cumplimiento'], ['vpn', 'VPN']];
-    const key = { nombre: x => App.projectName(x.p).toLowerCase(), estado: x => x.estado, tipo: x => x.catPrincipal || 'zz', ice: x => -(x.ice ?? -1), proy: x => -x.proy, cap: x => -x.cap, cumpl: x => x.pc ?? 9, vpn: x => -(x.vpn ?? -1e18) }[F.orden] || (x => 0);
-    const rows = d.filas.slice().sort((a, b) => { const p = key(a), q = key(b); return p < q ? -1 : p > q ? 1 : 0; });
-    return `<div class="dash-card span-12"><h3>Proyectos</h3><div class="sub">Clic en un encabezado para ordenar; clic en un proyecto para abrirlo.${d.usd ? ` ${d.usd} casos en USD no se suman.` : ''} Los proyectos sin caso usan el Income (en ${d.unidad === 1e6 ? 'millones' : d.unidad === 1e3 ? 'miles' : 'pesos'}) como valor anual.</div>
-      <div class="flujo-wrap"><table class="lst dash-tbl"><thead><tr>${cols.map(([k, l]) => `<th data-orden="${k}" class="${['ice', 'proy', 'cap', 'cumpl', 'vpn'].includes(k) ? 'n' : ''} ${F.orden === k ? 'on' : ''}">${l}${F.orden === k ? ' ▾' : ''}</th>`).join('')}</tr></thead><tbody>
-        ${rows.map(x => { const st = estadoDe(x.pc);
-          return `<tr class="clic" data-pid="${x.p.id}"><td><b>${esc(App.projectName(x.p))}</b>${x.fuente === 'income' ? ' <span class="tag">por Income</span>' : !x.fuente ? ' <span class="tag">sin valor</span>' : ''}</td>
-            <td>${x.estado && ec ? `<span class="pill cl-${App.optColor(ec, x.estado)}">${esc(x.estado)}</span>` : ''}</td>
-            <td>${x.catPrincipal ? `<span class="cat-dot cat-${x.catPrincipal}"></span>${esc(App.catLabel(x.catPrincipal))}` : '<span class="faint">—</span>'}</td>
-            <td class="n">${x.ice ?? '<span class="faint">—</span>'}</td><td class="n">${esc(mm(x.proy))}</td><td class="n">${esc(mm(x.cap))}</td>
-            <td class="n">${st ? `<span style="display:inline-flex;align-items:center;gap:6px"><span class="st-ico ${st[0]}">${st[1]}</span>${Math.round(x.pc * 100)}%</span>` : '<span class="faint">—</span>'}</td>
-            <td class="n">${x.vpn == null ? '<span class="faint">—</span>' : esc(m(x.vpn))}</td></tr>`; }).join('')}
-      </tbody></table></div></div>`;
+  function calendario(d) {
+    const hoy = d.hoy, lim = App.d.add(hoy, 30);
+    const ses = App.S.sessions.filter(s => s.fecha >= hoy && s.fecha <= lim && s.estado !== 'Cancelada')
+      .map(s => ({ f: s.fecha, t: App.Agenda ? App.Agenda.tituloOf(s) : 'Comité', s: (s.proyectos || []).length ? `${s.proyectos.length} iniciativa${s.proyectos.length === 1 ? '' : 's'} en agenda` : 'Sin iniciativas en agenda todavía', href: '#/agenda' }));
+    const hitos = App.S.activities.filter(a => a.hito && (a.fin || a.inicio) >= hoy && (a.fin || a.inicio) <= lim)
+      .map(a => { const p = App.byId('projects', a.project_id); return p ? { f: a.fin || a.inicio, t: 'Hito · ' + (a.name || 'sin nombre'), s: App.projectName(p), href: `#/cronograma/${p.id}` } : null; }).filter(Boolean);
+    const ev = ses.concat(hitos).sort((a, b) => a.f.localeCompare(b.f)).slice(0, 5);
+    const venc = App.S.sessions.flatMap(s => s.compromisos || []).filter(k => !k.hecho && k.fecha && k.fecha < hoy && (k.texto || '').trim()).length;
+    return `<section class="t-card" aria-labelledby="t5">${ev.length ? ev.map(e => `<a class="t-row t-ev" href="${e.href}"><span class="t-f"><b>${+e.f.slice(8)}</b><small>${App.d.MES3[+e.f.slice(5, 7) - 1]}</small></span><span class="t-tx"><b>${esc(e.t)}</b><small>${esc(e.s)}</small></span><span class="t-ch">›</span></a>`).join('')
+      : '<div class="t-vacio">No hay comités ni hitos en los próximos 30 días.</div>'}
+      <div class="t-pie t-pie-row"><span class="t-tag">${venc ? `${venc} compromiso${venc === 1 ? '' : 's'} vencido${venc === 1 ? '' : 's'}` : 'Sin compromisos vencidos'}</span><a class="t-lnk" href="#/agenda">Ver el comité de valor →</a></div></section>`;
   }
 
   /* ---------- sección ---------- */
   function render(main) {
-    const NV = App.vista && App.vista.nueva;
-    const d = datos();
-    const ec = App.estadoCol();
-    const key = JSON.stringify([F.anio, F.estado, F.tipo, F.alcance, F.tabla]);
-    const anim = key !== lastKey; lastKey = key;
-    const nF = (F.estado ? 1 : 0) + (F.tipo ? 1 : 0);
-    main.innerHTML = `<div class="dash-head"><button class="burger" data-act="burger" aria-label="Menú">☰</button><div><div class="eyebrow">${NV ? 'Dirección de Generación de Valor' : 'Portafolio de Generación de Valor'}</div><h1>${NV ? 'Lo que el portafolio está generando en ' + d.Y : 'Tablero ejecutivo'}</h1><div class="sub">Datos al ${esc(App.d.fmt(d.hoy))} · ${d.filas.length} iniciativa${d.filas.length === 1 ? '' : 's'} en la vista · cifras en pesos colombianos</div></div><span class="sp"></span>
-      <div class="dash-f" role="group" aria-label="Filtros del tablero">
-        <select data-f="anio" aria-label="Año">${d.anios.map(y => `<option ${y === d.Y ? 'selected' : ''}>${y}</option>`).join('')}</select>
-        <div class="seg"><button data-f-alc="todos" class="${F.alcance !== 'real' ? 'on' : ''}" aria-pressed="${F.alcance !== 'real'}">Todas</button><button data-f-alc="real" class="${F.alcance === 'real' ? 'on' : ''}" aria-pressed="${F.alcance === 'real'}">En realización</button></div>
-        <button class="btn ghost" data-f-mas aria-haspopup="true"><svg aria-hidden="true"><use href="#i-filtro"/></svg>Filtros${nF ? ` <span class="n">${nF}</span>` : ''}</button>
-        ${App.canEdit() ? '<button class="btn ghost" data-f-aj title="Ajustes del tablero" aria-label="Ajustes del tablero"><svg aria-hidden="true"><use href="#i-ajustes"/></svg></button>' : ''}
-      </div></div>
-      ${nF ? `<div class="f-act">${F.estado ? `<button data-quitar="estado" title="Quitar filtro">Estado: ${esc(F.estado)} <span>✕</span></button>` : ''}${F.tipo ? `<button data-quitar="tipo" title="Quitar filtro">Tipo de valor: ${esc(App.catLabel(F.tipo))} <span>✕</span></button>` : ''}</div>` : ''}
-      <div class="dash-grid ${anim ? 'anim' : ''}" id="dashGrid"></div>`;
-    const grid = $('#dashGrid', main);
-    const draw = () => {
-      const W = Math.max(320, (grid.clientWidth || 1000) - 36);
-      const W7 = Math.max(320, (grid.clientWidth >= 1100 ? grid.clientWidth * 7 / 12 - 14 : grid.clientWidth) - 36);
-      const W6 = Math.max(320, (grid.clientWidth >= 1100 ? grid.clientWidth / 2 - 7 : grid.clientWidth) - 36);
-      const sg = senales(d);
-      const sec = (n, t, h) => `<div class="span-12 dash-sec"><span class="n">${n}</span><b>${t}</b><span>${h}</span></div>`;
-      grid.innerHTML = NV ? gdefs()
-        + sec(1, 'Lo esencial', 'Cuánto valor se ha capturado, con su evidencia, y qué necesita atención') + hero(d, sg) + atencion(d, sg) + indicadores2(d, sg)
-        + sec(2, 'Decisiones y ejecución', 'Qué decidió el comité, qué viene y cómo van las iniciativas') + App.Mejoras.enRealizacion(d) + App.Mejoras.decisionesRecientes()
-        + sec(3, 'El valor en el tiempo', 'De dónde viene el valor y cómo avanza la captura') + porAnio(d, W) + curva(d, W7) + `<div class="span-5 dash-col">${cumplimiento(d)}${estado(d)}</div>`
-        + (App.canEdit() ? sec(4, 'Qué hacer', 'Sugerencia según potencial y salud de ejecución; la decisión es del comité') + matriz(d, sg) : '')
-        + sec(App.canEdit() ? 5 : 4, 'Detalle por iniciativa', 'Todas las cifras, para ordenar y comparar') + tabla(d)
-      : gdefs()
-        + sec(1, 'Lo esencial', 'Cuánto valor se ha capturado y qué necesita atención') + hero(d, sg) + atencion(d, sg) + indicadores(d, sg)
-        + sec(2, 'El valor en el tiempo', 'De dónde viene el valor y cómo avanza la captura') + porAnio(d, W) + curva(d, W7) + mezcla(d)
-        + sec(3, 'Ejecución y decisiones', 'Qué acelerar, replantear o revisar') + matriz(d, sg) + `<div class="span-5 dash-col">${cumplimiento(d)}${estado(d)}</div>` + iceValor(d, W)
-        + sec(4, 'Detalle por iniciativa', 'Todas las cifras, para ordenar y comparar') + tabla(d);
-      // la cifra principal cuenta hasta su valor
-      const big = $('.big[data-count]', grid);
-      if (big && grid.classList.contains('anim') && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        const target = +big.dataset.count, t0 = performance.now();
-        const step = t => { const k = Math.min(1, (t - t0) / 900), e = 1 - Math.pow(1 - k, 3); big.textContent = m(target * e); if (k < 1) requestAnimationFrame(step); };
-        requestAnimationFrame(step);
-      }
-    };
+    const d = datos({ anio: F.anio, estado: '', tipo: '', alcance: 'todos' });
+    const sg = senales(d);
+    const paso = (n, t, s, extra) => `<div class="t-paso" id="t${n}"><i>${n}</i><b>${t}</b><small>${s}</small><span class="sp"></span>${extra || ''}</div>`;
+    const seg = (k, val, ops) => `<div class="seg t-seg" role="group">${ops.map(([v, l]) => `<button data-${k}="${v}" class="${val === v ? 'on' : ''}" aria-pressed="${val === v}">${l}</button>`).join('')}</div>`;
+    main.innerHTML = `<div class="pg-top"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Tablero</h1><span class="pg-meta">Datos al ${esc(App.d.fmt(d.hoy))} · ${d.filas.length} iniciativa${d.filas.length === 1 ? '' : 's'} · ${d.filas.filter(x => x.caso).length} con caso de negocio · pesos colombianos</span><span class="sp"></span>
+        <label class="pg-sel">Año de captura <select data-f="anio">${d.anios.map(y => `<option ${y === d.Y ? 'selected' : ''}>${y}</option>`).join('')}</select></label>
+        ${App.canEdit() ? '<button class="btn ghost sm" data-f-aj title="Ajustes del tablero" aria-label="Ajustes del tablero"><svg aria-hidden="true"><use href="#i-ajustes"/></svg></button>' : ''}</div>
+      ${paso(1, 'Valor a crear', 'lo que proyectan los casos de negocio, año por año', seg('agrupar', F.agrupar || 'tipo', [['tipo', 'Por tipo de valor'], ['okr', 'Por OKR'], ['etapa', 'Por etapa']]))}
+      ${valorACrear(d)}
+      ${paso(2, `Captura por iniciativa · ${d.Y}`, 'lo capturado frente a lo que debía llevar a la fecha', seg('cpi', F.cpi === 'brecha' ? 'brecha' : 'valor', [['valor', 'Mayor valor'], ['brecha', 'Mayor brecha']]))}
+      ${capturaIniciativas(d)}
+      ${paso(3, `Proyectado vs. capturado · ${d.Y}`, 'acumulado mes a mes de las iniciativas en realización')}
+      <section class="t-card t-pad"><div class="t-lgd"><span><i class="t-sw-l proy"></i>Proyectado</span><span><i class="t-sw-l cap"></i>Capturado</span><span><i class="t-sw-l ver"></i>Verificado</span></div><svg class="t-viz" id="tCurva" height="210" role="img" aria-label="Proyectado contra capturado, acumulado"></svg></section>
+      <div class="t-dos"><div>${paso(4, 'Qué requiere atención', 'lo más grave primero')}${atencion2(sg)}</div><div>${paso(5, 'Calendario', 'comités e hitos de los próximos 30 días')}${calendario(d)}</div></div>`;
+    const draw = () => { const a = $('#tAnios', main), c = $('#tCurva', main); if (a) dibujarAnios(a, d); if (c) dibujarCurva(c, d); };
     draw();
-    // interacción
     main.onclick = e => {
       if (e.target.closest('.burger')) return App.toggleSide();
-      const a = e.target.closest('[data-f-alc]'); if (a) { F.alcance = a.dataset.fAlc; saveF(); return App.render(); }
-      const q = e.target.closest('[data-quitar]'); if (q) { F[q.dataset.quitar] = ''; saveF(); return App.render(); }
-      const fm = e.target.closest('[data-f-mas]');
-      if (fm) {
-        const p = App.openPop(fm, `<div class="lbl">Filtrar el tablero</div>
-          ${ec ? `<label class="mi" style="display:block;cursor:default">Estado<select class="fld" data-pf="estado" style="margin-top:4px"><option value="">Todos</option>${(ec.options || []).map(o => `<option ${F.estado === o.name ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}</select></label>` : ''}
-          <label class="mi" style="display:block;cursor:default">Tipo de valor<select class="fld" data-pf="tipo" style="margin-top:4px"><option value="">Todos</option>${App.CATS.map(c => `<option value="${c.id}" ${F.tipo === c.id ? 'selected' : ''}>${esc(c.label)}</option>`).join('')}</select></label>
-          ${nF ? '<div class="sep"></div><button class="mi" data-limpiar="1">Quitar todos los filtros</button>' : ''}`, { width: 260, nofocus: true });
-        p.onchange = ev => { const t = ev.target; if (!t.dataset.pf) return; F[t.dataset.pf] = t.value; saveF(); App.closePop(true); App.render(); };
-        p.onclick = ev => { if (ev.target.closest('[data-limpiar]')) { F.estado = ''; F.tipo = ''; saveF(); App.closePop(true); App.render(); } };
-        return;
-      }
+      const v = e.target.closest('[data-agrupar]'); if (v) { F.agrupar = v.dataset.agrupar; saveF(); return App.render(); }
+      const c = e.target.closest('[data-cpi]'); if (c) { F.cpi = c.dataset.cpi; saveF(); return App.render(); }
+      const ev = e.target.closest('[data-evid]'); if (ev) { const b = $('#evidBox', main); b.hidden = !b.hidden; ev.setAttribute('aria-expanded', !b.hidden); ev.textContent = b.hidden ? '¿De dónde sale lo capturado?' : 'Ocultar la evidencia'; return; }
       const aj = e.target.closest('[data-f-aj]');
       if (aj) {
-        const p = App.openPop(aj, `<div class="lbl">Ajustes del tablero</div><label class="mi" style="display:block;cursor:default">La columna Income de Proyectos está en<select class="fld" data-unidad style="margin-top:4px">${[[1e6, 'millones'], [1e3, 'miles'], [1, 'pesos']].map(([v, l]) => `<option value="${v}" ${d.unidad === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label><div class="hint" style="padding:0 10px 8px">Se usa como valor anual de los proyectos que aún no tienen caso de negocio.</div>`, { width: 280, nofocus: true });
-        p.onchange = ev => { if (!ev.target.hasAttribute('data-unidad')) return; const v = Number(ev.target.value); App.closePop(true); App.guard(async () => { App.S.tablero = await App.api('PUT', '/api/config/tablero', { income_unidad: v }); App.render(); }); };
-        return;
+        const p = App.openPop(aj, `<div class="lbl">Ajustes del tablero</div><label class="mi" style="display:block;cursor:default">La columna Income del portafolio está en<select class="fld" data-unidad style="margin-top:4px">${[[1e6, 'millones'], [1e3, 'miles'], [1, 'pesos']].map(([val, l]) => `<option value="${val}" ${d.unidad === val ? 'selected' : ''}>${l}</option>`).join('')}</select></label><div class="hint" style="padding:0 10px 8px">Se usa como valor anual de las iniciativas que aún no tienen caso de negocio.</div>`, { width: 280, nofocus: true });
+        p.onchange = ev2 => { if (!ev2.target.hasAttribute('data-unidad')) return; const val = Number(ev2.target.value); App.closePop(true); App.guard(async () => { App.S.tablero = await App.api('PUT', '/api/config/tablero', { income_unidad: val }); App.render(); }); };
       }
-      const ev = e.target.closest('[data-evid]'); if (ev) { const b = $('#evidBox', main); b.hidden = !b.hidden; ev.setAttribute('aria-expanded', !b.hidden); ev.textContent = b.hidden ? '¿De dónde sale esta cifra?' : 'Ocultar la evidencia'; return; }
-      const qe = e.target.closest('[data-qe=editar]'); if (qe) return App.Mejoras.editarQueEs(qe);
-      if (e.target.closest('[data-dash=tabla]')) { F.tabla = !F.tabla; saveF(); return App.render(); }
-      const yr = e.target.closest('[data-anio]'); if (yr) { F.anio = +yr.dataset.anio; saveF(); hideTip(); return App.render(); }
-      const o = e.target.closest('[data-orden]'); if (o) { F.orden = o.dataset.orden; saveF(); lastKey = key; return App.render(); }
-      const ice = e.target.closest('[data-ice]'); if (ice) { hideTip(); return App.go('#/proyectos/' + ice.dataset.ice); }
-      const tr = e.target.closest('tr[data-pid]'); if (tr) return App.go('#/proyectos/' + tr.dataset.pid);
     };
-    main.onchange = e => {
-      const t = e.target, f = t.dataset.f; if (!f) return;
-      if (f === 'unidad') return App.guard(async () => { App.S.tablero = await App.api('PUT', '/api/config/tablero', { income_unidad: Number(t.value) }); App.render(); });
-      F[f] = f === 'anio' ? Number(t.value) : t.value; saveF(); App.render();
-    };
+    main.onchange = e => { const t = e.target; if (t.dataset.f === 'anio') { F.anio = Number(t.value); saveF(); App.render(); } };
     main.onmousemove = e => {
-      const h = e.target.closest('[data-anio],[data-mes],[data-ice],[data-bul],.seg[data-k]');
-      const xh = $('.xh', main);
-      if (!h) { hideTip(); if (xh) xh.setAttribute('visibility', 'hidden'); return; }
-      if (h.dataset.anio) {
-        const a = d.porAnio[+h.dataset.i]; const tot = d.cats.reduce((s, k) => s + a.cats[k], 0);
-        showTip(e, `<div class="t">${a.y}${a.y === d.Y ? ' · seleccionado' : ''}</div>${d.cats.filter(k => a.cats[k] > 0).map(k => row(cvar(k), App.catLabel(k), m(a.cats[k]))).join('')}<div class="sep">${row('', 'Proyectado', m(tot), true)}${row('var(--ink)', 'Captado', m(a.captado), true)}${tot ? row('', 'Captado / proyectado', App.pct(a.captado / tot)) : ''}</div>`);
-      } else if (h.dataset.mes != null) {
-        const i = +h.dataset.mes, c = d.curva[i];
-        if (xh) { xh.setAttribute('x1', +h.getAttribute('x') + +h.getAttribute('width') / 2); xh.setAttribute('x2', +h.getAttribute('x') + +h.getAttribute('width') / 2); xh.setAttribute('visibility', 'visible'); }
-        const vis = i < d.mesHasta;
-        showTip(e, `<div class="t">${App.d.MESES[i].replace(/^./, s => s.toUpperCase())} ${d.Y}</div>${row('var(--viz-muted)', 'Esperado acumulado', m(c.esperado))}${row('var(--cat-ahorro)', 'Captado acumulado', vis ? m(c.captado) : '—', true)}${vis ? `<div class="sep">${row('', 'Brecha', m(c.captado - c.esperado), true)}</div>` : ''}`);
-      } else if (h.dataset.ice) {
-        const x = d.filas.find(z => z.p.id === h.dataset.ice);
-        showTip(e, `<div class="t">${esc(App.projectName(x.p))}</div>${row('', 'ICE', String(x.ice), true)}${row('', `Valor proyectado ${d.Y}`, m(x.proy), true)}${row('', 'Estado', x.estado || '—')}${row('', 'En realización', x.real ? 'Sí' : 'No')}`);
-      } else if (h.dataset.bul) {
-        const x = d.filas.find(z => z.p.id === h.dataset.bul), st = estadoDe(x.pc);
-        showTip(e, `<div class="t">${esc(App.projectName(x.p))}</div>${row(`var(--st-${st[0]})`, 'Captado', m(x.cap), true)}${row('var(--ink)', 'Esperado a la fecha', m(x.esp))}${row('', `Proyectado ${d.Y}`, m(x.proy))}<div class="sep">${row('', st[2], App.pct(x.pc), true)}</div>`);
+      const h = e.target.closest('[data-anio2],[data-mes2]');
+      if (!h) return hideTip();
+      if (h.dataset.anio2 != null) {
+        const { filas, grupos } = valorACrear.ultimo, f = filas[+h.dataset.anio2];
+        showTip(e, `<div class="t">${f.y}${f.y === d.hoyY ? ' · año en curso' : f.y < d.hoyY ? ' · cerrado' : ''}</div>${grupos.filter(g => f.v[g.key] > 0).map(g => row(g.color, g.label, m(f.v[g.key]))).join('')}<div class="sep">${row('', 'Total proyectado', m(f.t), true)}</div>`);
+      } else {
+        const i = +h.dataset.mes2, c = curvaDatos(d)[i], vis = i < d.mesHasta;
+        showTip(e, `<div class="t">${App.d.MESES[i].replace(/^./, s => s.toUpperCase())} ${d.Y}</div>${row('var(--viz-muted)', 'Proyectado acumulado', m(c.esperado))}${row('var(--ink)', 'Capturado acumulado', vis ? m(c.captado) : '—', true)}${row('var(--good)', 'Verificado acumulado', vis ? m(c.ver) : '—')}`);
       }
     };
     main.onmouseleave = hideTip;
-    // redibujar al cambiar el tamaño de la ventana
     clearTimeout(render._rz);
-    window.onresize = () => { clearTimeout(render._rz); render._rz = setTimeout(() => { if (location.hash.startsWith('#/tablero')) { grid.classList.remove('anim'); draw(); } }, 200); };
+    window.onresize = () => { clearTimeout(render._rz); render._rz = setTimeout(() => { if (location.hash.startsWith('#/tablero')) draw(); }, 200); };
   }
 
-  App.Dash = { datos };
+  App.Dash = { datos, senales };
   App.views.tablero = { render };
 })();

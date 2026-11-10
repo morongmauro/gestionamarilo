@@ -48,7 +48,7 @@
     const comps = App.S.sessions.flatMap(s => (s.compromisos || []).map((k, i) => ({ s, k, i }))).filter(x => !x.k.hecho && (x.k.texto || '').trim())
       .sort((a, b) => (a.k.fecha || '9999').localeCompare(b.k.fecha || '9999'));
 
-    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><div><h1>Agenda de comités</h1><div class="sub">${delMes} ${delMes === 1 ? 'sesión' : 'sesiones'} en ${App.d.MESES[m - 1]}${prox[0] ? ` · próxima: ${esc(tituloOf(prox[0]))}, ${esc(App.d.fmtShort(prox[0].fecha))}` : ''}</div></div><span class="sp"></span>
+    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><div><h1>Comité de valor</h1><div class="sub">${delMes} ${delMes === 1 ? 'sesión' : 'sesiones'} en ${App.d.MESES[m - 1]}${prox[0] ? ` · próxima: ${esc(tituloOf(prox[0]))}, ${esc(App.d.fmtShort(prox[0].fecha))}` : ''}</div></div><span class="sp"></span>
         <div class="seg"><button data-v="mes" class="${A.view === 'mes' ? 'on' : ''}">Mes</button><button data-v="lista" class="${A.view === 'lista' ? 'on' : ''}">Lista</button></div>
         ${A.view === 'mes' ? `<div style="display:flex;align-items:center;gap:6px"><button class="btn sm" data-nav="-1">‹</button><button class="btn sm" data-nav="0">Hoy</button><button class="btn sm" data-nav="1">›</button><b style="min-width:130px;text-align:center;text-transform:capitalize">${App.d.MESES[m - 1]} ${y}</b></div>` : ''}
         ${ro ? '' : '<button class="btn primary" data-new="">+ Sesión</button>'}</div>

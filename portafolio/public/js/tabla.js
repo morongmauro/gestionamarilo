@@ -13,7 +13,9 @@
     people: { label: 'Personas', icon: '◎' }, number: { label: 'Número', icon: '#' },
     date: { label: 'Fecha', icon: '▣' }, check: { label: 'Casilla', icon: '☑' }, url: { label: 'Enlace', icon: '⇗' },
   };
-  const P = Object.assign({ view: 'tabla', sort: null, filters: [], group: '', collapsed: {}, boardCol: '', calc: true }, App.store.get('tabla', {}));
+  const P = Object.assign({ view: 'resumen', sort: null, filters: [], group: '', collapsed: {}, boardCol: '', calc: true }, App.store.get('tabla', {}));
+  // Con el menú nuevo, el portafolio abre en «Resumen» (una vez; después se respeta lo que cada quien elija)
+  if (!P.v2) { P.view = 'resumen'; P.v2 = true; App.store.set('tabla', P); }
   const savePrefs = () => App.store.set('tabla', P);
   let q = '';
   let root = null; // contenedor de la sección
@@ -114,10 +116,11 @@
 
   /* ---------- sección ---------- */
   function render(main) {
+    if (P.view === 'resumen' && App.Portafolio) { root = null; return App.Portafolio.render(main); }
     root = main;
     const ro = !App.canEdit();
-    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><div><h1>Proyectos</h1><div class="sub">${App.S.projects.length} ${App.S.projects.length === 1 ? 'proyecto' : 'proyectos'} en el portafolio</div></div><span class="sp"></span>
-        <div class="seg"><button data-view="tabla" class="${P.view === 'tabla' ? 'on' : ''}">▤ Tabla</button><button data-view="tablero" class="${P.view === 'tablero' ? 'on' : ''}">▦ Tablero</button></div></div>
+    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><div><h1>Portafolio</h1><div class="sub">${App.S.projects.length} ${App.S.projects.length === 1 ? 'iniciativa' : 'iniciativas'} · aquí se editan las columnas, como en Notion</div></div><span class="sp"></span>
+        <div class="seg"><button data-view="resumen">Resumen</button><button data-view="tabla" class="${P.view === 'tabla' ? 'on' : ''}">Tabla completa</button><button data-view="tablero" class="${P.view === 'tablero' ? 'on' : ''}">Tablero</button></div></div>
       <div class="toolbar">
         <label class="search"><span>⌕</span><input id="tq" placeholder="Buscar en todas las columnas…" value="${esc(q)}"></label>
         <button class="tb ${P.filters.length ? 'on' : ''}" data-act="filtro">⚲ Filtrar</button>
@@ -392,7 +395,7 @@
 
   function onClick(e) {
     if (e.target.closest('[data-stop]')) return;
-    const v = e.target.closest('.seg [data-view]'); if (v) { P.view = v.dataset.view; savePrefs(); paint(); return; }
+    const v = e.target.closest('.seg [data-view]'); if (v) return setView(v.dataset.view);
     const ch = e.target.closest('[data-chip]');
     if (ch) { const k = ch.dataset.chip; if (k === 'sort') P.sort = null; else if (k === 'group') P.group = ''; else P.filters.splice(Number(k.slice(1)), 1); savePrefs(); paint(); return; }
     const t = e.target.closest('[data-act]'); if (!t) return;
@@ -422,5 +425,7 @@
   }
 
   App.Tabla = { TYPES, renderValue, openEditor, render };
+  function setView(v) { const antes = P.view; P.view = v; savePrefs(); if (antes === 'resumen' || v === 'resumen' || !root) App.render(); else paint(); }
+  App.Tabla = { setView };
   App.views.proyectos = { render: main => render(main) };
 })();

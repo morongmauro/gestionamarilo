@@ -1,20 +1,7 @@
 /* ============================================================
-   VISTA MEJORADA · estilos de las piezas nuevas
-   Todo lo que cambia la vista actual va bajo html[data-vista="nueva"];
-   el botón del interruptor es lo único visible siempre.
+   PIEZAS DE LA VISTA MEJORADA (hoy la única vista)
+   Las reglas siguen bajo html[data-vista="nueva"], que siempre está activo.
    ============================================================ */
-
-/* Interruptor (visible en las dos vistas) */
-.vista-btn{display:flex;align-items:center;gap:8px;margin:10px 12px 2px;padding:8px 12px;border-radius:999px;border:1px solid color-mix(in srgb,var(--amarillo) 55%,transparent);background:color-mix(in srgb,var(--amarillo) 16%,transparent);color:inherit;font:inherit;font-size:var(--fs-xs);font-weight:700;cursor:pointer;text-align:left}
-.vista-btn:hover{background:color-mix(in srgb,var(--amarillo) 28%,transparent)}
-.vista-btn svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.app.col .vista-btn span{display:none}
-.app.col .vista-btn{justify-content:center;padding:8px}
-html[data-vista="nueva"] .vista-btn{border-color:var(--line-2);background:transparent;color:var(--muted)}
-html[data-vista="nueva"] .vista-btn:hover{background:var(--hover);color:inherit}
-
-/* Menú de cinco entradas: las secciones de operación viven dentro de la ficha */
-html[data-vista="nueva"] .tab[data-sec="cronograma"],html[data-vista="nueva"] .tab[data-sec="casos"],html[data-vista="nueva"] .tab[data-sec="historial"],html[data-vista="nueva"] .tab[data-sec="sistema"]{display:none}
 
 /* Marca de agua de la demostración */
 #demoWater{position:fixed;right:14px;bottom:14px;z-index:60;padding:6px 14px;border-radius:999px;background:color-mix(in srgb,var(--amarillo) 85%,transparent);color:#160B29;font-size:11px;font-weight:800;letter-spacing:.08em;pointer-events:none;box-shadow:var(--shadow)}
