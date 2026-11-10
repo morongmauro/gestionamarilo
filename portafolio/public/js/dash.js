@@ -185,7 +185,7 @@
           <div class="lbl">Valor captado en ${d.Y}${st ? ` · <span class="badge ${st[0] === 'good' ? 'good' : st[0] === 'warning' ? 'warn' : 'crit'}" style="vertical-align:1px">${ico(st[0] === 'good' ? 'i-check' : st[0] === 'warning' ? 'i-alerta' : 'i-x')}${esc(st[2])}</span>` : ''}</div>
           <div class="big" data-count="${d.captadoY}">${esc(m(d.captadoY))}</div>
           <p class="frase">${frase}</p>
-          <div class="det">Esperado a la fecha: <b>${esc(m(d.esperadoY))}</b> · Proyectado para todo ${d.Y}: <b>${esc(m(d.proyectadoY))}</b> · prorrateado por los meses corridos de los proyectos en realización</div>
+          <div class="det">Esperado a la fecha: <b>${esc(m(d.esperadoY))}</b> · Proyectado para todo ${d.Y}: <b>${esc(m(d.proyectadoY))}</b> · prorrateado por los meses ya cerrados de los proyectos en realización</div>
           ${compos(d)}
           ${NV ? `<div class="vp"><span class="ver"><i></i>Verificado <b>${esc(m(d.verifY))}</b></span><span class="pre"><i></i>Preliminar <b>${esc(m(d.captadoY - d.verifY))}</b></span><button class="vp-link" data-evid="1" aria-expanded="false">¿De dónde sale esta cifra?</button></div><div class="evid" id="evidBox" hidden>${App.Mejoras.evidenciaHTML(d.Y, d.filas)}</div>` : ''}
         </div></div></div>`;
