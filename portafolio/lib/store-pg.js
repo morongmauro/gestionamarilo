@@ -1,7 +1,7 @@
 // ============================================================
 // ALMACENAMIENTO EN POSTGRESQL · Cloud SQL (Google Cloud), Supabase, Neon, Azure Database for PostgreSQL
-// Pensado para la demostración en Vercel con datos de prueba.
-// Los datos reales van en Azure SQL (store-sql.js).
+// Supabase mientras se trabaja en Vercel; Cloud SQL en Google Cloud. Para pasar los
+// datos de una a otra: scripts/migrar-postgres.js (copia exacta y verificada).
 // Dos tablas: pf_docs (una fila por registro, con su colección) y pf_config.
 // Las tablas se crean solas al arrancar.
 // ============================================================
@@ -9,6 +9,7 @@ let Pool;
 try { ({ Pool } = require('pg')); } catch {
   throw new Error('Falta el paquete pg. Corre «npm install» en la carpeta portafolio.');
 }
+const { conexion } = require('./pg-conexion');
 
 class PgStore {
   constructor(opts = {}) {
@@ -19,11 +20,9 @@ class PgStore {
     if (!this.client) {
       const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
       if (!url) throw new Error('Falta DATABASE_URL o POSTGRES_URL (la cadena de conexión de Postgres)');
-      // Sin TLS en local y por el socket de Cloud SQL (Google Cloud): host=/cloudsql/PROYECTO:REGION:INSTANCIA
-      const local = /localhost|127\.0\.0\.1|\/cloudsql\//.test(url);
+      // TLS según el destino (Supabase con TLS; Cloud SQL por socket o proxy, sin TLS): ver lib/pg-conexion.js
       this.client = new Pool({
-        connectionString: url,
-        ssl: local || process.env.PG_SSL === 'false' ? false : { rejectUnauthorized: false },
+        ...conexion(url),
         max: Number(process.env.PG_POOL_MAX) || 3, // en Vercel cada instancia abre pocas conexiones
       });
       // Cloud SQL y los proxies cortan las conexiones inactivas: sin este manejador,

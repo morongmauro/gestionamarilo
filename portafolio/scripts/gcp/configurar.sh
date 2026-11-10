@@ -80,4 +80,9 @@ cat <<FIN
 Siguiente paso (TI): conectar Cloud Build al repositorio de GitHub (Cloud Build → Activadores → rama main →
 archivo cloudbuild.yaml, sustituciones _REGION=$REGION y _CLOUDSQL=$CONEXION) para que cada cambio se publique solo.
 Opcional: dominio propio (Cloud Run → Administrar dominios personalizados) e Identity-Aware Proxy.
+
+¿Ya trabajaron con datos reales en Supabase? Pásalos aquí (respaldo + copia exacta + verificación):
+   ORIGEN_URL='postgresql://…supabase… (Session pooler, puerto 5432)' bash scripts/gcp/migrar-desde-supabase.sh --simular
+   ORIGEN_URL='…' bash scripts/gcp/migrar-desde-supabase.sh
+Después de migrar, entran los usuarios de Supabase con sus contraseñas (el administrador temporal de arriba se reemplaza).
 FIN
