@@ -158,7 +158,7 @@
   }
   function itemHTML(s, full) {
     const c = comite(s);
-    return `<button class="up-item" data-ses="${s.id}"><div class="up-date" style="${s.estado === 'Cancelada' ? 'opacity:.5' : ''}"><b>${+s.fecha.slice(8)}</b><span>${App.d.MES3[+s.fecha.slice(5, 7) - 1]}</span></div><div class="up-t"><b style="${s.estado === 'Cancelada' ? 'text-decoration:line-through' : ''}">${esc(tituloOf(s))}</b><span>${s.hora_ini ? esc(s.hora_ini) + (s.hora_fin ? '–' + esc(s.hora_fin) : '') + ' · ' : ''}${(s.proyectos || []).length} ${(s.proyectos || []).length === 1 ? 'proyecto' : 'proyectos'}${full && c ? ' · ' + esc(c.name) : ''}${s.estado && s.estado !== 'Programada' ? ' · ' + esc(s.estado) : ''}</span></div><i style="width:10px;height:10px;border-radius:50%;flex-shrink:0;background:var(--c-${colorOf(s)}-i)"></i></button>`;
+    return `<button class="up-item" data-ses="${s.id}"><div class="up-date" style="${s.estado === 'Cancelada' ? 'opacity:.5' : ''}"><b>${+s.fecha.slice(8)}</b><span>${App.d.MES3[+s.fecha.slice(5, 7) - 1]}</span></div><div class="up-t"><b style="${s.estado === 'Cancelada' ? 'text-decoration:line-through' : ''}">${esc(tituloOf(s))}</b><span>${s.hora_ini ? esc(s.hora_ini) + (s.hora_fin ? '–' + esc(s.hora_fin) : '') + ' · ' : ''}${(s.proyectos || []).length} ${(s.proyectos || []).length === 1 ? 'iniciativa' : 'iniciativas'}${full && c ? ' · ' + esc(c.name) : ''}${s.estado && s.estado !== 'Programada' ? ' · ' + esc(s.estado) : ''}</span></div><i style="width:10px;height:10px;border-radius:50%;flex-shrink:0;background:var(--c-${colorOf(s)}-i)"></i></button>`;
   }
 
   /* ---------- comités ---------- */
@@ -201,7 +201,7 @@
     const c = comite(s);
     const comp = JSON.parse(JSON.stringify(s.compromisos || []));
     const compHTML = () => comp.map((k, i) => `<div class="comp-ed"><input type="checkbox" data-ci="${i}" data-ck="hecho" ${k.hecho ? 'checked' : ''} ${dis} title="Cumplido"><input class="fld" data-ci="${i}" data-ck="texto" value="${esc(k.texto || '')}" placeholder="Compromiso" ${dis} style="${k.hecho ? 'text-decoration:line-through;color:var(--muted)' : ''}"><input class="fld rsp" data-ci="${i}" data-ck="responsable" value="${esc(k.responsable || '')}" placeholder="Responsable" ${dis} list="pplList"><input class="fld fch" type="date" data-ci="${i}" data-ck="fecha" value="${esc(k.fecha || '')}" ${dis}>${ro ? '<span></span>' : `<button class="x" data-cdel="${i}" title="Quitar">✕</button>`}</div>`).join('') || '<div class="faint" style="font-size:12px">Sin compromisos</div>';
-    const projHTML = () => (s.proyectos || []).map(pid => { const p = App.byId('projects', pid); return p ? `<span class="pill cl-${App.projectColor(p)}" data-goproj="${pid}" title="Abrir proyecto">${esc(App.projectName(p))}</span>` : ''; }).join('') + (ro ? '' : '<button class="btn sm" data-addproj="1">+ Proyecto</button>') + (!(s.proyectos || []).length && ro ? '<span class="faint">Ninguno</span>' : '');
+    const projHTML = () => (s.proyectos || []).map(pid => { const p = App.byId('projects', pid); return p ? `<span class="pill cl-${App.projectColor(p)}" data-goproj="${pid}" title="Abrir la iniciativa">${esc(App.projectName(p))}</span>` : ''; }).join('') + (ro ? '' : '<button class="btn sm" data-addproj="1">+ Iniciativa</button>') + (!(s.proyectos || []).length && ro ? '<span class="faint">Ninguno</span>' : '');
     const d = App.openDrawer(`<div class="d-top"><div style="display:flex;gap:8px;align-items:center"><span class="pill cl-${colorOf(s)}">${esc(c ? c.name : 'Sin comité')}</span><span class="tag ${s.estado === 'Cancelada' ? '' : 'warn'}">${esc(s.estado || 'Programada')}</span></div><button class="x" data-close="1" title="Cerrar">✕</button></div>
       <h2>${esc(tituloOf(s))}</h2>
       <div class="faint" style="font-size:12px;margin:-6px 0 14px">${esc(App.d.fmtLong(s.fecha))}${s.hora_ini ? ' · ' + esc(s.hora_ini) + (s.hora_fin ? ' a ' + esc(s.hora_fin) : '') : ''}</div>
@@ -212,9 +212,9 @@
         <label>Estado</label><select class="fld" data-s="estado" ${dis}>${ESTADOS.map(e => `<option ${e === (s.estado || 'Programada') ? 'selected' : ''}>${e}</option>`).join('')}</select>
         <label>Lugar</label><input class="fld" data-s="lugar" value="${esc(s.lugar || '')}" placeholder="Sala, piso…" ${dis}>
         <label>Enlace</label><div class="row"><input class="fld" data-s="enlace" value="${esc(s.enlace || '')}" placeholder="Enlace de Teams" ${dis}>${s.enlace && /^https?:\/\//i.test(s.enlace) ? `<a class="btn sm" href="${esc(s.enlace)}" target="_blank" rel="noopener">Abrir ↗</a>` : ''}</div>
-        <label>Proyectos</label><div class="chips-sel" id="sProj">${projHTML()}</div>
+        <label>Iniciativas</label><div class="chips-sel" id="sProj">${projHTML()}</div>
       </div>
-      <h4>Orden del día y temas</h4><textarea class="fld" data-s="temas" rows="4" ${dis} placeholder="1. Avance de proyectos…">${esc(s.temas || '')}</textarea>
+      <h4>Orden del día y temas</h4><textarea class="fld" data-s="temas" rows="4" ${dis} placeholder="1. Avance de iniciativas…">${esc(s.temas || '')}</textarea>
       <h4>Asistentes</h4><textarea class="fld" data-s="asistentes" rows="2" ${dis}>${esc(s.asistentes || '')}</textarea>
       <h4>Decisiones</h4><textarea class="fld" data-s="decisiones" rows="4" ${dis} placeholder="Lo que se decidió en la sesión">${esc(s.decisiones || '')}</textarea>
       ${App.vista && App.vista.nueva ? '<div id="sDec" style="margin:12px 0"></div>' : ''}
@@ -251,7 +251,7 @@
       if (ro) return;
       if (e.target.closest('[data-addproj]')) return App.pickList(e.target.closest('[data-addproj]'), {
         items: App.projectsSorted().map(p => ({ id: p.id, label: App.projectName(p), color: App.projectColor(p) })),
-        selected: s.proyectos || [], placeholder: 'Buscar proyecto…', empty: 'No hay proyectos',
+        selected: s.proyectos || [], placeholder: 'Buscar iniciativa…', empty: 'No hay iniciativas',
         onSave: ids => App.patch('sessions', id, { proyectos: ids }).then(() => { $('#sProj', d).innerHTML = projHTML(); }).catch(() => {}),
       });
       if (e.target.closest('[data-cadd]')) { comp.push({ texto: '', responsable: '', fecha: null, hecho: false }); $('#sComp', d).innerHTML = compHTML(); const ins = $$('[data-ck=texto]', d); ins[ins.length - 1].focus(); return; }
@@ -261,7 +261,7 @@
     };
   }
   function repetir(anchor, s) {
-    const p = App.openPop(anchor, `<div class="lbl">Repetir esta sesión</div><div class="row" style="padding:0 4px"><select data-r="cada" style="flex:1;width:auto"><option value="7">Cada semana</option><option value="14" selected>Cada 2 semanas</option><option value="m">Cada mes</option></select></div><div class="row" style="padding:0 4px"><input type="number" data-r="n" value="6" min="1" max="52" style="width:80px"><span class="hint" style="margin:0">veces más</span></div><div class="row" style="padding:4px"><button class="btn primary" data-r="ok">Crear sesiones</button></div><div class="hint">Copia comité, hora, lugar, enlace, proyectos y temas. No copia decisiones ni compromisos.</div>`, { width: 280, nofocus: true });
+    const p = App.openPop(anchor, `<div class="lbl">Repetir esta sesión</div><div class="row" style="padding:0 4px"><select data-r="cada" style="flex:1;width:auto"><option value="7">Cada semana</option><option value="14" selected>Cada 2 semanas</option><option value="m">Cada mes</option></select></div><div class="row" style="padding:0 4px"><input type="number" data-r="n" value="6" min="1" max="52" style="width:80px"><span class="hint" style="margin:0">veces más</span></div><div class="row" style="padding:4px"><button class="btn primary" data-r="ok">Crear sesiones</button></div><div class="hint">Copia comité, hora, lugar, enlace, iniciativas y temas. No copia decisiones ni compromisos.</div>`, { width: 280, nofocus: true });
     p.onclick = e => {
       if (!e.target.closest('[data-r=ok]')) return;
       const cada = $('[data-r=cada]', p).value, n = Math.max(1, Math.min(52, +$('[data-r=n]', p).value || 1));

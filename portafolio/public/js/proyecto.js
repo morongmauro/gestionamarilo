@@ -11,14 +11,14 @@
     const [id, tab0] = params;
     const tab = TABS.some(t => t[0] === tab0) ? tab0 : 'info';
     const p = App.byId('projects', id);
-    if (!p) { main.innerHTML = `<div class="page-h"><a class="back" href="#/proyectos">← Proyectos</a></div><div class="card-box"><div class="empty-box"><b>Este proyecto no existe o fue eliminado</b></div></div>`; return; }
+    if (!p) { main.innerHTML = `<div class="page-h"><a class="back" href="#/proyectos">← Portafolio</a></div><div class="card-box"><div class="empty-box"><b>Esta iniciativa no existe o fue eliminada</b></div></div>`; return; }
     const ro = !App.canEdit(), tc = App.titleCol(), ec = App.estadoCol();
     const pl = App.planOf(id), caso = App.caseOf(id), f = caso ? Finanzas.calc(caso) : null;
     const ses = App.S.sessions.filter(s => (s.proyectos || []).includes(id)).sort((a, b) => (a.fecha + (a.hora_ini || '')).localeCompare(b.fecha + (b.hora_ini || '')));
     const prox = ses.find(s => s.fecha >= App.d.today() && s.estado !== 'Cancelada');
     const estado = ec ? (p.props || {})[ec.id] : null;
 
-    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><a class="back" href="#/proyectos">← Proyectos</a><span class="sp"></span>${ro ? '' : '<button class="btn" data-p="menu">··· Opciones</button>'}</div>
+    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><a class="back" href="#/proyectos">← Portafolio</a><span class="sp"></span>${ro ? '' : '<button class="btn" data-p="menu">··· Opciones</button>'}</div>
       <div class="card-box p-head">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${ec ? `<span class="pill cl-${App.optColor(ec, estado)}" data-p="estado" style="cursor:${ro ? 'default' : 'pointer'}">${esc(estado || 'Sin ' + ec.name.toLowerCase())}</span>` : ''}</div>
         <div class="p-title" data-p="titulo">${esc(App.projectName(p))}</div>
@@ -36,11 +36,18 @@
     const box = $('#pTab', main);
 
     if (tab === 'info') {
-      const cols = App.S.columns.filter(c => c.id !== tc.id);
+      // B5 · Los campos del método anterior (Impacto, Confianza y Facilidad de 1 a 10, e Income antiguo) no se muestran
+      // junto a los del ICE de la Oficina: quedan guardados y se ven al abrir «campos anteriores».
+      const hayIce = App.S.columns.some(c => c.id === 'ice_income');
+      const VIEJOS = ['impacto', 'confianza', 'facilidad', 'income'];
+      const todas = App.S.columns.filter(c => c.id !== tc.id);
+      const cols = todas.filter(c => !(hayIce && VIEJOS.includes(c.id)) && !c.hidden);
+      const viejas = todas.filter(c => hayIce && VIEJOS.includes(c.id) && (p.props || {})[c.id] != null && (p.props || {})[c.id] !== '');
+      const fila = c => { const v = (p.props || {})[c.id]; const vacio = v == null || v === '' || (Array.isArray(v) && !v.length);
+        return `<div class="k"><span class="ic">${App.Tabla.TYPES[c.type].icon}</span>${esc(c.name)}</div><div class="v ${vacio && c.type !== 'check' ? 'empty' : ''}" data-col="${c.id}">${vacio && c.type !== 'check' ? `<div class="c-in">${ro ? '—' : 'Vacío'}</div>` : App.Tabla.renderValue(c, v)}</div>`; };
       const historia = App.vista && App.vista.nueva ? App.Mejoras.historia(p, { pl, caso, f, prox, ro, d: filaDe(id) }) : '';
-      box.innerHTML = historia + `<div class="card-box"><div class="props">${cols.map(c => { const v = (p.props || {})[c.id]; const vacio = v == null || v === '' || (Array.isArray(v) && !v.length);
-        return `<div class="k"><span class="ic">${App.Tabla.TYPES[c.type].icon}</span>${esc(c.name)}</div><div class="v ${vacio && c.type !== 'check' ? 'empty' : ''}" data-col="${c.id}">${vacio && c.type !== 'check' ? `<div class="c-in">${ro ? '—' : 'Vacío'}</div>` : App.Tabla.renderValue(c, v)}</div>`; }).join('')}</div>
-        <div class="meta-line">Creado ${esc(App.d.ago(p.created_at))}${p.updated_by_name ? ` · Última edición: ${esc(p.updated_by_name)}, ${esc(App.d.ago(p.updated_at))}` : ''}${ro ? '' : ' · Las columnas se administran desde la tabla de Proyectos'}</div></div>`;
+      box.innerHTML = historia + `<div class="card-box"><div class="props">${cols.map(fila).join('')}</div>${viejas.length ? `<details class="props-viejas"><summary>${viejas.length} campo${viejas.length === 1 ? '' : 's'} del método anterior (guardado${viejas.length === 1 ? '' : 's'}, ya no se usa${viejas.length === 1 ? '' : 'n'} para el ICE)</summary><div class="props">${viejas.map(fila).join('')}</div></details>` : ''}
+        <div class="meta-line">Creado ${esc(App.d.ago(p.created_at))}${p.updated_by_name ? ` · Última edición: ${esc(p.updated_by_name)}, ${esc(App.d.ago(p.updated_at))}` : ''}${ro ? '' : ' · Las columnas se administran en Portafolio → Tabla completa'}</div></div>`;
     } else if (tab === 'cronograma') {
       App.PlanHost.render(box, id);
     } else if (tab === 'caso') {
@@ -48,7 +55,7 @@
     } else {
       box.innerHTML = `<div class="card-box">${ro ? '' : '<div style="margin-bottom:10px"><button class="btn primary" data-p="agendar">+ Agendar en un comité</button></div>'}
         ${ses.length ? `<table class="lst"><thead><tr><th>Fecha</th><th>Comité</th><th>Estado</th><th>Temas</th><th>Decisiones</th></tr></thead><tbody>${ses.map(s => `<tr class="clic" data-ses="${s.id}"><td style="white-space:nowrap"><b>${esc(App.d.fmt(s.fecha))}</b><div class="faint" style="font-size:11px">${esc(s.hora_ini || '')}</div></td><td><span class="pill cl-${App.Agenda.colorOf(s)}">${esc(App.Agenda.tituloOf(s))}</span></td><td>${esc(s.estado || 'Programada')}</td><td class="muted" style="max-width:260px">${esc((s.temas || '').slice(0, 140))}</td><td style="max-width:300px">${esc((s.decisiones || '').slice(0, 180))}</td></tr>`).join('')}</tbody></table>`
-          : '<div class="empty-box"><b>Este proyecto aún no ha pasado por comité</b>Agenda una sesión para presentarlo.</div>'}</div>`;
+          : '<div class="empty-box"><b>Esta iniciativa aún no ha pasado por comité</b>Agenda una sesión para presentarlo.</div>'}</div>`;
     }
 
     main.onclick = e => {
@@ -64,7 +71,7 @@
       if (a === 'avanzar' && ec) { const nueva = b.dataset.fase; if (!confirm(`¿Pasar «${App.projectName(p)}» a ${nueva}?\n\nQueda en la trazabilidad. Si lo decidió el comité, regístralo también en la sesión.`)) return;
         return App.guard(async () => { await App.patch('projects', id, { props: { [ec.id]: nueva } }); App.toast('Cambió de fase'); App.render(); }); }
       if (a === 'agendar') App.Agenda.openNewSession(App.d.add(App.d.today(), 7), { proyectos: [id] });
-      if (a === 'menu') App.menu(b, [{ id: 'tabla', label: '▤ Ver en la tabla' }, { id: 'agenda', label: '▦ Agendar en comité' }, '-', { id: 'del', label: '🗑 Eliminar proyecto', danger: true }], m => {
+      if (a === 'menu') App.menu(b, [{ id: 'tabla', label: '▤ Ver en la tabla' }, { id: 'agenda', label: '▦ Agendar en comité' }, '-', { id: 'del', label: '🗑 Eliminar iniciativa', danger: true }], m => {
         if (m === 'tabla') App.go('#/proyectos');
         if (m === 'agenda') App.Agenda.openNewSession(App.d.add(App.d.today(), 7), { proyectos: [id] });
         if (m === 'del') confirmDelete(id);
@@ -107,7 +114,7 @@
     const p = App.byId('projects', id); if (!p) return;
     const n = App.actsOf(id).length, c = App.caseOf(id);
     if (!confirm(`¿Eliminar «${App.projectName(p)}»?\n\nSe borran también ${n} actividades del cronograma${c ? ' y su caso de negocio' : ''}. Las sesiones de comité se conservan.`)) return;
-    App.guard(async () => { await App.remove('projects', id); App.toast('Proyecto eliminado'); App.go('#/proyectos'); });
+    App.guard(async () => { await App.remove('projects', id); App.toast('Iniciativa eliminada'); App.go('#/proyectos'); });
   }
 
   App.Proyecto = { render, confirmDelete };

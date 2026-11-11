@@ -73,7 +73,7 @@
     const reg = { income: fib(v.ice_income), conf: redondeaPct(v.ice_confianza), esf: redondeaPct(v.ice_esfuerzo), os: leeOS(v.ice_os) ?? leeOS(v.objetivos_semestre) };
     const calc = calculados(p);
     const f = {}, notas = [], fuentes = new Set();
-    const NOM = { income: 'Income', conf: 'Confidence', esf: 'Effort', os: 'OS' };
+    const NOM = { income: 'Income', conf: 'Confianza', esf: 'Esfuerzo', os: 'OS' };
     const fmt = (k, x) => (k === 'conf' || k === 'esf' ? `${x} %` : k === 'os' ? String(x).replace('.', ',') : String(x));
     for (const k of ['income', 'conf', 'esf']) {
       if (reg[k] != null) { f[k] = reg[k]; fuentes.add('manual'); notas.push(`${NOM[k]} ${fmt(k, f[k])}: registrado por la Oficina`); }
@@ -92,7 +92,17 @@
     return { ...f, origen, ice: formula(f.income, f.conf, f.esf, f.os), oficina: f.income >= UMBRAL_OFICINA, notas };
   }
 
-  App.ICE = { detalle, formula, FIB, BANDAS_INCOME, fib, redondeaPct, leeOS, effortDeMeses, UMBRAL_OFICINA,
+  // B6 · Income registrado por la Oficina frente al que dan las cifras del caso (null si coinciden o falta alguno)
+  function diferenciaIncome(p) {
+    const reg = fib((p.props || {}).ice_income), calc = calculados(p).out.income;
+    return reg != null && calc != null && reg !== calc ? { reg, calc } : null;
+  }
+  const avisoIncome = (p, ro) => { const d = diferenciaIncome(p); return d ? `<span class="ice-dif" title="El Income registrado y el que sale del caso de negocio no coinciden. El ICE usa el registrado.">La Oficina registró Income <b>${d.reg}</b>; el caso da <b>${d.calc}</b>${ro ? '' : ` <button class="t-lnk" data-usar-income="${d.calc}" data-pid="${p.id}">Usar ${d.calc}</button>`}</span>` : ''; };
+  // (este archivo también se carga en el servidor para exportar: allí no hay página)
+  if (typeof document !== 'undefined') document.addEventListener('click', e => { const b = e.target.closest('[data-usar-income]'); if (!b || !App.canEdit()) return;
+    App.guard(async () => { await App.patch('projects', b.dataset.pid, { props: { ice_income: Number(b.dataset.usarIncome) } }); App.toast('Income actualizado con el del caso'); App.render(); }); });
+
+  App.ICE = { diferenciaIncome, avisoIncome, detalle, formula, FIB, BANDAS_INCOME, fib, redondeaPct, leeOS, effortDeMeses, UMBRAL_OFICINA,
     explicacion: 'ICE = Income × Confidence ÷ Effort × OS (método de la Oficina de Generación de Valor). Income: dinero a dos años en escala Fibonacci (≤ $50 M = 1 … > $16.201 M = 55; desde 3, $201–600 M, va a la Oficina). Confidence: 25 % a 100 %. Effort: 25 % menos de 2 meses · 50 % 2 a 4 · 75 % 4 a 6 · 100 % 6 o más. OS: 0,75 no alineado · 1 alineado · 1,25 prioridad del semestre. Se usa lo que la Oficina registró en la tabla; lo que falte se calcula del caso de negocio y del cronograma.' };
   App.iceOf = p => detalle(p).ice;
 })();

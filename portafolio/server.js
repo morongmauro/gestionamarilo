@@ -269,7 +269,7 @@ route('POST', '/api/ideas', 'usuario', async (req, ctx) => {
   const d = cleanPropuesta(ctx.body);
   const cols = await projectColumns();
   const t = cols.find(c => c.type === 'title') || { id: 'proyecto' };
-  const ec = cols.find(c => c.type === 'select' && /estado/i.test(c.name));
+  const ec = cols.find(c => c.type === 'select' && /estado|fase/i.test(c.name));
   // Una propuesta entra en Fase 1 (o en el estado «Idea» si la tabla aún usa los antiguos)
   const idea = ec && ((ec.options || []).find(o => Fases.clasificar(o.name) === 1 && /^fase/i.test(o.name)) || (ec.options || []).find(o => /idea|propuesta/i.test(o.name)));
   const traz = cols.find(c => c.log) || cols.find(c => c.id === 'trazabilidad');
@@ -499,7 +499,7 @@ route('PATCH', `/api/${COLL_RX}/:id`, 'editor', async (req, ctx) => {
   const patch = cleanDoc(coll, ctx.body, true);
   delete patch.project_id; // un registro no cambia de proyecto
   let cols = null, ec = null, traz = null;
-  if (coll === 'projects' && patch.props) { cols = await projectColumns(); ec = cols.find(c => c.type === 'select' && /estado/i.test(c.name)); traz = cols.find(c => c.log) || cols.find(c => c.id === 'trazabilidad'); }
+  if (coll === 'projects' && patch.props) { cols = await projectColumns(); ec = cols.find(c => c.type === 'select' && /estado|fase/i.test(c.name)); traz = cols.find(c => c.log) || cols.find(c => c.id === 'trazabilidad'); }
   const doc = await store.update(coll, id, cur => {
     const next = { ...cur, ...patch, updated_at: now(), updated_by: ctx.user.id, updated_by_name: ctx.user.name };
     if (patch.props) next.props = { ...(cur.props || {}), ...patch.props }; // se mezclan columna por columna
@@ -626,7 +626,7 @@ async function prepare() {
   // Cada iniciativa deja en su trazabilidad de qué estado venía. Un estado que no se reconoce queda igual.
   if (!(await store.getConfig('migr_fases_v1'))) {
     const cols = await store.getConfig('project_columns');
-    const ec = cols.find(c => c.type === 'select' && /estado/i.test(c.name));
+    const ec = cols.find(c => c.type === 'select' && /estado|fase/i.test(c.name));
     if (ec) {
       const traz = cols.find(c => c.log) || cols.find(c => c.id === 'trazabilidad');
       const sinMapear = (ec.options || []).filter(o => !Fases.de(o.name)).map(o => ({ name: o.name, color: o.color }));
@@ -647,6 +647,18 @@ async function prepare() {
       if (n || sinMapear.length) console.log(`Fases: ${n} iniciativas actualizadas${sinMapear.length ? `; estados sin reconocer: ${sinMapear.map(o => o.name).join(', ')}` : ''}`);
     }
     await store.setConfig('migr_fases_v1', true);
+  }
+  // Migración (una sola vez): un solo vocabulario. Las columnas que conservan su nombre de fábrica pasan a
+  // «Iniciativa», «Fase», «Confianza (%)» y «Esfuerzo (%)». Las que alguien renombró no se tocan.
+  if (!(await store.getConfig('migr_terminos_v1'))) {
+    const cols = await store.getConfig('project_columns');
+    if (Array.isArray(cols)) {
+      const NOMBRES = { proyecto: ['Proyecto', 'Iniciativa'], estado: ['Estado', 'Fase'], ice_confianza: ['Confidence (%)', 'Confianza (%)'], ice_esfuerzo: ['Effort (%)', 'Esfuerzo (%)'] };
+      let n = 0;
+      cols.forEach(c => { const r = NOMBRES[c.id]; if (r && c.name === r[0]) { c.name = r[1]; n++; } });
+      if (n) await store.setConfig('project_columns', cols);
+    }
+    await store.setConfig('migr_terminos_v1', true);
   }
   if (!(await store.getConfig('seeded_committees'))) {
     if (!(await store.list('committees')).length) for (const c of defaults.committees()) await store.insert('committees', { ...c, id: newId(), created_at: now(), updated_at: now() });

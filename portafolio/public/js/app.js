@@ -134,7 +134,7 @@
   function sideProjects(activeId) {
     const ps = App.projectsSorted();
     $('#sideProj').innerHTML = ps.map(p => { const pl = App.planOf(p.id);
-      return `<a class="sp-item ${p.id === activeId ? 'on' : ''}" href="#/proyectos/${p.id}" title="${esc(App.projectName(p))}"><i style="background:var(--c-${App.projectColor(p)}-i)"></i><span class="nm">${esc(App.projectName(p))}</span>${pl.acts.length ? `<span class="pc">${pl.avance}%</span>` : ''}</a>`; }).join('') || '<div class="faint" style="font-size:12px;padding:4px 10px">Sin proyectos</div>';
+      return `<a class="sp-item ${p.id === activeId ? 'on' : ''}" href="#/proyectos/${p.id}" title="${esc(App.projectName(p))}"><i style="background:var(--c-${App.projectColor(p)}-i)"></i><span class="nm">${esc(App.projectName(p))}</span>${pl.acts.length ? `<span class="pc">${pl.avance}%</span>` : ''}</a>`; }).join('') || '<div class="faint" style="font-size:12px;padding:4px 10px">Sin iniciativas</div>';
   }
 
   /* ---------- barra lateral ---------- */

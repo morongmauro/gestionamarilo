@@ -111,8 +111,26 @@
   }
 
   /* ---------- historial ---------- */
-  const COLL = { projects: 'el proyecto', activities: 'la actividad', sections: 'el capítulo', cases: 'el', sessions: 'la sesión', committees: 'el comité', users: 'el usuario' };
+  const COLL = { projects: 'la iniciativa', activities: 'la actividad', sections: 'el capítulo', cases: 'el', sessions: 'la sesión', committees: 'el comité', users: 'el usuario' };
   let quien = '';
+  // Nombres que entiende cualquiera, en vez de los internos
+  const CAMPO = { section_id: 'capítulo', name: 'nombre', responsable: 'responsable', inicio: 'fechas', fin: 'fechas', duracion: 'fechas', avance: 'avance', hito: 'hito', position: 'orden', notas: 'notas', deps: 'precedencias', dep_tipos: 'precedencias',
+    real_ini: 'fechas reales', real_fin: 'fechas reales', base_ini: 'línea base', base_fin: 'línea base', entregable: 'entregable', area: 'área', flujos: 'tabla del caso', captado: 'valor captado', escenarios: 'escenarios', estado: 'estado',
+    miembros: 'involucrados', fecha_meta: 'fecha meta', linea_base_at: 'línea base', compromisos: 'compromisos', proyectos: 'iniciativas en agenda', decisiones_reg: 'decisiones', decisiones: 'decisiones', temas: 'orden del día', asistentes: 'asistentes',
+    tasa: 'tasa de descuento', anios: 'horizonte', anio_inicio: 'año 0', moneda: 'moneda', sponsor: 'sponsor', problema: 'problema', objetivo: 'objetivo', alcance: 'alcance', riesgos: 'riesgos', supuestos: 'supuestos', recomendacion: 'recomendación',
+    titulo: 'título', fecha: 'fecha', hora_ini: 'hora', hora_fin: 'hora', lugar: 'lugar', enlace: 'enlace', comite_id: 'comité', frase: 'frase', color: 'color', role: 'rol', active: 'acceso', origen: 'origen', validacion: 'verificación' };
+  const campos = l => { const col = id => (App.S.columns.find(c => c.id === id) || {}).name; const u = [...new Set((l || []).map(k => CAMPO[k] || col(k) || String(k).replace(/_/g, ' ')))]; return u.slice(0, 4).join(', ') + (u.length > 4 ? ` y ${u.length - 4} más` : ''); };
+  // Varias actividades cambiadas de una vez (traer o pegar un cronograma) se cuentan en una sola línea
+  function agrupar(items) {
+    const out = [], pid = h => (h.coll === 'activities' || h.coll === 'sections') ? ((App.byId(h.coll, h.record_id) || {}).project_id || '') : null;
+    for (let i = 0; i < items.length;) {
+      const h = items[i], p = pid(h); let j = i + 1;
+      if (p != null) while (j < items.length && items[j].user_name === h.user_name && pid(items[j]) === p && Math.abs(new Date(items[j].created_at) - new Date(h.created_at)) < 120000) j++;
+      if (j - i >= 4) { const pr = App.byId('projects', p); out.push({ grupo: true, created_at: h.created_at, user_name: h.user_name, n: j - i, pid: p, nombre: pr ? App.projectName(pr) : '', creadas: items.slice(i, j).filter(x => /cre/.test(x.accion)).length }); i = j; }
+      else { out.push(h); i++; }
+    }
+    return out;
+  }
   async function historial(main) {
     main.innerHTML = '<div class="empty-box">Cargando…</div>';
     const ruta = location.hash;
@@ -131,9 +149,11 @@
     };
     main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><div><h1>Historial</h1><div class="sub">Quién cambió qué y cuándo · últimos ${items.length} cambios</div></div><span class="sp"></span>
       <select class="fld" id="hQuien" style="width:auto"><option value="">Todas las personas</option>${personas.map(p => `<option ${p === quien ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select></div>
-      ${vis.length ? vis.map(h => { const d = h.created_at.slice(0, 10), hd = d !== day ? `<div class="h-day">${esc(App.d.fmtLong(new Date(h.created_at).toLocaleDateString('en-CA')))}</div>` : ''; day = d;
+      ${vis.length ? agrupar(vis).map(h => { const d = h.created_at.slice(0, 10), hd = d !== day ? `<div class="h-day">${esc(App.d.fmtLong(new Date(h.created_at).toLocaleDateString('en-CA')))}</div>` : ''; day = d;
+        const hora = new Date(h.created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+        if (h.grupo) return hd + `<div class="h-item"><span class="hr">${hora}</span><span><b>${esc(h.user_name)}</b> ${h.creadas === h.n ? 'cargó' : 'actualizó'} ${h.n} actividades del cronograma${h.nombre ? ` de <a href="#/proyectos/${h.pid}/cronograma">«${esc(h.nombre)}»</a>` : ''}</span></div>`;
         const l = link(h);
-        return hd + `<div class="h-item"><span class="hr">${new Date(h.created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</span><span><b>${esc(h.user_name)}</b> ${esc(h.accion)} ${esc(COLL[h.coll] || '')} ${l ? `<a href="${l.startsWith('ses:') ? '#' : l}" ${l.startsWith('ses:') ? `data-ses="${l.slice(4)}"` : ''}>«${esc(h.nombre)}»</a>` : `«${esc(h.nombre)}»`}${(h.campos || []).length ? ` <span class="cp">· ${esc(h.campos.join(', '))}</span>` : ''}</span></div>`; }).join('') : '<div class="card-box"><div class="empty-box"><b>Aún no hay cambios registrados</b></div></div>'}`;
+        return hd + `<div class="h-item"><span class="hr">${new Date(h.created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}</span><span><b>${esc(h.user_name)}</b> ${esc(h.accion)} ${esc(COLL[h.coll] || '')} ${l ? `<a href="${l.startsWith('ses:') ? '#' : l}" ${l.startsWith('ses:') ? `data-ses="${l.slice(4)}"` : ''}>«${esc(h.nombre)}»</a>` : `«${esc(h.nombre)}»`}${(h.campos || []).length ? ` <span class="cp">· ${esc(campos(h.campos))}</span>` : ''}</span></div>`; }).join('') : '<div class="card-box"><div class="empty-box"><b>Aún no hay cambios registrados</b></div></div>'}`;
     $('#hQuien', main).onchange = e => { quien = e.target.value; historial(main); };
     main.onclick = e => {
       if (e.target.closest('.burger')) return App.toggleSide();

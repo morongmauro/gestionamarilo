@@ -18,6 +18,9 @@
   const opts = P.opciones(LS, { owner: true, editable: true, panel: false, compacto: true });
   const optsPort = P.opciones(LS_PORT, { owner: false, editable: false, panel: false, compacto: true, zoom: 'mes' });
   opts.compacto = optsPort.compacto = true;
+  // En la vista Gantt, Área y Duración quedan ocultas mientras nadie las pida: así el cronograma se ve sin desplazarse.
+  // Siguen en el menú «Columnas» y en la vista «Tabla completa».
+  [opts, optsPort].forEach(o => { if (!o.colsVis || !o.colsVis.gantt) o.colsVis = Object.assign({}, o.colsVis, { gantt: { ar: false, dias: false } }); });
 
   let cur = null;          // { el, pid (null = todo el portafolio), M (modelo), ro }
   let guardando = 0, cola = Promise.resolve();
@@ -223,7 +226,7 @@
   function deshacer() {
     if (!editable()) return;
     const i = pila.map(x => x.pid).lastIndexOf(cur.pid);
-    if (i < 0) { toast('No hay cambios para deshacer en este proyecto', false); return; }
+    if (i < 0) { toast('No hay cambios para deshacer en esta iniciativa', false); return; }
     const e = pila.splice(i, 1)[0], pid = e.pid;
     // El modelo vuelve a ser la foto; las diferencias contra lo actual se guardan de una
     const nat = App.S.activities.filter(a => a.project_id === pid);
@@ -605,7 +608,7 @@
       <span>Fin <b>${esc(fmt(s.fechaFinal))}</b>${M.fechaMeta ? ` · meta ${esc(fmt(M.fechaMeta))}${dif != null ? ` <em style="color:${dif > 0 ? 'var(--crit)' : 'var(--good)'}">${dif > 0 ? `+${dif} háb.` : dif < 0 ? `${dif} háb.` : 'justo'}</em>` : ''}` : ''}</span>
       <span><b>${s.completadas}/${s.total}</b> listas</span>
       ${s.retrasos ? `<span style="color:var(--crit-ink)"><b>${s.retrasos}</b> atrasada${s.retrasos === 1 ? '' : 's'}</span>` : ''}
-      ${s.rutaCritica ? `<span title="Actividades sin holgura: si una se atrasa, se atrasa todo el proyecto" style="color:${s.rutaCriticaEnRiesgo ? 'var(--cp-late-ink)' : 'var(--cp-ink)'}"><b>${s.rutaCritica}</b> en ruta crítica${s.rutaCriticaEnRiesgo ? ` (${s.rutaCriticaEnRiesgo} en riesgo)` : ''}</span>` : ''}
+      ${s.rutaCritica ? `<span title="Actividades sin holgura: si una se atrasa, se atrasa toda la iniciativa" style="color:${s.rutaCriticaEnRiesgo ? 'var(--cp-late-ink)' : 'var(--cp-ink)'}"><b>${s.rutaCritica}</b> en ruta crítica${s.rutaCriticaEnRiesgo ? ` (${s.rutaCriticaEnRiesgo} en riesgo)` : ''}</span>` : ''}
     </span>`;
   }
   function cabecera() {
@@ -621,9 +624,9 @@
       <div class="plan-head-r">${kpis(M)}
         ${p ? `<span class="plan-info" title="${esc(info)}">ⓘ</span>` : ''}
         ${p && ed ? `<button class="btn sm undo-btn" data-ph="undo" ${n ? '' : 'disabled'} title="${n ? 'Deshacer: ' + esc(pila.filter(x => x.pid === cur.pid).slice(-1)[0].desc) + ' (Ctrl+Z)' : 'Nada que deshacer'}">↶ Deshacer${n ? ` <em>${n}</em>` : ''}</button>` : ''}
-        ${p ? `<button class="btn sm" data-ph="meta" ${ed ? '' : 'disabled'} title="Fecha en que el proyecto debe terminar: el plan avisa si se pasa">⚑ ${p.fecha_meta ? 'Meta ' + esc(App.d.fmtShort(p.fecha_meta)) : 'Fecha meta'}</button>
+        ${p ? `<button class="btn sm" data-ph="meta" ${ed ? '' : 'disabled'} title="Fecha en que la iniciativa debe terminar: el plan avisa si se pasa">⚑ ${p.fecha_meta ? 'Meta ' + esc(App.d.fmtShort(p.fecha_meta)) : 'Fecha meta'}</button>
         ${ed ? '<button class="btn sm" data-ph="gestion" title="Traer el cronograma desde un enlace compartido de la app de gestión">⇣ Traer de la app de gestión</button>' : ''}
-        <button class="btn sm" data-ph="inv" title="Quiénes participan en el proyecto y de qué área son">👥 Involucrados${(p.miembros || []).length ? ` · ${p.miembros.length}` : ''}</button>` : ''}
+        <button class="btn sm" data-ph="inv" title="Quiénes participan en la iniciativa y de qué área son">👥 Involucrados${(p.miembros || []).length ? ` · ${p.miembros.length}` : ''}</button>` : ''}
         <button class="btn sm mesa-btn${mesa ? ' on' : ''}" data-ph="mesa" title="${mesa ? 'Volver a la vista normal (Esc)' : 'Solo el cronograma, a pantalla completa: para mesas de trabajo de revisión'}">${mesa ? '✕ Salir de mesa' : '⛶ Mesa de trabajo'}</button>
       </div>`;
   }
@@ -636,7 +639,7 @@
     const head = $('.plan-head', cur.el), body = $('#plan-body', cur.el);
     head.innerHTML = cabecera();
     const wrap = $('#pl-wrap', body), keep = wrap ? [wrap.scrollLeft, wrap.scrollTop] : null;
-    o.vacioHtml = cur.pid ? (editable() ? 'Aún no hay actividades. Tráelo de la app de gestión («⇣ Traer de la app de gestión», arriba), crea el primer capítulo abajo («＋ Nueva etapa») o pega filas desde Excel.' : 'Aún no hay actividades en este plan.') : 'Aún no hay actividades en ningún proyecto.';
+    o.vacioHtml = cur.pid ? (editable() ? 'Aún no hay actividades. Tráelo de la app de gestión («⇣ Traer de la app de gestión», arriba), crea el primer capítulo abajo («＋ Nueva etapa») o pega filas desde Excel.' : 'Aún no hay actividades en este plan.') : 'Aún no hay actividades en ninguna iniciativa.';
     const ancho = (body.clientWidth || cur.el.clientWidth || 1100) - (o.panel ? 236 : 0);
     o.anchoTL = P.anchoAjuste(ancho, (o.vista === 'tabla' ? 1300 : 700) + P.extraNombre());
     body.innerHTML = P.render(cur.M, o);
@@ -702,11 +705,11 @@
     const visibles = ps.filter(p => !filtro || !ec || (p.props || {})[ec.id] === filtro);
     const acts = App.S.activities.filter(a => visibles.some(p => p.id === a.project_id));
     const late = acts.filter(a => a.fin && a.fin < hoy() && (a.avance || 0) < 100 && !a.real_fin).length;
-    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><div><h1>Cronogramas</h1><div class="sub">${pid ? esc(App.projectName(App.byId('projects', pid))) + ' · plan de trabajo' : `${visibles.length} proyectos · ${acts.length} actividades${late ? ` · <b style="color:var(--crit-ink)">${late} atrasadas</b>` : ''}`}</div></div><span class="sp"></span>
+    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><div><h1>Cronogramas</h1><div class="sub">${pid ? esc(App.projectName(App.byId('projects', pid))) + ' · plan de trabajo' : `${visibles.length} iniciativas · ${acts.length} actividades${late ? ` · <b style="color:var(--crit-ink)">${late} atrasadas</b>` : ''}`}</div></div><span class="sp"></span>
         ${!pid && ec ? `<select class="fld" id="gEstado" style="width:auto"><option value="">Todos los estados</option>${(ec.options || []).map(o => `<option ${filtro === o.name ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}</select>` : ''}
-        ${pid ? `<a class="btn" href="#/proyectos/${pid}">Abrir proyecto →</a>` : ''}</div>
-      <div class="cron-tabs"><a class="ctab${pid ? '' : ' on'}" href="#/cronograma/todos" title="Todos los proyectos en un solo cronograma (solo lectura)">▦ Todo el portafolio</a>${ps.map(p => { const pl = App.planOf(p.id); return `<a class="ctab${p.id === pid ? ' on' : ''}" href="#/cronograma/${p.id}"><i style="background:var(--c-${App.projectColor(p)}-i)"></i>${esc(App.projectName(p))}${pl.acts.length ? `<span class="n">${pl.avance}%</span>` : ''}</a>`; }).join('')}</div>
-      ${pid ? '' : '<div class="cron-nota">Vista del portafolio: cada proyecto es un capítulo. Para editar, elige el proyecto arriba.</div>'}
+        ${pid ? `<a class="btn" href="#/proyectos/${pid}">Abrir la iniciativa →</a>` : ''}</div>
+      <div class="cron-tabs"><a class="ctab${pid ? '' : ' on'}" href="#/cronograma/todos" title="Todas las iniciativas en un solo cronograma (solo lectura)">▦ Todo el portafolio</a>${ps.map(p => { const pl = App.planOf(p.id); return `<a class="ctab${p.id === pid ? ' on' : ''}" href="#/cronograma/${p.id}"><i style="background:var(--c-${App.projectColor(p)}-i)"></i>${esc(App.projectName(p))}${pl.acts.length ? `<span class="n">${pl.avance}%</span>` : ''}</a>`; }).join('')}</div>
+      ${pid ? '' : '<div class="cron-nota">Vista del portafolio: cada iniciativa es un capítulo. Para editar, elige la iniciativa arriba.</div>'}
       <div id="gBox"></div>`;
     const sel = $('#gEstado', main); if (sel) sel.onchange = () => { App.store.set('cron.estado', sel.value); App.render(); };
     $('.burger', main).onclick = App.toggleSide;

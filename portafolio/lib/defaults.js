@@ -11,15 +11,15 @@ const OS_OPCIONES = [{ name: '0,75 · No alineado', color: 'gris' }, { name: '1 
 function iceOficinaColumns() {
   return [
     { id: 'ice_income', name: 'Income (1-55)', type: 'number', width: 120 },
-    { id: 'ice_confianza', name: 'Confidence (%)', type: 'number', width: 130 },
-    { id: 'ice_esfuerzo', name: 'Effort (%)', type: 'number', width: 110 },
+    { id: 'ice_confianza', name: 'Confianza (%)', type: 'number', width: 130 },
+    { id: 'ice_esfuerzo', name: 'Esfuerzo (%)', type: 'number', width: 110 },
     { id: 'ice_os', name: 'OS · objetivos del semestre', type: 'select', width: 210, options: OS_OPCIONES },
   ];
 }
 function projectColumns() {
   return [
-    { id: 'estado', name: 'Estado', type: 'select', width: 230, options: require('../public/js/fases').opciones() },
-    { id: 'proyecto', name: 'Proyecto', type: 'title', width: 300 },
+    { id: 'estado', name: 'Fase', type: 'select', width: 230, options: require('../public/js/fases').opciones() },
+    { id: 'proyecto', name: 'Iniciativa', type: 'title', width: 300 },
     { id: 'trazabilidad', name: 'Trazabilidad', type: 'text', width: 380, log: true },
     { id: 'habilitadores', name: 'Habilitadores', type: 'people', width: 200, options: [] },
     { id: 'realizadores', name: 'Realizadores', type: 'people', width: 200, options: [] },

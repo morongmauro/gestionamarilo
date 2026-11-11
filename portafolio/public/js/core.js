@@ -48,8 +48,8 @@ App.api = async (method, url, body) => {
 /* ---------- datos ---------- */
 App.byId = (coll, id) => App.S[coll].find(x => x.id === id) || null;
 App.titleCol = () => App.S.columns.find(c => c.type === 'title') || App.S.columns[0] || { id: 'proyecto' };
-App.projectName = p => (p && (p.props || {})[App.titleCol().id]) || 'Proyecto sin nombre';
-App.estadoCol = () => App.S.columns.find(c => c.type === 'select' && /estado/i.test(c.name)) || App.S.columns.find(c => c.type === 'select');
+App.projectName = p => (p && (p.props || {})[App.titleCol().id]) || 'Iniciativa sin nombre';
+App.estadoCol = () => App.S.columns.find(c => c.type === 'select' && /estado|fase/i.test(c.name)) || App.S.columns.find(c => c.type === 'select');
 // Cada persona con su color (el mismo en toda la app), para distinguir habilitadores y realizadores
 const COLORES_PERSONA = ['azul', 'verde', 'naranja', 'morado', 'rosa', 'amarillo', 'cafe'];
 App.colorPersona = n => { const k = String(n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); let h = 0; for (const ch of k) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return COLORES_PERSONA[h % COLORES_PERSONA.length]; };

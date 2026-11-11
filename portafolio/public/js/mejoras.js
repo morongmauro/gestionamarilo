@@ -172,13 +172,13 @@
         <div><span class="l">Última decisión</span>${ultima ? `<span class="dec-t">${esc(ultima.tipo)}</span> ${esc(ultima.texto)} <span class="faint">· ${esc(App.d.fmtShort(ultima.fecha || ultima.s.fecha))}</span>` : '<span class="faint">ninguna registrada</span>'}</div>
       </div></div>
       <div class="hs"><div class="hs-k">Qué vale</div><div class="hs-v hs-grid">
-        <div><span class="l">Proyectado ${Y}</span><b>${esc(App.moneyShort(d ? d.proy : 0))}</b></div>
-        <div><span class="l">${sigla('VPN')}</span>${f && f.vpn != null ? `<b class="${f.vpn < 0 ? 'crit' : ''}">${esc(App.moneyShort(f.vpn, caso.moneda))}</b> <span class="faint">· ${sigla('TIR')} ${f.tir != null ? esc(App.pct(f.tir)) : '—'}</span>` : '<span class="faint">sin caso</span>'}</div>
-        <div><span class="l">Captado ${Y}</span><b>${esc(App.moneyShort(ver + pre))}</b> <span class="faint">· verificado ${esc(App.moneyShort(ver))} · preliminar ${esc(App.moneyShort(pre))}</span></div>
-        <div><span class="l">Prioridad (${sigla('ICE')})</span>${(() => { const d = App.ICE.detalle(p); return d.ice == null ? '<span class="faint">sin datos para calcularla</span>' : `<b>${d.ice}</b> <span class="faint">· Income ${d.income} · confianza ${d.conf} % · esfuerzo ${d.esf} % · OS ${String(d.os ?? 1).replace('.', ',')} · ${d.origen === 'caso' ? 'calculado del caso' : d.origen === 'manual' ? 'registrado por la Oficina' : d.origen === 'mixto' ? 'parte registrado, parte calculado' : 'convertido de 1 a 10'}</span>`; })()}</div>
+        <div><span class="l">Valor a dos años <span class="hs-of">cifra oficial</span></span>${(() => { const dos = f && App.Avance ? App.Avance.dosAnios(f) : 0; return dos ? `<b class="hs-big">${esc(App.moneyShort(dos, caso.moneda))}</b> <span class="faint">· beneficios de los dos primeros años del caso${d && d.proy ? ` · ${esc(App.moneyShort(d.proy))} en ${Y}` : ''}</span>` : `<span class="faint">sin cifras: ${caso ? 'el caso aún no tiene beneficios' : 'falta el caso de negocio'}</span>`; })()}</div>
+        <div><span class="l">${sigla('VPN')}${f && f.vpn != null && f.totalInversion > 0 ? ` a ${Math.round(caso.anios || 0)} años · tasa ${App.num(caso.tasa, 1) || 0} %` : ''}</span>${f && f.vpn != null && f.totalInversion > 0 ? `<b class="${f.vpn < 0 ? 'crit' : ''}">${esc(App.moneyShort(f.vpn, caso.moneda))}</b> <span class="faint">· ${sigla('TIR')} ${f.tir != null ? esc(App.pct(f.tir)) : '—'}</span>` : `<span class="faint">${caso ? 'aparece al poner la inversión en el caso' : 'sin caso'}</span>`}</div>
+        <div><span class="l">Captado ${Y}</span>${ver + pre ? `<b>${esc(App.moneyShort(ver + pre))}</b> <span class="faint">· verificado ${esc(App.moneyShort(ver))} · preliminar ${esc(App.moneyShort(pre))}</span>` : '<span class="faint">sin captura registrada este año</span>'}</div>
+        <div><span class="l">Prioridad (${sigla('ICE')})</span>${(() => { const d = App.ICE.detalle(p); return d.ice == null ? '<span class="faint">sin datos para calcularla</span>' : `<b>${d.ice}</b> <span class="faint">· Income ${d.income} · confianza ${d.conf} % · esfuerzo ${d.esf} % · OS ${String(d.os ?? 1).replace('.', ',')} · ${d.origen === 'caso' ? 'calculado del caso' : d.origen === 'manual' ? 'registrado por la Oficina' : d.origen === 'mixto' ? 'parte registrado, parte calculado' : 'convertido de 1 a 10'}</span>${App.ICE.avisoIncome(p, ro)}`; })()}</div>
         <div><span class="l">Evidencia</span>${caps.length ? `<a href="#/proyectos/${p.id}/caso">${validacionDe(caso, Y) && validacionDe(caso, Y).hasta ? 'validado hasta ' + esc(mesLargo(validacionDe(caso, Y).hasta)) + ' por ' + esc(validacionDe(caso, Y).por || '') : 'sin validar'} →</a>` : '<span class="faint">sin capturas este año</span>'}</div>
       </div></div>
-      <div class="hs-acc">${prox ? `<a class="btn amarillo" href="#/agenda/preparar/${prox.id}">Preparar el comité</a>` : ''}${ro ? '' : `<a class="btn" href="#/proyectos/${p.id}/caso">Registrar captura</a>`}${hab && hab.email ? `<a class="btn ghost" href="mailto:${esc(hab.email)}?subject=${encodeURIComponent(App.projectName(p))}">Escribir a ${esc(hab.name.split(' ')[0])}</a>` : ''}</div>
+      <div class="hs-acc">${prox ? `<a class="btn amarillo" href="#/agenda/preparar/${prox.id}">Preparar el comité</a>` : ''}${ro ? '' : caso ? `<a class="btn" href="#/proyectos/${p.id}/caso">Registrar captura</a>` : `<a class="btn" href="#/proyectos/${p.id}/caso">Crear el caso de negocio</a>`}${hab && hab.email ? `<a class="btn ghost" href="mailto:${esc(hab.email)}?subject=${encodeURIComponent(App.projectName(p))}">Escribir a ${esc(hab.name.split(' ')[0])}</a>` : ''}</div>
     </div>`;
   }
   function habilitador(p) {
@@ -190,7 +190,7 @@
   /* ---------- preparar el comité (vista imprimible por sesión) ---------- */
   function preparar(main, sid) {
     const s = App.byId('sessions', sid);
-    if (!s) { main.innerHTML = '<div class="empty-box"><b>Esa sesión no existe</b><a class="back" href="#/agenda">← Comités</a></div>'; return; }
+    if (!s) { main.innerHTML = '<div class="empty-box"><b>Esa sesión no existe</b><a class="back" href="#/agenda">← Comité de valor</a></div>'; return; }
     const ec = App.estadoCol(), Y = Number(hoy().slice(0, 4));
     const ps = (s.proyectos || []).map(pid => App.byId('projects', pid)).filter(Boolean);
     const pend = decisiones().filter(d => d.estado !== 'Cumplida' && ps.some(p => p.id === d.project_id));
@@ -254,25 +254,24 @@
   }
 
   /* ---------- desactualizados (administración) ---------- */
-  function desactualizados() {
-    const lim = new Date(Date.now() - 21 * 86400e3).toISOString(), Y = hoy().slice(0, 4), mesPasado = hoy().slice(0, 7);
-    const viejos = App.S.projects.filter(p => App.enRealizacion(p) && (p.updated_at || p.created_at || '') < lim);
-    const sinEv = App.S.cases.map(c => { const xs = (c.captado || []).filter(x => x.mes && x.mes.startsWith(Y + '-') && x.mes < mesPasado && Number(x.valor) && !verificado(x, c)); return xs.length ? { c, desde: xs.map(x => x.mes).sort()[0], total: xs.reduce((a, x) => a + Number(x.valor), 0) } : null; }).filter(Boolean);
-    const vencidos = App.S.sessions.flatMap(s => (s.compromisos || []).filter(k => !k.hecho && k.fecha && k.fecha < hoy() && (k.texto || '').trim()).map(k => ({ k, s })));
-    const ideas = App.S.projects.filter(p => p.origen && p.origen.tipo === 'propuesta' && (p.created_at || '') < new Date(Date.now() - 10 * 86400e3).toISOString() && /idea/i.test(((p.props || {})[(App.estadoCol() || {}).id] || '')));
-    const item = (href, t, s) => `<a class="des" href="${href}"><b>${esc(t)}</b><span>${esc(s)}</span></a>`;
-    return `<div class="card-box" style="margin-bottom:16px"><h3 style="font-size:14px;font-weight:800;margin-bottom:4px">Qué está desactualizado</h3><div class="muted" style="font-size:12.5px;margin-bottom:10px">Se calcula solo. Cuando esta lista está vacía, el portafolio está al día.</div>
-      ${!viejos.length && !sinEv.length && !vencidos.length && !ideas.length ? '<div class="atn-ok">Todo al día.</div>' : ''}
-      ${viejos.map(p => item('#/proyectos/' + p.id, App.projectName(p), 'en realización sin cambios desde ' + App.d.ago(p.updated_at || p.created_at))).join('')}
-      ${sinEv.map(({ c, desde, total }) => { const p = App.byId('projects', c.project_id); return p ? item(`#/proyectos/${p.id}/caso`, App.projectName(p), `captado sin validar desde ${App.d.MES3[Number(desde.slice(5)) - 1]} (${App.moneyShort(total)})`) : ''; }).join('')}
-      ${vencidos.map(({ k, s }) => item('#/agenda', k.texto, `compromiso vencido el ${App.d.fmtShort(k.fecha)} · ${k.responsable || 'sin responsable'} · ${App.Agenda.tituloOf(s)}`)).join('')}
-      ${ideas.map(p => item('#/proyectos/' + p.id, App.projectName(p), 'propuesta sin respuesta hace más de 10 días · ' + (p.origen.nombre || ''))).join('')}
-    </div>`;
+  // Qué está desactualizado: iniciativas activas sin cambios en 30 días, captura sin validar y compromisos vencidos.
+  // Se calcula solo; lo usa el Tablero.
+  function desactualizadosItems() {
+    const lim = new Date(Date.now() - 30 * 86400e3).toISOString(), Y = hoy().slice(0, 4), mesPasado = hoy().slice(0, 7);
+    const ec = App.estadoCol(), activa = p => { const fa = window.Fases && ec ? Fases.clasificar((p.props || {})[ec.id]) : null; return fa === 2 || fa === 3; };
+    const ultimo = p => { const c = App.caseOf(p.id); return [p.updated_at || p.created_at || '', c ? c.updated_at || '' : '', ...App.actsOf(p.id).map(x => x.updated_at || '')].sort().pop(); };
+    const dias = iso => Math.max(0, Math.round((Date.now() - new Date(iso)) / 86400e3));
+    const out = [];
+    App.S.projects.filter(activa).forEach(p => { const u = ultimo(p); if (u && u < lim) out.push({ href: '#/proyectos/' + p.id, t: App.projectName(p), s: `sin cambios hace ${dias(u)} días (avance, caso o captura)` }); });
+    App.S.cases.forEach(c => { const xs = (c.captado || []).filter(x => x.mes && x.mes.startsWith(Y + '-') && x.mes < mesPasado && Number(x.valor) && !verificado(x, c)); const p = App.byId('projects', c.project_id);
+      if (xs.length && p) out.push({ href: `#/proyectos/${p.id}/caso`, t: App.projectName(p), s: `captado sin verificar desde ${App.d.MES3[Number(xs.map(x => x.mes).sort()[0].slice(5)) - 1]} (${App.moneyShort(xs.reduce((a, x) => a + Number(x.valor), 0))})` }); });
+    App.S.sessions.forEach(se => (se.compromisos || []).filter(k => !k.hecho && k.fecha && k.fecha < hoy() && (k.texto || '').trim()).forEach(k => out.push({ href: '#/agenda', t: k.texto, s: `compromiso vencido el ${App.d.fmtShort(k.fecha)} · ${k.responsable || 'sin responsable'}` })));
+    return out;
   }
   function adminExtras(main) {
     const d = direccion();
     const box = document.createElement('div');
-    box.innerHTML = desactualizados() + `<div class="card-box" style="margin-bottom:16px"><h3 style="font-size:14px;font-weight:800;margin-bottom:4px">Qué es la Dirección</h3><div class="muted" style="font-size:12.5px;margin-bottom:8px">El texto que abre el inicio en la vista mejorada, y a quién llegan las propuestas.</div>
+    box.innerHTML = `<div class="card-box" style="margin-bottom:16px"><h3 style="font-size:14px;font-weight:800;margin-bottom:4px">Qué es la Dirección</h3><div class="muted" style="font-size:12.5px;margin-bottom:8px">El texto que abre el inicio en la vista mejorada, y a quién llegan las propuestas.</div>
         <div class="pre" style="font-size:13px">${esc(d.que_es || QUE_ES_DEF)}</div><div class="faint" style="font-size:12px;margin:6px 0 10px">Propuestas: ${esc(d.correo_propuestas || 'sin correo')}${d.responsable_propuestas ? ' · responde ' + esc(d.responsable_propuestas) : ''}</div><button class="btn" data-qe="editar">Editar</button></div>
       <div class="card-box" style="margin-bottom:16px"><h3 style="font-size:14px;font-weight:800;margin-bottom:6px">Más herramientas</h3><div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="#/historial">Historial de cambios</a><a class="btn" href="#/cronograma">Cronogramas de todo el portafolio</a><a class="btn" href="#/casos">Casos de negocio</a><a class="btn ghost" href="#/sistema">Sistema de diseño</a></div></div>`;
     if (App.ImportarNotion) box.appendChild(App.ImportarNotion.tarjeta());
@@ -282,6 +281,6 @@
     box.addEventListener('click', e => { const b = e.target.closest('[data-qe=editar]'); if (b) editarQueEs(b); });
   }
 
-  App.Mejoras = { sigla, queEs, editarQueEs, verificado, validacionDe, capturasDelAnio, evidenciaHTML, evidenciaEditor, decisionesRecientes, decisionesEditor, decisionesDe, hitos, hitosHTML, enRealizacion, historia, preparar, proponer, desactualizados, adminExtras };
+  App.Mejoras = { sigla, queEs, editarQueEs, verificado, validacionDe, capturasDelAnio, evidenciaHTML, evidenciaEditor, decisionesRecientes, decisionesEditor, decisionesDe, hitos, hitosHTML, enRealizacion, historia, preparar, proponer, desactualizadosItems, adminExtras };
   App.views.proponer = { render: proponer };
 })();

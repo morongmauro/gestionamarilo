@@ -60,7 +60,9 @@
     const g = /^([+-])\s*(\d+(?:[.,]\d+)?)\s*%$/.exec(s);
     if (g) { const p = Number(g[2].replace(',', '.')) / 100; return Math.round((prev || 0) * (1 + (g[1] === '-' ? -p : p))); }
     const v = s[0] === '=' ? evalExpr(s.slice(1)) : parseQty(s);
-    return v == null ? null : Math.round(v * escala * 100) / 100;
+    // «1,2M» o «300k» ya dicen su tamaño: no se vuelven a multiplicar por la escala de la hoja
+    const absoluto = s[0] !== '=' && /(mm|mil|k|m)\s*\)?$/i.test(s);
+    return v == null ? null : Math.round(v * (absoluto ? 1 : escala) * 100) / 100;
   }
 
   const nombre = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();

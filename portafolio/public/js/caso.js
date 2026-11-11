@@ -13,7 +13,7 @@
   const SECCIONES = [
     ['problema', 'Problema u oportunidad', '¿Qué pasa hoy y por qué vale la pena resolverlo?'],
     ['objetivo', 'Objetivo', '¿Qué se logra y cómo se mide?'],
-    ['alcance', 'Alcance', 'Qué incluye el proyecto.'],
+    ['alcance', 'Alcance', 'Qué incluye la iniciativa.'],
     ['fuera_alcance', 'Fuera de alcance', 'Qué no incluye, para evitar malentendidos.'],
     ['beneficios_cual', 'Beneficios cualitativos', 'Lo que no se traduce en plata: experiencia, riesgo, cumplimiento…'],
     ['riesgos', 'Riesgos', 'Qué puede salir mal y cómo se mitiga.'],
@@ -72,7 +72,7 @@
     const c = App.caseOf(pid), ro = !App.canEdit();
     if (grid) { grid.destroy(); grid = null; }
     if (!c) {
-      el.innerHTML = `<div class="card-box"><div class="empty-box"><b>Este proyecto aún no tiene caso de negocio</b>${ro ? 'Cuando el equipo lo cree, aparecerá aquí.' : 'Arma la justificación: problema, objetivo, beneficios, costos y la decisión que se le pide al comité. Puedes empezar desde cero o subir el Excel que ya tienes.'}${ro ? '' : '<div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn primary" data-c="crear">+ Crear caso de negocio</button><button class="btn" data-c="crear-excel">⇪ Crear desde un Excel</button></div>'}</div></div>`;
+      el.innerHTML = `<div class="card-box"><div class="empty-box"><b>Esta iniciativa aún no tiene caso de negocio</b>${ro ? 'Cuando el equipo lo cree, aparecerá aquí.' : 'Arma la justificación: problema, objetivo, beneficios, costos y la decisión que se le pide al comité. Puedes empezar desde cero o subir el Excel que ya tienes.'}${ro ? '' : '<div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn primary" data-c="crear">+ Crear caso de negocio</button><button class="btn" data-c="crear-excel">⇪ Crear desde un Excel</button></div>'}</div></div>`;
       const b = $('[data-c=crear]', el); if (b) b.onclick = () => App.guard(async () => { await App.create('cases', nuevoCaso(pid)); App.render(); });
       const pre = preliminar(App.byId('projects', pid));
       if (pre && !ro) { const box = $('.empty-box', el); if (box) box.insertAdjacentHTML('beforeend', `<div class="cs-prelim" style="margin-top:12px;text-align:left">⤴ <span>Esta iniciativa ya tiene ${esc(pre.porque)}. <b>Arma un caso preliminar</b> con ese valor y complétalo después.</span><button class="btn primary sm" data-c="crear-ice">Armar caso desde el ICE</button></div>`); }
@@ -92,12 +92,14 @@
       const k = (v, l, cls, t) => `<span${t ? ` title="${esc(t)}"` : ''}><b class="${cls || ''}">${v}</b>${l}</span>`;
       const dos = App.Avance ? App.Avance.dosAnios(f) : 0, inc = dos > 0 ? App.ICE.BANDAS_INCOME.find(([lim]) => dos <= lim)[1] : null;
       const sinInv = !(f.totalInversion > 0);
-      return (sinInv ? k('—', 'VPN y TIR: aparecen al poner la inversión', '', 'Sin inversión el VPN y la TIR saldrían inflados') :
+      const pr = App.byId('projects', pid);
+      return k(esc(App.moneyShort(dos, mon)), `valor a dos años${inc ? ` → Income ${inc}` : ''}`, '', 'Cifra oficial de la iniciativa: beneficios de los dos primeros años con beneficios. Es la base del Income del ICE') +
+        (sinInv ? k('—', 'VPN y TIR: aparecen al poner la inversión', '', 'Sin inversión el VPN y la TIR saldrían inflados') :
         k(esc(App.moneyShort(f.vpn, mon)), 'VPN', f.vpn == null ? '' : f.vpn >= 0 ? 'good' : 'bad', `Tasa de descuento ${App.num(c.tasa, 2) || 0} %`) +
         k(esc(App.pct(f.tir)), 'TIR', f.tir == null ? '' : f.tir * 100 >= (c.tasa || 0) ? 'good' : 'bad', f.tirMultiple ? 'El flujo cambia de signo varias veces: puede haber otra TIR' : '') +
         k(f.payback == null ? '—' : esc(App.num(f.payback, 1)) + ' años', 'payback', '', 'Años para recuperar la inversión') +
         k(esc(App.pct(f.roi)), 'ROI', f.roi == null ? '' : f.roi >= 0 ? 'good' : 'bad')) +
-        k(esc(App.moneyShort(dos, mon)), `valor a dos años${inc ? ` → Income ${inc}` : ''}`, '', 'Beneficios de los dos primeros años con beneficios: la base del Income del ICE');
+        (pr && App.ICE.avisoIncome ? App.ICE.avisoIncome(pr, ro) : '');
     };
     const sensHTML = rows => {
       const base = Object.assign({}, c, { flujos: rows });
@@ -177,7 +179,9 @@
     const capVal = (mes, cat) => { const e = cap.find(x => x.mes === mes && x.categoria === cat); return e ? Number(e.valor) || 0 : 0; };
     const setCap = (mes, cat, v) => { const i = cap.findIndex(x => x.mes === mes && x.categoria === cat); if (!v) { if (i >= 0) cap.splice(i, 1); } else if (i >= 0) cap[i].valor = v; else cap.push({ mes, categoria: cat, valor: v }); };
     const esperadoAnual = (cat, year) => { const t = year - y0; if (t < 0 || t >= n()) return 0; return fl.filter(f => f.tipo === 'beneficio' && App.catOf(f) === cat).reduce((a, f) => a + (Number((f.valores || [])[t]) || 0), 0); };
-    const dec = escala === 1 ? 0 : 2, show = v => (v ? App.num(v / escala, dec) : ''), fmt = v => App.num(v / escala, dec);
+    // Doce meses no caben en pesos sin cortar cifras: esta tabla va en millones (o en miles, si así está la hoja)
+    const escCap = escala === 1 ? 1e6 : escala;
+    const dec = 2, show = v => (v ? App.num(v / escCap, dec) : ''), fmt = v => App.num(v / escCap, dec);
     const meses = () => Array.from({ length: 12 }, (_, i) => `${anioCap}-${String(i + 1).padStart(2, '0')}`);
     const capCats = () => {
       const ben = fl.filter(f => f.tipo === 'beneficio').map(App.catOf), con = cap.filter(x => x.mes.startsWith(anioCap + '-')).map(x => x.categoria);
@@ -209,10 +213,10 @@
       const futuro = m => anioCap > hoyY || (anioCap === hoyY && Number(m.slice(5)) > hoyM);
       box.innerHTML = `<div class="hoja-top"><span class="sp"></span>
           <div class="seg">${Array.from({ length: n() }, (_, t) => y0 + t).map(y => `<button data-capy="${y}" class="${y === anioCap ? 'on' : ''}">${y}</button>`).join('')}</div></div>
-        <div class="help" style="margin:4px 0 10px">Registra cada mes lo que el proyecto ya generó, por tipo de valor. El tablero lo compara con lo que el caso proyecta a la fecha. Cifras en ${escala === 1 ? '' : escala === 1e3 ? 'miles de ' : 'millones de '}${esc(mon)}; acepta 1,2M, 300k y =fórmulas.</div>
+        <div class="help" style="margin:4px 0 10px">Registra cada mes lo que la iniciativa ya generó, por tipo de valor. El tablero lo compara con lo que el caso proyecta a la fecha. Cifras en <b>${escCap === 1e3 ? 'miles' : 'millones'} de ${esc(mon)}</b>: escribe 10 para ${escCap === 1e3 ? '10 mil' : '10 millones'}. El valor exacto se ve al pasar el mouse.</div>
         <div id="capSum">${sumHTML(r)}</div>
         ${r.cats.length ? `<div class="flujo-wrap"><table class="cap-tbl"><thead><tr><th>Tipo de valor</th>${r.ms.map(m => `<th class="${futuro(m) ? 'fut' : ''}">${App.d.MES3[Number(m.slice(5)) - 1]}</th>`).join('')}<th>Total</th><th>Esperado año</th></tr></thead><tbody>
-          ${r.cats.map(k => `<tr><td><span class="cat-dot cat-${k}"></span>${esc(App.catLabel(k))}</td>${r.ms.map(m => `<td class="${futuro(m) ? 'fut' : ''}"><input data-capm="${m}" data-capc="${k}" value="${esc(show(capVal(m, k)))}" inputmode="decimal" ${dis} placeholder="·"></td>`).join('')}<td class="n" data-capt="${k}"><b>${esc(fmt(r.ms.reduce((a, m) => a + capVal(m, k), 0)))}</b></td><td class="n faint">${esc(fmt(esperadoAnual(k, anioCap)))}</td></tr>`).join('')}
+          ${r.cats.map(k => `<tr><td><span class="cat-dot cat-${k}"></span>${esc(App.catLabel(k))}</td>${r.ms.map(m => `<td class="${futuro(m) ? 'fut' : ''}"><input data-capm="${m}" data-capc="${k}" title="${capVal(m, k) ? esc(App.money(capVal(m, k), mon)) : ''}" value="${esc(show(capVal(m, k)))}" inputmode="decimal" ${dis} placeholder="·"></td>`).join('')}<td class="n" data-capt="${k}"><b>${esc(fmt(r.ms.reduce((a, m) => a + capVal(m, k), 0)))}</b></td><td class="n faint">${esc(fmt(esperadoAnual(k, anioCap)))}</td></tr>`).join('')}
           <tr class="tot"><td>Captado</td>${r.totMes.map((v, i) => `<td class="n" data-captm="${i}">${esc(fmt(v))}</td>`).join('')}<td class="n" data-capt="_tot"><b>${esc(fmt(r.captado))}</b></td><td></td></tr>
           <tr class="tot"><td>Esperado</td>${r.ms.map(() => `<td class="n faint">${esc(fmt(r.espMes))}</td>`).join('')}<td class="n faint">${esc(fmt(r.espMes * 12))}</td><td></td></tr>
         </tbody></table></div>` : '<div class="faint" style="font-size:12.5px">Agrega beneficios al flujo para registrar lo captado.</div>'}
@@ -223,9 +227,9 @@
     $('#cCapt', el).addEventListener('change', e => {
       const t = e.target;
       if (t.dataset.capm) {
-        const v = App.Hoja.parseCell(t.value, 0, escala);
-        if (v == null) { App.toast(`No entendí «${t.value}». Escribe un número, 1,2M, 300k o =fórmula`, true); t.value = show(capVal(t.dataset.capm, t.dataset.capc)); return; }
-        setCap(t.dataset.capm, t.dataset.capc, v); t.value = show(v); saveCap(); updateCap();
+        const v = App.Hoja.parseCell(t.value, 0, escCap);
+        if (v == null) { App.toast(`No entendí «${t.value}». Escribe un número (en ${escCap === 1e3 ? 'miles' : 'millones'}) o =fórmula`, true); t.value = show(capVal(t.dataset.capm, t.dataset.capc)); return; }
+        setCap(t.dataset.capm, t.dataset.capc, v); t.value = show(v); t.title = v ? App.money(v, mon) : ''; saveCap(); updateCap();
       }
       if (t.dataset.capnew !== undefined && t.value) { extraCats.add(t.value); renderCap(); }
     });
@@ -281,7 +285,7 @@
         <div><b>+5% · −3%</b><span>sobre el valor del año anterior</span></div>
         <div><b>(1.200)</b><span>número negativo</span></div>
         <div><b>··· en cada fila</b><span>repetir, crecer un %, repartir un total</span></div></div>`, { width: 380, nofocus: true });
-      if (a === 'del') { if (!confirm('¿Eliminar el caso de negocio de este proyecto? Se pierde toda su información.')) return; App.guard(async () => { await App.remove('cases', c.id); App.render(); }); }
+      if (a === 'del') { if (!confirm('¿Eliminar el caso de negocio de esta iniciativa? Se pierde toda su información.')) return; App.guard(async () => { await App.remove('cases', c.id); App.render(); }); }
     };
   }
 
@@ -356,15 +360,17 @@
     const grupos = GRUPOS.map(g => ({ g, l: vis.filter(r => r.c && g.de(r.c.estado)) })).filter(z => z.l.length);
     const sin = vis.filter(r => !r.c);
     const COLS = 10;
+    // Las iniciativas sin caso no son casos: el grupo va cerrado, salvo que se busquen o se filtren a propósito
+    const sinAbierto = !!CF.sin || CF.estado === 'Sin caso' || !!CF.q;
     const cuerpo = grupos.map(z => `<tr class="cn-grp"><td colspan="${COLS}"><b>${z.g.t}</b> <small>${z.l.length} ${z.l.length === 1 ? 'caso' : 'casos'}</small></td></tr>${z.l.map(fila).join('')}`).join('')
-      + (sin.length ? `<tr class="cn-grp"><td colspan="${COLS}"><b>Sin caso de negocio</b> <small>${sin.length} ${sin.length === 1 ? 'iniciativa' : 'iniciativas'}</small></td></tr>${sin.map(fila).join('')}` : '');
+      + (sin.length ? `<tr class="cn-grp cn-tog" data-cn-sin="1" role="button" aria-expanded="${sinAbierto}"><td colspan="${COLS}"><b>${sinAbierto ? '▾' : '▸'} Sin caso de negocio</b> <small>${sin.length} ${sin.length === 1 ? 'iniciativa' : 'iniciativas'}${sinAbierto ? '' : ' · clic para verlas'}</small></td></tr>${sinAbierto ? sin.map(fila).join('') : ''}` : '');
     const sel = (attr, label, val, opts) => `<label class="cn-f"><span>${label}</span><select data-cf="${attr}">${opts.map(([v, t]) => `<option value="${esc(v)}" ${String(val) === String(v) ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>`;
     main.innerHTML = `<div class="pg-top"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Casos de negocio</h1>
         <div class="kl"><span><b>${casos.length}</b>${casos.length === 1 ? 'caso' : 'casos'}</span><span><b>${esc(m(vpnAprob))}</b>VPN total aprobado${nUSD ? ` · ${nUSD} en USD aparte` : ''}</span><span><b>${esc(m(capT))}</b>captado ${Y} de ${esc(m(proyT))}</span><span><b class="${nRev ? 'r' : ''}">${nRev}</b>por aprobar en comité</span></div>
         <span class="sp"></span><button class="btn ghost sm" data-cn="csv">Exportar a Excel</button>${App.canEdit() ? '<button class="btn primary sm" data-cn="nuevo">+ Nuevo caso</button>' : ''}</div>
       <div class="pf-bar"><label class="search"><span>⌕</span><input id="cnq" placeholder="Buscar caso o iniciativa…" value="${esc(CF.q)}"></label>
         ${sel('estado', 'Estado', CF.estado, [['', 'Todos'], ...ESTADOS.map(e => [e.name, e.name]), ['Sin caso', 'Sin caso']])}
-        ${sel('fase', 'Etapa', CF.fase, [['', 'Todas'], ...(window.Fases ? Fases.FASES.map(x => [String(x.id), x.fuera ? x.nombre : x.corto + ' · ' + x.nombre.split(' · ')[1].split(',')[0]]) : [])])}
+        ${sel('fase', 'Fase', CF.fase, [['', 'Todas'], ...(window.Fases ? Fases.FASES.map(x => [String(x.id), x.fuera ? x.nombre : x.corto + ' · ' + x.nombre.split(' · ')[1].split(',')[0]]) : [])])}
         ${sel('cat', 'Tipo de valor', CF.cat, [['', 'Todos'], ...App.CATS.map(x => [x.id, App.catLabel(x.id)])])}
         <span class="sp"></span><div class="seg"><button data-modo="cap" class="${cap ? 'on' : ''}" aria-pressed="${cap}">Captado vs. proyectado</button><button data-modo="proy" class="${cap ? '' : 'on'}" aria-pressed="${!cap}">Proyectado</button></div></div>
       <section class="t-card pf-tbl-card"><div class="pf-wrap"><table class="pf-tbl cn-tbl">
@@ -381,6 +387,7 @@
       const b = e.target.closest('[data-cn]');
       if (b && b.dataset.cn === 'csv') return csvCasos(vis.filter(r => r.c), Y);
       if (b && b.dataset.cn === 'nuevo') return nuevoCaso2(b);
+      if (e.target.closest('[data-cn-sin]')) { CF.sin = !CF.sin; return section(main, params); }
       const r = e.target.closest('tr[data-pid]'); if (r) App.go('#/casos/' + r.dataset.pid);
     };
   }
@@ -401,8 +408,8 @@
   }
   function detalle(main, pid) {
     const p = App.byId('projects', pid);
-    if (!p) { main.innerHTML = '<div class="empty-box"><b>Proyecto no encontrado</b><a href="#/casos" class="back">← Casos de negocio</a></div>'; return; }
-    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><a class="back" href="#/casos">← Casos de negocio</a><div><h1>${esc(App.projectName(p))}</h1><div class="sub">Caso de negocio</div></div><span class="sp"></span><a class="btn" href="#/proyectos/${pid}">Ver proyecto →</a></div><div id="cBox"></div>`;
+    if (!p) { main.innerHTML = '<div class="empty-box"><b>Iniciativa no encontrada</b><a href="#/casos" class="back">← Casos de negocio</a></div>'; return; }
+    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><a class="back" href="#/casos">← Casos de negocio</a><div><h1>${esc(App.projectName(p))}</h1><div class="sub">Caso de negocio</div></div><span class="sp"></span><a class="btn" href="#/proyectos/${pid}">Ver la iniciativa →</a></div><div id="cBox"></div>`;
     main.onclick = e => { if (e.target.closest('.burger')) App.toggleSide(); };
     editor($('#cBox', main), pid);
   }

@@ -104,7 +104,9 @@
       const p = x.p, pl = App.planOf(p.id), out = [];
       const st = estadoDe(x.pc);
       if (st && st[0] !== 'good') out.push({ sev: st[0] === 'critical' ? 3 : 2, txt: `Captura ${st[0] === 'critical' ? 'rezagada' : 'por debajo'}: ${Math.round(x.pc * 100)}% de lo esperado a la fecha`, href: `#/casos/${p.id}` });
-      if (pl.atrasadas) out.push({ sev: pl.atrasadas >= 3 ? 3 : 2, txt: `${pl.atrasadas} actividad${pl.atrasadas > 1 ? 'es' : ''} atrasada${pl.atrasadas > 1 ? 's' : ''} en el cronograma`, href: `#/cronograma/${p.id}` });
+      const masVieja = pl.atrasadas ? Math.max(...pl.acts.filter(a => a.fin && a.fin < hoy && (a.avance || 0) < 100).map(a => App.d.diff(a.fin, hoy))) : 0;
+      // Crítico: 5 o más actividades atrasadas, o alguna con más de 30 días de atraso. Lo demás es «Atención».
+      if (pl.atrasadas) out.push({ sev: pl.atrasadas >= 5 || masVieja > 30 ? 3 : 2, txt: `${pl.atrasadas} actividad${pl.atrasadas > 1 ? 'es' : ''} atrasada${pl.atrasadas > 1 ? 's' : ''} en el cronograma`, href: `#/cronograma/${p.id}` });
       let riesgoRC = 0;
       if (pl.acts.length && App.PlanHost) { try { riesgoRC = App.PlanHost.modelo(p.id).summary.rutaCriticaEnRiesgo || 0; } catch (e) { riesgoRC = 0; } }
       if (riesgoRC) out.push({ sev: 3, txt: `${riesgoRC} actividad${riesgoRC > 1 ? 'es' : ''} de la ruta crítica en riesgo`, href: `#/cronograma/${p.id}` });
@@ -177,9 +179,10 @@
       <div class="t-hero-l">
         <div class="t-eyb">Valor proyectado ${filas.length ? `${filas[0].y} – ${filas.at(-1).y}` : ''}</div>
         <div class="t-big">${esc(m(tot))}</div>
+        <div class="t-cob"><b>${d.proyectos.filter(x => x.fuente).length} de ${d.proyectos.length}</b> iniciativas con cifras${d.proyectos.some(x => !x.fuente) ? ` · <a class="t-lnk" href="#/casos">${d.proyectos.filter(x => !x.fuente).length} aún sin caso →</a>` : ''}</div>
         <p class="t-frase">${frase}</p>
         <div class="t-grupos">${sumG.slice(0, 7).map(({ g, v }) => `<div class="t-gr"><i style="background:${g.color}"></i><span title="${esc(g.label)}">${esc(g.label)}</span><b>${esc(m(v))}</b><small>${tot ? Math.round(v / tot * 100) : 0} %</small></div>`).join('')}${sumG.length > 7 ? `<div class="t-gr t-mas">y ${sumG.length - 7} más</div>` : ''}</div>
-        <div class="t-aviso">Sale de los casos de negocio (las iniciativas sin caso usan su Income). La captura real se mide abajo.${S.nota ? ' ' + esc(S.nota) : ''}</div>
+        <div class="t-aviso">Suma solo las iniciativas con caso de negocio. Las que no tienen caso todavía no aportan a esta cifra. La captura real se mide abajo.${S.nota ? ' ' + esc(S.nota) : ''}</div>
       </div>
       <div class="t-hero-r">
         <div class="t-lgd">${grupos.slice(0, 7).map(g => `<span><i style="background:${g.color}"></i>${esc(g.label.length > 34 ? g.label.slice(0, 33) + '…' : g.label)}</span>`).join('')}</div>
@@ -275,6 +278,29 @@
       <div class="t-pie t-pie-row"><span class="t-tag">${venc ? `${venc} compromiso${venc === 1 ? '' : 's'} vencido${venc === 1 ? '' : 's'}` : 'Sin compromisos vencidos'}</span><a class="t-lnk" href="#/agenda">Ver el comité de valor →</a></div></section>`;
   }
 
+  // Titulares: lo que un gerente pregunta primero
+  function titulares(d, sg) {
+    const pc = d.esperadoY > 0 ? d.captadoY / d.esperadoY : null, pv = d.captadoY > 0 ? d.verifY / d.captadoY : null;
+    const rev = App.S.cases.filter(c => c.estado === 'En revisión').length;
+    const prox = App.S.sessions.filter(x => x.fecha >= d.hoy && x.estado !== 'Cancelada').sort((a, b) => a.fecha.localeCompare(b.fecha))[0];
+    const conAl = sg.filter(z => z.malo && !z.pausado), crit = conAl.filter(z => z.max >= 3).length;
+    const ec = App.estadoCol(), activa = p => { const fa = window.Fases && ec ? Fases.de((p.props || {})[ec.id]) : null; return !fa || !fa.fuera; };
+    const sinDatos = d.proyectos.filter(x => activa(x.p) && !x.caso && !App.actsOf(x.p.id).length).length;
+    const tono = v => (v == null ? '' : v >= 0.9 ? 'ok' : v >= 0.7 ? 'warn' : 'crit');
+    const t = (href, lbl, val, sub, cls) => `<a class="t-tit ${cls || ''}" href="${href}"><span class="l">${lbl}</span><b>${val}</b><small>${sub}</small></a>`;
+    return `<div class="t-tits">
+      ${t('#/casos', `Captado ${d.Y}`, esc(m(d.captadoY)), pc == null ? `de ${esc(m(d.proyectadoY))} proyectados para el año` : `<em>${Math.round(pc * 100)} %</em> de lo esperado a hoy (${esc(m(d.esperadoY))})`, tono(pc))}
+      ${t('#/casos', 'Verificado', pv == null ? '—' : Math.round(pv * 100) + ' %', pv == null ? 'aún no hay captura registrada' : `${esc(m(d.verifY))} de ${esc(m(d.captadoY))} captados; el resto es preliminar`, pv == null ? '' : pv >= 0.8 ? 'ok' : pv >= 0.4 ? 'warn' : 'crit')}
+      ${t('#/agenda', 'Casos por aprobar', String(rev), prox ? `próximo comité: ${esc(App.d.fmtShort(prox.fecha))}` : 'no hay comité programado', '')}
+      ${t('#/proyectos', 'Con alertas', String(conAl.length), `${crit} crítica${crit === 1 ? '' : 's'} · ${sinDatos} sin datos para medir`, conAl.length ? (crit ? 'crit' : 'warn') : 'ok')}</div>`;
+  }
+  // A5 · lo desactualizado, a la vista de todos
+  function desactualizado() {
+    const it = App.Mejoras && App.Mejoras.desactualizadosItems ? App.Mejoras.desactualizadosItems() : [];
+    return `<div class="t-sub">Qué está desactualizado <small>se calcula solo</small></div><section class="t-card">${it.length ? it.slice(0, 5).map(x => `<a class="t-row" href="${x.href}"><span class="t-sev des">↻ Actualizar</span><span class="t-tx"><b>${esc(x.t)}</b><small>${esc(x.s)}</small></span><span class="t-ch">›</span></a>`).join('') : '<div class="t-vacio">Nada pendiente de actualizar.</div>'}
+      ${it.length > 5 ? `<div class="t-pie t-pie-row"><span class="t-tag">y ${it.length - 5} más</span></div>` : ''}</section>`;
+  }
+
   /* ---------- sección ---------- */
   function render(main) {
     const d = datos({ anio: F.anio, estado: '', tipo: '', alcance: 'todos' });
@@ -284,13 +310,14 @@
     main.innerHTML = `<div class="pg-top"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Tablero</h1><span class="pg-meta">Datos al ${esc(App.d.fmt(d.hoy))} · ${d.filas.length} iniciativa${d.filas.length === 1 ? '' : 's'} · ${d.filas.filter(x => x.caso).length} con caso de negocio · pesos colombianos</span><span class="sp"></span>
         <label class="pg-sel">Año de captura <select data-f="anio">${d.anios.map(y => `<option ${y === d.Y ? 'selected' : ''}>${y}</option>`).join('')}</select></label>
         ${App.canEdit() ? '<button class="btn ghost sm" data-f-aj title="Ajustes del tablero" aria-label="Ajustes del tablero"><svg aria-hidden="true"><use href="#i-ajustes"/></svg></button>' : ''}</div>
+      ${titulares(d, sg)}
       ${paso(1, 'Valor a crear', 'lo que proyectan los casos de negocio, año por año', seg('agrupar', F.agrupar || 'tipo', [['tipo', 'Por tipo de valor'], ['okr', 'Por OKR'], ['etapa', 'Por fase']]))}
       ${valorACrear(d)}
       ${paso(2, `Captura por iniciativa · ${d.Y}`, 'lo capturado frente a lo que debía llevar a la fecha', seg('cpi', F.cpi === 'brecha' ? 'brecha' : 'valor', [['valor', 'Mayor valor'], ['brecha', 'Mayor brecha']]))}
       ${capturaIniciativas(d)}
-      ${paso(3, `Proyectado vs. capturado · ${d.Y}`, 'acumulado mes a mes de las iniciativas en realización')}
+      ${paso(3, `Proyectado vs. capturado · ${d.Y}`, 'acumulado mes a mes')}
       <section class="t-card t-pad"><div class="t-lgd"><span><i class="t-sw-l proy"></i>Proyectado</span><span><i class="t-sw-l cap"></i>Capturado</span><span><i class="t-sw-l ver"></i>Verificado</span></div><svg class="t-viz" id="tCurva" height="210" role="img" aria-label="Proyectado contra capturado, acumulado"></svg></section>
-      <div class="t-dos"><div>${paso(4, 'Qué requiere atención', 'lo más grave primero')}${atencion2(sg)}</div><div>${paso(5, 'Calendario', 'comités e hitos de los próximos 30 días')}${calendario(d)}</div></div>`;
+      <div class="t-dos"><div>${paso(4, 'Qué requiere atención', 'lo más grave primero')}${atencion2(sg)}${desactualizado()}</div><div>${paso(5, 'Calendario', 'comités e hitos de los próximos 30 días')}${calendario(d)}</div></div>`;
     const draw = () => { const a = $('#tAnios', main), c = $('#tCurva', main); if (a) dibujarAnios(a, d); if (c) dibujarCurva(c, d); };
     draw();
     main.onclick = e => {

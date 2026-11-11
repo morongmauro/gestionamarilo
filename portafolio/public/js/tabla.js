@@ -96,7 +96,7 @@
     return `<div class="c-in">${esc(textOf(c, v))}</div>`;
   }
   function cellHTML(c, r) {
-    return renderValue(c, (r.props || {})[c.id]) + (c.type === 'title' ? `<button class="open" data-act="open" data-id="${r.id}" title="Abrir proyecto">⤢ Abrir</button>` : '');
+    return renderValue(c, (r.props || {})[c.id]) + (c.type === 'title' ? `<button class="open" data-act="open" data-id="${r.id}" title="Abrir la iniciativa">⤢ Abrir</button>` : '');
   }
   // Columnas calculadas (solo lectura)
   const CALC = [
@@ -120,7 +120,7 @@
     root = main;
     const ro = !App.canEdit();
     main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><div><h1>Portafolio</h1><div class="sub">${App.S.projects.length} ${App.S.projects.length === 1 ? 'iniciativa' : 'iniciativas'} · aquí se editan las columnas, como en Notion</div></div><span class="sp"></span>
-        <div class="seg"><button data-view="resumen">Resumen</button><button data-view="tabla" class="${P.view === 'tabla' ? 'on' : ''}">Tabla completa</button><button data-view="tablero" class="${P.view === 'tablero' ? 'on' : ''}">Tablero</button></div></div>
+        <div class="seg"><button data-view="resumen">Resumen</button><button data-view="tabla" class="${P.view === 'tabla' ? 'on' : ''}">Tabla completa</button><button data-view="tablero" class="${P.view === 'tablero' ? 'on' : ''}" title="Tarjetas agrupadas por fase">Por fase</button></div></div>
       <div class="toolbar">
         <label class="search"><span>⌕</span><input id="tq" placeholder="Buscar en todas las columnas…" value="${esc(q)}"></label>
         <button class="tb ${P.filters.length ? 'on' : ''}" data-act="filtro">⚲ Filtrar</button>
@@ -129,7 +129,7 @@
         <button class="tb ${App.S.columns.some(c => c.hidden) || !P.calc ? 'on' : ''}" data-act="cols">▥ Columnas</button>
         <span class="sp"></span>
         <button class="tb" data-act="csv" title="Descargar como CSV (se abre en Excel)">⇩ CSV</button>
-        ${ro ? '' : '<button class="tb primary" data-act="new">+ Nuevo proyecto</button>'}
+        ${ro ? '' : '<button class="tb primary" data-act="new">+ Nueva iniciativa</button>'}
       </div>
       <div class="chips" id="tchips"></div>
       <div id="tview"></div>`;
@@ -173,8 +173,8 @@
       const head = g.key === null ? '' : `<tr class="grp"><td colspan="${span}" data-act="toggle" data-key="${esc(g.key)}"><div class="g-in"><span class="ar">${closed ? '▶' : '▼'}</span>${g.key === '' ? `<span class="pill cl-gris">Sin ${esc(gc.name.toLowerCase())}</span>` : (gc.type === 'select' || gc.type === 'multi') ? `<span class="pill cl-${App.optColor(gc, g.key)}">${esc(g.key)}</span>` : gc.type === 'people' ? `<span class="pill ppl cl-${App.optColor(gc, g.key)}"><span class="av">${esc(App.initials(g.key))}</span>${esc(g.key)}</span>` : `<span>${esc(g.key)}</span>`}<span class="n">${g.rows.length}</span></div></td></tr>`;
       return `<tbody>${head}${closed ? '' : g.rows.map(trRow).join('') + newBtn(g)}</tbody>`;
     }).join('');
-    const empty = !App.S.projects.length ? `<tbody><tr><td colspan="${span}"><div class="empty-state"><b>Aún no hay proyectos</b>${App.canEdit() ? 'Haz clic en «+ Nuevo proyecto». Cada celda se edita con un clic, como en Notion.' : 'Cuando el equipo cree proyectos, aparecerán aquí.'}</div></td></tr>${newBtn({ key: null })}</tbody>` : '';
-    const tfoot = `<tfoot><tr><td colspan="${span}">${rows.length} ${rows.length === 1 ? 'proyecto' : 'proyectos'}${rows.length !== App.S.projects.length ? ` de ${App.S.projects.length}` : ''}</td></tr></tfoot>`;
+    const empty = !App.S.projects.length ? `<tbody><tr><td colspan="${span}"><div class="empty-state"><b>Aún no hay iniciativas</b>${App.canEdit() ? 'Haz clic en «+ Nueva iniciativa». Cada celda se edita con un clic, como en Notion.' : 'Cuando el equipo cree proyectos, aparecerán aquí.'}</div></td></tr>${newBtn({ key: null })}</tbody>` : '';
+    const tfoot = `<tfoot><tr><td colspan="${span}">${rows.length} ${rows.length === 1 ? 'iniciativa' : 'iniciativas'}${rows.length !== App.S.projects.length ? ` de ${App.S.projects.length}` : ''}</td></tr></tfoot>`;
     $('#tview', root).innerHTML = `<div class="tbl-wrap"><table class="tbl" style="width:${total}px">${colgroup}${thead}${empty || bodies}${tfoot}</table></div>`;
   }
   function boardColumn() { const c = col(P.boardCol); if (c && c.type === 'select') return c; return App.estadoCol() || null; }
@@ -329,10 +329,10 @@
     $('[data-p=ok]', p).onclick = ok;
   }
   function openRowMenu(anchor, rowId) {
-    App.menu(anchor, [{ id: 'open', label: '⤢ Abrir proyecto' }, { id: 'dup', label: '⧉ Duplicar' }, '-', { id: 'del', label: '🗑 Eliminar', danger: true }], async a => {
+    App.menu(anchor, [{ id: 'open', label: '⤢ Abrir la iniciativa' }, { id: 'dup', label: '⧉ Duplicar' }, '-', { id: 'del', label: '🗑 Eliminar', danger: true }], async a => {
       const r = App.byId('projects', rowId);
       if (a === 'open') App.go('#/proyectos/' + rowId);
-      if (a === 'dup') App.guard(async () => { const props = JSON.parse(JSON.stringify(r.props || {})); const t = App.titleCol().id; props[t] = (props[t] || 'Proyecto') + ' (copia)'; await App.create('projects', { props }); App.render(); });
+      if (a === 'dup') App.guard(async () => { const props = JSON.parse(JSON.stringify(r.props || {})); const t = App.titleCol().id; props[t] = (props[t] || 'Iniciativa') + ' (copia)'; await App.create('projects', { props }); App.render(); });
       if (a === 'del') App.Proyecto.confirmDelete(rowId);
     });
   }
@@ -380,7 +380,7 @@
     const lines = [head.map(cell).join(';'), ...rows.map(r => { const pl = App.planOf(r.id), cs = App.caseOf(r.id), f = cs ? Finanzas.calc(cs) : null;
       return [...cols.map(c => { const v = (r.props || {})[c.id]; return Array.isArray(v) ? v.join(', ') : c.type === 'check' ? (v ? 'Sí' : 'No') : v; }), pl.ini || '', pl.fin || '', pl.acts.length ? pl.avance : '', cs ? cs.estado || 'Borrador' : '', f && f.vpn != null ? Math.round(f.vpn) : ''].map(cell).join(';'); })];
     const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `proyectos-${App.d.today()}.csv`; a.click(); URL.revokeObjectURL(a.href);
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `iniciativas-${App.d.today()}.csv`; a.click(); URL.revokeObjectURL(a.href);
   }
   async function nuevo(gcol, gkey) {
     const props = {};
