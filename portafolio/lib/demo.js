@@ -55,7 +55,7 @@ async function cargar(store) {
     const fin0 = P.inicio == null ? null : habil(dias(hoy, P.inicio));
     await store.insert('projects', { id: pid, position: k, ...meta, miembros: P.plan.length ? MIEMBROS : [],
       fecha_meta: fin0 ? iso(masHabiles(fin0, P.atraso ? 60 : 90)) : null,
-      props: { proyecto: P.nombre, estado: P.estado, habilitadores: P.hab, realizadores: P.rea, income: P.income, okrs: P.okr, tipo_valor: P.tipo, impacto: P.ice[0], confianza: P.ice[1], facilidad: P.ice[2],
+      props: { proyecto: P.nombre, estado: require('../public/js/fases').mapear(P.estado), habilitadores: P.hab, realizadores: P.rea, income: P.income, okrs: P.okr, tipo_valor: P.tipo, impacto: P.ice[0], confianza: P.ice[1], facilidad: P.ice[2],
         trazabilidad: `${f(-1).slice(8)}/${f(-1).slice(5, 7)}: Avance revisado en comité.\n${f(-15).slice(8)}/${f(-15).slice(5, 7)}: Se ajustó el alcance con el negocio.` } });
     // Plan de trabajo: capítulos en serie, cada actividad depende de la anterior
     let pos = 0, prev = null, ini = fin0;

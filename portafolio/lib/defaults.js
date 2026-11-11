@@ -18,10 +18,7 @@ function iceOficinaColumns() {
 }
 function projectColumns() {
   return [
-    { id: 'estado', name: 'Estado', type: 'select', width: 150, options: [
-      { name: 'L0 - Idea', color: 'gris' }, { name: 'L1 - Planeación', color: 'verde' },
-      { name: 'L2 - Ejecución', color: 'naranja' }, { name: 'L3 - Escalamiento', color: 'azul' },
-      { name: 'L4 - Cerrado', color: 'morado' }, { name: 'Pausado', color: 'rojo' }] },
+    { id: 'estado', name: 'Estado', type: 'select', width: 230, options: require('../public/js/fases').opciones() },
     { id: 'proyecto', name: 'Proyecto', type: 'title', width: 300 },
     { id: 'trazabilidad', name: 'Trazabilidad', type: 'text', width: 380, log: true },
     { id: 'habilitadores', name: 'Habilitadores', type: 'people', width: 200, options: [] },

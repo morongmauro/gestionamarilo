@@ -201,3 +201,30 @@ a.t-cpi:hover{background:var(--hover)}
   .pf-lente h3 small{display:none}
 }
 .t-cpi .n{white-space:nowrap}
+
+/* ---------- personas con su color ---------- */
+.pill.ppl.cl-azul .av{background:var(--c-azul-i)}.pill.ppl.cl-verde .av{background:var(--c-verde-i)}.pill.ppl.cl-naranja .av{background:var(--c-naranja-i)}
+.pill.ppl.cl-morado .av{background:var(--c-morado-i)}.pill.ppl.cl-rosa .av{background:var(--c-rosa-i)}.pill.ppl.cl-amarillo .av{background:var(--c-amarillo-i)}.pill.ppl.cl-cafe .av{background:var(--c-cafe-i)}
+.pf-per{display:inline-flex;align-items:center;gap:4px;margin-right:8px;white-space:nowrap}
+.pf-per i{width:8px;height:8px;border-radius:50%;flex:none}
+.pf-per i.cl-azul{background:var(--c-azul-i)}.pf-per i.cl-verde{background:var(--c-verde-i)}.pf-per i.cl-naranja{background:var(--c-naranja-i)}.pf-per i.cl-morado{background:var(--c-morado-i)}
+.pf-per i.cl-rosa{background:var(--c-rosa-i)}.pf-per i.cl-amarillo{background:var(--c-amarillo-i)}.pf-per i.cl-cafe{background:var(--c-cafe-i)}
+
+/* ---------- OKR como etiquetas que filtran ---------- */
+.pf-okrbs{display:flex;gap:4px;align-items:center;max-width:220px;flex-wrap:nowrap;overflow:hidden}
+.pf-okrb{font:inherit;font-size:var(--fs-2xs);font-weight:700;color:var(--ink);background:var(--sunk);border:1px solid var(--line-2);border-radius:var(--r-pill);padding:2px 8px;cursor:pointer;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pf-okrb::before{content:"◎ ";color:var(--muted)}
+.pf-okrb:hover{border-color:var(--ink)}
+.pf-okrb.on{background:var(--amarillo-soft,color-mix(in srgb,var(--amarillo) 22%,var(--card)));border-color:color-mix(in srgb,var(--amarillo) 70%,transparent)}
+
+/* ---------- mapa ICE ---------- */
+.pf-mapa .pf-q{font-size:11px;font-weight:800;letter-spacing:.06em;fill:var(--ink);opacity:.55}
+.pf-mapa .pf-q2{font-size:11px;fill:var(--muted)}
+.pf-mapa .pf-umbral{stroke:var(--ink);stroke-opacity:.3;stroke-dasharray:5 4}
+.pf-mapa .pf-lbl{font-size:11.5px;font-weight:600;fill:var(--ink)}
+.pf-mapa circle{cursor:pointer}.pf-mapa a:hover circle{stroke:var(--ink)}
+.pf-okrb{max-width:122px}
+.pf-crono .faint{display:inline-block;max-width:118px;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;white-space:nowrap}
+.pf-nm small{display:flex;align-items:center;gap:0;overflow:hidden}
+.pf-per{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.pf-nm small .pf-etapa{flex:none}

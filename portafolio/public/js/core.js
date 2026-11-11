@@ -50,7 +50,10 @@ App.byId = (coll, id) => App.S[coll].find(x => x.id === id) || null;
 App.titleCol = () => App.S.columns.find(c => c.type === 'title') || App.S.columns[0] || { id: 'proyecto' };
 App.projectName = p => (p && (p.props || {})[App.titleCol().id]) || 'Proyecto sin nombre';
 App.estadoCol = () => App.S.columns.find(c => c.type === 'select' && /estado/i.test(c.name)) || App.S.columns.find(c => c.type === 'select');
-App.optColor = (c, name) => ((c && c.options || []).find(o => o.name === name) || {}).color || 'gris';
+// Cada persona con su color (el mismo en toda la app), para distinguir habilitadores y realizadores
+const COLORES_PERSONA = ['azul', 'verde', 'naranja', 'morado', 'rosa', 'amarillo', 'cafe'];
+App.colorPersona = n => { const k = String(n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); let h = 0; for (const ch of k) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return COLORES_PERSONA[h % COLORES_PERSONA.length]; };
+App.optColor = (c, name) => (c && c.type === 'people' ? App.colorPersona(name) : ((c && c.options || []).find(o => o.name === name) || {}).color || 'gris');
 App.projectColor = p => { const c = App.estadoCol(); return c ? App.optColor(c, (p.props || {})[c.id]) : 'gris'; };
 App.caseOf = pid => App.S.cases.find(c => c.project_id === pid) || null;
 App.actsOf = pid => App.S.activities.filter(a => a.project_id === pid).sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
@@ -269,6 +272,9 @@ App.iceOf = p => { const v = (p.props || {}); const i = Number(v.impacto), c = N
 // Qué decir cuando una iniciativa no tiene cronograma: depende de su etapa, no es un descuido
 App.sinPlan = p => {
   const e = String(((p && p.props) || {})[(App.estadoCol() || {}).id] || '');
+  const fase = window.Fases ? Fases.clasificar(e) : null;
+  if (fase === 2) return { corto: 'Cronograma pendiente', largo: 'En Fase 2 (ejecución y piloto) sin cronograma registrado.', aplica: true };
+  if (fase === 3) return { corto: 'En escalamiento, sin cronograma', largo: 'En Fase 3: se gestiona por la captura de valor, no por cronograma.', aplica: false };
   if (/cancel/i.test(e)) return { corto: 'Cancelada', largo: 'Iniciativa cancelada: no aplica cronograma.', aplica: false };
   if (/standby|paus|suspend|detenid/i.test(e)) return { corto: 'En pausa', largo: 'En pausa: el cronograma se retoma cuando se reactive.', aplica: false };
   if (/realiz|seguim|operac|produc|piloto|escal|cerrad|implement/i.test(e)) return { corto: 'En operación, sin cronograma', largo: 'Ya está en operación o seguimiento: se gestiona por resultados, no por cronograma.', aplica: false };

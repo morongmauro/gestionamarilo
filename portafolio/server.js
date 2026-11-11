@@ -11,6 +11,7 @@ const crypto = require('crypto');
 const auth = require('./lib/auth');
 const { cleanDoc, cleanColumns, cleanDireccion, cleanPropuesta, ValidationError } = require('./lib/validate');
 const defaults = require('./lib/defaults');
+const Fases = require('./public/js/fases');
 const exporter = require('./lib/export');
 const lake = require('./lib/lake');
 let store = null; // se crea al arrancar (prepare)
@@ -269,7 +270,8 @@ route('POST', '/api/ideas', 'usuario', async (req, ctx) => {
   const cols = await projectColumns();
   const t = cols.find(c => c.type === 'title') || { id: 'proyecto' };
   const ec = cols.find(c => c.type === 'select' && /estado/i.test(c.name));
-  const idea = ec && (ec.options || []).find(o => /idea|propuesta/i.test(o.name));
+  // Una propuesta entra en Fase 1 (o en el estado «Idea» si la tabla aún usa los antiguos)
+  const idea = ec && ((ec.options || []).find(o => Fases.clasificar(o.name) === 1 && /^fase/i.test(o.name)) || (ec.options || []).find(o => /idea|propuesta/i.test(o.name)));
   const traz = cols.find(c => c.log) || cols.find(c => c.id === 'trazabilidad');
   const props = { [t.id]: d.titulo };
   if (ec && idea) props[ec.id] = idea.name;
@@ -600,6 +602,32 @@ async function prepare() {
     cols.forEach(c => { if (['impacto', 'confianza', 'facilidad'].includes(c.id) && !ps.some(p => (p.props || {})[c.id] != null && (p.props || {})[c.id] !== '')) c.hidden = true; });
     await store.setConfig('project_columns', cols);
     await store.setConfig('migr_ice_v2', true);
+  }
+  // Migración (una sola vez): de los estados L0…L4 a las 3 fases (y Cerrada, En pausa, Cancelada).
+  // Cada iniciativa deja en su trazabilidad de qué estado venía. Un estado que no se reconoce queda igual.
+  if (!(await store.getConfig('migr_fases_v1'))) {
+    const cols = await store.getConfig('project_columns');
+    const ec = cols.find(c => c.type === 'select' && /estado/i.test(c.name));
+    if (ec) {
+      const traz = cols.find(c => c.log) || cols.find(c => c.id === 'trazabilidad');
+      const sinMapear = (ec.options || []).filter(o => !Fases.de(o.name)).map(o => ({ name: o.name, color: o.color }));
+      ec.options = Fases.opciones().concat(sinMapear);
+      await store.setConfig('project_columns', cols);
+      let n = 0;
+      for (const p of await store.list('projects')) {
+        const antes = (p.props || {})[ec.id], despues = antes ? Fases.mapear(antes) : antes;
+        if (!antes || despues === antes) continue;
+        await store.update('projects', p.id, d => {
+          const props = { ...(d.props || {}), [ec.id]: despues };
+          if (traz) props[traz.id] = (`${fechaCorta()}: Estado ${antes} → ${despues} (organización en 3 fases)` + (props[traz.id] ? '\n' + props[traz.id] : '')).slice(0, 20000);
+          return { ...d, props };
+        });
+        n++;
+      }
+      if (n) await store.insert('historial', { id: newId(), created_at: now(), user_id: 'sistema', user_name: 'Sistema', accion: 'reorganizó', coll: 'projects', record_id: '', nombre: `${n} iniciativas pasaron a las 3 fases`, campos: [ec.id] });
+      if (n || sinMapear.length) console.log(`Fases: ${n} iniciativas actualizadas${sinMapear.length ? `; estados sin reconocer: ${sinMapear.map(o => o.name).join(', ')}` : ''}`);
+    }
+    await store.setConfig('migr_fases_v1', true);
   }
   if (!(await store.getConfig('seeded_committees'))) {
     if (!(await store.list('committees')).length) for (const c of defaults.committees()) await store.insert('committees', { ...c, id: newId(), created_at: now(), updated_at: now() });

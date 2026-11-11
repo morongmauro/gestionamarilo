@@ -89,7 +89,7 @@
           const n = App.ICE.leeOS(raw); if (n == null) continue;
           const nom = { 0.75: '0,75 · No alineado', 1: '1 · Alineado', 1.25: '1,25 · Prioridad del semestre' }[n]; ensureOpt(col, nom); props[col.id] = nom;
         }
-        else if (SELECT.has(id)) { const v = raw.replace(/\s+/g, ' ').trim(); ensureOpt(col, v); props[col.id] = v; }
+        else if (SELECT.has(id)) { let v = raw.replace(/\s+/g, ' ').trim(); if (id === 'estado') v = Fases.mapear(v); ensureOpt(col, v); props[col.id] = v; } // estados antiguos (L0…L4) → las 3 fases
         else props[col.id] = raw;
       }
       return props;

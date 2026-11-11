@@ -10,8 +10,8 @@
 'use strict';
 (function () {
   const { $, esc } = App;
-  const R = Object.assign({ okr: null, cat: '', etapa: '', q: '', alertas: false }, App.store.get('portafolio', {}));
-  const guardar = () => App.store.set('portafolio', { okr: R.okr, cat: R.cat, etapa: R.etapa, alertas: R.alertas });
+  const R = Object.assign({ okr: null, cat: '', etapa: '', q: '', alertas: false, modo: 'tabla' }, App.store.get('portafolio', {}));
+  const guardar = () => App.store.set('portafolio', { okr: R.okr, cat: R.cat, etapa: R.etapa, alertas: R.alertas, modo: R.modo });
   const m = v => App.moneyShort(v);
   const ORDEN_CAT = ['ingresos', 'ahorro', 'tiempo', 'eficiencia', 'riesgo', 'otro'];
 
@@ -79,7 +79,7 @@
   }
   function filaHTML(r) {
     const ec = App.estadoCol(), est = r.x.estado, ice = r.x.ice;
-    const okr = r.okrs.length ? `<span class="pf-okrs" title="${esc(r.okrs.join('\n'))}">${esc(r.okrs[0])}${r.okrs.length > 1 ? ` <em>+${r.okrs.length - 1}</em>` : ''}</span>` : '<span class="faint">—</span>';
+    const okr = r.okrs.length ? `<div class="pf-okrbs">${r.okrs.slice(0, 2).map(o => `<button class="pf-okrb ${R.okr === o ? 'on' : ''}" data-okr="${esc(o)}" title="Ver solo las iniciativas de este OKR">${esc(o)}</button>`).join('')}${r.okrs.length > 2 ? `<span class="pf-mas2" title="${esc(r.okrs.slice(2).join('\n'))}">+${r.okrs.length - 2}</span>` : ''}</div>` : '<span class="faint">—</span>';
     const todos = esc(r.cats.map(App.catLabel).join(', '));
     const tipos = r.cats.length ? `<span class="pf-tv" style="--c:var(--cat-${r.cats[0]})" title="${todos}">${esc(App.catLabel(r.cats[0]))}</span>${r.cats.length > 1 ? `<span class="pf-mas2" title="${todos}">+${r.cats.length - 1}</span>` : ''}` : '<span class="faint">—</span>';
     const av = r.pl.acts.length ? `<span class="pf-av"><span class="t"><i style="width:${r.pl.avance}%"></i>${r.esp != null ? `<u style="left:${r.esp}%" title="Esperado a hoy: ${r.esp} %"></u>` : ''}</span><b>${r.pl.avance} %</b></span>` : '<span class="faint">—</span>';
@@ -87,7 +87,7 @@
       : r.valor ? `<span class="pf-caso"><b>${esc(m(r.valor))}</b><small class="pf-inc" title="Sin caso de negocio: valor del Income"> Income</small></span>` : (App.canEdit() ? `<a class="t-lnk" href="#/proyectos/${r.p.id}/caso">+ Crear caso</a>` : '<span class="faint">Sin caso</span>');
     const al = r.al[0];
     return `<tr data-pid="${r.p.id}">
-      <td class="pf-nm"><a href="#/proyectos/${r.p.id}"><b>${esc(App.projectName(r.p))}</b></a><small>${est ? `<span class="pill pf-etapa cl-${App.optColor(ec, est)}" title="${esc(est)}">${esc(corto(est))}</span>` : ''}${esc(responsables(r.p))}</small></td>
+      <td class="pf-nm"><a href="#/proyectos/${r.p.id}"><b>${esc(App.projectName(r.p))}</b></a><small>${est ? `<span class="pill pf-etapa cl-${App.optColor(ec, est)}" title="${esc(est)}">${esc(corto(est))}</span>` : ''}${responsables(r.p).map(n => `<span class="pf-per" title="${esc(n)}"><i class="cl-${App.colorPersona(n)}"></i>${esc(n)}</span>`).join('')}</small></td>
       <td>${okr}</td><td><div class="pf-tvs">${tipos}</div></td>
       <td class="n">${ice == null ? '<span class="faint">—</span>' : `<b>${esc(App.num(ice, 1))}</b>`}</td>
       <td>${av}</td>
@@ -95,11 +95,11 @@
       <td>${caso}</td>
       <td>${al ? `<a class="pf-al ${al.sev >= 3 ? 'crit' : 'warn'}" href="${al.href}" title="${esc(r.al.map(o => '• ' + o.txt).join('\n'))}">${al.sev >= 3 ? '●' : '▲'} ${esc(cortoAlerta(al.txt))}${r.al.length > 1 ? ` <em>+${r.al.length - 1}</em>` : ''}</a>` : '<span class="pf-ok">✓ Al día</span>'}</td></tr>`;
   }
-  const corto = e => { const mm = /^(L\d)\b/i.exec(e); return mm ? mm[1].toUpperCase() : e; };
+  const corto = e => { const f = window.Fases && Fases.de(e); if (f) return f.corto; const mm = /^(L\d)\b/i.exec(e); return mm ? mm[1].toUpperCase() : e; };
   const cortoAlerta = t => t.replace(/ en el cronograma$/, '').replace(/^(\d+) actividad(?:es)? atrasadas?$/, (_, n) => n + (n === '1' ? ' atrasada' : ' atrasadas')).replace(/^1 compromiso de comité vencido$/, 'Compromiso vencido').replace(/^Captura (rezagada|por debajo): (\d+)%.*/, 'Captura al $2 %').replace(/^Termina (\d+) días? hábil(es)? después de la fecha meta$/, 'Meta +$1 días').replace(/ de comité vencidos?$/, ' vencido').replace(/^(\d+) actividad(es)? de la ruta crítica en riesgo$/, 'Ruta crítica en riesgo');
   function responsables(p) {
     const v = p.props || {}; const n = [].concat(v.habilitadores || [], v.realizadores || []).filter(Boolean);
-    return n.length ? n.slice(0, 2).join(' · ') : '';
+    return n.slice(0, 2);
   }
 
   function render(main) {
@@ -119,11 +119,12 @@
       <div class="pf-bar"><label class="search"><span>⌕</span><input id="pfq" placeholder="Buscar iniciativa u OKR…" value="${esc(R.q)}"></label>${chips}
         ${ec ? `<select class="pf-sel" data-pf-etapa aria-label="Etapa"><option value="">Etapa: todas</option>${(ec.options || []).map(o => `<option ${R.etapa === o.name ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}</select>` : ''}
         <button class="pf-tg ${R.alertas ? 'on' : ''}" data-pf="alertas" aria-pressed="${R.alertas}">Solo con alertas</button>
-        <span class="sp"></span><div class="seg"><button class="on" aria-pressed="true">Resumen</button><button data-vista-pf="tabla" title="Tabla tipo Notion: aquí se editan las columnas">Tabla completa</button><button data-vista-pf="tablero">Tablero</button></div></div>
-      <section class="t-card pf-tbl-card"><div class="pf-wrap"><table class="pf-tbl">
+        <span class="sp"></span><div class="seg"><button data-modo="tabla" class="${R.modo !== 'mapa' ? 'on' : ''}" aria-pressed="${R.modo !== 'mapa'}">Resumen</button><button data-modo="mapa" class="${R.modo === 'mapa' ? 'on' : ''}" aria-pressed="${R.modo === 'mapa'}" title="Iniciativas por ICE e Income, en cuadrantes">Mapa ICE</button><button data-vista-pf="tabla" title="Tabla tipo Notion: aquí se editan las columnas">Tabla completa</button><button data-vista-pf="tablero">Tablero</button></div></div>
+      ${R.modo === 'mapa' ? mapaHTML(vis) : `<section class="t-card pf-tbl-card"><div class="pf-wrap"><table class="pf-tbl">
         <thead><tr><th>Iniciativa <small>etapa · responsables</small></th><th>OKR</th><th>Tipo de valor</th><th class="n" title="Prioridad relativa">ICE ▾</th><th>Avance <small>real · ┃ esperado</small></th><th>Cronograma <small>${+d.hoy.slice(0, 4)} – ${+d.hoy.slice(0, 4) + 1}</small></th><th>Caso de negocio <small>valor proyectado</small></th><th>Alertas</th></tr></thead>
         <tbody>${vis.map(filaHTML).join('') || `<tr><td colspan="8"><div class="t-vacio">${rows.length ? 'Ninguna iniciativa cumple estos filtros.' : 'Aún no hay iniciativas.'}</div></td></tr>`}</tbody></table></div>
-        <div class="t-pie t-pie-row"><span class="t-tag">${vis.length} de ${rows.length} iniciativas · ordenadas por ICE${R.okr != null ? ` · OKR «${esc(R.okr || 'sin asignar')}»` : ''}</span><span class="t-tag">Clic en el cronograma o en el caso abre esa pestaña de la iniciativa</span></div></section>`;
+        <div class="t-pie t-pie-row"><span class="t-tag">${vis.length} de ${rows.length} iniciativas · ordenadas por ICE${R.okr != null ? ` · OKR «${esc(R.okr || 'sin asignar')}»` : ''}</span><span class="t-tag">Clic en el cronograma o en el caso abre esa pestaña de la iniciativa</span></div></section>`}`;
+    const svg = $('#pfMapa', main); if (svg) dibujarMapa(svg, vis);
     const q = $('#pfq', main);
     q.oninput = () => { R.q = q.value; const pos = q.selectionStart; render(main); const n = $('#pfq', main); n.focus(); n.setSelectionRange(pos, pos); };
     main.onclick = e => {
@@ -131,6 +132,7 @@
       const o = e.target.closest('[data-okr]'); if (o) { R.okr = R.okr === o.dataset.okr ? null : o.dataset.okr; guardar(); return render(main); }
       const c = e.target.closest('[data-cat]'); if (c) { R.cat = R.cat === c.dataset.cat ? '' : c.dataset.cat; guardar(); return render(main); }
       const qq = e.target.closest('[data-quitar]'); if (qq) { if (qq.dataset.quitar === 'okr') R.okr = null; else R[qq.dataset.quitar] = ''; guardar(); return render(main); }
+      const md = e.target.closest('[data-modo]'); if (md) { R.modo = md.dataset.modo; guardar(); return render(main); }
       const v = e.target.closest('[data-vista-pf]'); if (v) return App.Tabla.setView(v.dataset.vistaPf);
       const b = e.target.closest('[data-pf]'); if (!b) return;
       if (b.dataset.pf === 'alertas') { R.alertas = !R.alertas; guardar(); return render(main); }
@@ -138,6 +140,53 @@
       if (b.dataset.pf === 'nuevo') App.guard(async () => { const p = await App.create('projects', { props: {} }); App.go('#/proyectos/' + p.id); });
     };
     main.onchange = e => { if (e.target.hasAttribute('data-pf-etapa')) { R.etapa = e.target.value; guardar(); render(main); } };
+  }
+
+  /* ---------- mapa ICE: cuadrantes ---------- */
+  // Eje X: Income (valor a dos años, escala de la Oficina). Eje Y: ICE.
+  // Línea vertical: umbral de la Oficina (Income 3). Línea horizontal: ICE mediano del portafolio.
+  const COLOR_FASE = { 1: '#5B9BEA', 2: '#F08A5D', 3: '#3FC293' };
+  const colorFase = e => { const f = window.Fases && Fases.de(e); return f && COLOR_FASE[f.id] || '#B9B5C6'; };
+  function mapaHTML(vis) {
+    const con = vis.filter(r => r.x.ice != null).length, sin = vis.length - con;
+    return `<section class="t-card t-pad pf-mapa">
+      <div class="t-lgd"><span><i style="background:#5B9BEA"></i>Fase 1 · Planeación</span><span><i style="background:#F08A5D"></i>Fase 2 · Ejecución y piloto</span><span><i style="background:#3FC293"></i>Fase 3 · Escalamiento</span><span><i style="background:#B9B5C6"></i>Cerrada, en pausa o cancelada</span></div>
+      <svg id="pfMapa" class="t-viz" height="460" role="img" aria-label="Iniciativas por ICE e Income"></svg>
+      <div class="t-pie"><span class="t-tag">${con} iniciativa${con === 1 ? '' : 's'} en el mapa${sin ? ` · ${sin} sin ICE no aparecen (complétalo en su ficha)` : ''}</span><span class="t-tag">Clic en un punto abre la iniciativa · pasa el mouse para ver su ICE</span></div></section>`;
+  }
+  function dibujarMapa(svg, vis) {
+    const W = svg.clientWidth || 900, H = 460, L = 56, R2 = 16, T = 16, B = 46;
+    const FIB = App.ICE.FIB, pts = vis.map(r => ({ r, d: App.ICE.detalle(r.p) })).filter(z => z.d.ice != null && z.d.income != null);
+    const band = (W - L - R2) / FIB.length;
+    const tk = (hi => { const raw = hi / 4, mag = Math.pow(10, Math.floor(Math.log10(raw || 1))), st = [1, 2, 2.5, 5, 10].map(k => k * mag).find(k => raw <= k) || 10 * mag; const o = []; for (let v = 0; v <= hi + st * 0.999; v += st) o.push(Math.round(v / st) * st); return o; })(Math.max(10, ...pts.map(z => z.d.ice)));
+    const top = tk.at(-1), y = v => T + (1 - v / top) * (H - T - B);
+    const xs = FIB.map((_, i) => L + band * i + band / 2);
+    const ices = pts.map(z => z.d.ice).sort((a, b) => a - b), med = ices.length ? ices[Math.floor(ices.length / 2)] : top / 2;
+    const xU = L + band * 2, yM = y(med); // umbral Oficina: entre Income 2 y 3
+    let h = '';
+    // cuadrantes
+    const q = (x0, y0, x1, y1, fill, t1, t2, anchor, tx, ty) => `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" fill="${fill}"/><text x="${tx}" y="${ty}" text-anchor="${anchor}" class="pf-q">${t1}</text><text x="${tx}" y="${ty + 14}" text-anchor="${anchor}" class="pf-q2">${t2}</text>`;
+    h += q(xU, T, W - R2, yM, 'rgba(63,194,147,.08)', 'PRIORIZAR', 'mucho valor y alto ICE', 'end', W - R2 - 8, T + 16);
+    h += q(L, T, xU, yM, 'rgba(91,155,234,.07)', 'GANANCIA RÁPIDA', 'poco valor, fácil y seguro', 'start', L + 8, T + 16);
+    h += q(xU, yM, W - R2, H - B, 'rgba(240,138,93,.07)', 'REPLANTEAR CÓMO', 'mucho valor, ICE bajo', 'end', W - R2 - 8, H - B - 22);
+    h += q(L, yM, xU, H - B, 'rgba(22,11,41,.035)', 'CUESTIONAR', 'poco valor y bajo ICE', 'start', L + 8, H - B - 22);
+    h += tk.map(v => `<line x1="${L}" x2="${W - R2}" y1="${y(v)}" y2="${y(v)}" class="t-grid"/><text x="${L - 8}" y="${y(v) + 4}" text-anchor="end" class="t-ax">${v}</text>`).join('');
+    h += xs.map((x, i) => `<text x="${x}" y="${H - B + 16}" text-anchor="middle" class="t-ax">${FIB[i]}</text>`).join('');
+    h += `<text x="${(L + W - R2) / 2}" y="${H - 6}" text-anchor="middle" class="t-ax on">Income · valor a dos años (escala 1 a 55)</text><text transform="translate(14 ${(T + H - B) / 2}) rotate(-90)" text-anchor="middle" class="t-ax on">ICE</text>`;
+    h += `<line x1="${xU}" x2="${xU}" y1="${T}" y2="${H - B}" class="pf-umbral"/><text x="${xU + 6}" y="${T + 14}" class="pf-q2">← umbral Oficina (Income 3)</text>`;
+    h += `<line x1="${L}" x2="${W - R2}" y1="${yM}" y2="${yM}" class="pf-umbral"/><text x="${W - R2 - 4}" y="${yM - 5}" text-anchor="end" class="pf-q2">ICE mediano ${App.num(med, 1)}</text>`;
+    // puntos: los de igual Income se reparten dentro de su franja
+    const porI = {}; pts.forEach(z => { (porI[z.d.income] = porI[z.d.income] || []).push(z); });
+    const pos = new Map();
+    Object.entries(porI).forEach(([inc, l]) => { const i = FIB.indexOf(+inc); l.sort((a, b) => a.d.ice - b.d.ice).forEach((z, k) => { const off = l.length > 1 ? (k / (l.length - 1) - 0.5) * Math.min(band * 0.7, l.length * 14) : 0; pos.set(z, [xs[i] + off, y(z.d.ice)]); }); });
+    const nombres = pts.slice().sort((a, b) => b.d.ice - a.d.ice).slice(0, 6);
+    pts.forEach(z => { const [cx, cy] = pos.get(z), nm = App.projectName(z.r.p);
+      h += `<a href="#/proyectos/${z.r.p.id}"><circle cx="${cx}" cy="${cy}" r="7" fill="${colorFase(z.r.x.estado)}" stroke="var(--card)" stroke-width="2"><title>${esc(nm)}\nICE ${App.num(z.d.ice, 1)} = Income ${z.d.income} × ${z.d.conf} % ÷ ${z.d.esf} % × ${String(z.d.os).replace('.', ',')}\n${esc(z.r.x.estado || 'Sin fase')}</title></circle></a>`; });
+    const usadas = [];
+    nombres.forEach(z => { const [cx, cy] = pos.get(z); const nm = App.projectName(z.r.p), t = nm.length > 26 ? nm.slice(0, 25) + '…' : nm, der = cx < W * 0.62;
+      let yy = cy + 4; for (let k = 0; k < 5 && usadas.some(u => Math.abs(u - yy) < 13); k++) yy += 13; usadas.push(yy);
+      h += `<text x="${der ? cx + 11 : cx - 11}" y="${yy}" text-anchor="${der ? 'start' : 'end'}" class="pf-lbl">${esc(t)}</text>`; });
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.innerHTML = h;
   }
 
   function csv(vis) {

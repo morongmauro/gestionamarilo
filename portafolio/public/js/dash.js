@@ -150,7 +150,7 @@
       const pausa = n => /paus|cancel|suspend|descart/i.test(n), activos = opts.filter(o => !pausa(o.name));
       const color = o => (pausa(o.name) ? 'var(--ord-paus)' : `var(--ord-${Math.min(5, 1 + Math.round(activos.indexOf(o) * 4 / Math.max(1, activos.length - 1)))})`);
       const grupos = opts.map(o => ({ key: o.name, label: o.name, color: color(o) }));
-      if (d.filas.some(x => !x.estado)) grupos.push({ key: '', label: 'Sin etapa', color: 'var(--viz-muted)' });
+      if (d.filas.some(x => !x.estado)) grupos.push({ key: '', label: 'Sin fase', color: 'var(--viz-muted)' });
       return { grupos, val: (x, y, g) => (x.estado === g.key ? total(x, y) : 0), nota: '' };
     }
     const grupos = ORDEN_CAT.filter(k => d.cats.includes(k)).map(k => ({ key: k, label: App.catLabel(k), color: `var(--cat-${k})` }));
@@ -284,7 +284,7 @@
     main.innerHTML = `<div class="pg-top"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Tablero</h1><span class="pg-meta">Datos al ${esc(App.d.fmt(d.hoy))} · ${d.filas.length} iniciativa${d.filas.length === 1 ? '' : 's'} · ${d.filas.filter(x => x.caso).length} con caso de negocio · pesos colombianos</span><span class="sp"></span>
         <label class="pg-sel">Año de captura <select data-f="anio">${d.anios.map(y => `<option ${y === d.Y ? 'selected' : ''}>${y}</option>`).join('')}</select></label>
         ${App.canEdit() ? '<button class="btn ghost sm" data-f-aj title="Ajustes del tablero" aria-label="Ajustes del tablero"><svg aria-hidden="true"><use href="#i-ajustes"/></svg></button>' : ''}</div>
-      ${paso(1, 'Valor a crear', 'lo que proyectan los casos de negocio, año por año', seg('agrupar', F.agrupar || 'tipo', [['tipo', 'Por tipo de valor'], ['okr', 'Por OKR'], ['etapa', 'Por etapa']]))}
+      ${paso(1, 'Valor a crear', 'lo que proyectan los casos de negocio, año por año', seg('agrupar', F.agrupar || 'tipo', [['tipo', 'Por tipo de valor'], ['okr', 'Por OKR'], ['etapa', 'Por fase']]))}
       ${valorACrear(d)}
       ${paso(2, `Captura por iniciativa · ${d.Y}`, 'lo capturado frente a lo que debía llevar a la fecha', seg('cpi', F.cpi === 'brecha' ? 'brecha' : 'valor', [['valor', 'Mayor valor'], ['brecha', 'Mayor brecha']]))}
       ${capturaIniciativas(d)}
