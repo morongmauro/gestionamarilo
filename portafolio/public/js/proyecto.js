@@ -41,7 +41,7 @@
       const hayIce = App.S.columns.some(c => c.id === 'ice_income');
       const VIEJOS = ['impacto', 'confianza', 'facilidad', 'income'];
       const todas = App.S.columns.filter(c => c.id !== tc.id);
-      const cols = todas.filter(c => !(hayIce && VIEJOS.includes(c.id)) && !c.hidden);
+      const cols = todas.filter(c => !(hayIce && VIEJOS.includes(c.id)));
       const viejas = todas.filter(c => hayIce && VIEJOS.includes(c.id) && (p.props || {})[c.id] != null && (p.props || {})[c.id] !== '');
       const fila = c => { const v = (p.props || {})[c.id]; const vacio = v == null || v === '' || (Array.isArray(v) && !v.length);
         return `<div class="k"><span class="ic">${App.Tabla.TYPES[c.type].icon}</span>${esc(c.name)}</div><div class="v ${vacio && c.type !== 'check' ? 'empty' : ''}" data-col="${c.id}">${vacio && c.type !== 'check' ? `<div class="c-in">${ro ? '—' : 'Vacío'}</div>` : App.Tabla.renderValue(c, v)}</div>`; };

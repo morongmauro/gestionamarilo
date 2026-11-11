@@ -23,7 +23,7 @@
     const ec = App.estadoCol(), tv = App.S.columns.find(c => c.id === 'tipo_valor') || App.S.columns.find(c => /tipo de valor/i.test(c.name));
     const cats = App.CATS.map(c => c.id).filter(id => !F.tipo || id === F.tipo);
     let usd = 0;
-    const proyectos = App.projectsSorted().filter(p => !F.estado || !ec || (p.props || {})[ec.id] === F.estado).map(p => {
+    const proyectos = App.projectsSorted().filter(p => !F.dgv || App.enAlcance(p)).filter(p => !F.estado || !ec || (p.props || {})[ec.id] === F.estado).map(p => {
       const caso = App.caseOf(p.id);
       const real = App.enRealizacion(p);
       const esUSD = caso && caso.moneda === 'USD'; if (esUSD) usd++;
@@ -303,12 +303,14 @@
 
   /* ---------- sección ---------- */
   function render(main) {
-    const d = datos({ anio: F.anio, estado: '', tipo: '', alcance: 'todos' });
+    const d = datos({ anio: F.anio, estado: '', tipo: '', alcance: 'todos', dgv: true });
     const sg = senales(d);
+    const fuera = App.S.projects.length - d.proyectos.length;
+    const alcance = App.dgvHay() ? `<button class="pf-tg ${App.soloDgv() ? 'on' : ''}" data-dgv aria-pressed="${App.soloDgv()}" title="${App.soloDgv() ? `Solo cuenta las iniciativas con «¿Revisión DGV?»: SI. Hay ${fuera} más que no se muestran. Clic para verlas todas.` : 'Cuenta todas las iniciativas. Clic para ver solo las de «¿Revisión DGV?»: SI.'}">¿Revisión DGV?: ${App.soloDgv() ? 'SI' : 'todas'}</button>` : '';
     const paso = (n, t, s, extra) => `<div class="t-paso" id="t${n}"><i>${n}</i><b>${t}</b><small>${s}</small><span class="sp"></span>${extra || ''}</div>`;
     const seg = (k, val, ops) => `<div class="seg t-seg" role="group">${ops.map(([v, l]) => `<button data-${k}="${v}" class="${val === v ? 'on' : ''}" aria-pressed="${val === v}">${l}</button>`).join('')}</div>`;
     main.innerHTML = `<div class="pg-top"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Tablero</h1><span class="pg-meta">Datos al ${esc(App.d.fmt(d.hoy))} · ${d.filas.length} iniciativa${d.filas.length === 1 ? '' : 's'} · ${d.filas.filter(x => x.caso).length} con caso de negocio · pesos colombianos</span><span class="sp"></span>
-        <label class="pg-sel">Año de captura <select data-f="anio">${d.anios.map(y => `<option ${y === d.Y ? 'selected' : ''}>${y}</option>`).join('')}</select></label>
+        ${alcance}<label class="pg-sel">Año de captura <select data-f="anio">${d.anios.map(y => `<option ${y === d.Y ? 'selected' : ''}>${y}</option>`).join('')}</select></label>
         ${App.canEdit() ? '<button class="btn ghost sm" data-f-aj title="Ajustes del tablero" aria-label="Ajustes del tablero"><svg aria-hidden="true"><use href="#i-ajustes"/></svg></button>' : ''}</div>
       ${titulares(d, sg)}
       ${paso(1, 'Valor a crear', 'lo que proyectan los casos de negocio, año por año', seg('agrupar', F.agrupar || 'tipo', [['tipo', 'Por tipo de valor'], ['okr', 'Por OKR'], ['etapa', 'Por fase']]))}
@@ -322,6 +324,7 @@
     draw();
     main.onclick = e => {
       if (e.target.closest('.burger')) return App.toggleSide();
+      if (e.target.closest('[data-dgv]')) { App.store.set('alcance.dgv', App.soloDgv() ? 'todas' : 'si'); return App.render(); }
       const v = e.target.closest('[data-agrupar]'); if (v) { F.agrupar = v.dataset.agrupar; saveF(); return App.render(); }
       const c = e.target.closest('[data-cpi]'); if (c) { F.cpi = c.dataset.cpi; saveF(); return App.render(); }
       const ev = e.target.closest('[data-evid]'); if (ev) { const b = $('#evidBox', main); b.hidden = !b.hidden; ev.setAttribute('aria-expanded', !b.hidden); ev.textContent = b.hidden ? '¿De dónde sale lo capturado?' : 'Ocultar la evidencia'; return; }

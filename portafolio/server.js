@@ -660,6 +660,24 @@ async function prepare() {
     }
     await store.setConfig('migr_terminos_v1', true);
   }
+  // Migración (una sola vez): la columna «¿Revisión DGV?» existe siempre, con SI y NO (y los valores que ya traigan las iniciativas).
+  // El Portafolio muestra por defecto solo las que están en SI.
+  if (!(await store.getConfig('migr_dgv_v1'))) {
+    const cols = await store.getConfig('project_columns');
+    if (Array.isArray(cols)) {
+      let c = cols.find(x => x.id === 'revision_dgv') || cols.find(x => /revisi[oó]n\s*dgv/i.test(x.name || ''));
+      if (!c) { c = { id: 'revision_dgv', name: '¿Revisión DGV?', type: 'select', width: 150, options: [], hidden: true }; cols.push(c); }
+      if (c.type === 'select') {
+        c.options = c.options || [];
+        const usados = new Set((await store.list('projects')).map(p => (p.props || {})[c.id]).filter(v => typeof v === 'string' && v.trim()));
+        if (![...usados, ...c.options.map(o => o.name)].some(v => /^s[ií]$/i.test(v))) usados.add('SI');
+        if (![...usados, ...c.options.map(o => o.name)].some(v => /^no$/i.test(v))) usados.add('NO');
+        usados.forEach(v => { if (!c.options.some(o => o.name === v)) c.options.push({ name: v, color: /^s[ií]$/i.test(v) ? 'verde' : 'gris' }); });
+      }
+      await store.setConfig('project_columns', cols);
+    }
+    await store.setConfig('migr_dgv_v1', true);
+  }
   if (!(await store.getConfig('seeded_committees'))) {
     if (!(await store.list('committees')).length) for (const c of defaults.committees()) await store.insert('committees', { ...c, id: newId(), created_at: now(), updated_at: now() });
     await store.setConfig('seeded_committees', true);

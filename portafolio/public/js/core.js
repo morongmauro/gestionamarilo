@@ -55,6 +55,14 @@ const COLORES_PERSONA = ['azul', 'verde', 'naranja', 'morado', 'rosa', 'amarillo
 App.colorPersona = n => { const k = String(n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); let h = 0; for (const ch of k) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return COLORES_PERSONA[h % COLORES_PERSONA.length]; };
 App.optColor = (c, name) => (c && c.type === 'people' ? App.colorPersona(name) : ((c && c.options || []).find(o => o.name === name) || {}).color || 'gris');
 App.projectColor = p => { const c = App.estadoCol(); return c ? App.optColor(c, (p.props || {})[c.id]) : 'gris'; };
+// «¿Revisión DGV?» (viene de la tabla de la Oficina): las iniciativas con SI son las activas.
+// Mientras el filtro esté puesto, el Portafolio y el Tablero solo cuentan esas. Si ninguna iniciativa tiene el dato, no se filtra nada.
+App.dgvCol = () => App.S.columns.find(c => c.id === 'revision_dgv') || App.S.columns.find(c => /revisi[oó]n\s*dgv/i.test(c.name)) || null;
+App.dgvValor = p => { const c = App.dgvCol(), v = ((p && p.props) || {})[c ? c.id : 'revision_dgv']; return Array.isArray(v) ? v[0] : v; };
+App.dgvSi = p => { const v = App.dgvValor(p); return v === true || /^\s*s[ií]\s*$/i.test(String(v == null ? '' : v)); };
+App.dgvHay = () => App.S.projects.some(p => { const v = App.dgvValor(p); return v != null && v !== '' && v !== false; });
+App.soloDgv = () => App.dgvHay() && App.store.get('alcance.dgv', 'si') === 'si';
+App.enAlcance = p => !App.soloDgv() || App.dgvSi(p);
 App.caseOf = pid => App.S.cases.find(c => c.project_id === pid) || null;
 App.actsOf = pid => App.S.activities.filter(a => a.project_id === pid).sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 App.projectsSorted = () => App.S.projects.slice().sort((a, b) => (a.position ?? 0) - (b.position ?? 0));

@@ -10,6 +10,7 @@
   const { $, esc } = App;
   // Lo que la app usa y para qué (las esenciales no se proponen nunca)
   const USO = {
+    revision_dgv: ['Filtro del Portafolio y del Tablero: iniciativas activas', true],
     proyecto: ['Nombre de la iniciativa', true], estado: ['Fase de la iniciativa', true], trazabilidad: ['Bitácora de cambios', true],
     habilitadores: ['Responsables', true], realizadores: ['Responsables', true], okrs: ['Zoom por OKR', true], tipo_valor: ['Zoom por tipo de valor', true],
     ice_income: ['ICE · Income', true], ice_confianza: ['ICE · Confidence', true], ice_esfuerzo: ['ICE · Effort', true], ice_os: ['ICE · OS', true],

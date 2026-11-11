@@ -399,3 +399,17 @@ a.t-cpi:hover{background:var(--hover)}
 .cap-tbl input{width:64px}
 .cn-tbl tr.cn-tog{cursor:pointer}.cn-tbl tr.cn-tog:hover td{background:var(--hover)}
 .h-item .hr{white-space:nowrap}
+
+/* Portafolio: ordenar por columna y agrupar */
+.pf-tbl th.pf-ord{cursor:pointer;user-select:none}
+.pf-tbl th.pf-ord:hover{color:var(--ink)}
+.pf-tbl th.pf-ord i{font-style:normal;display:inline-block;width:12px;margin-left:3px;color:var(--ink)}
+.pf-tbl th.pf-ord.on{color:var(--ink)}
+.pf-tbl tr.pf-grp td{background:color-mix(in srgb,var(--sunk) 60%,var(--card));padding:9px 12px;cursor:pointer;font-size:var(--fs-sm)}
+.pf-tbl tr.pf-grp:hover td{background:var(--sunk)}
+.pf-tbl tr.pf-grp small{color:var(--muted);font-weight:500;margin-left:10px;font-size:var(--fs-xs)}
+.pf-tbl tr.pf-grp small .r{color:var(--crit);font-weight:700}
+.pf-bar .pf-sel{max-width:210px}
+.pf-tbl .pf-okrb::before{content:none}
+.pf-bar .pf-sel{max-width:178px}
+.pf-bar .search{min-width:190px}

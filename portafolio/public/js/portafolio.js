@@ -10,8 +10,8 @@
 'use strict';
 (function () {
   const { $, esc } = App;
-  const R = Object.assign({ okr: null, cat: '', etapa: '', q: '', alertas: false, modo: 'tabla' }, App.store.get('portafolio', {}));
-  const guardar = () => App.store.set('portafolio', { okr: R.okr, cat: R.cat, etapa: R.etapa, alertas: R.alertas, modo: R.modo });
+  const R = Object.assign({ okr: null, cat: '', etapa: '', q: '', alertas: false, modo: 'tabla', grupo: 'fase', orden: 'ice', dir: -1, cerr: {} }, App.store.get('portafolio', {}));
+  const guardar = () => App.store.set('portafolio', { okr: R.okr, cat: R.cat, etapa: R.etapa, alertas: R.alertas, modo: R.modo, grupo: R.grupo, orden: R.orden, dir: R.dir, cerr: R.cerr });
   const m = v => App.moneyShort(v);
   const ORDEN_CAT = ['ingresos', 'ahorro', 'tiempo', 'eficiencia', 'riesgo', 'otro'];
 
@@ -74,6 +74,40 @@
   // «Laura Martínez» → «Laura M.»
   const nombreCorto = n => { const p = String(n || '').trim().split(/\s+/); return p.length > 1 ? `${p[0]} ${p[1][0].toUpperCase()}.` : p[0] || ''; };
 
+  /* ---------- ordenar y agrupar ---------- */
+  // Cada columna sabe por qué valor se ordena; lo vacío siempre queda al final
+  const ORDEN = {
+    nombre: { t: 'nombre', v: r => App.projectName(r.p).toLowerCase(), dir: 1 },
+    okr: { t: 'OKR', v: r => (r.okrs[0] || '').toLowerCase() || null, dir: 1 },
+    tipo: { t: 'tipo de valor', v: r => (r.cats[0] ? App.catLabel(r.cats[0]).toLowerCase() : null), dir: 1 },
+    ice: { t: 'ICE', v: r => r.x.ice, dir: -1 },
+    avance: { t: 'avance', v: r => (r.pl.acts.length ? r.pl.avance : null), dir: -1 },
+    fin: { t: 'fecha de fin', v: r => r.pl.fin || null, dir: 1 },
+    valor: { t: 'valor a dos años', v: r => dosAnios(r) || r.valor || null, dir: -1 },
+    alertas: { t: 'alertas', v: r => (r.al.length ? r.al[0].sev * 100 + r.al.length : sinDatos(r) ? 0.5 : inactiva(r) ? null : 0), dir: -1 },
+  };
+  function ordenar(l) {
+    const o = ORDEN[R.orden] || ORDEN.ice, dir = R.dir === 1 ? 1 : -1;
+    const cmp = (a, b) => { const x = o.v(a), y = o.v(b); if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1; return (typeof x === 'string' ? x.localeCompare(y) : x - y) * dir; };
+    // Sin agrupar por fase, las cerradas, en pausa o canceladas van al final
+    return l.slice().sort((a, b) => (R.grupo === 'fase' ? 0 : inactiva(a) - inactiva(b)) || cmp(a, b) || App.projectName(a.p).localeCompare(App.projectName(b.p)));
+  }
+  const GRUPOS = {
+    fase: { t: 'por fase', de: r => { const k = window.Fases ? Fases.clasificar(r.x.estado) : null; const fa = k != null && Fases.deId(k); return fa ? { k: String(k), t: fa.nombre, o: Fases.FASES.indexOf(fa) } : { k: 'sin', t: r.x.estado || 'Sin fase', o: 99 }; } },
+    okr: { t: 'por OKR', de: r => (r.okrs[0] ? { k: r.okrs[0], t: r.okrs[0], o: 0 } : { k: '', t: 'Sin OKR asignado', o: 1 }) },
+    tipo: { t: 'por tipo de valor', de: r => (r.cats[0] ? { k: r.cats[0], t: App.catLabel(r.cats[0]), o: ORDEN_CAT.indexOf(r.cats[0]) } : { k: '', t: 'Sin tipo de valor', o: 99 }) },
+  };
+  function cuerpo(vis) {
+    const l = ordenar(vis), g = GRUPOS[R.grupo];
+    if (!g) return l.map(filaHTML).join('');
+    const mapa = new Map();
+    l.forEach(r => { const z = g.de(r); if (!mapa.has(z.k)) mapa.set(z.k, { z, rows: [] }); mapa.get(z.k).rows.push(r); });
+    return [...mapa.values()].sort((a, b) => a.z.o - b.z.o || a.z.t.localeCompare(b.z.t)).map(({ z, rows }) => {
+      const id = R.grupo + ':' + z.k, cerrado = !!(R.cerr || {})[id], v = rows.reduce((a, r) => a + (dosAnios(r) || 0), 0), al = rows.filter(r => r.al.length).length;
+      return `<tr class="pf-grp" data-grp="${esc(id)}" role="button" aria-expanded="${!cerrado}"><td colspan="8"><b>${cerrado ? '▸' : '▾'} ${esc(z.t)}</b><small>${rows.length} ${rows.length === 1 ? 'iniciativa' : 'iniciativas'}${v ? ` · ${esc(m(v))} a dos años` : ''}${al ? ` · <span class="r">${al} con alertas</span>` : ''}</small></td></tr>${cerrado ? '' : rows.map(filaHTML).join('')}`;
+    }).join('');
+  }
+
   /* ---------- tabla ---------- */
   function mini(r) {
     const pl = r.pl; if (!pl.ini) return `<span class="faint" title="${esc(App.sinPlan(r.p).largo)}">${inactiva(r) ? '—' : 'Sin cronograma'}</span>`;
@@ -110,10 +144,12 @@
   }
 
   function render(main) {
-    const { d, rows } = filas();
-    const vis = rows.filter(r => pasaFiltros(r));
-    // Las iniciativas cerradas, en pausa o canceladas no compiten en el orden por ICE: van al final
-    vis.sort((a, b) => inactiva(a) - inactiva(b) || (b.x.ice ?? -1) - (a.x.ice ?? -1) || App.projectName(a.p).localeCompare(App.projectName(b.p)));
+    const { d, rows: todas } = filas();
+    // Iniciativas activas: las que tienen «¿Revisión DGV?» en SI. Las demás se ocultan mientras el filtro esté puesto.
+    const rows = todas.filter(r => App.enAlcance(r.p)), fuera = todas.length - rows.length;
+    const vis = ordenar(rows.filter(r => pasaFiltros(r)));
+    const oAct = ORDEN[R.orden] ? R.orden : 'ice';
+    const th = (k, lbl, sm, cls) => `<th class="pf-ord ${cls || ''} ${oAct === k ? 'on' : ''}" data-ord="${k}" title="Clic para ordenar por ${ORDEN[k].t}" aria-sort="${oAct === k ? (R.dir === 1 ? 'ascending' : 'descending') : 'none'}">${lbl}<i>${oAct === k ? (R.dir === 1 ? '▴' : '▾') : ''}</i>${sm ? `<small>${sm}</small>` : ''}</th>`;
     const ec = App.estadoCol();
     const nAl = rows.filter(r => r.al.length).length, total = rows.reduce((a, r) => a + r.valor, 0);
     const chips = [
@@ -126,12 +162,15 @@
       ${lentes(rows)}
       <div class="pf-bar"><label class="search"><span>⌕</span><input id="pfq" placeholder="Buscar iniciativa u OKR…" value="${esc(R.q)}"></label>${chips}
         ${ec ? `<select class="pf-sel" data-pf-etapa aria-label="Fase"><option value="">Fase: todas</option>${(ec.options || []).map(o => `<option ${R.etapa === o.name ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}</select>` : ''}
+        ${App.dgvHay() ? `<button class="pf-tg ${App.soloDgv() ? 'on' : ''}" data-pf="dgv" aria-pressed="${App.soloDgv()}" title="${App.soloDgv() ? `Se muestran solo las iniciativas con «¿Revisión DGV?»: SI. ${fuera} más están ocultas. Clic para verlas todas.` : 'Se muestran todas. Clic para ver solo las de «¿Revisión DGV?»: SI.'}">¿Revisión DGV?: ${App.soloDgv() ? 'SI' : 'todas'}</button>` : ''}
         <button class="pf-tg ${R.alertas ? 'on' : ''}" data-pf="alertas" aria-pressed="${R.alertas}">Solo con alertas</button>
+        <select class="pf-sel" data-pf-grupo aria-label="Agrupar">${[['fase', 'Agrupar: por fase'], ['okr', 'Agrupar: por OKR'], ['tipo', 'Agrupar: por tipo de valor'], ['', 'Sin agrupar']].map(([k, l]) => `<option value="${k}" ${(R.grupo || '') === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
+        <select class="pf-sel" data-pf-orden aria-label="Ordenar">${Object.entries(ORDEN).map(([k, o]) => `<option value="${k}" ${oAct === k ? 'selected' : ''}>Ordenar: ${o.t}${oAct === k ? (R.dir === 1 ? ' ▴' : ' ▾') : ''}</option>`).join('')}</select>
         <span class="sp"></span><div class="seg"><button data-modo="tabla" class="${R.modo !== 'mapa' ? 'on' : ''}" aria-pressed="${R.modo !== 'mapa'}">Resumen</button><button data-modo="mapa" class="${R.modo === 'mapa' ? 'on' : ''}" aria-pressed="${R.modo === 'mapa'}" title="Iniciativas por ICE e Income, en cuadrantes">Mapa ICE</button><button data-vista-pf="tabla" title="Tabla tipo Notion: aquí se editan las columnas">Tabla completa</button><button data-vista-pf="tablero" title="Tarjetas agrupadas por fase">Por fase</button></div></div>
       ${R.modo === 'mapa' ? mapaHTML(vis) : `<section class="t-card pf-tbl-card"><div class="pf-wrap"><table class="pf-tbl">
-        <thead><tr><th>Iniciativa <small>fase · responsables</small></th><th>OKR</th><th>Tipo de valor</th><th class="n" title="Prioridad relativa">ICE ▾</th><th>Avance <small>real · ┃ esperado</small></th><th>Cronograma <small>${+d.hoy.slice(0, 4)} – ${+d.hoy.slice(0, 4) + 1}</small></th><th>Valor a 2 años <small>caso de negocio</small></th><th>Alertas</th></tr></thead>
-        <tbody>${vis.map(filaHTML).join('') || `<tr><td colspan="8"><div class="t-vacio">${rows.length ? 'Ninguna iniciativa cumple estos filtros.' : 'Aún no hay iniciativas.'}</div></td></tr>`}</tbody></table></div>
-        <div class="t-pie t-pie-row"><span class="t-tag">${vis.length} de ${rows.length} iniciativas · ordenadas por ICE${R.okr != null ? ` · OKR «${esc(R.okr || 'sin asignar')}»` : ''}</span><span class="t-tag">Clic en el cronograma o en el caso abre esa pestaña de la iniciativa</span></div></section>`}`;
+        <thead><tr>${th('nombre', 'Iniciativa', 'fase · responsables')}${th('okr', 'OKR')}${th('tipo', 'Tipo de valor')}${th('ice', 'ICE', '', 'n')}${th('avance', 'Avance', 'real · ┃ esperado')}${th('fin', 'Cronograma', `${+d.hoy.slice(0, 4)} – ${+d.hoy.slice(0, 4) + 1}`)}${th('valor', 'Valor a 2 años', 'caso de negocio')}${th('alertas', 'Alertas')}</tr></thead>
+        <tbody>${cuerpo(vis) || `<tr><td colspan="8"><div class="t-vacio">${rows.length ? 'Ninguna iniciativa cumple estos filtros.' : fuera ? `Ninguna iniciativa tiene «¿Revisión DGV?» en SI. <button class="t-lnk" data-pf="dgv">Ver las ${fuera} iniciativas</button>` : 'Aún no hay iniciativas.'}</div></td></tr>`}</tbody></table></div>
+        <div class="t-pie t-pie-row"><span class="t-tag">${vis.length} de ${rows.length} iniciativas · ordenadas por ${ORDEN[oAct].t}${R.okr != null ? ` · OKR «${esc(R.okr || 'sin asignar')}»` : ''}${fuera ? ` · <button class="t-lnk" data-pf="dgv">${fuera} ocultas por no tener «¿Revisión DGV?»: SI</button>` : ''}</span><span class="t-tag">Clic en un encabezado ordena · clic en un grupo lo pliega</span></div></section>`}`;
     const svg = $('#pfMapa', main); if (svg) dibujarMapa(svg, vis);
     const q = $('#pfq', main);
     q.oninput = () => { R.q = q.value; const pos = q.selectionStart; render(main); const n = $('#pfq', main); n.focus(); n.setSelectionRange(pos, pos); };
@@ -142,12 +181,20 @@
       const qq = e.target.closest('[data-quitar]'); if (qq) { if (qq.dataset.quitar === 'okr') R.okr = null; else R[qq.dataset.quitar] = ''; guardar(); return render(main); }
       const md = e.target.closest('[data-modo]'); if (md) { R.modo = md.dataset.modo; guardar(); return render(main); }
       const v = e.target.closest('[data-vista-pf]'); if (v) return App.Tabla.setView(v.dataset.vistaPf);
+      const or = e.target.closest('[data-ord]'); if (or) { const k = or.dataset.ord; if (R.orden === k) R.dir = R.dir === 1 ? -1 : 1; else { R.orden = k; R.dir = ORDEN[k].dir; } guardar(); return render(main); }
+      const gr = e.target.closest('[data-grp]'); if (gr && !e.target.closest('a,button')) { R.cerr = Object.assign({}, R.cerr); if (R.cerr[gr.dataset.grp]) delete R.cerr[gr.dataset.grp]; else R.cerr[gr.dataset.grp] = true; guardar(); return render(main); }
       const b = e.target.closest('[data-pf]'); if (!b) return;
+      if (b.dataset.pf === 'dgv') { App.store.set('alcance.dgv', App.soloDgv() ? 'todas' : 'si'); return render(main); }
+      if (b.dataset.pf === 'dir') { R.dir = R.dir === 1 ? -1 : 1; guardar(); return render(main); }
       if (b.dataset.pf === 'alertas') { R.alertas = !R.alertas; guardar(); return render(main); }
       if (b.dataset.pf === 'csv') return csv(vis);
-      if (b.dataset.pf === 'nuevo') App.guard(async () => { const p = await App.create('projects', { props: {} }); App.go('#/proyectos/' + p.id); });
+      if (b.dataset.pf === 'nuevo') App.guard(async () => { const c = App.dgvCol(), si = c && App.soloDgv() ? ((c.options || []).find(o => /^s[ií]$/i.test(o.name)) || { name: 'SI' }).name : null; const p = await App.create('projects', { props: si ? { [c.id]: si } : {} }); App.go('#/proyectos/' + p.id); });
     };
-    main.onchange = e => { if (e.target.hasAttribute('data-pf-etapa')) { R.etapa = e.target.value; guardar(); render(main); } };
+    main.onchange = e => {
+      if (e.target.hasAttribute('data-pf-etapa')) { R.etapa = e.target.value; guardar(); render(main); }
+      if (e.target.hasAttribute('data-pf-grupo')) { R.grupo = e.target.value; guardar(); render(main); }
+      if (e.target.hasAttribute('data-pf-orden')) { R.orden = e.target.value; R.dir = ORDEN[R.orden].dir; guardar(); render(main); }
+    };
   }
 
   /* ---------- mapa ICE: cuadrantes ---------- */
