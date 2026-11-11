@@ -10,7 +10,7 @@ function iceColumns() {
 const OS_OPCIONES = [{ name: '0,75 · No alineado', color: 'gris' }, { name: '1 · Alineado', color: 'azul' }, { name: '1,25 · Prioridad del semestre', color: 'amarillo' }];
 function iceOficinaColumns() {
   return [
-    { id: 'ice_income', name: 'Income (1-55)', type: 'number', width: 120 },
+    { id: 'ice_income', name: 'Income', type: 'number', width: 120 },
     { id: 'ice_confianza', name: 'Confianza (%)', type: 'number', width: 130 },
     { id: 'ice_esfuerzo', name: 'Esfuerzo (%)', type: 'number', width: 110 },
     { id: 'ice_os', name: 'OS · objetivos del semestre', type: 'select', width: 210, options: OS_OPCIONES },

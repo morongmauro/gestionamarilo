@@ -678,12 +678,21 @@ async function prepare() {
     }
     await store.setConfig('migr_dgv_v1', true);
   }
-  // Migración (una sola vez): la columna del Income del ICE se llama «Income (1-55)», sin «Fibonacci»
-  if (!(await store.getConfig('migr_income_nombre_v1'))) {
+  // Migración (una sola vez): la columna del Income del ICE se llama «Income», a secas (ni «Fibonacci» ni «1-55»).
+  // Si quedaba una columna vieja también llamada «Income» (el valor anual del método anterior), pasa a «Income (método anterior)»
+  // para que no haya dos con el mismo nombre. Las que alguien renombró no se tocan.
+  if (!(await store.getConfig('migr_income_nombre_v2'))) {
     const cols = await store.getConfig('project_columns');
-    const c = Array.isArray(cols) && cols.find(x => x.id === 'ice_income' && /fibonacci/i.test(x.name || ''));
-    if (c) { c.name = 'Income (1-55)'; await store.setConfig('project_columns', cols); }
-    await store.setConfig('migr_income_nombre_v1', true);
+    if (Array.isArray(cols)) {
+      const ice = cols.find(x => x.id === 'ice_income');
+      if (ice) {
+        const vieja = cols.find(x => x.id === 'income' && /^income$/i.test(String(x.name || '').trim()));
+        if (vieja) vieja.name = 'Income (método anterior)';
+        if (/^income\s*\(.*(fibonacci|1\s*[-a]\s*55).*\)$/i.test(String(ice.name || '').trim())) ice.name = 'Income';
+        await store.setConfig('project_columns', cols);
+      }
+    }
+    await store.setConfig('migr_income_nombre_v2', true);
   }
   if (!(await store.getConfig('seeded_committees'))) {
     if (!(await store.list('committees')).length) for (const c of defaults.committees()) await store.insert('committees', { ...c, id: newId(), created_at: now(), updated_at: now() });

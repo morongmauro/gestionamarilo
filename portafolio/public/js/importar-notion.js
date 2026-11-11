@@ -44,7 +44,7 @@
     ['gerencia', 'Gerencia', 'select'], ['vp', 'Vicepresidencia', 'select'], ['cadena_valor', 'Cadena de valor', 'select', true],
     ['captura_creacion', 'Captura o creación', 'select', true], ['criterio', 'Criterio / costos', 'select', true], ['palanca', 'Palanca', 'select', true],
     ['revision_dgv', '¿Revisión DGV?', 'select', true],
-    ['ice_income', 'Income (1-55)', 'number'], ['ice_confianza', 'Confidence (%)', 'number'], ['ice_esfuerzo', 'Effort (%)', 'number'], ['ice_os', 'OS · objetivos del semestre', 'select'],
+    ['ice_income', 'Income', 'number'], ['ice_confianza', 'Confianza (%)', 'number'], ['ice_esfuerzo', 'Esfuerzo (%)', 'number'], ['ice_os', 'OS · objetivos del semestre', 'select'],
     ['valor_crear', 'Valor a crear/capturar (COP)', 'number'], ['pct_captura', '% Captura de valor', 'number', true], ['pct_okr', '% Cumplimiento OKRs', 'number', true],
     ['gastos', 'Gastos enero-agosto (COP)', 'number', true],
     ['objetivo_general', 'Objetivo general', 'text', true], ['meta', 'Meta (% o $)', 'text', true], ['linea_base_txt', 'Línea base', 'text', true],

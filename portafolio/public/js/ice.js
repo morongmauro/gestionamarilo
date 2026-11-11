@@ -4,7 +4,7 @@
 
      ICE = Income × Confidence ÷ Effort × OS
 
-   - Income (1 a 55, Fibonacci): dinero captado o ahorrado a dos años.
+   - Income (de 1 a 55): dinero captado o ahorrado a dos años.
        ≤ $50 M = 1 · $51–200 M = 2 · $201–600 M = 3 (umbral: desde aquí van a la Of. Valor)
        $601 M–1.200 M = 5 · $1.201–2.200 M = 8 · $2.201–4.200 M = 13
        $4.201–8.200 M = 21 · $8.201–16.200 M = 34 · > $16.201 M = 55
@@ -103,6 +103,6 @@
     App.guard(async () => { await App.patch('projects', b.dataset.pid, { props: { ice_income: Number(b.dataset.usarIncome) } }); App.toast('Income actualizado con el del caso'); App.render(); }); });
 
   App.ICE = { diferenciaIncome, avisoIncome, detalle, formula, FIB, BANDAS_INCOME, fib, redondeaPct, leeOS, effortDeMeses, UMBRAL_OFICINA,
-    explicacion: 'ICE = Income × Confidence ÷ Effort × OS (método de la Oficina de Generación de Valor). Income: dinero a dos años en escala Fibonacci (≤ $50 M = 1 … > $16.201 M = 55; desde 3, $201–600 M, va a la Oficina). Confidence: 25 % a 100 %. Effort: 25 % menos de 2 meses · 50 % 2 a 4 · 75 % 4 a 6 · 100 % 6 o más. OS: 0,75 no alineado · 1 alineado · 1,25 prioridad del semestre. Se usa lo que la Oficina registró en la tabla; lo que falte se calcula del caso de negocio y del cronograma.' };
+    explicacion: 'ICE = Income × Confidence ÷ Effort × OS (método de la Oficina de Generación de Valor). Income: dinero a dos años en una escala de 1 a 55 (≤ $50 M = 1 … > $16.201 M = 55; desde 3, $201–600 M, va a la Oficina). Confidence: 25 % a 100 %. Effort: 25 % menos de 2 meses · 50 % 2 a 4 · 75 % 4 a 6 · 100 % 6 o más. OS: 0,75 no alineado · 1 alineado · 1,25 prioridad del semestre. Se usa lo que la Oficina registró en la tabla; lo que falte se calcula del caso de negocio y del cronograma.' };
   App.iceOf = p => detalle(p).ice;
 })();
