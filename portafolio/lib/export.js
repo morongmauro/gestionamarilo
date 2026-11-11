@@ -72,7 +72,7 @@ function build(tabla, d) {
         vpn: f.vpn ?? '', tir: f.tir ?? '', payback_anios: f.payback ?? '', roi: f.roi ?? '',
         problema: c.problema || '', objetivo: c.objetivo || '', alcance: c.alcance || '', riesgos: c.riesgos || '', recomendacion: c.recomendacion || '', ...meta(c) };
     });
-    case 'flujos': return d.cases.flatMap(c => regs(c.flujos).flatMap(fl => valores(fl).slice(0, Finanzas.calc(c).anios + 1).map((v, t) => ({
+    case 'flujos': return d.cases.flatMap(c => regs(c.flujos).filter(fl => fl.tipo !== 'supuesto').flatMap(fl => valores(fl).slice(0, Finanzas.calc(c).anios + 1).map((v, t) => ({
       proyecto_id: c.project_id, proyecto: nombre(c.project_id), concepto: fl.concepto || '', tipo: fl.tipo || '',
       tipo_valor: fl.tipo === 'beneficio' ? CATS[fl.categoria] || '' : '', anio: t, anio_calendario: c.anio_inicio ? c.anio_inicio + t : '', valor: Number(v) || 0 }))));
     case 'captado': return d.cases.flatMap(c => regs(c.captado).map(k => ({

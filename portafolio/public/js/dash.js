@@ -69,7 +69,7 @@
       const esp = x.real ? proy * corrido(Y) / 12 : 0;
       return { ...x, proy, cap, esp, pc: esp > 0 ? cap / esp : null };
     });
-    return { hoy, hoyY, hoyM, Y, anios, cats, porAnio, proyectadoY, esperadoY, captadoY, verifY, curva, mesHasta, filas, reales, usd, unidad, corrido: corrido(Y) };
+    return { hoy, hoyY, hoyM, Y, anios, cats, porAnio, proyectadoY, esperadoY, captadoY, verifY, curva, mesHasta, filas, proyectos, reales, usd, unidad, corrido: corrido(Y) };
   }
   const estadoDe = pc => (pc == null ? null : pc >= 0.9 ? ['good', '✓', 'En meta'] : pc >= 0.7 ? ['warning', '!', 'Por debajo'] : ['critical', '✕', 'Rezagado']);
   const m = v => App.moneyShort(v);

@@ -20,7 +20,7 @@
     ['supuestos', 'Supuestos', 'Lo que se da por cierto para que los números se cumplan.'],
     ['recomendacion', 'Recomendación y decisión solicitada', 'Qué se le pide al comité.'],
   ];
-  const TIPOS = [['inversion', 'Inversión'], ['costo', 'Costos de operación'], ['beneficio', 'Beneficios']];
+  const TIPOS = [['supuesto', 'Supuestos · no suman, se usan en fórmulas (unidades, precios, %)'], ['beneficio', 'Beneficios'], ['costo', 'Costos de operación'], ['inversion', 'Inversión']];
 
   function nuevoCaso(pid) {
     return { project_id: pid, estado: 'Borrador', tasa: 12, anios: 5, moneda: 'COP', flujos: [
@@ -141,7 +141,7 @@
           <label>Año 0 <input class="fld" type="number" data-f="anio_inicio" value="${esc(c.anio_inicio ?? '')}" placeholder="${new Date().getFullYear()}" ${dis}></label>
           <label>Horizonte <select class="fld" data-f="anios" ${dis}>${Array.from({ length: App.Hoja.MAXY }, (_, i) => i + 1).map(y => `<option value="${y}" ${y === n() - 1 ? 'selected' : ''}>${y} ${y === 1 ? 'año' : 'años'}</option>`).join('')}</select></label>
           ${ro ? '' : '<a class="t-lnk" href="/api/cases/plantilla/excel" download>Plantilla vacía</a>'}</div>
-        <div class="help" style="margin:2px 0 8px">Cifras en ${escala === 1 ? '' : escala === 1e3 ? 'miles de ' : 'millones de '}${esc(mon)}. El año 0 es el arranque. Copia y pega desde Excel, usa flechas y Enter, =150*12, 1,2M o +5% sobre el año anterior. Flujo neto y acumulado se calculan solos.</div>
+        <div class="help" style="margin:2px 0 8px">Cifras en ${escala === 1 ? '' : escala === 1e3 ? 'miles de ' : 'millones de '}${esc(mon)}. El año 0 es el arranque. Copia y pega desde Excel, usa flechas y Enter, =150*12, 1,2M o +5% sobre el año anterior. <b>Fórmulas entre filas:</b> <code>=[Unidades vendidas]*[Precio promedio]*(1-[Comisión])</code> toma cada fila del mismo año y se recalcula sola. Flujo neto y acumulado se calculan solos.</div>
         <div class="flujo-wrap hoja-wrap" id="cFlujo"></div>
       </section>
       ${paso(3, 'Escenarios y margen de seguridad', 'cambia los porcentajes y mira cómo se mueve el caso')}
@@ -276,6 +276,8 @@
         <div><b>Esc · F2</b><span>cancelar lo escrito · editar sin borrar</span></div>
         <div><b>1,2M · 300k</b><span>millones y miles</span></div>
         <div><b>=150*12</b><span>calcular como en Excel</span></div>
+        <div><b>=[Unidades]*[Precio]</b><span>fórmula con otras filas (mismo año); al llenar se copia</span></div>
+        <div><b>5%</b><span>en una fila de supuestos: porcentaje</span></div>
         <div><b>+5% · −3%</b><span>sobre el valor del año anterior</span></div>
         <div><b>(1.200)</b><span>número negativo</span></div>
         <div><b>··· en cada fila</b><span>repetir, crecer un %, repartir un total</span></div></div>`, { width: 380, nofocus: true });
@@ -284,34 +286,118 @@
   }
 
   /* ---------- sección «Casos de negocio» ---------- */
-  let filtro = App.store.get('casos.filtro', 'todos');
+  /* ---------- lista de casos (Casos de negocio) ---------- */
+  const CF = Object.assign({ q: '', estado: '', fase: '', cat: '', modo: 'cap' }, App.store.get('casos.f', {}));
+  const guardarCF = () => App.store.set('casos.f', { estado: CF.estado, fase: CF.fase, cat: CF.cat, modo: CF.modo });
+  const GRUPOS = [
+    { k: 'rev', t: 'Por aprobar en comité', de: e => e === 'En revisión' },
+    { k: 'apr', t: 'Aprobados', de: e => e === 'Aprobado' },
+    { k: 'bor', t: 'Borradores', de: e => !e || e === 'Borrador' },
+    { k: 'apl', t: 'Aplazados o rechazados', de: e => e === 'Aplazado' || e === 'Rechazado' },
+  ];
+  const supuestoClave = c => {
+    const t = String(c.supuestos || '').split(/\n|•|;|\. /).map(x => x.replace(/^[-*\s]+/, '').trim()).find(Boolean);
+    if (t) return t;
+    const r = (c.flujos || []).find(x => x && x.tipo === 'supuesto' && (x.concepto || '').trim());
+    return r ? r.concepto.trim() : '';
+  };
+  const responsablesDe = p => { const v = p.props || {}; return [].concat(v.habilitadores || [], v.realizadores || []).filter(Boolean).slice(0, 2); };
+
   function section(main, params) {
     if (params[0]) return detalle(main, params[0]);
-    const ps = App.projectsSorted();
-    const rows = ps.map(p => { const c = App.caseOf(p.id); return { p, c, f: c ? Finanzas.calc(c) : null }; })
-      .filter(x => filtro === 'todos' || (filtro === 'con' ? x.c : !x.c));
-    const casos = App.S.cases, aprobTodos = casos.filter(c => c.estado === 'Aprobado'), aprob = aprobTodos.filter(c => c.moneda !== 'USD'), usd = aprobTodos.length - aprob.length;
-    const sum = (arr, k) => arr.reduce((a, c) => { const v = Finanzas.calc(c)[k]; return a + (Number.isFinite(v) ? v : 0); }, 0);
-    const rev = casos.filter(c => c.estado === 'En revisión').length;
+    const D = App.Dash.datos({}), Y = D.Y, frac = D.corrido / 12;
+    const porId = new Map(D.proyectos.map(x => [x.p.id, x]));
     const ec = App.estadoCol();
-    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><div><h1>Casos de negocio</h1><div class="sub">${casos.length} de ${ps.length} proyectos tienen caso${rev ? ` · ${rev} en revisión` : ''}</div></div><span class="sp"></span>
-        <div class="seg">${[['todos', 'Todos'], ['con', 'Con caso'], ['sin', 'Sin caso']].map(([k, l]) => `<button data-f="${k}" class="${filtro === k ? 'on' : ''}">${l}</button>`).join('')}</div></div>
-      <div class="kpis">
-        <div class="kpi"><div class="l">Aprobados</div><div class="v">${aprobTodos.length}</div><div class="s">de ${casos.length} ${casos.length === 1 ? 'caso' : 'casos'}</div></div>
-        <div class="kpi"><div class="l">Inversión aprobada</div><div class="v">${esc(App.moneyShort(sum(aprob, 'totalInversion')))}</div><div class="s">suma de casos aprobados en pesos${usd ? ` · ${usd} en USD aparte` : ''}</div></div>
-        <div class="kpi"><div class="l">Beneficio aprobado</div><div class="v">${esc(App.moneyShort(sum(aprob, 'totalBeneficio')))}</div><div class="s">en el horizonte de cada caso</div></div>
-        <div class="kpi"><div class="l">VPN aprobado</div><div class="v ${sum(aprob, 'vpn') >= 0 ? 'good' : 'bad'}">${esc(App.moneyShort(sum(aprob, 'vpn')))}</div><div class="s">valor presente neto</div></div>
-      </div>
-      <div class="card-box" style="padding:0;overflow:auto">${rows.length ? `<table class="lst"><thead><tr><th>Proyecto</th><th>Estado del caso</th><th>Sponsor</th><th class="n">Inversión</th><th class="n">Beneficio</th><th class="n">VPN</th><th class="n">TIR</th><th class="n">Payback</th><th class="n">ROI</th></tr></thead><tbody>
-        ${rows.map(({ p, c, f }) => `<tr class="clic" data-pid="${p.id}"><td><b>${esc(App.projectName(p))}</b>${ec && (p.props || {})[ec.id] ? ` <span class="pill cl-${App.optColor(ec, p.props[ec.id])}" style="margin-left:6px">${esc(p.props[ec.id])}</span>` : ''}</td>
-          ${c ? `<td><span class="pill cl-${estadoColor(c.estado)}">${esc(c.estado || 'Borrador')}</span></td><td>${esc(c.sponsor || '')}</td><td class="n">${esc(App.moneyShort(f.totalInversion, c.moneda))}</td><td class="n">${esc(App.moneyShort(f.totalBeneficio, c.moneda))}</td><td class="n" style="color:${f.vpn == null ? '' : f.vpn >= 0 ? 'var(--good)' : 'var(--crit)'};font-weight:700">${esc(App.moneyShort(f.vpn, c.moneda))}</td><td class="n">${esc(App.pct(f.tir))}</td><td class="n">${f.payback == null ? '—' : esc(App.num(f.payback, 1)) + ' a'}</td><td class="n">${esc(App.pct(f.roi))}</td>`
-            : `<td colspan="8" class="faint">Sin caso de negocio${App.canEdit() ? ' · clic para crearlo' : ''}</td>`}</tr>`).join('')}
-      </tbody></table>` : '<div class="empty-box"><b>No hay proyectos en esta vista</b></div>'}</div>`;
-    main.onclick = e => {
-      const f = e.target.closest('[data-f]'); if (f) { filtro = f.dataset.f; App.store.set('casos.filtro', filtro); return App.render(); }
-      const r = e.target.closest('[data-pid]'); if (r) App.go('#/casos/' + r.dataset.pid);
-      if (e.target.closest('.burger')) App.toggleSide();
+    const todos = App.projectsSorted().map(p => {
+      const c = App.caseOf(p.id), x = porId.get(p.id), f = c ? Finanzas.calc(c) : null;
+      const usd = c && c.moneda === 'USD';
+      const proy = x && !usd ? D.cats.reduce((a, k) => a + x.anual(k, Y), 0) : 0;
+      const cap = x && !usd ? D.cats.reduce((a, k) => a + x.captado(k, Y), 0) : 0;
+      const cats = c ? [...new Set((c.flujos || []).filter(fl => fl && fl.tipo === 'beneficio').map(App.catOf))] : [];
+      const est = ec ? (p.props || {})[ec.id] || '' : '', fase = window.Fases ? Fases.clasificar(est) : null;
+      return { p, c, f, usd, proy, cap, esp: proy * frac, cats, est, fase };
+    });
+    const casos = todos.filter(r => r.c);
+    const nq = App.norm ? App.norm(CF.q) : CF.q.toLowerCase();
+    const pasa = r => (!CF.q || (App.norm ? App.norm(App.projectName(r.p)) : App.projectName(r.p).toLowerCase()).includes(nq))
+      && (!CF.estado || (CF.estado === 'Sin caso' ? !r.c : r.c && (r.c.estado || 'Borrador') === CF.estado))
+      && (!CF.fase || String(r.fase) === CF.fase)
+      && (!CF.cat || r.cats.includes(CF.cat));
+    const vis = todos.filter(pasa);
+    const aprob = casos.filter(r => r.c.estado === 'Aprobado'), aprobCOP = aprob.filter(r => !r.usd), nUSD = aprob.length - aprobCOP.length;
+    const vpnAprob = aprobCOP.reduce((a, r) => a + (Number.isFinite(r.f.vpn) ? r.f.vpn : 0), 0);
+    const capT = casos.reduce((a, r) => a + r.cap, 0), proyT = casos.reduce((a, r) => a + r.proy, 0);
+    const nRev = casos.filter(r => r.c.estado === 'En revisión').length;
+    const m = v => App.moneyShort(v);
+    const cap = CF.modo === 'cap';
+    const bullet = r => {
+      if (!r.c) return '';
+      if (r.usd) return '<span class="faint">Caso en USD: va aparte</span>';
+      if (!r.proy) return `<span class="faint">Sin flujos en ${Y}</span>`;
+      const w = Math.min(100, r.cap / r.proy * 100), e = Math.min(100, r.esp / r.proy * 100);
+      const bajo = D.corrido > 0 && r.cap < r.esp * 0.9;
+      return `<span class="cn-bul ${bajo ? 'bajo' : ''}" title="Captado ${esc(m(r.cap))} de ${esc(m(r.proy))} proyectado en ${Y} · esperado a hoy ${esc(m(r.esp))}"><span class="t"><i style="width:${w}%"></i>${D.corrido > 0 ? `<u style="left:${e}%"></u>` : ''}</span><span class="v"><b>${esc(m(r.cap))}</b> / ${esc(m(r.proy))}</span></span>`;
     };
+    const fila = r => {
+      const nm = esc(App.projectName(r.p)), per = responsablesDe(r.p);
+      const sub = `${per.map(n => `<span class="pf-per" title="${esc(n)}"><i class="cl-${App.colorPersona(n)}"></i>${esc(n)}</span>`).join('')}${r.est ? `<span class="cn-fase">${esc(window.Fases && Fases.de(r.est) ? Fases.de(r.est).corto : r.est)}</span>` : ''}`;
+      if (!r.c) return `<tr class="cn-sin" data-pid="${r.p.id}"><td class="pf-nm"><b>${nm}</b><small>${sub}</small></td><td colspan="8" class="faint">${App.canEdit() ? '<span class="t-lnk">+ Crear caso de negocio</span> · ' : ''}${(r.p.props || {}).income ? `con su Income se arma un caso preliminar` : 'sin caso todavía'}</td><td class="cn-go">↗</td></tr>`;
+      const c = r.c, f = r.f, mo = c.moneda, sc = supuestoClave(c);
+      return `<tr data-pid="${r.p.id}"><td class="pf-nm"><b title="${nm}">${nm}</b><small>${sub}</small></td>
+        <td><span class="pill cl-${estadoColor(c.estado)}">${esc(c.estado || 'Borrador')}</span>${c.origen === 'ice' ? ' <span class="cn-pre" title="Caso preliminar construido desde el ICE">preliminar</span>' : ''}</td>
+        <td class="n">${f.totalInversion ? esc(App.moneyShort(f.totalInversion, mo)) : '<span class="faint">—</span>'}</td>
+        <td class="n cn-vpn">${f.vpn == null || !f.totalInversion ? '<span class="faint">—</span>' : `<b class="${f.vpn >= 0 ? '' : 'neg'}">${esc(App.moneyShort(f.vpn, mo))}</b>`}</td>
+        <td class="n">${f.tir == null ? '<span class="faint">—</span>' : esc(App.pct(f.tir))}</td>
+        <td class="n">${f.payback == null ? '<span class="faint">—</span>' : esc(App.num(f.payback, 1)) + ' años'}</td>
+        <td>${cap ? bullet(r) : `<span class="cn-proy"><b>${r.proy ? esc(m(r.proy)) : '—'}</b> <small>${esc(App.moneyShort(f.totalBeneficio, mo))} en ${Math.round(c.anios || 0)} años</small></span>`}</td>
+        <td class="cn-sup" title="${esc(sc)}">${sc ? esc(sc) : '<span class="faint">—</span>'}</td>
+        <td class="cn-act">${c.updated_at ? esc(App.d.ago(c.updated_at)) : ''}</td><td class="cn-go">↗</td></tr>`;
+    };
+    const grupos = GRUPOS.map(g => ({ g, l: vis.filter(r => r.c && g.de(r.c.estado)) })).filter(z => z.l.length);
+    const sin = vis.filter(r => !r.c);
+    const COLS = 10;
+    const cuerpo = grupos.map(z => `<tr class="cn-grp"><td colspan="${COLS}"><b>${z.g.t}</b> <small>${z.l.length} ${z.l.length === 1 ? 'caso' : 'casos'}</small></td></tr>${z.l.map(fila).join('')}`).join('')
+      + (sin.length ? `<tr class="cn-grp"><td colspan="${COLS}"><b>Sin caso de negocio</b> <small>${sin.length} ${sin.length === 1 ? 'iniciativa' : 'iniciativas'}</small></td></tr>${sin.map(fila).join('')}` : '');
+    const sel = (attr, label, val, opts) => `<label class="cn-f"><span>${label}</span><select data-cf="${attr}">${opts.map(([v, t]) => `<option value="${esc(v)}" ${String(val) === String(v) ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>`;
+    main.innerHTML = `<div class="pg-top"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Casos de negocio</h1>
+        <div class="kl"><span><b>${casos.length}</b>${casos.length === 1 ? 'caso' : 'casos'}</span><span><b>${esc(m(vpnAprob))}</b>VPN total aprobado${nUSD ? ` · ${nUSD} en USD aparte` : ''}</span><span><b>${esc(m(capT))}</b>captado ${Y} de ${esc(m(proyT))}</span><span><b class="${nRev ? 'r' : ''}">${nRev}</b>por aprobar en comité</span></div>
+        <span class="sp"></span><button class="btn ghost sm" data-cn="csv">Exportar a Excel</button>${App.canEdit() ? '<button class="btn primary sm" data-cn="nuevo">+ Nuevo caso</button>' : ''}</div>
+      <div class="pf-bar"><label class="search"><span>⌕</span><input id="cnq" placeholder="Buscar caso o iniciativa…" value="${esc(CF.q)}"></label>
+        ${sel('estado', 'Estado', CF.estado, [['', 'Todos'], ...ESTADOS.map(e => [e.name, e.name]), ['Sin caso', 'Sin caso']])}
+        ${sel('fase', 'Etapa', CF.fase, [['', 'Todas'], ...(window.Fases ? Fases.FASES.map(x => [String(x.id), x.fuera ? x.nombre : x.corto + ' · ' + x.nombre.split(' · ')[1].split(',')[0]]) : [])])}
+        ${sel('cat', 'Tipo de valor', CF.cat, [['', 'Todos'], ...App.CATS.map(x => [x.id, App.catLabel(x.id)])])}
+        <span class="sp"></span><div class="seg"><button data-modo="cap" class="${cap ? 'on' : ''}" aria-pressed="${cap}">Captado vs. proyectado</button><button data-modo="proy" class="${cap ? '' : 'on'}" aria-pressed="${!cap}">Proyectado</button></div></div>
+      <section class="t-card pf-tbl-card"><div class="pf-wrap"><table class="pf-tbl cn-tbl">
+        <thead><tr><th>Iniciativa <small>responsables · fase</small></th><th>Estado del caso</th><th class="n">Inversión</th><th class="n">VPN</th><th class="n">TIR</th><th class="n">Payback</th>
+          <th>${cap ? `Captado ${Y} <small>real / proyectado · ┃ esperado a hoy</small>` : `Beneficio ${Y} <small>proyectado · total del caso</small>`}</th><th>Supuesto clave</th><th>Actualizado</th><th></th></tr></thead>
+        <tbody>${cuerpo || `<tr><td colspan="${COLS}"><div class="t-vacio">${todos.length ? 'Ningún caso cumple estos filtros.' : 'Aún no hay iniciativas.'}</div></td></tr>`}</tbody></table></div>
+        <div class="t-pie t-pie-row"><span class="t-tag">Clic en una fila abre el caso con su tabla y flujos</span><span class="t-tag">Cifras en pesos · VPN con la tasa de descuento de cada caso${D.usd ? ' · casos en USD aparte' : ''}</span></div></section>`;
+    const q = $('#cnq', main);
+    q.oninput = () => { CF.q = q.value; const pos = q.selectionStart; section(main, params); const n = $('#cnq', main); n.focus(); n.setSelectionRange(pos, pos); };
+    main.onchange = e => { const s2 = e.target.closest('[data-cf]'); if (s2) { CF[s2.dataset.cf] = s2.value; guardarCF(); section(main, params); } };
+    main.onclick = e => {
+      if (e.target.closest('.burger')) return App.toggleSide();
+      const md = e.target.closest('[data-modo]'); if (md) { CF.modo = md.dataset.modo; guardarCF(); return section(main, params); }
+      const b = e.target.closest('[data-cn]');
+      if (b && b.dataset.cn === 'csv') return csvCasos(vis.filter(r => r.c), Y);
+      if (b && b.dataset.cn === 'nuevo') return nuevoCaso2(b);
+      const r = e.target.closest('tr[data-pid]'); if (r) App.go('#/casos/' + r.dataset.pid);
+    };
+  }
+  function nuevoCaso2(btn) {
+    const sin = App.projectsSorted().filter(p => !App.caseOf(p.id));
+    const pop = App.openPop(btn, `<div class="lbl">¿Para qué iniciativa es el caso?</div>
+      ${sin.length ? `<div style="padding:0 10px 6px"><input class="fld" data-n="q" placeholder="Buscar iniciativa…" style="width:100%"></div><div data-n="l" style="max-height:300px;overflow:auto">${sin.map(p => `<button class="mi" data-n-pid="${p.id}">${esc(App.projectName(p))}</button>`).join('')}</div>`
+        : '<div style="padding:4px 12px 10px" class="faint">Todas las iniciativas ya tienen caso. Crea primero la iniciativa en Portafolio.</div>'}`, { width: 340 });
+    const q = pop.querySelector('[data-n=q]'); if (q) { q.focus(); q.oninput = () => { const t = q.value.toLowerCase(); pop.querySelectorAll('[data-n-pid]').forEach(b => { b.style.display = b.textContent.toLowerCase().includes(t) ? '' : 'none'; }); }; }
+    pop.onclick = e => { const b = e.target.closest('[data-n-pid]'); if (b) { App.closePop(true); App.go('#/casos/' + b.dataset.nPid); } };
+  }
+  function csvCasos(lista, Y) {
+    const cell = v => { let s = String(v == null ? '' : v); if (/^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s)) s = "'" + s; return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const head = ['Iniciativa', 'Estado del caso', 'Moneda', 'Inversión', 'Beneficio total', 'VPN', 'TIR %', 'Payback (años)', 'Proyectado ' + Y, 'Captado ' + Y, 'Esperado a hoy', 'Supuesto clave', 'Sponsor', 'Actualizado'];
+    const lines = [head.map(cell).join(';'), ...lista.map(r => [App.projectName(r.p), r.c.estado || 'Borrador', r.c.moneda || 'COP', Math.round(r.f.totalInversion) || '', Math.round(r.f.totalBeneficio) || '', r.f.vpn != null ? Math.round(r.f.vpn) : '', r.f.tir != null ? Math.round(r.f.tir * 1000) / 10 : '', r.f.payback != null ? Math.round(r.f.payback * 10) / 10 : '', Math.round(r.proy) || '', Math.round(r.cap) || '', Math.round(r.esp) || '', supuestoClave(r.c), r.c.sponsor || '', (r.c.updated_at || '').slice(0, 10)].map(cell).join(';'))];
+    const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'casos-de-negocio-' + App.d.today() + '.csv'; a.click(); URL.revokeObjectURL(a.href);
   }
   function detalle(main, pid) {
     const p = App.byId('projects', pid);

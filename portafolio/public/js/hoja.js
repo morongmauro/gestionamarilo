@@ -7,6 +7,10 @@
    - Cuadrito azul: arrastrar para llenar (con 2+ celdas sigue la serie)
    - Ctrl+Z / Ctrl+Y deshacer y rehacer
    - En una celda: 1.250.000 · 1,2M · 300k · =150*12 · +5% (sobre el año anterior)
+   - Fórmulas entre filas: =[Unidades vendidas]*[Precio promedio]*(1-[Comisión])
+     El nombre entre [ ] es otra fila y toma su valor del MISMO año. Se recalculan
+     solas; al llenar hacia los lados o hacia abajo se copia la fórmula.
+   - Filas de «supuestos»: cantidades, precios o porcentajes que no suman al flujo
    ============================================================ */
 'use strict';
 (function () {
@@ -26,16 +30,17 @@
     return Number.isFinite(v) ? (neg ? -v : v) : null;
   }
   // Calculadora segura (sin eval): + - * / ( ) % y sufijos k / M
-  function evalExpr(src) {
+  function evalExpr(src, ref) {
     const toks = [];
-    const re = /\s*(?:(\d[\d.,]*)\s*(mm|mil|k|m)?\s*(%)?|([-+*/()]))\s*/iy;
+    const re = /\s*(?:\[([^\]]{1,120})\]|(\d[\d.,]*)\s*(mm|mil|k|m)?\s*(%)?|([-+*/()]))\s*/iy;
     let i = 0;
     while (i < src.length) {
       re.lastIndex = i; const m = re.exec(src);
       if (!m || !m[0].length) return null;
       i = re.lastIndex;
-      if (m[1] !== undefined) { let v = App.parseNum(m[1]) * SUF(m[2]); if (m[3]) v /= 100; toks.push({ n: v }); }
-      else toks.push({ o: m[4] });
+      if (m[1] !== undefined) { const v = ref ? ref(m[1]) : null; if (v == null || !Number.isFinite(v)) return null; toks.push({ n: v }); }
+      else if (m[2] !== undefined) { let v = App.parseNum(m[2]) * SUF(m[3]); if (m[4]) v /= 100; toks.push({ n: v }); }
+      else toks.push({ o: m[5] });
     }
     let p = 0;
     const peek = () => toks[p], eat = () => toks[p++];
@@ -58,6 +63,9 @@
     return v == null ? null : Math.round(v * escala * 100) / 100;
   }
 
+  const nombre = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+  const tieneRef = t => /^\s*=.*\[[^\]]+\]/.test(String(t || ''));
+
   /* ---------- la cuadrícula ---------- */
   // o: { rows, years (columnas de valores = años + 1), escala, anioInicio, ro, tipos, onLive, onCommit, onYears }
   function mount(el, o) {
@@ -68,7 +76,60 @@
     const dec = o.escala === 1 ? 0 : 2;
     const show = v => (v == null || v === 0 || v === '' ? '' : App.num(Number(v) / o.escala, dec));
     const val = (idx, t) => Number(((rows[idx] || {}).valores || [])[t]) || 0;
-    const setVal = (idx, t, v) => { const r = rows[idx]; r.valores = r.valores || []; while (r.valores.length <= t) r.valores.push(0); r.valores[t] = v; };
+    const esSup = idx => (rows[idx] || {}).tipo === 'supuesto';
+    const fx = (idx, t) => ((rows[idx] || {}).formulas || {})[t] || null;
+    // Lo que se ve en una celda: los supuestos van tal cual (no son plata ni se escalan); con % si la fila es de porcentajes
+    const ver = (idx, t) => { const v = val(idx, t); if (!esSup(idx)) return show(v); if (!v) return ''; return rows[idx].pct ? App.num(v * 100, 2) + ' %' : App.num(v, 4); };
+    const setRaw = (idx, t, v) => { const r = rows[idx]; r.valores = r.valores || []; while (r.valores.length <= t) r.valores.push(0); r.valores[t] = v; };
+    // Lo que escribe la persona reemplaza la fórmula de esa celda
+    const setVal = (idx, t, v) => { setRaw(idx, t, v); const F = rows[idx].formulas; if (F && t in F) { delete F[t]; if (!Object.keys(F).length) delete rows[idx].formulas; } };
+    const setFx = (idx, t, txt) => { rows[idx].formulas = Object.assign({}, rows[idx].formulas, { [t]: txt }); };
+    const refDe = t => n => { const j = rows.findIndex(r => nombre(r.concepto) === nombre(n)); return j < 0 ? null : val(j, t); };
+    // Recalcula todas las fórmulas (en varias pasadas, por si una depende de otra). Lo que no se puede calcular
+    // (un nombre que no existe o una referencia circular) queda marcado.
+    function recalc() {
+      S.err = {};
+      const conFx = rows.map((r, idx) => [idx, r.formulas]).filter(([, F]) => F && Object.keys(F).length);
+      if (!conFx.length) return;
+      // Referencias circulares (una fórmula que, directa o indirectamente, se usa a sí misma)
+      const fila = n => rows.findIndex(r => nombre(r.concepto) === nombre(n));
+      const deps = (idx, t) => { const F = rows[idx].formulas; if (!F || !(t in F)) return []; return [...String(F[t]).matchAll(/\[([^\]]+)\]/g)].map(m => fila(m[1])).filter(j => j >= 0); };
+      const ciclo = {};
+      conFx.forEach(([idx, F]) => Object.keys(F).forEach(t => {
+        const ver0 = new Set(), pila = [...deps(idx, t)];
+        while (pila.length) { const j = pila.pop(); if (j === idx) { ciclo[idx + ':' + t] = true; break; } if (ver0.has(j)) continue; ver0.add(j); pila.push(...deps(j, t)); }
+      }));
+      let cambio = true, n = 0;
+      for (; cambio && n <= rows.length + 1; n++) {
+        cambio = false; S.err = Object.assign({}, ...Object.keys(ciclo).map(k => ({ [k]: 'ciclo' })));
+        conFx.forEach(([idx, F]) => Object.entries(F).forEach(([t, txt]) => {
+          if (ciclo[idx + ':' + t]) return;
+          const v = evalExpr(String(txt).replace(/^\s*=/, ''), refDe(+t));
+          if (v == null) { S.err[idx + ':' + t] = true; return; }
+          const nv = esSup(idx) ? Math.round(v * 1e6) / 1e6 : Math.round(v * 100) / 100;
+          if (val(idx, +t) !== nv) { setRaw(idx, +t, nv); cambio = true; }
+        }));
+      }
+      if (cambio) conFx.forEach(([idx, F]) => Object.keys(F).forEach(t => { S.err[idx + ':' + t] = 'ciclo'; }));
+    }
+    // Interpretar lo que se escribe en una celda de valores
+    function parseFor(idx, txt, prev) {
+      const s = String(txt == null ? '' : txt).trim();
+      if (!esSup(idx)) return parseCell(s, prev, o.escala);
+      if (!s) return 0;
+      const g = /^([+-])\s*(\d+(?:[.,]\d+)?)\s*%$/.exec(s);
+      if (g) { const p = Number(g[2].replace(',', '.')) / 100; return Math.round((prev || 0) * (1 + (g[1] === '-' ? -p : p)) * 1e6) / 1e6; }
+      const pc = /^(-?\d+(?:[.,]\d+)?)\s*%$/.exec(s);
+      if (pc) { rows[idx].pct = true; return Number(pc[1].replace(',', '.')) / 100; }
+      const v = s[0] === '=' ? evalExpr(s.slice(1)) : parseQty(s);
+      return v == null ? null : Math.round(v * 1e6) / 1e6;
+    }
+    // Pinta de nuevo los valores (sin redibujar la tabla): después de recalcular
+    function pintarValores() {
+      nav.forEach((idx, r) => { for (let t = 0; t < NC(); t++) { const td = tdAt(r, t + 1); if (!td) continue; const inp = $('input', td);
+        td.classList.toggle('fx', !!fx(idx, t)); td.classList.toggle('fx-err', !!(S.err && S.err[idx + ':' + t])); td.title = fx(idx, t) ? fx(idx, t) + (S.err && S.err[idx + ':' + t] ? (S.err[idx + ':' + t] === 'ciclo' ? ' · referencia circular' : ' · revisa los nombres entre [ ]') : '') : '';
+        if (inp && inp !== document.activeElement) inp.value = ver(idx, t); } });
+    }
     const snapshot = () => JSON.stringify(rows);
     const restore = json => { const a = JSON.parse(json); rows.length = 0; a.forEach(x => rows.push(x)); };
     const pushUndo = before => { S.undo.push(before); if (S.undo.length > 60) S.undo.shift(); S.redo = []; };
@@ -86,8 +147,10 @@
       return line('Inversión', f.inversion) + line('Costos', f.costos) + line('Beneficios', f.beneficios) + line('Flujo neto', f.netos, 'neto') + line('Acumulado', f.acumulado, '', false);
     }
     const rowTotal = idx => (rows[idx].valores || []).slice(0, NC()).reduce((a, b) => a + (Number(b) || 0), 0);
+    const totTxt = (r, idx) => (r.tipo === 'supuesto' ? '' : App.num((r.valores || []).slice(0, NC()).reduce((a, b) => a + (Number(b) || 0), 0) / o.escala, dec));
 
     function render() {
+      recalc();
       nav = [];
       const head = `<tr><th>Concepto</th>${Array.from({ length: NC() }, (_, t) => `<th>${yearLbl(t)}</th>`).join('')}<th>Total</th><th></th></tr>`;
       const body = o.tipos.map(([tipo, lbl]) => {
@@ -97,8 +160,8 @@
           const ben = rows[idx].tipo === 'beneficio' && App.catOf;
           const cat = ben ? App.catOf(rows[idx]) : null;
           return `<tr data-row="${r}"><td data-r="${r}" data-c="0" class="${ben ? 'con-cat' : ''}"><input class="cpt" value="${esc(rows[idx].concepto || '')}" placeholder="Concepto" spellcheck="false" ${o.ro ? 'readonly' : ''}>${ben ? `<button class="catb cat-${esc(cat)}" data-cat="${idx}" tabindex="-1" title="Tipo de valor (cambiar)"><i></i>${esc(App.catLabel(cat))}</button>` : ''}</td>` +
-            Array.from({ length: NC() }, (_, t) => `<td data-r="${r}" data-c="${t + 1}"><input value="${esc(show(val(idx, t)))}" inputmode="decimal" spellcheck="false" ${o.ro ? 'readonly' : ''}></td>`).join('') +
-            `<td class="rt" data-rt="${idx}">${esc(App.num(rowTotal(idx) / o.escala, dec))}</td><td class="rm">${o.ro ? '' : `<button class="x" data-rowmenu="${idx}" title="Opciones de la fila" tabindex="-1">···</button>`}</td></tr>`;
+            Array.from({ length: NC() }, (_, t) => `<td data-r="${r}" data-c="${t + 1}" class="${fx(idx, t) ? 'fx' : ''}${S.err && S.err[idx + ':' + t] ? ' fx-err' : ''}" title="${esc(fx(idx, t) || '')}"><input value="${esc(ver(idx, t))}" inputmode="decimal" spellcheck="false" ${o.ro ? 'readonly' : ''}></td>`).join('') +
+            `<td class="rt" data-rt="${idx}">${esc(totTxt(rows[idx], idx))}</td><td class="rm">${o.ro ? '' : `<button class="x" data-rowmenu="${idx}" title="Opciones de la fila" tabindex="-1">···</button>`}</td></tr>`;
         }).join('');
         return `<tr class="grp"><td colspan="${NC() + 3}">${lbl}${o.ro ? '' : `<button data-addrow="${tipo}" tabindex="-1">+ fila</button>`}</td></tr>${trs}`;
       }).join('');
@@ -110,7 +173,7 @@
     }
     function refreshTotals(src) {
       $('tbody.tots', el).innerHTML = totalsHTML(src || rows);
-      (src || rows).forEach((r, idx) => { const td = $(`[data-rt="${idx}"]`, el); if (td) td.textContent = App.num((r.valores || []).slice(0, NC()).reduce((a, b) => a + (Number(b) || 0), 0) / o.escala, dec); });
+      (src || rows).forEach((r, idx) => { const td = $(`[data-rt="${idx}"]`, el); if (td) td.textContent = totTxt(r, idx); });
     }
     function paint(preview) {
       $$('td.sel, td.act, td.fillp', el).forEach(td => td.classList.remove('sel', 'act', 'fillp'));
@@ -141,18 +204,28 @@
       const td = inp.parentElement, r = +td.dataset.r, c = +td.dataset.c, idx = nav[r];
       if (idx == null) return true;
       if (c === 0) { if ((rows[idx].concepto || '') !== inp.value) { const before = snapshot(); rows[idx].concepto = inp.value; finish(before); } return true; }
+      const t = c - 1, txt = inp.value.trim();
       // Sin cambios en el texto: no se relee lo que se ve (redondeado) para no perder decimales
-      if (inp.value === S.focusSnap && S.focusSnap === show(val(idx, c - 1))) { refreshTotals(); return true; }
-      const v = parseCell(inp.value, c > 1 ? val(idx, c - 2) : 0, o.escala);
-      if (v == null) { if (!quiet) App.toast(`No entendí «${inp.value}». Escribe un número, 1,2M, 300k, =150*12 o +5%`, true); inp.value = show(val(idx, c - 1)); refreshTotals(); return false; }
-      if (v !== val(idx, c - 1)) { const before = snapshot(); setVal(idx, c - 1, v); finish(before); }
-      inp.value = show(val(idx, c - 1));
+      if ((inp.value === S.focusSnap && (S.focusSnap === ver(idx, t) || S.focusSnap === fx(idx, t))) || (inp.value === ver(idx, t) && inp.value !== '')) { inp.value = ver(idx, t); refreshTotals(); return true; }
+      if (tieneRef(txt)) { // fórmula entre filas
+        const v = evalExpr(txt.replace(/^=/, ''), refDe(t));
+        if (v == null) { if (!quiet) App.toast(`No entendí la fórmula. Los nombres entre [ ] deben ser filas de esta tabla: ${rows.filter(x => (x.concepto || '').trim()).slice(0, 6).map(x => '[' + x.concepto.trim() + ']').join(' ')}`, true); inp.value = fx(idx, t) || ver(idx, t); return false; }
+        if (txt !== fx(idx, t)) { const before = snapshot(); setFx(idx, t, txt); recalc(); finish(before); }
+        inp.value = ver(idx, t); pintarValores(); return true;
+      }
+      const v = parseFor(idx, inp.value, c > 1 ? val(idx, c - 2) : 0);
+      if (v == null) { if (!quiet) App.toast(`No entendí «${inp.value}». Escribe un número, 1,2M, 300k, =150*12, +5% o =[otra fila]*2`, true); inp.value = ver(idx, t); refreshTotals(); return false; }
+      if (v !== val(idx, t) || fx(idx, t)) { const before = snapshot(); setVal(idx, t, v); recalc(); finish(before); pintarValores(); }
+      inp.value = ver(idx, t);
       return true;
     }
     function finish(before) { pushUndo(before); refreshTotals(); o.onCommit(rows); }
+    // Copiar la fórmula de una celda a otra (llenar): las referencias son por nombre y del mismo año, así que valen tal cual
+    const copiar = (src, ts, idx, t) => { const F = fx(src, ts); if (F) { setRaw(idx, t, 0); setFx(idx, t, F); return true; } return false; };
     function op(fn, rerender = true) {
       const act = document.activeElement; if (act && el.contains(act)) commitInput(act, true);
       const before = snapshot(); const r = fn(); if (r === false) return;
+      recalc();
       if (snapshot() === before) return;
       pushUndo(before);
       if (rerender) { const a = S.act, s = S.sel; render(); S.act = a; S.sel = s; paint(); if (a) focusCell(a.r, a.c, true); } else refreshTotals();
@@ -167,8 +240,8 @@
 
     /* ---------- operaciones de rango ---------- */
     const clearRange = () => op(() => { const g = range(); for (let r = g.r0; r <= g.r1; r++) for (let c = g.c0; c <= g.c1; c++) { const idx = nav[r]; if (c === 0) rows[idx].concepto = ''; else setVal(idx, c - 1, 0); } });
-    const fillDown = () => op(() => { const g = range(); if (g.r0 === g.r1) return false; for (let c = g.c0; c <= g.c1; c++) for (let r = g.r0 + 1; r <= g.r1; r++) { if (c === 0) rows[nav[r]].concepto = rows[nav[g.r0]].concepto; else setVal(nav[r], c - 1, val(nav[g.r0], c - 1)); } });
-    const fillRight = () => op(() => { const g = range(); const c0 = Math.max(1, g.c0); if (c0 >= g.c1) return false; for (let r = g.r0; r <= g.r1; r++) for (let c = c0 + 1; c <= g.c1; c++) setVal(nav[r], c - 1, val(nav[r], c0 - 1)); });
+    const fillDown = () => op(() => { const g = range(); if (g.r0 === g.r1) return false; for (let c = g.c0; c <= g.c1; c++) for (let r = g.r0 + 1; r <= g.r1; r++) { if (c === 0) rows[nav[r]].concepto = rows[nav[g.r0]].concepto; else if (!copiar(nav[g.r0], c - 1, nav[r], c - 1)) setVal(nav[r], c - 1, val(nav[g.r0], c - 1)); } });
+    const fillRight = () => op(() => { const g = range(); const c0 = Math.max(1, g.c0); if (c0 >= g.c1) return false; for (let r = g.r0; r <= g.r1; r++) for (let c = c0 + 1; c <= g.c1; c++) { if (!copiar(nav[r], c0 - 1, nav[r], c - 1)) setVal(nav[r], c - 1, val(nav[r], c0 - 1)); } });
     function copyText() {
       const g = range(); const out = [];
       for (let r = g.r0; r <= g.r1; r++) {
@@ -190,7 +263,7 @@
       const isNum = s => parseQty(s) != null;
       // Un solo valor sobre varias celdas: las llena todas
       if (grid.length === 1 && grid[0].length === 1 && multi()) {
-        return op(() => { for (let r = g.r0; r <= g.r1; r++) for (let c = g.c0; c <= g.c1; c++) { if (c === 0) rows[nav[r]].concepto = grid[0][0]; else { const v = parseCell(grid[0][0], c > 1 ? val(nav[r], c - 2) : 0, o.escala); if (v != null) setVal(nav[r], c - 1, v); } } });
+        return op(() => { for (let r = g.r0; r <= g.r1; r++) for (let c = g.c0; c <= g.c1; c++) { if (c === 0) rows[nav[r]].concepto = grid[0][0]; else if (tieneRef(grid[0][0])) { setRaw(nav[r], c - 1, 0); setFx(nav[r], c - 1, grid[0][0].trim()); } else { const v = parseFor(nav[r], grid[0][0], c > 1 ? val(nav[r], c - 2) : 0); if (v != null) setVal(nav[r], c - 1, v); } } });
       }
       // Tabla completa de Excel: se salta la fila de títulos y se toma la primera columna como concepto
       // (los años de los títulos, como 2026, también cuentan como títulos)
@@ -210,7 +283,8 @@
             const c = c0 + j;
             if (c === 0) { if (cell.trim()) rows[idx].concepto = cell.trim(); return; }
             if (c - 1 >= MAXY + 1) return;
-            const v = parseCell(cell, c > 1 ? val(idx, c - 2) : 0, o.escala);
+            if (tieneRef(cell)) { setRaw(idx, c - 1, 0); setFx(idx, c - 1, cell.trim()); return; }
+            const v = parseFor(idx, cell, c > 1 ? val(idx, c - 2) : 0);
             if (v != null) setVal(idx, c - 1, v);
           });
         });
@@ -232,14 +306,14 @@
           for (let r = g.r0; r <= g.r1; r++) {
             const idx = nav[r], w = g.c1 - cS + 1;
             const last = val(idx, g.c1 - 1), step = w >= 2 ? last - val(idx, g.c1 - 2) : 0;
-            for (let c = g.c1 + 1; c <= target.c; c++) setVal(idx, c - 1, w >= 2 ? last + step * (c - g.c1) : last);
+            for (let c = g.c1 + 1; c <= target.c; c++) { if (!copiar(idx, g.c1 - 1, idx, c - 1)) setVal(idx, c - 1, w >= 2 ? last + step * (c - g.c1) : last); }
           }
           S.sel = { r0: g.r0, c0: g.c0, r1: g.r1, c1: target.c };
         } else {
           const h = g.r1 - g.r0 + 1;
           for (let r = g.r1 + 1; r <= target.r; r++) {
             const src = nav[g.r0 + ((r - g.r1 - 1) % h)], idx = nav[r];
-            for (let c = g.c0; c <= g.c1; c++) { if (c === 0) rows[idx].concepto = rows[src].concepto; else setVal(idx, c - 1, val(src, c - 1)); }
+            for (let c = g.c0; c <= g.c1; c++) { if (c === 0) rows[idx].concepto = rows[src].concepto; else if (!copiar(src, c - 1, idx, c - 1)) setVal(idx, c - 1, val(src, c - 1)); }
           }
           S.sel = { r0: g.r0, c0: g.c0, r1: target.r, c1: g.c1 };
         }
@@ -294,13 +368,14 @@
       const td = inp.parentElement, r = +td.dataset.r, c = +td.dataset.c;
       S.act = { r, c };
       if (!S.keep && !S.drag) S.sel = { r0: r, c0: c, r1: r, c1: c };
+      if (c > 0 && fx(nav[r], c - 1) && document.activeElement === inp) inp.value = fx(nav[r], c - 1);
       S.focusSnap = inp.value; inp.select(); paint();
     });
     el.addEventListener('focusout', e => { const inp = e.target; if (S.rendering) return; if (inp.tagName === 'INPUT' && inp.parentElement.dataset.r && el.contains(inp)) commitInput(inp); });
     el.oninput = e => {
       const inp = e.target; if (inp.tagName !== 'INPUT') return;
       const td = inp.parentElement, c = +td.dataset.c, idx = nav[+td.dataset.r];
-      if (c === 0) return;
+      if (c === 0 || esSup(idx) || tieneRef(inp.value)) return;
       const v = parseCell(inp.value, c > 1 ? val(idx, c - 2) : 0, o.escala);
       if (v == null) return;
       const tmp = JSON.parse(snapshot()); const rr = tmp[idx]; rr.valores = rr.valores || []; while (rr.valores.length <= c - 1) rr.valores.push(0); rr.valores[c - 1] = v;
