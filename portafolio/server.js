@@ -425,6 +425,25 @@ route('POST', '/api/plan/:pid', 'editor', async (req, ctx) => {
   return { cambios: n, activities: activities.filter(a => a.project_id === pid), sections: sections.filter(x => x.project_id === pid) };
 });
 
+// ---------- Traer un cronograma desde la app de gestión (enlace compartido) ----------
+// Solo enlaces de los sitios permitidos (GESTION_HOSTS; por defecto gestionamarilo.vercel.app):
+// el servidor no sale a cualquier dirección que alguien escriba.
+route('POST', '/api/importar/gestion', 'editor', async (req, ctx) => {
+  let u; try { u = new URL(String(ctx.body.url || '').trim()); } catch { throw new HttpError(400, 'Pega el enlace completo, p. ej. https://gestionamarilo.vercel.app/share/…'); }
+  const hosts = String(process.env.GESTION_HOSTS || 'gestionamarilo.vercel.app').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
+  const m = /^\/share\/([A-Za-z0-9_-]{8,128})\/?$/.exec(u.pathname);
+  if (u.protocol !== 'https:' || !hosts.includes(u.hostname.toLowerCase()) || !m) throw new HttpError(400, `El enlace debe ser un cronograma compartido de ${hosts.join(' o ')} (…/share/código)`);
+  let r;
+  try { r = await fetch(`https://${u.hostname}/api/share/${m[1]}`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(15000) }); }
+  catch (e) { throw new HttpError(502, 'No se pudo leer el enlace: ' + e.message); }
+  if (r.status === 404) throw new HttpError(404, 'El enlace no existe o fue revocado en la app de gestión');
+  if (!r.ok) throw new HttpError(502, `La app de gestión respondió ${r.status}`);
+  const d = await r.json();
+  if (!d || !Array.isArray(d.activities) || !Array.isArray(d.sections)) throw new HttpError(502, 'El enlace no trae un cronograma');
+  const p = d.project || {};
+  return { project: { name: p.name || '', fechaMeta: p.fechaMeta || null, lineaBaseAt: p.lineaBaseAt || null }, sections: d.sections, activities: d.activities, miembros: Array.isArray(d.miembros) ? d.miembros : [] };
+});
+
 // ---------- Comentarios de una actividad (la nubecita del plan) ----------
 route('POST', '/api/activities/:id/comentarios', 'editor', async (req, ctx) => {
   const texto = String(ctx.body.texto || '').trim().slice(0, 4000);

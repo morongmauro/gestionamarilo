@@ -277,6 +277,7 @@
       <div class="card-box" style="margin-bottom:16px"><h3 style="font-size:14px;font-weight:800;margin-bottom:6px">Más herramientas</h3><div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="#/historial">Historial de cambios</a><a class="btn" href="#/cronograma">Cronogramas de todo el portafolio</a><a class="btn" href="#/casos">Casos de negocio</a><a class="btn ghost" href="#/sistema">Sistema de diseño</a></div></div>`;
     if (App.ImportarNotion) box.appendChild(App.ImportarNotion.tarjeta());
     if (App.Columnas) box.appendChild(App.Columnas.tarjeta());
+    if (App.Caso && App.Caso.tarjetaPreliminares) box.appendChild(App.Caso.tarjetaPreliminares());
     const first = $('.card-box', main); if (first) first.insertAdjacentElement('beforebegin', box); else main.appendChild(box);
     box.addEventListener('click', e => { const b = e.target.closest('[data-qe=editar]'); if (b) editarQueEs(b); });
   }

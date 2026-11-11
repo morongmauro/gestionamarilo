@@ -93,7 +93,7 @@
       <td>${av}</td>
       <td><a class="pf-crono" href="#/cronograma/${r.p.id}" title="Abrir el cronograma">${mini(r)}</a></td>
       <td>${caso}</td>
-      <td>${al ? `<a class="pf-al ${al.sev >= 3 ? 'crit' : 'warn'}" href="${al.href}" title="${esc(r.al.map(o => '• ' + o.txt).join('\n'))}">${al.sev >= 3 ? '●' : '▲'} ${esc(cortoAlerta(al.txt))}${r.al.length > 1 ? ` <em>+${r.al.length - 1}</em>` : ''}</a>` : '<span class="pf-ok">✓ Al día</span>'}</td></tr>`;
+      <td>${al ? `<a class="pf-al ${al.sev >= 3 ? 'crit' : 'warn'}" href="${al.href}" title="${esc(r.al.map(o => '• ' + o.txt).join('\n'))}">${al.sev >= 3 ? '●' : '▲'} ${esc(cortoAlerta(al.txt))}${r.al.length > 1 ? ` <em>+${r.al.length - 1}</em>` : ''}</a>` : (() => { const av = App.Avance && App.Avance.de(r.p); return av && av.listo ? `<a class="pf-listo" href="#/proyectos/${r.p.id}" title="Cumple los criterios: confirma el cambio en su ficha">↗ Lista para ${esc(av.sig.corto)}</a>` : '<span class="pf-ok">✓ Al día</span>'; })()}</td></tr>`;
   }
   const corto = e => { const f = window.Fases && Fases.de(e); if (f) return f.corto; const mm = /^(L\d)\b/i.exec(e); return mm ? mm[1].toUpperCase() : e; };
   const cortoAlerta = t => t.replace(/ en el cronograma$/, '').replace(/^(\d+) actividad(?:es)? atrasadas?$/, (_, n) => n + (n === '1' ? ' atrasada' : ' atrasadas')).replace(/^1 compromiso de comité vencido$/, 'Compromiso vencido').replace(/^Captura (rezagada|por debajo): (\d+)%.*/, 'Captura al $2 %').replace(/^Termina (\d+) días? hábil(es)? después de la fecha meta$/, 'Meta +$1 días').replace(/ de comité vencidos?$/, ' vencido').replace(/^(\d+) actividad(es)? de la ruta crítica en riesgo$/, 'Ruta crítica en riesgo');

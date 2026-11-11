@@ -86,7 +86,7 @@ const SCHEMAS = {
   sections: { project_id: 'id', name: 'str', position: 'num', parent_id: 'id', enabled: 'bool' },
   // Caso de negocio (uno por proyecto)
   cases: {
-    project_id: 'id', estado: 'str', sponsor: 'str', fecha_comite: 'date',
+    project_id: 'id', estado: 'str', sponsor: 'str', fecha_comite: 'date', origen: 'str', // origen «ice» = caso preliminar
     problema: 'text', objetivo: 'text', alcance: 'text', fuera_alcance: 'text', beneficios_cual: 'text',
     riesgos: 'text', supuestos: 'text', recomendacion: 'text',
     tasa: 'num', anios: 'num', anio_inicio: 'num', moneda: 'str', flujos: 'objs', escenarios: 'obj', captado: 'objs',

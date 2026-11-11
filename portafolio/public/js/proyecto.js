@@ -25,11 +25,12 @@
         <div class="facts">
           <span>Cronograma: <b>${pl.ini ? `${esc(App.d.fmt(pl.ini))} – ${esc(App.d.fmt(pl.fin))}` : esc(App.sinPlan(p).corto)}</b></span>
           ${pl.acts.length ? `<span><span class="bar-mini"><i style="width:${pl.avance}%"></i></span><b>${pl.avance}%</b> de avance${pl.atrasadas ? ` · <b style="color:var(--crit-ink)">${pl.atrasadas} atrasada${pl.atrasadas > 1 ? 's' : ''}</b>` : ''}</span>` : ''}
-          <span>Caso: ${caso ? `<span class="pill cl-${App.Caso.estadoColor(caso.estado)}">${esc(caso.estado || 'Borrador')}</span>${f.vpn != null ? ` <b>VPN ${esc(App.moneyShort(f.vpn, caso.moneda))}</b>` : ''}` : '<b>sin caso</b>'}</span>
+          <span>Caso: ${caso ? `<span class="pill cl-${App.Caso.estadoColor(caso.estado)}">${esc(caso.estado || 'Borrador')}</span>${f.vpn != null && f.totalInversion > 0 ? ` <b>VPN ${esc(App.moneyShort(f.vpn, caso.moneda))}</b>` : caso.origen === 'ice' ? ' <span class="faint">preliminar</span>' : ''}` : '<b>sin caso</b>'}</span>
           <span title="${esc((App.ICE.detalle(p).notas || []).join('\n'))}">ICE: <b>${App.iceOf(p) == null ? '—' : esc(App.num(App.iceOf(p), 1))}</b>${ro ? '' : ' <button class="t-lnk" data-p="ice">calcular / editar</button>'}</span>
           <span>Próximo comité: <b>${prox ? `${esc(App.d.fmtShort(prox.fecha))} · ${esc(App.Agenda.tituloOf(prox))}` : 'ninguno'}</b></span>
         </div>
       </div>
+      ${App.Avance ? App.Avance.html(p, ro) : ''}
       <nav class="ptabs">${TABS.map(([k, l]) => `<a href="#/proyectos/${id}/${k}" class="${k === tab ? 'on' : ''}">${l}${k === 'cronograma' && pl.acts.length ? `<span class="n">${pl.acts.length}</span>` : ''}${k === 'comites' && ses.length ? `<span class="n">${ses.length}</span>` : ''}</a>`).join('')}</nav>
       <div id="pTab"></div>`;
     const box = $('#pTab', main);
@@ -60,6 +61,8 @@
       if (a === 'titulo') App.Tabla.openEditor(b, id, tc.id);
       if (a === 'estado' && ec) App.Tabla.openEditor(b, id, ec.id);
       if (a === 'ice') return iceEditor(b, p);
+      if (a === 'avanzar' && ec) { const nueva = b.dataset.fase; if (!confirm(`¿Pasar «${App.projectName(p)}» a ${nueva}?\n\nQueda en la trazabilidad. Si lo decidió el comité, regístralo también en la sesión.`)) return;
+        return App.guard(async () => { await App.patch('projects', id, { props: { [ec.id]: nueva } }); App.toast('Cambió de fase'); App.render(); }); }
       if (a === 'agendar') App.Agenda.openNewSession(App.d.add(App.d.today(), 7), { proyectos: [id] });
       if (a === 'menu') App.menu(b, [{ id: 'tabla', label: '▤ Ver en la tabla' }, { id: 'agenda', label: '▦ Agendar en comité' }, '-', { id: 'del', label: '🗑 Eliminar proyecto', danger: true }], m => {
         if (m === 'tabla') App.go('#/proyectos');

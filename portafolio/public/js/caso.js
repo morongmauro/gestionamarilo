@@ -29,6 +29,41 @@
       { id: App.uid(), concepto: 'Beneficio esperado', tipo: 'beneficio', valores: [] }] };
   }
 
+  // Caso preliminar desde el ICE, para iniciativas que llegaron de Notion con Income pero sin caso.
+  // Valor a dos años: la columna «Valor a crear/capturar» si existe; si no, el MÍNIMO del rango del Income
+  // (lo conservador). Se reparte en los años 1 y 2. Inversión y costos quedan para el equipo.
+  const MIN_INCOME = { 1: 25e6, 2: 51e6, 3: 201e6, 5: 601e6, 8: 1201e6, 13: 2201e6, 21: 4201e6, 34: 8201e6, 55: 16201e6 };
+  function preliminar(p) {
+    if (!p || App.caseOf(p.id)) return null;
+    const v = p.props || {}, inc = App.ICE.fib(v.ice_income), vc = Number(v.valor_crear) || 0;
+    if (!inc && !(vc > 0)) return null;
+    const valor = vc > 0 ? vc : MIN_INCOME[inc];
+    const tv = App.S.columns.find(c => c.id === 'tipo_valor') || App.S.columns.find(c => /tipo de valor/i.test(c.name));
+    const cat = App.catDeTipoValor(tv ? v[tv.id] : ''), mitad = Math.round(valor / 2);
+    const fuente = vc > 0 ? 'valor a crear/capturar registrado' : `Income ${inc}: mínimo del rango (${App.moneyShort(valor)} a dos años)`;
+    return { porque: vc > 0 ? `valor a crear registrado (${App.moneyShort(vc)})` : `Income ${inc} registrado en el ICE`, caso: {
+      project_id: p.id, estado: 'Borrador', origen: 'ice', tasa: 12, anios: 2, moneda: 'COP', anio_inicio: +App.d.today().slice(0, 4),
+      supuestos: `Caso preliminar construido desde el ICE (${fuente}). Reemplazar con las cifras reales.`,
+      flujos: [
+        { id: App.uid(), concepto: 'Inversión (por definir)', tipo: 'inversion', valores: [] },
+        { id: App.uid(), concepto: 'Costos de operación (por definir)', tipo: 'costo', valores: [] },
+        { id: App.uid(), concepto: `${App.catLabel(cat)} estimado desde el ICE`, tipo: 'beneficio', categoria: cat, valores: [0, mitad, valor - mitad] }] } };
+  }
+  // Administración: armar de una vez los casos preliminares que falten
+  function tarjetaPreliminares() {
+    const box = document.createElement('div'); box.className = 'card-box'; box.style.marginBottom = '16px';
+    const pintar = () => {
+      const ps = App.S.projects.map(p => ({ p, pre: preliminar(p) })).filter(x => x.pre);
+      box.innerHTML = `<h3 style="font-size:14px;font-weight:800;margin-bottom:4px">Casos preliminares desde el ICE</h3>
+        <div class="muted" style="font-size:12.5px;margin-bottom:10px">${ps.length ? `<b>${ps.length}</b> iniciativa${ps.length === 1 ? '' : 's'} tiene${ps.length === 1 ? '' : 'n'} Income (o valor a crear) pero no caso de negocio. Se arma un caso en borrador con el mínimo del rango del Income a dos años; la inversión queda para el equipo. No toca ninguna iniciativa que ya tenga caso.` : 'Todas las iniciativas con Income ya tienen caso de negocio.'}</div>
+        ${ps.length ? `<div class="faint" style="font-size:12px;margin-bottom:8px">${ps.slice(0, 8).map(x => esc(App.projectName(x.p))).join(' · ')}${ps.length > 8 ? ` y ${ps.length - 8} más` : ''}</div><button class="btn" data-pre="1">Armar ${ps.length} caso${ps.length === 1 ? '' : 's'} preliminar${ps.length === 1 ? '' : 'es'}</button>` : ''}`;
+      const b = box.querySelector('[data-pre]');
+      if (b) b.onclick = () => { if (!confirm(`¿Armar ${ps.length} casos preliminares desde el ICE?`)) return; b.disabled = true;
+        App.guard(async () => { for (const x of ps) await App.create('cases', x.pre.caso); App.toast(`Listo: ${ps.length} casos preliminares`); pintar(); }).finally(() => { b.disabled = false; }); };
+    };
+    pintar(); return box;
+  }
+
   /* ---------- editor (en la sección y en la pestaña del proyecto) ---------- */
   const ESC_DEF = { pes: { b: -20, c: 10, i: 10 }, opt: { b: 15, c: -5, i: 0 } };
   const ESCALAS = [[1, 'Pesos'], [1e3, 'Miles'], [1e6, 'Millones']];
@@ -39,6 +74,9 @@
     if (!c) {
       el.innerHTML = `<div class="card-box"><div class="empty-box"><b>Este proyecto aún no tiene caso de negocio</b>${ro ? 'Cuando el equipo lo cree, aparecerá aquí.' : 'Arma la justificación: problema, objetivo, beneficios, costos y la decisión que se le pide al comité. Puedes empezar desde cero o subir el Excel que ya tienes.'}${ro ? '' : '<div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn primary" data-c="crear">+ Crear caso de negocio</button><button class="btn" data-c="crear-excel">⇪ Crear desde un Excel</button></div>'}</div></div>`;
       const b = $('[data-c=crear]', el); if (b) b.onclick = () => App.guard(async () => { await App.create('cases', nuevoCaso(pid)); App.render(); });
+      const pre = preliminar(App.byId('projects', pid));
+      if (pre && !ro) { const box = $('.empty-box', el); if (box) box.insertAdjacentHTML('beforeend', `<div class="cs-prelim" style="margin-top:12px;text-align:left">⤴ <span>Esta iniciativa ya tiene ${esc(pre.porque)}. <b>Arma un caso preliminar</b> con ese valor y complétalo después.</span><button class="btn primary sm" data-c="crear-ice">Armar caso desde el ICE</button></div>`); }
+      const bi = $('[data-c=crear-ice]', el); if (bi) bi.onclick = () => App.guard(async () => { await App.create('cases', pre.caso); App.toast('Caso preliminar creado'); App.render(); });
       const bx = $('[data-c=crear-excel]', el); if (bx) bx.onclick = () => App.guard(async () => { await App.create('cases', Object.assign(nuevoCaso(pid), { flujos: [] })); App.render(); const btn = App.$('[data-c=importar]'); if (btn) btn.click(); });
       return;
     }
@@ -51,11 +89,15 @@
 
     const kpiHTML = rows => {
       const f = Finanzas.calc(Object.assign({}, c, { flujos: rows }));
-      const k = (l, v, cls, s) => `<div class="kpi"><div class="l">${l}</div><div class="v ${cls || ''}">${v}</div>${s ? `<div class="s">${s}</div>` : ''}</div>`;
-      return k('VPN', esc(App.moneyShort(f.vpn, mon)), f.vpn == null ? '' : f.vpn >= 0 ? 'good' : 'bad', `Tasa de descuento ${App.num(c.tasa, 2) || 0}%`) +
-        k('TIR', esc(App.pct(f.tir)), f.tir == null ? '' : f.tir * 100 >= (c.tasa || 0) ? 'good' : 'bad', f.tir == null ? 'Necesita flujos negativos y positivos' : f.tirMultiple ? 'El flujo cambia de signo varias veces: puede haber otra TIR' : '') +
-        k('Payback', f.payback == null ? '—' : f.payback > 0 && f.payback < 0.05 ? 'menos de 0,1 años' : esc(App.num(f.payback, 1)) + ' años', '', 'Años para recuperar la inversión') +
-        k('ROI', esc(App.pct(f.roi)), f.roi == null ? '' : f.roi >= 0 ? 'good' : 'bad', `Inversión ${esc(App.moneyShort(f.totalInversion, mon))} · Beneficio ${esc(App.moneyShort(f.totalBeneficio, mon))}`);
+      const k = (v, l, cls, t) => `<span${t ? ` title="${esc(t)}"` : ''}><b class="${cls || ''}">${v}</b>${l}</span>`;
+      const dos = App.Avance ? App.Avance.dosAnios(f) : 0, inc = dos > 0 ? App.ICE.BANDAS_INCOME.find(([lim]) => dos <= lim)[1] : null;
+      const sinInv = !(f.totalInversion > 0);
+      return (sinInv ? k('—', 'VPN y TIR: aparecen al poner la inversión', '', 'Sin inversión el VPN y la TIR saldrían inflados') :
+        k(esc(App.moneyShort(f.vpn, mon)), 'VPN', f.vpn == null ? '' : f.vpn >= 0 ? 'good' : 'bad', `Tasa de descuento ${App.num(c.tasa, 2) || 0} %`) +
+        k(esc(App.pct(f.tir)), 'TIR', f.tir == null ? '' : f.tir * 100 >= (c.tasa || 0) ? 'good' : 'bad', f.tirMultiple ? 'El flujo cambia de signo varias veces: puede haber otra TIR' : '') +
+        k(f.payback == null ? '—' : esc(App.num(f.payback, 1)) + ' años', 'payback', '', 'Años para recuperar la inversión') +
+        k(esc(App.pct(f.roi)), 'ROI', f.roi == null ? '' : f.roi >= 0 ? 'good' : 'bad')) +
+        k(esc(App.moneyShort(dos, mon)), `valor a dos años${inc ? ` → Income ${inc}` : ''}`, '', 'Beneficios de los dos primeros años con beneficios: la base del Income del ICE');
     };
     const sensHTML = rows => {
       const base = Object.assign({}, c, { flujos: rows });
@@ -82,46 +124,35 @@
       if (App.Caso.chart) App.Caso.chart($('#cChart', el), Object.assign({}, c, { flujos: rows }), mon);
     };
 
-    el.innerHTML = `<div class="case-grid">
-      <div>
-        <div class="card-box" style="margin-bottom:14px">
-          ${SECCIONES.map(([k, t, h], i) => `<div class="sec"><h3><span class="nm">${i + 1}</span>${t}</h3><div class="help">${h}</div><textarea class="fld" data-f="${k}" rows="3" ${dis} placeholder="${ro ? '' : 'Escribe aquí…'}">${esc(c[k] || '')}</textarea></div>`).join('')}
-        </div>
-        <div class="card-box" style="margin-bottom:14px">
-          <div class="hoja-top">
-            <h3 class="hoja-t"><span class="nm">$</span>Flujo financiero año a año</h3>
-            <span class="sp"></span>
-            <div class="seg no-print" title="Cómo se muestran y se escriben las cifras">${ESCALAS.map(([v, l]) => `<button data-escala="${v}" class="${v === escala ? 'on' : ''}">${l}</button>`).join('')}</div>
-            ${ro ? '' : '<button class="btn sm no-print" data-c="undo" title="Deshacer (Ctrl+Z)">↶</button><button class="btn sm no-print" data-c="redo" title="Rehacer (Ctrl+Y)">↷</button>'}
-            <button class="btn sm no-print" data-c="atajos">? Atajos</button>
-          </div>
-          <div class="help" style="margin:4px 0 8px">Cifras en ${escala === 1 ? '' : escala === 1e3 ? 'miles de ' : 'millones de '}${esc(mon)}. El año 0 es el arranque. Se trabaja como en Excel: copia y pega desde Excel, flechas, Enter, =150*12, 1,2M o +5% sobre el año anterior.</div>
-          <div class="no-print excel-bar">${ro ? '' : '<button class="btn sm" data-c="importar">⇪ Subir Excel</button>'}<a class="btn sm" href="/api/cases/${c.id}/excel" download>⇩ Descargar Excel</a>${ro ? '' : '<a class="btn sm" href="/api/cases/plantilla/excel" download>⇩ Plantilla vacía</a>'}<input type="file" accept=".xlsx" data-c="archivo" hidden></div>
-          <div class="flujo-wrap hoja-wrap" id="cFlujo"></div>
-          <div id="cChart" class="cf-chart"></div>
-        </div>
-        <div class="card-box">
-          <div class="sec" style="margin-bottom:6px"><h3><span class="nm">±</span>Escenarios y margen de seguridad</h3><div class="help">Cambia los porcentajes y mira cómo se mueve el caso. Lo que en Excel serían tres hojas copiadas, aquí se recalcula solo.</div></div>
-          <div id="cSens"></div>
-        </div>
-        <div class="card-box" style="margin-top:14px" id="cCapt"></div>
-      </div>
-      <div class="case-side">
-        <div class="card-box">
-          <div class="case-meta">
-            <label>Estado</label><select class="estado-sel cl-${estadoColor(c.estado)}" data-f="estado" ${dis}>${ESTADOS.map(e => `<option ${e.name === (c.estado || 'Borrador') ? 'selected' : ''}>${e.name}</option>`).join('')}</select>
-            <label>Sponsor</label><input class="fld" data-f="sponsor" value="${esc(c.sponsor || '')}" ${dis} placeholder="Quién lo patrocina">
-            <label>Comité</label><input class="fld" type="date" data-f="fecha_comite" value="${esc(c.fecha_comite || '')}" ${dis}>
-            <label>Moneda</label><select class="fld" data-f="moneda" ${dis}>${['COP', 'USD'].map(m => `<option ${m === mon ? 'selected' : ''}>${m}</option>`).join('')}</select>
-            <label>Tasa (%)</label><input class="fld" type="number" step="0.1" data-f="tasa" value="${esc(c.tasa ?? '')}" ${dis}>
-            <label>Horizonte</label><select class="fld" data-f="anios" ${dis}>${Array.from({ length: App.Hoja.MAXY }, (_, i) => i + 1).map(y => `<option value="${y}" ${y === n() - 1 ? 'selected' : ''}>${y} ${y === 1 ? 'año' : 'años'}</option>`).join('')}</select>
-            <label>Año 0</label><input class="fld" type="number" data-f="anio_inicio" value="${esc(c.anio_inicio ?? '')}" placeholder="p. ej. ${new Date().getFullYear()}" ${dis}>
-          </div>
-        </div>
-        <div id="cKpi" style="display:flex;flex-direction:column;gap:10px"></div>
-        <div class="no-print" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-c="print">⎙ Imprimir / PDF</button>${ro ? '' : '<button class="btn danger" data-c="del">Eliminar caso</button>'}</div>
-        <div class="meta-line">${c.updated_by_name ? `Última edición: ${esc(c.updated_by_name)}, ${esc(App.d.ago(c.updated_at))}` : ''}</div>
-      </div></div>`;
+    const llenos = ['sponsor', 'fecha_comite', ...SECCIONES.map(x => x[0])].filter(k => String(c[k] || '').trim()).length;
+    const paso = (n, t, sub, extra) => `<div class="t-paso"><i>${n}</i><b>${t}</b><small>${sub}</small><span class="sp"></span>${extra || ''}</div>`;
+    el.innerHTML = `<div class="cs-top"><div class="kl" id="cKpi"></div><span class="sp"></span>
+        <select class="estado-sel cl-${estadoColor(c.estado)}" data-f="estado" ${dis} title="Estado del caso">${ESTADOS.map(e => `<option ${e.name === (c.estado || 'Borrador') ? 'selected' : ''}>${e.name}</option>`).join('')}</select>
+        <span class="no-print cs-acc">${ro ? '' : '<button class="btn sm" data-c="importar">⇪ Subir Excel</button>'}<a class="btn sm" href="/api/cases/${c.id}/excel" download>⇩ Excel</a><button class="btn sm" data-c="print">⎙ PDF</button></span>
+        <input type="file" accept=".xlsx" data-c="archivo" hidden></div>
+      ${c.origen === 'ice' ? `<div class="cs-prelim">⚠️ <span><b>Caso preliminar, construido desde el ICE.</b> Las cifras son una estimación: reemplázalas con las reales y agrega la inversión cuando el equipo las tenga.</span>${ro ? '' : '<button class="btn sm" data-c="prelim-ok">Ya tiene cifras reales</button>'}</div>` : ''}
+      ${paso(1, 'Flujo del caso', 'barras: flujo neto de cada año · línea: acumulado')}
+      <section class="t-card t-pad"><div id="cChart" class="cf-chart"></div></section>
+      ${paso(2, 'Tabla del caso', 'se edita como Excel: celdas, filas, años y fórmulas', `<div class="seg no-print" title="Cómo se muestran y se escriben las cifras">${ESCALAS.map(([v, l]) => `<button data-escala="${v}" class="${v === escala ? 'on' : ''}">${l}</button>`).join('')}</div>${ro ? '' : '<button class="btn sm no-print" data-c="undo" title="Deshacer (Ctrl+Z)">↶</button><button class="btn sm no-print" data-c="redo" title="Rehacer (Ctrl+Y)">↷</button>'}<button class="btn sm no-print" data-c="atajos">? Atajos</button>`)}
+      <section class="t-card t-pad">
+        <div class="cs-param"><span class="cs-pt">Parámetros</span>
+          <label>Moneda <select class="fld" data-f="moneda" ${dis}>${['COP', 'USD'].map(m => `<option ${m === mon ? 'selected' : ''}>${m}</option>`).join('')}</select></label>
+          <label>Tasa de descuento <input class="fld" type="number" step="0.1" data-f="tasa" value="${esc(c.tasa ?? '')}" ${dis}> %</label>
+          <label>Año 0 <input class="fld" type="number" data-f="anio_inicio" value="${esc(c.anio_inicio ?? '')}" placeholder="${new Date().getFullYear()}" ${dis}></label>
+          <label>Horizonte <select class="fld" data-f="anios" ${dis}>${Array.from({ length: App.Hoja.MAXY }, (_, i) => i + 1).map(y => `<option value="${y}" ${y === n() - 1 ? 'selected' : ''}>${y} ${y === 1 ? 'año' : 'años'}</option>`).join('')}</select></label>
+          ${ro ? '' : '<a class="t-lnk" href="/api/cases/plantilla/excel" download>Plantilla vacía</a>'}</div>
+        <div class="help" style="margin:2px 0 8px">Cifras en ${escala === 1 ? '' : escala === 1e3 ? 'miles de ' : 'millones de '}${esc(mon)}. El año 0 es el arranque. Copia y pega desde Excel, usa flechas y Enter, =150*12, 1,2M o +5% sobre el año anterior. Flujo neto y acumulado se calculan solos.</div>
+        <div class="flujo-wrap hoja-wrap" id="cFlujo"></div>
+      </section>
+      ${paso(3, 'Escenarios y margen de seguridad', 'cambia los porcentajes y mira cómo se mueve el caso')}
+      <section class="t-card t-pad"><div id="cSens"></div></section>
+      ${paso(4, 'Valor captado (real)', 'lo que la iniciativa ya generó, mes a mes')}
+      <section class="t-card t-pad" id="cCapt"></section>
+      ${paso(5, 'Contexto para el comité', 'lo que no son cifras')}
+      <details class="t-card cs-ctx" ${llenos ? '' : 'open'}><summary><b>Sponsor · fecha de comité · problema · objetivo · alcance · riesgos · recomendación</b><span class="faint"> — ${llenos} de ${SECCIONES.length + 2} llenos</span><span class="t-lnk cs-abrir">Abrir ▾</span></summary>
+        <div class="cs-ctx-in"><div class="cs-param"><label>Sponsor <input class="fld" data-f="sponsor" value="${esc(c.sponsor || '')}" ${dis} placeholder="Quién lo patrocina"></label><label>Fecha de comité <input class="fld" type="date" data-f="fecha_comite" value="${esc(c.fecha_comite || '')}" ${dis}></label></div>
+        ${SECCIONES.map(([k, t, h], i) => `<div class="sec"><h3><span class="nm">${i + 1}</span>${t}</h3><div class="help">${h}</div><textarea class="fld" data-f="${k}" rows="3" ${dis} placeholder="${ro ? '' : 'Escribe aquí…'}">${esc(c[k] || '')}</textarea></div>`).join('')}</div></details>
+      <div class="meta-line">${c.updated_by_name ? `Última edición: ${esc(c.updated_by_name)}, ${esc(App.d.ago(c.updated_at))}` : ''}${ro ? '' : ' · <button class="t-lnk" data-c="del" style="color:var(--crit)">Eliminar caso</button>'}</div>`;
 
     // Flujo: se guarda medio segundo después de cada cambio
     let tSave = null;
@@ -176,7 +207,7 @@
       const box = $('#cCapt', el); if (!box) return;
       const r = resumenCap();
       const futuro = m => anioCap > hoyY || (anioCap === hoyY && Number(m.slice(5)) > hoyM);
-      box.innerHTML = `<div class="hoja-top"><h3 class="hoja-t"><span class="nm">✓</span>Valor captado (real)</h3><span class="sp"></span>
+      box.innerHTML = `<div class="hoja-top"><span class="sp"></span>
           <div class="seg">${Array.from({ length: n() }, (_, t) => y0 + t).map(y => `<button data-capy="${y}" class="${y === anioCap ? 'on' : ''}">${y}</button>`).join('')}</div></div>
         <div class="help" style="margin:4px 0 10px">Registra cada mes lo que el proyecto ya generó, por tipo de valor. El tablero lo compara con lo que el caso proyecta a la fecha. Cifras en ${escala === 1 ? '' : escala === 1e3 ? 'miles de ' : 'millones de '}${esc(mon)}; acepta 1,2M, 300k y =fórmulas.</div>
         <div id="capSum">${sumHTML(r)}</div>
@@ -230,6 +261,7 @@
       const b = e.target.closest('[data-c]'); if (!b) return;
       const a = b.dataset.c;
       if (a === 'print') return window.print();
+      if (a === 'prelim-ok') return App.guard(async () => { await App.patch('cases', c.id, { origen: '' }); editor(el, pid); });
       if (a === 'undo') return grid.undo();
       if (a === 'redo') return grid.redo();
       if (a === 'importar') return $('[data-c=archivo]', el).click();
@@ -258,15 +290,15 @@
     const ps = App.projectsSorted();
     const rows = ps.map(p => { const c = App.caseOf(p.id); return { p, c, f: c ? Finanzas.calc(c) : null }; })
       .filter(x => filtro === 'todos' || (filtro === 'con' ? x.c : !x.c));
-    const casos = App.S.cases, aprob = casos.filter(c => c.estado === 'Aprobado');
+    const casos = App.S.cases, aprobTodos = casos.filter(c => c.estado === 'Aprobado'), aprob = aprobTodos.filter(c => c.moneda !== 'USD'), usd = aprobTodos.length - aprob.length;
     const sum = (arr, k) => arr.reduce((a, c) => { const v = Finanzas.calc(c)[k]; return a + (Number.isFinite(v) ? v : 0); }, 0);
     const rev = casos.filter(c => c.estado === 'En revisión').length;
     const ec = App.estadoCol();
     main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><div><h1>Casos de negocio</h1><div class="sub">${casos.length} de ${ps.length} proyectos tienen caso${rev ? ` · ${rev} en revisión` : ''}</div></div><span class="sp"></span>
         <div class="seg">${[['todos', 'Todos'], ['con', 'Con caso'], ['sin', 'Sin caso']].map(([k, l]) => `<button data-f="${k}" class="${filtro === k ? 'on' : ''}">${l}</button>`).join('')}</div></div>
       <div class="kpis">
-        <div class="kpi"><div class="l">Aprobados</div><div class="v">${aprob.length}</div><div class="s">de ${casos.length} ${casos.length === 1 ? 'caso' : 'casos'}</div></div>
-        <div class="kpi"><div class="l">Inversión aprobada</div><div class="v">${esc(App.moneyShort(sum(aprob, 'totalInversion')))}</div><div class="s">suma de casos aprobados</div></div>
+        <div class="kpi"><div class="l">Aprobados</div><div class="v">${aprobTodos.length}</div><div class="s">de ${casos.length} ${casos.length === 1 ? 'caso' : 'casos'}</div></div>
+        <div class="kpi"><div class="l">Inversión aprobada</div><div class="v">${esc(App.moneyShort(sum(aprob, 'totalInversion')))}</div><div class="s">suma de casos aprobados en pesos${usd ? ` · ${usd} en USD aparte` : ''}</div></div>
         <div class="kpi"><div class="l">Beneficio aprobado</div><div class="v">${esc(App.moneyShort(sum(aprob, 'totalBeneficio')))}</div><div class="s">en el horizonte de cada caso</div></div>
         <div class="kpi"><div class="l">VPN aprobado</div><div class="v ${sum(aprob, 'vpn') >= 0 ? 'good' : 'bad'}">${esc(App.moneyShort(sum(aprob, 'vpn')))}</div><div class="s">valor presente neto</div></div>
       </div>
@@ -289,7 +321,7 @@
     editor($('#cBox', main), pid);
   }
 
-  App.Caso = { editor, estadoColor, ESTADOS };
+  App.Caso = { editor, estadoColor, ESTADOS, preliminar, tarjetaPreliminares };
   window.addEventListener('pagehide', () => { if (App.Caso._flush) App.Caso._flush(); });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && App.Caso._flush) App.Caso._flush(); });
   App.views.casos = { render: section };

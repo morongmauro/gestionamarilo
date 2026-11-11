@@ -534,6 +534,48 @@
     hacer('quitar línea base', M => { M.activities.forEach(a => { a.baselineStart = null; a.baselineEnd = null; }); M.lineaBase = null; });
     App.patch('projects', pid, { linea_base_at: null }).then(() => { toast('Línea base quitada'); pintar(); }).catch(() => {});
   }
+  // Cronograma desde la app de gestión: misma estructura (capítulos, subcapítulos, actividades,
+  // precedencias, responsables, línea base, fecha meta e involucrados). Se trae con un enlace compartido;
+  // de ahí en adelante se gestiona aquí. Las propuestas sin aprobar del enlace no se traen.
+  function traerDeGestion(btn) {
+    if (!editable()) return;
+    const pid = cur.pid, M = cur.M, hay = M.activities.length + M.sections.length;
+    const pop = App.openPop(btn, `<div class="lbl">Traer el cronograma de la app de gestión</div>
+      <div style="padding:0 10px 4px;font-size:12.5px" class="faint">Pega el enlace compartido (gestionamarilo.vercel.app/share/…). Se trae completo y desde ahí se sigue gestionando aquí.</div>
+      <div style="padding:0 10px"><input class="fld" data-g="url" placeholder="https://gestionamarilo.vercel.app/share/…" style="width:100%"></div>
+      ${hay ? `<label class="mi" style="cursor:pointer;font-size:12.5px"><input type="checkbox" data-g="reemplazar" checked style="width:auto"> Reemplazar lo que ya tiene este cronograma (${M.activities.length} actividades)</label>` : ''}
+      <div data-g="msg" style="padding:0 10px;font-size:12.5px"></div>
+      <div class="row" style="justify-content:flex-end;padding:4px 10px 8px"><button class="btn primary sm" data-g="ok">Traer cronograma</button></div>`, { width: 400 });
+    pop.onclick = e => {
+      const ok = e.target.closest('[data-g=ok]'); if (!ok || ok.disabled) return;
+      const url = pop.querySelector('[data-g=url]').value.trim(), reemplazar = !!(pop.querySelector('[data-g=reemplazar]') || {}).checked;
+      const msg = pop.querySelector('[data-g=msg]'); ok.disabled = true; msg.textContent = 'Leyendo el enlace…';
+      App.guard(async () => {
+        try {
+          const d = await App.api('POST', '/api/importar/gestion', { url });
+          const acts = d.activities.filter(a => !a.propuesta), props = d.activities.length - acts.length;
+          if (hay && !reemplazar && !confirm('Se agregará al cronograma actual sin borrar nada. ¿Seguir?')) { ok.disabled = false; msg.textContent = ''; return; }
+          const c = {
+            sections: { upsert: d.sections.map(x => Object.assign({ id: x.id }, aNativoSec(x))), remove: reemplazar ? M.sections.map(x => x.id).filter(id => !d.sections.some(y => y.id === id)) : [] },
+            activities: { upsert: acts.map(x => Object.assign({ id: x.id }, aNativo(x))), remove: reemplazar ? M.activities.map(x => x.id).filter(id => !acts.some(y => y.id === id)) : [] },
+          };
+          const r = await App.api('POST', '/api/plan/' + pid, Object.assign({ registrar: true }, c));
+          App.S.activities = App.S.activities.filter(a => a.project_id !== pid).concat(r.activities);
+          App.S.sections = (App.S.sections || []).filter(x => x.project_id !== pid).concat(r.sections);
+          // Involucrados (sin repetir), fecha meta y línea base
+          const p = App.byId('projects', pid), ms = (p.miembros || []).slice();
+          d.miembros.forEach(m => { if (m && m.nombre && !ms.some(x => P.norm(x.nombre) === P.norm(m.nombre))) ms.push({ nombre: String(m.nombre).slice(0, 120), area: String(m.area || '').slice(0, 120), rol: String(m.rol || '').slice(0, 120) }); });
+          const patch = { miembros: ms };
+          if (d.project.fechaMeta) patch.fecha_meta = d.project.fechaMeta;
+          if (d.project.lineaBaseAt) patch.linea_base_at = d.project.lineaBaseAt;
+          await App.patch('projects', pid, patch);
+          App.closePop(true);
+          toast(`✓ Cronograma traído: ${d.sections.length} capítulos y ${acts.length} actividades${props ? ` (${props} propuestas sin aprobar no se trajeron)` : ''}`);
+          App.render(); // la ficha, el avance de fase y el cronograma se actualizan juntos
+        } catch (ex) { msg.innerHTML = `<span style="color:var(--crit)">${esc(ex.message)}</span>`; ok.disabled = false; }
+      });
+    };
+  }
   function fechaMeta(btn) {
     if (!editable()) return;
     const pid = cur.pid, p = App.byId('projects', pid);
@@ -580,6 +622,7 @@
         ${p ? `<span class="plan-info" title="${esc(info)}">ⓘ</span>` : ''}
         ${p && ed ? `<button class="btn sm undo-btn" data-ph="undo" ${n ? '' : 'disabled'} title="${n ? 'Deshacer: ' + esc(pila.filter(x => x.pid === cur.pid).slice(-1)[0].desc) + ' (Ctrl+Z)' : 'Nada que deshacer'}">↶ Deshacer${n ? ` <em>${n}</em>` : ''}</button>` : ''}
         ${p ? `<button class="btn sm" data-ph="meta" ${ed ? '' : 'disabled'} title="Fecha en que el proyecto debe terminar: el plan avisa si se pasa">⚑ ${p.fecha_meta ? 'Meta ' + esc(App.d.fmtShort(p.fecha_meta)) : 'Fecha meta'}</button>
+        ${ed ? '<button class="btn sm" data-ph="gestion" title="Traer el cronograma desde un enlace compartido de la app de gestión">⇣ Traer de la app de gestión</button>' : ''}
         <button class="btn sm" data-ph="inv" title="Quiénes participan en el proyecto y de qué área son">👥 Involucrados${(p.miembros || []).length ? ` · ${p.miembros.length}` : ''}</button>` : ''}
         <button class="btn sm mesa-btn${mesa ? ' on' : ''}" data-ph="mesa" title="${mesa ? 'Volver a la vista normal (Esc)' : 'Solo el cronograma, a pantalla completa: para mesas de trabajo de revisión'}">${mesa ? '✕ Salir de mesa' : '⛶ Mesa de trabajo'}</button>
       </div>`;
@@ -593,7 +636,7 @@
     const head = $('.plan-head', cur.el), body = $('#plan-body', cur.el);
     head.innerHTML = cabecera();
     const wrap = $('#pl-wrap', body), keep = wrap ? [wrap.scrollLeft, wrap.scrollTop] : null;
-    o.vacioHtml = cur.pid ? (editable() ? 'Aún no hay actividades. Crea el primer capítulo abajo («＋ Nueva etapa») y agrega actividades, o pega filas desde Excel.' : 'Aún no hay actividades en este plan.') : 'Aún no hay actividades en ningún proyecto.';
+    o.vacioHtml = cur.pid ? (editable() ? 'Aún no hay actividades. Tráelo de la app de gestión («⇣ Traer de la app de gestión», arriba), crea el primer capítulo abajo («＋ Nueva etapa») o pega filas desde Excel.' : 'Aún no hay actividades en este plan.') : 'Aún no hay actividades en ningún proyecto.';
     const ancho = (body.clientWidth || cur.el.clientWidth || 1100) - (o.panel ? 236 : 0);
     o.anchoTL = P.anchoAjuste(ancho, (o.vista === 'tabla' ? 1300 : 700) + P.extraNombre());
     body.innerHTML = P.render(cur.M, o);
@@ -613,6 +656,7 @@
       if (a === 'lb-quitar') quitarLineaBase();
       if (a === 'meta') fechaMeta(b);
       if (a === 'inv') involucrados();
+      if (a === 'gestion') traerDeGestion(b);
       if (a === 'mesa') toggleMesa();
     });
     pintar();
