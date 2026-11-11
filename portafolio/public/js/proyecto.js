@@ -41,12 +41,14 @@
       const hayIce = App.S.columns.some(c => c.id === 'ice_income');
       const VIEJOS = ['impacto', 'confianza', 'facilidad', 'income'];
       const todas = App.S.columns.filter(c => c.id !== tc.id);
-      const cols = todas.filter(c => !(hayIce && VIEJOS.includes(c.id)));
+      const utiles = todas.filter(c => !(hayIce && VIEJOS.includes(c.id)));
+      const cols = utiles.filter(c => !App.colVacia(c) || c === App.estadoCol() || c.id === 'revision_dgv');
+      const vacias = utiles.filter(c => !cols.includes(c));
       const viejas = todas.filter(c => hayIce && VIEJOS.includes(c.id) && (p.props || {})[c.id] != null && (p.props || {})[c.id] !== '');
       const fila = c => { const v = (p.props || {})[c.id]; const vacio = v == null || v === '' || (Array.isArray(v) && !v.length);
         return `<div class="k"><span class="ic">${App.Tabla.TYPES[c.type].icon}</span>${esc(c.name)}</div><div class="v ${vacio && c.type !== 'check' ? 'empty' : ''}" data-col="${c.id}">${vacio && c.type !== 'check' ? `<div class="c-in">${ro ? '—' : 'Vacío'}</div>` : App.Tabla.renderValue(c, v)}</div>`; };
       const historia = App.vista && App.vista.nueva ? App.Mejoras.historia(p, { pl, caso, f, prox, ro, d: filaDe(id) }) : '';
-      box.innerHTML = historia + `<div class="card-box"><div class="props">${cols.map(fila).join('')}</div>${viejas.length ? `<details class="props-viejas"><summary>${viejas.length} campo${viejas.length === 1 ? '' : 's'} del método anterior (guardado${viejas.length === 1 ? '' : 's'}, ya no se usa${viejas.length === 1 ? '' : 'n'} para el ICE)</summary><div class="props">${viejas.map(fila).join('')}</div></details>` : ''}
+      box.innerHTML = historia + `<div class="card-box"><div class="props">${cols.map(fila).join('')}</div>${viejas.length ? `<details class="props-viejas"><summary>${viejas.length} campo${viejas.length === 1 ? '' : 's'} del método anterior (guardado${viejas.length === 1 ? '' : 's'}, ya no se usa${viejas.length === 1 ? '' : 'n'} para el ICE)</summary><div class="props">${viejas.map(fila).join('')}</div></details>` : ''}${vacias.length && !ro ? `<details class="props-viejas"><summary>${vacias.length} campo${vacias.length === 1 ? '' : 's'} que ninguna iniciativa tiene diligenciado${vacias.length === 1 ? '' : 's'}</summary><div class="props">${vacias.map(fila).join('')}</div></details>` : ''}
         <div class="meta-line">Creado ${esc(App.d.ago(p.created_at))}${p.updated_by_name ? ` · Última edición: ${esc(p.updated_by_name)}, ${esc(App.d.ago(p.updated_at))}` : ''}${ro ? '' : ' · Las columnas se administran en Portafolio → Tabla completa'}</div></div>`;
     } else if (tab === 'cronograma') {
       App.PlanHost.render(box, id);

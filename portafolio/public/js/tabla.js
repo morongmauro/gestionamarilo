@@ -21,7 +21,7 @@
   let root = null; // contenedor de la sección
 
   const col = id => App.S.columns.find(c => c.id === id);
-  const visibleCols = () => App.S.columns.filter(c => !c.hidden);
+  const visibleCols = () => App.S.columns.filter(c => !c.hidden && !App.colOlvidada(c));
   const rowTitle = r => ((r.props || {})[App.titleCol().id] || '').trim();
   const fmtNum = n => App.num(n, 2);
 
@@ -365,7 +365,7 @@
     p.onclick = e => { const b = e.target.closest('[data-g]'); if (!b) return; if (isBoard) P.boardCol = b.dataset.g; else P.group = b.dataset.g; savePrefs(); App.closePop(true); paint(); };
   }
   function openColsMenu(anchor) {
-    const p = App.openPop(anchor, `<div class="lbl">Columnas visibles</div>${App.S.columns.map(c => `<label class="mi" style="cursor:pointer"><input type="checkbox" data-c="${c.id}" ${c.hidden ? '' : 'checked'} ${c.type === 'title' || !App.canEdit() ? 'disabled' : ''} style="width:auto"> ${TYPES[c.type].icon} ${esc(c.name)}</label>`).join('')}<div class="sep"></div><label class="mi" style="cursor:pointer"><input type="checkbox" data-calc="1" ${P.calc ? 'checked' : ''} style="width:auto"> Columnas calculadas (cronograma, avance, caso)</label>${App.canEdit() ? '<div class="sep"></div><button class="mi" data-p="add">+ Agregar columna</button>' : ''}`, { width: 300, nofocus: true });
+    const p = App.openPop(anchor, `<div class="lbl">Columnas visibles</div>${App.S.columns.map(c => `<label class="mi" style="cursor:pointer"><input type="checkbox" data-c="${c.id}" ${c.hidden || App.colOlvidada(c) ? '' : 'checked'} ${c.type === 'title' || !App.canEdit() ? 'disabled' : ''} style="width:auto"> ${TYPES[c.type].icon} ${esc(c.name)}${App.colOlvidada(c) ? ' <span class="faint">· vacía</span>' : ''}</label>`).join('')}<div class="sep"></div><label class="mi" style="cursor:pointer"><input type="checkbox" data-calc="1" ${P.calc ? 'checked' : ''} style="width:auto"> Columnas calculadas (cronograma, avance, caso)</label>${App.canEdit() ? '<div class="sep"></div><button class="mi" data-p="add">+ Agregar columna</button>' : ''}`, { width: 300, nofocus: true });
     p.onchange = e => {
       if (e.target.dataset.calc) { P.calc = e.target.checked; savePrefs(); paint(); return; }
       const cb = e.target.closest('[data-c]'); if (!cb) return; col(cb.dataset.c).hidden = !cb.checked; App.saveColumns(); paint();

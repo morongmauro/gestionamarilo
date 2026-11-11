@@ -313,7 +313,7 @@
     const gs = secs.map(x => ({ key: x.id, id: x.id, name: x.name, sec: x, padre: esSub(x) ? x.parentId : null, acts: acts.filter(a => a.sectionId === x.id).sort(orden) }));
     // Color: cada capítulo principal el suyo; los subcapítulos heredan el de su capítulo
     let ci = 0;
-    gs.forEach(g => { if (!g.padre) g.color = AREA_COLORS[ci++ % AREA_COLORS.length]; });
+    gs.forEach(g => { if (!g.padre) g.color = (g.sec && g.sec.color) || AREA_COLORS[ci++ % AREA_COLORS.length]; });
     gs.forEach(g => { if (g.padre) g.color = (gs.find(p => p.id === g.padre) || {}).color || '#9A9384'; });
     const huerf = acts.filter(a => !a.sectionId || !secs.some(x => x.id === a.sectionId)).sort(orden);
     if (huerf.length) gs.push({ key: '_otras', id: null, name: 'Otras', sec: null, padre: null, color: '#9A9384', acts: huerf });

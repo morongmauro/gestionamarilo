@@ -413,3 +413,13 @@ a.t-cpi:hover{background:var(--hover)}
 .pf-tbl .pf-okrb::before{content:none}
 .pf-bar .pf-sel{max-width:178px}
 .pf-bar .search{min-width:190px}
+
+/* Cronogramas: selector en vez de un botón por iniciativa */
+.cr-bar .seg a{display:inline-block;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none;font-size:var(--fs-xs);font-weight:600;color:var(--muted);padding:6px 12px;border-radius:var(--r-pill,999px)}
+.cr-bar .seg a.on{background:var(--card);color:var(--ink);box-shadow:var(--shadow)}
+.cr-lgd{margin:0}
+.cr-sin{margin:14px 2px 0;font-size:var(--fs-xs)}
+.cr-sin summary{cursor:pointer;font-weight:700;color:var(--muted)}
+.cr-sin div{display:flex;flex-wrap:wrap;gap:6px 8px;margin-top:10px}
+.cr-sin a{color:var(--ink);text-decoration:none;background:var(--card);border:1px solid var(--line-2);border-radius:8px;padding:4px 9px;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cr-sin a:hover{border-color:var(--ink)}

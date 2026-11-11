@@ -97,8 +97,12 @@
     okr: { t: 'por OKR', de: r => (r.okrs[0] ? { k: r.okrs[0], t: r.okrs[0], o: 0 } : { k: '', t: 'Sin OKR asignado', o: 1 }) },
     tipo: { t: 'por tipo de valor', de: r => (r.cats[0] ? { k: r.cats[0], t: App.catLabel(r.cats[0]), o: ORDEN_CAT.indexOf(r.cats[0]) } : { k: '', t: 'Sin tipo de valor', o: 99 }) },
   };
+  // Columnas de lista que alguien usa (Gerencia, Vicepresidencia, Palanca…): también sirven para agrupar
+  const colsGrupo = () => App.S.columns.filter(c => (c.type === 'select' || c.type === 'multi') && c !== App.estadoCol() && !['tipo_valor', 'ice_os', 'revision_dgv'].includes(c.id) && !App.colVacia(c));
+  const grupoDe = k => { if (GRUPOS[k]) return GRUPOS[k]; const c = k && k.startsWith('col:') ? App.S.columns.find(x => 'col:' + x.id === k) : null;
+    return c ? { t: 'por ' + c.name.toLowerCase(), de: r => { let v = (r.p.props || {})[c.id]; if (Array.isArray(v)) v = v[0]; return v ? { k: String(v), t: String(v), o: 0 } : { k: '', t: 'Sin ' + c.name.toLowerCase(), o: 1 }; } } : null; };
   function cuerpo(vis) {
-    const l = ordenar(vis), g = GRUPOS[R.grupo];
+    const l = ordenar(vis), g = grupoDe(R.grupo);
     if (!g) return l.map(filaHTML).join('');
     const mapa = new Map();
     l.forEach(r => { const z = g.de(r); if (!mapa.has(z.k)) mapa.set(z.k, { z, rows: [] }); mapa.get(z.k).rows.push(r); });
@@ -164,7 +168,7 @@
         ${ec ? `<select class="pf-sel" data-pf-etapa aria-label="Fase"><option value="">Fase: todas</option>${(ec.options || []).map(o => `<option ${R.etapa === o.name ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}</select>` : ''}
         ${App.dgvHay() ? `<button class="pf-tg ${App.soloDgv() ? 'on' : ''}" data-pf="dgv" aria-pressed="${App.soloDgv()}" title="${App.soloDgv() ? `Se muestran solo las iniciativas con «¿Revisión DGV?»: SI. ${fuera} más están ocultas. Clic para verlas todas.` : 'Se muestran todas. Clic para ver solo las de «¿Revisión DGV?»: SI.'}">¿Revisión DGV?: ${App.soloDgv() ? 'SI' : 'todas'}</button>` : ''}
         <button class="pf-tg ${R.alertas ? 'on' : ''}" data-pf="alertas" aria-pressed="${R.alertas}">Solo con alertas</button>
-        <select class="pf-sel" data-pf-grupo aria-label="Agrupar">${[['fase', 'Agrupar: por fase'], ['okr', 'Agrupar: por OKR'], ['tipo', 'Agrupar: por tipo de valor'], ['', 'Sin agrupar']].map(([k, l]) => `<option value="${k}" ${(R.grupo || '') === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
+        <select class="pf-sel" data-pf-grupo aria-label="Agrupar">${[['fase', 'Agrupar: por fase'], ...colsGrupo().map(c => ['col:' + c.id, 'Agrupar: por ' + c.name.toLowerCase()]), ['okr', 'Agrupar: por OKR'], ['tipo', 'Agrupar: por tipo de valor'], ['', 'Sin agrupar']].map(([k, l]) => `<option value="${k}" ${(R.grupo || '') === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
         <select class="pf-sel" data-pf-orden aria-label="Ordenar">${Object.entries(ORDEN).map(([k, o]) => `<option value="${k}" ${oAct === k ? 'selected' : ''}>Ordenar: ${o.t}${oAct === k ? (R.dir === 1 ? ' ▴' : ' ▾') : ''}</option>`).join('')}</select>
         <span class="sp"></span><div class="seg"><button data-modo="tabla" class="${R.modo !== 'mapa' ? 'on' : ''}" aria-pressed="${R.modo !== 'mapa'}">Resumen</button><button data-modo="mapa" class="${R.modo === 'mapa' ? 'on' : ''}" aria-pressed="${R.modo === 'mapa'}" title="Iniciativas por ICE e Income, en cuadrantes">Mapa ICE</button><button data-vista-pf="tabla" title="Tabla tipo Notion: aquí se editan las columnas">Tabla completa</button><button data-vista-pf="tablero" title="Tarjetas agrupadas por fase">Por fase</button></div></div>
       ${R.modo === 'mapa' ? mapaHTML(vis) : `<section class="t-card pf-tbl-card"><div class="pf-wrap"><table class="pf-tbl">

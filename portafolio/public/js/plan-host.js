@@ -673,7 +673,8 @@
     let base = null;
     pids.forEach((pid, i) => {
       const p = App.byId('projects', pid), M = modelo(pid), raiz = 'p:' + pid;
-      sections.push({ id: raiz, name: App.projectName(p), position: i, parentId: null, enabled: true });
+      // Un color por fase (el mismo del Mapa ICE), no uno distinto por iniciativa
+      sections.push({ id: raiz, name: App.projectName(p), position: i, parentId: null, enabled: true, color: colorFase(p) });
       const tops = new Map();
       M.sections.forEach(s => { tops.set(s.id, s.parentId && M.sections.some(x => x.id === s.parentId) ? s.parentId : s.id); });
       P.ordenSecciones(M.sections).filter(s => tops.get(s.id) === s.id).forEach((s, k) => sections.push({ id: s.id, name: s.name, position: k, parentId: raiz, enabled: s.enabled }));
@@ -685,6 +686,8 @@
     M.summary = resumen(activities, M.today);
     return M;
   }
+  const COLOR_FASE = { 1: '#5B9BEA', 2: '#F08A5D', 3: '#3FC293' };
+  const colorFase = p => { const ec = App.estadoCol(), k = window.Fases && ec ? Fases.clasificar((p.props || {})[ec.id]) : null; return COLOR_FASE[k] || '#B9B5C6'; };
   function renderPortafolio(el, pids) { montar(el, null, modeloPortafolio(pids)); }
 
   // Mientras se arrastra, se elige en una lista o se guarda, la sincronización no repinta encima
@@ -702,18 +705,33 @@
     if (!params[0] && !pid) { const g = App.store.get(LS_SEL, null); if (g && App.byId('projects', g)) pid = g; }
     if (params[0] === 'todos') pid = null;
     App.store.set(LS_SEL, pid || 'todos');
-    const visibles = ps.filter(p => !filtro || !ec || (p.props || {})[ec.id] === filtro);
-    const acts = App.S.activities.filter(a => visibles.some(p => p.id === a.project_id));
+    // Solo las iniciativas activas («¿Revisión DGV?»: SI, si el filtro está puesto) y, en la vista de todo el portafolio, solo las que tienen cronograma
+    const visibles = ps.filter(p => App.enAlcance(p) && (!filtro || !ec || (p.props || {})[ec.id] === filtro));
+    const conPlan = visibles.filter(p => App.S.activities.some(a => a.project_id === p.id)), sinPlan = visibles.filter(p => !conPlan.includes(p));
+    const acts = App.S.activities.filter(a => conPlan.some(p => p.id === a.project_id));
     const late = acts.filter(a => a.fin && a.fin < hoy() && (a.avance || 0) < 100 && !a.real_fin).length;
-    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><div><h1>Cronogramas</h1><div class="sub">${pid ? esc(App.projectName(App.byId('projects', pid))) + ' · plan de trabajo' : `${visibles.length} iniciativas · ${acts.length} actividades${late ? ` · <b style="color:var(--crit-ink)">${late} atrasadas</b>` : ''}`}</div></div><span class="sp"></span>
-        ${!pid && ec ? `<select class="fld" id="gEstado" style="width:auto"><option value="">Todos los estados</option>${(ec.options || []).map(o => `<option ${filtro === o.name ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}</select>` : ''}
-        ${pid ? `<a class="btn" href="#/proyectos/${pid}">Abrir la iniciativa →</a>` : ''}</div>
-      <div class="cron-tabs"><a class="ctab${pid ? '' : ' on'}" href="#/cronograma/todos" title="Todas las iniciativas en un solo cronograma (solo lectura)">▦ Todo el portafolio</a>${ps.map(p => { const pl = App.planOf(p.id); return `<a class="ctab${p.id === pid ? ' on' : ''}" href="#/cronograma/${p.id}"><i style="background:var(--c-${App.projectColor(p)}-i)"></i>${esc(App.projectName(p))}${pl.acts.length ? `<span class="n">${pl.avance}%</span>` : ''}</a>`; }).join('')}</div>
-      ${pid ? '' : '<div class="cron-nota">Vista del portafolio: cada iniciativa es un capítulo. Para editar, elige la iniciativa arriba.</div>'}
-      <div id="gBox"></div>`;
+    const actual = pid ? App.byId('projects', pid) : null;
+    main.innerHTML = `<div class="pg-top"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Cronogramas</h1>
+        <div class="kl"><span><b>${conPlan.length}</b>con cronograma</span><span><b>${sinPlan.length}</b>sin cronograma</span><span><b>${acts.length}</b>actividades</span><span><b class="${late ? 'r' : ''}">${late}</b>atrasadas</span></div>
+        <span class="sp"></span>${pid ? `<a class="btn ghost sm" href="#/proyectos/${pid}">Abrir la iniciativa →</a>` : ''}</div>
+      <div class="pf-bar cr-bar"><div class="seg"><a class="${pid ? '' : 'on'}" href="#/cronograma/todos" title="Todas las iniciativas con cronograma, en uno solo (solo lectura)">Todo el portafolio</a>${actual ? `<a class="on" href="#/cronograma/${pid}" title="${esc(App.projectName(actual))}">${esc(App.projectName(actual))}</a>` : ''}</div>
+        <button class="btn sm" data-cr="elegir">${actual ? 'Cambiar de iniciativa' : 'Abrir el cronograma de una iniciativa'} ▾</button>
+        ${!pid && ec ? `<select class="pf-sel" id="gEstado" aria-label="Fase"><option value="">Fase: todas</option>${(ec.options || []).map(o => `<option ${filtro === o.name ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}</select>` : ''}
+        ${!pid && conPlan.length ? '<span class="sp"></span><span class="t-lgd cr-lgd"><span><i style="background:#5B9BEA"></i>Fase 1</span><span><i style="background:#F08A5D"></i>Fase 2</span><span><i style="background:#3FC293"></i>Fase 3</span><span><i style="background:#B9B5C6"></i>Otra</span></span>' : ''}</div>
+      ${pid ? '' : conPlan.length ? '<div class="cron-nota">Cada iniciativa con cronograma es un capítulo, con el color de su fase. Para editar, abre el cronograma de esa iniciativa.</div>'
+        : `<section class="t-card"><div class="t-vacio"><b>Aún no hay cronogramas${filtro ? ' en esta fase' : ''}.</b><br>Abre una iniciativa para armar el suyo, pegarlo desde Excel o traerlo de la app de gestión.<br><button class="btn primary sm" data-cr="elegir" style="margin-top:10px">Elegir iniciativa</button></div></section>`}
+      <div id="gBox"></div>
+      ${!pid && sinPlan.length ? `<details class="cr-sin"><summary>${sinPlan.length} iniciativa${sinPlan.length === 1 ? '' : 's'} sin cronograma</summary><div>${sinPlan.map(p => `<a href="#/cronograma/${p.id}">${esc(App.projectName(p))}</a>`).join('')}</div></details>` : ''}`;
+    main.onclick = e => {
+      const b = e.target.closest('[data-cr=elegir]'); if (!b) return;
+      const orden = conPlan.concat(sinPlan, ps.filter(p => !visibles.includes(p)));
+      App.pickList(b, { multi: false, placeholder: 'Buscar iniciativa…', empty: 'No hay iniciativas', selected: pid ? [pid] : [],
+        items: orden.map(p => { const pl = App.planOf(p.id); return { id: p.id, label: App.projectName(p) + (pl.acts.length ? ` · ${pl.avance} %` : ' · sin cronograma'), color: pl.acts.length ? 'azul' : 'gris' }; }),
+        onSave: id => { if (id) App.go('#/cronograma/' + id); } });
+    };
     const sel = $('#gEstado', main); if (sel) sel.onchange = () => { App.store.set('cron.estado', sel.value); App.render(); };
     $('.burger', main).onclick = App.toggleSide;
-    if (pid) render($('#gBox', main), pid); else renderPortafolio($('#gBox', main), visibles.map(p => p.id));
+    if (pid) render($('#gBox', main), pid); else if (conPlan.length) renderPortafolio($('#gBox', main), conPlan.map(p => p.id));
   }
 
   window.addEventListener('resize', () => { if (cur && document.body.contains(cur.el)) { if (optsDe().zoom === 'ajustar') pintar(); else P.dibujarLineas(); } });

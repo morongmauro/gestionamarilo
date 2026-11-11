@@ -134,7 +134,14 @@
   const ORDEN_CAT = ['ingresos', 'ahorro', 'tiempo', 'eficiencia', 'riesgo', 'otro'];
   const PALETA = ORDEN_CAT.map(k => `var(--cat-${k})`);
   // OKRs de una iniciativa: la columna es texto; varios se separan con coma, punto y coma o salto de línea
-  const okrsDe = p => String((p.props || {}).okrs || '').split(/[,;\n]/).map(s => s.trim()).filter(s => s && !/^por definir$/i.test(s));
+  // Cada viñeta o renglón es un OKR (las comas de una frase no lo parten). Sin viñetas: se separa por punto y coma, o por comas si son nombres cortos.
+  const okrsDe = p => {
+    const t = String((p.props || {}).okrs || '').replace(/\r/g, '');
+    const vin = /\n|[•●▪◦‣]/.test(t) || /^\s*[-*·]\s+\S/.test(t);
+    let partes = vin ? t.split(/\n|[•●▪◦‣]/) : t.includes(';') ? t.split(';') : t.split(',');
+    if (!vin && !t.includes(';') && partes.some(x => x.trim().length > 60)) partes = [t];
+    return [...new Set(partes.map(x => x.replace(/^\s*(?:[-*·]|\d+[.)])\s+/, '').trim()).filter(x => x && !/^por definir$/i.test(x)))];
+  };
   App.okrsDe = okrsDe;
 
   // Series del gráfico de valor a crear, según cómo se agrupe

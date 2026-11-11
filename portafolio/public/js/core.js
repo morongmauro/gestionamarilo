@@ -63,6 +63,10 @@ App.dgvSi = p => { const v = App.dgvValor(p); return v === true || /^\s*s[ií]\s
 App.dgvHay = () => App.S.projects.some(p => { const v = App.dgvValor(p); return v != null && v !== '' && v !== false; });
 App.soloDgv = () => App.dgvHay() && App.store.get('alcance.dgv', 'si') === 'si';
 App.enAlcance = p => !App.soloDgv() || App.dgvSi(p);
+// Una columna que ninguna iniciativa tiene diligenciada es una columna olvidada: no se muestra (sigue existiendo y se puede
+// volver a mostrar desde «Columnas»). No aplica al nombre, la fase ni «¿Revisión DGV?».
+App.colVacia = c => !App.S.projects.some(p => { const v = (p.props || {})[c.id]; return v != null && v !== '' && v !== false && !(Array.isArray(v) && !v.length); });
+App.colOlvidada = c => c.type !== 'title' && c !== App.estadoCol() && c.id !== 'revision_dgv' && c.hidden === undefined && App.S.projects.length > 0 && App.colVacia(c);
 App.caseOf = pid => App.S.cases.find(c => c.project_id === pid) || null;
 App.actsOf = pid => App.S.activities.filter(a => a.project_id === pid).sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 App.projectsSorted = () => App.S.projects.slice().sort((a, b) => (a.position ?? 0) - (b.position ?? 0));

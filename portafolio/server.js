@@ -678,6 +678,13 @@ async function prepare() {
     }
     await store.setConfig('migr_dgv_v1', true);
   }
+  // Migración (una sola vez): la columna del Income del ICE se llama «Income (1-55)», sin «Fibonacci»
+  if (!(await store.getConfig('migr_income_nombre_v1'))) {
+    const cols = await store.getConfig('project_columns');
+    const c = Array.isArray(cols) && cols.find(x => x.id === 'ice_income' && /fibonacci/i.test(x.name || ''));
+    if (c) { c.name = 'Income (1-55)'; await store.setConfig('project_columns', cols); }
+    await store.setConfig('migr_income_nombre_v1', true);
+  }
   if (!(await store.getConfig('seeded_committees'))) {
     if (!(await store.list('committees')).length) for (const c of defaults.committees()) await store.insert('committees', { ...c, id: newId(), created_at: now(), updated_at: now() });
     await store.setConfig('seeded_committees', true);
