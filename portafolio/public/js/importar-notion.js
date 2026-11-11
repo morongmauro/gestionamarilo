@@ -44,7 +44,7 @@
     ['gerencia', 'Gerencia', 'select'], ['vp', 'Vicepresidencia', 'select'], ['cadena_valor', 'Cadena de valor', 'select', true],
     ['captura_creacion', 'Captura o creación', 'select', true], ['criterio', 'Criterio / costos', 'select', true], ['palanca', 'Palanca', 'select', true],
     ['revision_dgv', '¿Revisión DGV?', 'select', true],
-    ['ice_income', 'Income (Fibonacci)', 'number'], ['ice_confianza', 'Confianza (%)', 'number'], ['ice_esfuerzo', 'Esfuerzo (%)', 'number'],
+    ['ice_income', 'Income (1-55)', 'number'], ['ice_confianza', 'Confidence (%)', 'number'], ['ice_esfuerzo', 'Effort (%)', 'number'], ['ice_os', 'OS · objetivos del semestre', 'select'],
     ['valor_crear', 'Valor a crear/capturar (COP)', 'number'], ['pct_captura', '% Captura de valor', 'number', true], ['pct_okr', '% Cumplimiento OKRs', 'number', true],
     ['gastos', 'Gastos enero-agosto (COP)', 'number', true],
     ['objetivo_general', 'Objetivo general', 'text', true], ['meta', 'Meta (% o $)', 'text', true], ['linea_base_txt', 'Línea base', 'text', true],
@@ -55,7 +55,7 @@
   const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9%?/$()]/g, '');
   const MAPA = { iniciativa: 'proyecto', estado: 'estado', trazabilidad: 'trazabilidad', habilitadores: 'habilitadores', realizadores: 'realizadores', okrs: 'okrs', tipodevalor: 'tipo_valor',
     gerencia: 'gerencia', vp: 'vp', cadenadevalor: 'cadena_valor', 'captura/creacion': 'captura_creacion', 'criterio/costos': 'criterio', palanca: 'palanca', 'revisiondgv?': 'revision_dgv',
-    income: 'ice_income', '%confidence': 'ice_confianza', effort: 'ice_esfuerzo', 'valoracrear/capturar': 'valor_crear', '%capturadevalor': 'pct_captura', '%cumplimientookrs': 'pct_okr',
+    income: 'ice_income', '%confidence': 'ice_confianza', confidence: 'ice_confianza', effort: 'ice_esfuerzo', '%effort': 'ice_esfuerzo', os: 'ice_os', 'valoracrear/capturar': 'valor_crear', '%capturadevalor': 'pct_captura', '%cumplimientookrs': 'pct_okr',
     gastoseneroagosto: 'gastos', objetivogeneral: 'objetivo_general', 'meta(%o$)': 'meta', lineabase: 'linea_base_txt', oe1: 'oe1', oe2: 'oe2', oe3: 'oe3', objetivosdelsemestre: 'objetivos_semestre',
     comentarios: 'comentarios', observacion: 'observacion', plandetrabajo: 'plan_trabajo' };
   const NUM = new Set(['ice_income', 'ice_confianza', 'ice_esfuerzo', 'valor_crear', 'pct_captura', 'pct_okr', 'gastos']);
@@ -85,6 +85,10 @@
         const col = cols.find(c => c.id === id) || (id === 'proyecto' ? tc : null); if (!col) continue;
         if (NUM.has(id)) { const n = num(raw); if (n != null) props[col.id] = n; }
         else if (PEOPLE.has(id)) { const v = lista(raw); v.forEach(n => ensureOpt(col, n)); props[col.id] = v; }
+        else if (id === 'ice_os') { // 0,75 / 1 / 1,25 → la opción de la columna
+          const n = App.ICE.leeOS(raw); if (n == null) continue;
+          const nom = { 0.75: '0,75 · No alineado', 1: '1 · Alineado', 1.25: '1,25 · Prioridad del semestre' }[n]; ensureOpt(col, nom); props[col.id] = nom;
+        }
         else if (SELECT.has(id)) { const v = raw.replace(/\s+/g, ' ').trim(); ensureOpt(col, v); props[col.id] = v; }
         else props[col.id] = raw;
       }

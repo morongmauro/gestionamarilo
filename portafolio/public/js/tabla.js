@@ -426,6 +426,6 @@
 
   App.Tabla = { TYPES, renderValue, openEditor, render };
   function setView(v) { const antes = P.view; P.view = v; savePrefs(); if (antes === 'resumen' || v === 'resumen' || !root) App.render(); else paint(); }
-  App.Tabla = { setView };
+  App.Tabla.setView = setView;
   App.views.proyectos = { render: main => render(main) };
 })();

@@ -6,6 +6,16 @@ function iceColumns() {
     { id: 'facilidad', name: 'Facilidad (1-10)', type: 'number', width: 125 },
   ];
 }
+// Factores del ICE con el método de la Oficina: ICE = Income × Confidence ÷ Effort × OS
+const OS_OPCIONES = [{ name: '0,75 · No alineado', color: 'gris' }, { name: '1 · Alineado', color: 'azul' }, { name: '1,25 · Prioridad del semestre', color: 'amarillo' }];
+function iceOficinaColumns() {
+  return [
+    { id: 'ice_income', name: 'Income (1-55)', type: 'number', width: 120 },
+    { id: 'ice_confianza', name: 'Confidence (%)', type: 'number', width: 130 },
+    { id: 'ice_esfuerzo', name: 'Effort (%)', type: 'number', width: 110 },
+    { id: 'ice_os', name: 'OS · objetivos del semestre', type: 'select', width: 210, options: OS_OPCIONES },
+  ];
+}
 function projectColumns() {
   return [
     { id: 'estado', name: 'Estado', type: 'select', width: 150, options: [
@@ -30,4 +40,4 @@ function committees() {
     { name: 'Comité directivo', color: 'azul', frecuencia: 'Mensual', descripcion: '', integrantes: '' },
   ];
 }
-module.exports = { projectColumns, committees, iceColumns };
+module.exports = { projectColumns, committees, iceColumns, iceOficinaColumns };

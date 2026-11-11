@@ -4,6 +4,21 @@
 // Data Factory, Fabric o Databricks la copien al lago.
 // ============================================================
 const Finanzas = require('../public/js/finanzas');
+const fs = require('fs');
+const path = require('path');
+const vm = require('vm');
+// El ICE se calcula con el mismo código que usa la pantalla (public/js/ice.js), para que el lago
+// y el portafolio muestren la misma prioridad. Se carga una vez y se le pasan los datos del exporte.
+const ICE_SRC = fs.readFileSync(path.join(__dirname, '../public/js/ice.js'), 'utf8');
+function iceDe(d) {
+  const App = {
+    caseOf: id => d.cases.find(c => c.project_id === id) || null,
+    planOf: id => { const a = d.activities.filter(x => x.project_id === id); return { ini: a.map(x => x.inicio).filter(Boolean).sort()[0] || null, fin: a.map(x => x.fin || x.inicio).filter(Boolean).sort().pop() || null }; },
+    moneyShort: v => String(Math.round(v)),
+  };
+  vm.runInNewContext(ICE_SRC, { App, Finanzas });
+  return App.ICE;
+}
 // Listas de registros guardados (flujos, captado, compromisos): se ignoran filas dañadas
 const regs = v => (Array.isArray(v) ? v : []).filter(x => x && typeof x === 'object');
 const valores = fl => (Array.isArray(fl.valores) ? fl.valores : []);
@@ -24,6 +39,7 @@ function build(tabla, d) {
   const nombre = id => { const p = d.projects.find(x => x.id === id); return p ? (p.props || {})[titleCol.id] || '' : ''; };
   const comite = id => { const c = d.committees.find(x => x.id === id); return c ? c.name : ''; };
   const meta = r => ({ creado: r.created_at || '', actualizado: r.updated_at || '', actualizado_por: r.updated_by_name || '' });
+  let ICE = null;
   switch (tabla) {
     case 'proyectos': return d.projects.map(p => {
       const o = { proyecto_id: p.id };
@@ -35,8 +51,8 @@ function build(tabla, d) {
       o.avance_promedio = acts.length ? Math.round(acts.reduce((s, a) => s + (a.avance || 0), 0) / acts.length) : '';
       const caso = d.cases.find(c => c.project_id === p.id);
       o.estado_caso = caso ? caso.estado || '' : '';
-      const pr = p.props || {}; const ice = [pr.impacto, pr.confianza, pr.facilidad].map(Number);
-      o.ice = ice.every(v => v > 0) ? Math.round(ice[0] * ice[1] * ice[2]) : '';
+      const ic = (ICE || (ICE = iceDe(d))).detalle(p);
+      o.ice = ic.ice ?? ''; o.ice_income = ic.income ?? ''; o.ice_confidence = ic.conf ?? ''; o.ice_effort = ic.esf ?? ''; o.ice_os = ic.os ?? '';
       return Object.assign(o, meta(p));
     });
     case 'actividades': {
@@ -85,7 +101,7 @@ const HEADERS = {
   comites: ['comite_id', 'comite', 'frecuencia', 'descripcion', 'integrantes', ...META],
 };
 function headersOf(tabla, d) {
-  if (tabla === 'proyectos') return ['proyecto_id', ...(d.columns || []).map(c => c.name), 'inicio_cronograma', 'fin_cronograma', 'avance_promedio', 'estado_caso', 'ice', ...META];
+  if (tabla === 'proyectos') return ['proyecto_id', ...(d.columns || []).map(c => c.name), 'inicio_cronograma', 'fin_cronograma', 'avance_promedio', 'estado_caso', 'ice', 'ice_income', 'ice_confidence', 'ice_effort', 'ice_os', ...META];
   return HEADERS[tabla];
 }
 

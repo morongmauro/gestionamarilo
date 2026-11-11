@@ -590,6 +590,17 @@ async function prepare() {
     if (faltan.length) { const i = cols.findIndex(c => c.id === 'income'); cols.splice(i >= 0 ? i + 1 : cols.length, 0, ...faltan); await store.setConfig('project_columns', cols); }
     await store.setConfig('migr_ice_v1', true);
   }
+  // Migración (una sola vez): factores del ICE con el método de la Oficina (Income, Confidence, Effort, OS).
+  // Las columnas antiguas 1 a 10 se ocultan si nadie las llenó (los datos no se borran).
+  if (!(await store.getConfig('migr_ice_v2'))) {
+    const cols = await store.getConfig('project_columns');
+    const faltan = defaults.iceOficinaColumns().filter(c => !cols.some(x => x.id === c.id));
+    if (faltan.length) { const i = cols.findIndex(c => c.id === 'income'); cols.splice(i >= 0 ? i + 1 : cols.length, 0, ...faltan); }
+    const ps = await store.list('projects');
+    cols.forEach(c => { if (['impacto', 'confianza', 'facilidad'].includes(c.id) && !ps.some(p => (p.props || {})[c.id] != null && (p.props || {})[c.id] !== '')) c.hidden = true; });
+    await store.setConfig('project_columns', cols);
+    await store.setConfig('migr_ice_v2', true);
+  }
   if (!(await store.getConfig('seeded_committees'))) {
     if (!(await store.list('committees')).length) for (const c of defaults.committees()) await store.insert('committees', { ...c, id: newId(), created_at: now(), updated_at: now() });
     await store.setConfig('seeded_committees', true);
