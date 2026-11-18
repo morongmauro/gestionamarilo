@@ -23,7 +23,7 @@
     const ec = App.estadoCol(), tv = App.S.columns.find(c => c.id === 'tipo_valor') || App.S.columns.find(c => /tipo de valor/i.test(c.name));
     const cats = App.CATS.map(c => c.id).filter(id => !F.tipo || id === F.tipo);
     let usd = 0;
-    const proyectos = App.projectsSorted().filter(p => !F.dgv || App.enAlcance(p)).filter(p => !F.estado || !ec || (p.props || {})[ec.id] === F.estado).map(p => {
+    const proyectos = App.projectsSorted().filter(p => F.conEjemplo || !App.esEjemplo(p)).filter(p => !F.dgv || App.enAlcance(p)).filter(p => !F.estado || !ec || (p.props || {})[ec.id] === F.estado).map(p => {
       const caso = App.caseOf(p.id);
       const real = App.enRealizacion(p);
       const esUSD = caso && caso.moneda === 'USD'; if (esUSD) usd++;
@@ -277,7 +277,7 @@
     const hoy = d.hoy, lim = App.d.add(hoy, 30);
     const ses = App.S.sessions.filter(s => s.fecha >= hoy && s.fecha <= lim && s.estado !== 'Cancelada')
       .map(s => ({ f: s.fecha, t: App.Agenda ? App.Agenda.tituloOf(s) : 'Comité', s: (s.proyectos || []).length ? `${s.proyectos.length} iniciativa${s.proyectos.length === 1 ? '' : 's'} en agenda` : 'Sin iniciativas en agenda todavía', href: '#/agenda' }));
-    const hitos = App.S.activities.filter(a => a.hito && (a.fin || a.inicio) >= hoy && (a.fin || a.inicio) <= lim)
+    const hitos = App.S.activities.filter(a => a.hito && !App.esEjemplo(a.project_id) && (a.fin || a.inicio) >= hoy && (a.fin || a.inicio) <= lim)
       .map(a => { const p = App.byId('projects', a.project_id); return p ? { f: a.fin || a.inicio, t: 'Hito · ' + (a.name || 'sin nombre'), s: App.projectName(p), href: `#/cronograma/${p.id}` } : null; }).filter(Boolean);
     const ev = ses.concat(hitos).sort((a, b) => a.f.localeCompare(b.f)).slice(0, 5);
     const venc = App.S.sessions.flatMap(s => s.compromisos || []).filter(k => !k.hecho && k.fecha && k.fecha < hoy && (k.texto || '').trim()).length;
@@ -289,7 +289,7 @@
   // Titulares: lo que un gerente pregunta primero
   function titulares(d, sg) {
     const pc = d.esperadoY > 0 ? d.captadoY / d.esperadoY : null, pv = d.captadoY > 0 ? d.verifY / d.captadoY : null;
-    const rev = App.S.cases.filter(c => c.estado === 'En revisión').length;
+    const rev = App.S.cases.filter(c => c.estado === 'En revisión' && !App.esEjemplo(c.project_id)).length;
     const prox = App.S.sessions.filter(x => x.fecha >= d.hoy && x.estado !== 'Cancelada').sort((a, b) => a.fecha.localeCompare(b.fecha))[0];
     const conAl = sg.filter(z => z.malo && !z.pausado), crit = conAl.filter(z => z.max >= 3).length;
     const ec = App.estadoCol(), activa = p => { const fa = window.Fases && ec ? Fases.de((p.props || {})[ec.id]) : null; return !fa || !fa.fuera; };

@@ -21,7 +21,7 @@
     main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><a class="back" href="#/proyectos">← Portafolio</a><span class="sp"></span>${ro ? '' : '<button class="btn" data-p="menu">··· Opciones</button>'}</div>
       <div class="card-box p-head">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${ec ? `<span class="pill cl-${App.optColor(ec, estado)}" data-p="estado" style="cursor:${ro ? 'default' : 'pointer'}">${esc(estado || 'Sin ' + ec.name.toLowerCase())}</span>` : ''}</div>
-        <div class="p-title" data-p="titulo">${esc(App.projectName(p))}</div>
+        <div class="p-title" data-p="titulo">${esc(App.projectName(p))}${App.tagEjemplo(p)}</div>${App.esEjemplo(p) ? '<div class="ej-aviso">Proyecto de <b>ejemplo</b>: muestra cómo se ve una iniciativa completa (información, caso de negocio, cronograma y riesgos). No suma en los totales del portafolio ni en el tablero.</div>' : ''}
         <div class="facts">
           <span>Cronograma: <b>${pl.ini ? `${esc(App.d.fmt(pl.ini))} – ${esc(App.d.fmt(pl.fin))}` : esc(App.sinPlan(p).corto)}</b></span>
           ${pl.acts.length ? `<span><span class="bar-mini"><i style="width:${pl.avance}%"></i></span><b>${pl.avance}%</b> de avance${pl.atrasadas ? ` · <b style="color:var(--crit-ink)">${pl.atrasadas} atrasada${pl.atrasadas > 1 ? 's' : ''}</b>` : ''}</span>` : ''}
@@ -85,7 +85,7 @@
 
   // Proyectado y captado del año para la ficha (misma regla que el tablero)
   function filaDe(id) {
-    try { const d = App.Dash && App.Dash.datos ? App.Dash.datos({ anio: null, estado: '', tipo: '', alcance: 'todos' }) : null; return d ? d.filas.find(x => x.p.id === id) || null : null; } catch (e) { return null; }
+    try { const d = App.Dash && App.Dash.datos ? App.Dash.datos({ anio: null, estado: '', tipo: '', alcance: 'todos', conEjemplo: true }) : null; return d ? d.filas.find(x => x.p.id === id) || null : null; } catch (e) { return null; }
   }
 
   // ICE con el método de la Oficina: Income × Confidence ÷ Effort × OS.

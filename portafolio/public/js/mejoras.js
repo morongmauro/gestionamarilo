@@ -263,7 +263,7 @@
     const ultimo = p => { const c = App.caseOf(p.id); return [p.updated_at || p.created_at || '', c ? c.updated_at || '' : '', ...App.actsOf(p.id).map(x => x.updated_at || '')].sort().pop(); };
     const dias = iso => Math.max(0, Math.round((Date.now() - new Date(iso)) / 86400e3));
     const out = [];
-    App.S.projects.filter(activa).forEach(p => { const u = ultimo(p); if (u && u < lim) out.push({ href: '#/proyectos/' + p.id, t: App.projectName(p), s: `sin cambios hace ${dias(u)} días (avance, caso o captura)` }); });
+    App.S.projects.filter(p => activa(p) && !App.esEjemplo(p)).forEach(p => { const u = ultimo(p); if (u && u < lim) out.push({ href: '#/proyectos/' + p.id, t: App.projectName(p), s: `sin cambios hace ${dias(u)} días (avance, caso o captura)` }); });
     App.S.cases.forEach(c => { const xs = (c.captado || []).filter(x => x.mes && x.mes.startsWith(Y + '-') && x.mes < mesPasado && Number(x.valor) && !verificado(x, c)); const p = App.byId('projects', c.project_id);
       if (xs.length && p) out.push({ href: `#/proyectos/${p.id}/caso`, t: App.projectName(p), s: `captado sin verificar desde ${App.d.MES3[Number(xs.map(x => x.mes).sort()[0].slice(5)) - 1]} (${App.moneyShort(xs.reduce((a, x) => a + Number(x.valor), 0))})` }); });
     App.S.sessions.forEach(se => (se.compromisos || []).filter(k => !k.hecho && k.fecha && k.fecha < hoy() && (k.texto || '').trim()).forEach(k => out.push({ href: '#/agenda', t: k.texto, s: `compromiso vencido el ${App.d.fmtShort(k.fecha)} · ${k.responsable || 'sin responsable'}` })));

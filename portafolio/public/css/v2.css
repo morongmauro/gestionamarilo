@@ -583,3 +583,9 @@ textarea.rk-in{resize:vertical;min-height:34px}
 .pl-bar-fil .pl-sel{font:inherit;font-size:12.5px;font-weight:600;border:1px solid var(--line-2);border-radius:8px;padding:5px 8px;background:var(--card);color:var(--ink);max-width:260px}
 .pl-bar-fil .pl-bar-r{margin-left:auto}
 .cs-pane .cf-chart{margin-top:0}.cs-pane .cf-chart:empty{display:block;min-height:40px}
+
+/* Proyecto de ejemplo */
+.tag-ej{display:inline-block;vertical-align:middle;margin-left:8px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#6B4E00;background:#FFF1B8;border:1px dashed #C99A00;border-radius:999px;padding:1px 8px;line-height:1.5}
+.p-title .tag-ej{font-size:11px;position:relative;top:-3px}
+.ej-aviso{margin:6px 0 2px;font-size:12.5px;color:var(--muted);background:#FFF8DB;border-left:3px solid #FFD000;border-radius:6px;padding:6px 10px}
+.pf-grp-ej td{background:#FFF8DB!important}

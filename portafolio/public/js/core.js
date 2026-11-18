@@ -63,6 +63,9 @@ App.dgvSi = p => { const v = App.dgvValor(p); return v === true || /^\s*s[ií]\s
 App.dgvHay = () => App.S.projects.some(p => { const v = App.dgvValor(p); return v != null && v !== '' && v !== false; });
 App.soloDgv = () => App.dgvHay() && App.store.get('alcance.dgv', 'si') === 'si';
 App.enAlcance = p => !App.soloDgv() || App.dgvSi(p);
+// Proyecto de ejemplo: se ve completo al abrirlo, pero no suma en ningún total ni indicador del portafolio
+App.esEjemplo = p => { const x = typeof p === 'string' ? App.byId('projects', p) : p; return !!(x && x.ejemplo); };
+App.tagEjemplo = p => (App.esEjemplo(p) ? '<span class="tag-ej" title="Proyecto de ejemplo: muestra cómo se ve una iniciativa completa. No suma en los totales ni en el tablero.">Ejemplo</span>' : '');
 // Una columna que ninguna iniciativa tiene diligenciada es una columna olvidada: no se muestra (sigue existiendo y se puede
 // volver a mostrar desde «Columnas»). No aplica al nombre, la fase ni «¿Revisión DGV?».
 App.colVacia = c => !App.S.projects.some(p => { const v = (p.props || {})[c.id]; return v != null && v !== '' && v !== false && !(Array.isArray(v) && !v.length); });

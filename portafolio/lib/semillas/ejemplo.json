@@ -1,0 +1,893 @@
+{
+ "hoy": "2026-11-18",
+ "proyecto": {
+  "nombre": "Energía solar en zonas comunes",
+  "frase": "Paneles solares en las cubiertas de las zonas comunes de los proyectos entregados, para bajar la factura de energía de las copropiedades y vender los excedentes a la red.",
+  "area": "Construcciones",
+  "fecha_meta": "2027-09-30",
+  "props": {
+   "habilitadores": [
+    "Laura Gómez"
+   ],
+   "realizadores": [
+    "Andrés Torres"
+   ],
+   "ice_income": 5,
+   "ice_confianza": 80,
+   "ice_esfuerzo": 50,
+   "okrs": "Reducir el costo de operación de las copropiedades\nEnergía limpia en el 30 % de los proyectos entregados",
+   "tipo_valor": "Eficiencia operativa",
+   "gerencia": "Construcciones",
+   "vp": "OPERACIÓN",
+   "ice_os": "1,25 · Prioridad del semestre",
+   "trazabilidad": "20 oct 2026 · Comité de valor aprobó el piloto en 2 proyectos.\n6 nov 2026 · Asamblea del proyecto 1 aprobó la instalación."
+  },
+  "miembros": [
+   {
+    "nombre": "Laura Gómez",
+    "area": "Generación de Valor",
+    "rol": "Líder"
+   },
+   {
+    "nombre": "Andrés Torres",
+    "area": "Construcciones",
+    "rol": "Ejecución de obra"
+   },
+   {
+    "nombre": "Camila Rojas",
+    "area": "Ingeniería",
+    "rol": "Diseño y conexión"
+   },
+   {
+    "nombre": "Diego Martínez",
+    "area": "Compras",
+    "rol": "Proveedor"
+   },
+   {
+    "nombre": "Valentina Ruiz",
+    "area": "Servicio al cliente",
+    "rol": "Copropiedades"
+   },
+   {
+    "nombre": "Felipe Castro",
+    "area": "Financiera",
+    "rol": "Caso de negocio"
+   }
+  ],
+  "riesgos": [
+   {
+    "id": "er1",
+    "titulo": "La asamblea de copropietarios no aprueba la instalación",
+    "categoria": "adopcion",
+    "causa": "Desconfianza sobre quién paga y quién se queda con el ahorro",
+    "consecuencia": "Se cae el piloto en ese proyecto y se pierde el estudio hecho",
+    "costo": 90000000.0,
+    "disparador": "Más del 30 % de votos en contra en la primera asamblea",
+    "p": 4,
+    "i": 4,
+    "rp": 2,
+    "ri": 4,
+    "respuesta": "mitigar",
+    "estado": "En tratamiento",
+    "creado": "2026-08-20",
+    "acciones": [
+     {
+      "id": "er1a",
+      "texto": "Presentar el ahorro por apartamento en pesos al mes, no en kWh",
+      "responsable": "Valentina Ruiz",
+      "fecha": "2026-10-30",
+      "hecha": true
+     },
+     {
+      "id": "er1b",
+      "texto": "Acuerdo escrito: el ahorro queda en la copropiedad durante 5 años",
+      "responsable": "Laura Gómez",
+      "fecha": "2026-11-12",
+      "hecha": false
+     }
+    ]
+   },
+   {
+    "id": "er2",
+    "titulo": "El operador de red demora la aprobación de la conexión",
+    "categoria": "regulatorio",
+    "causa": "Trámite de autogenerador con tiempos variables",
+    "consecuencia": "Los paneles quedan instalados sin poder entregar excedentes",
+    "costo": 20000000.0,
+    "disparador": "Sin respuesta 30 días después de radicar",
+    "p": 3,
+    "i": 3,
+    "rp": 2,
+    "ri": 3,
+    "respuesta": "mitigar",
+    "estado": "Abierto",
+    "creado": "2026-09-02",
+    "acciones": [
+     {
+      "id": "er2a",
+      "texto": "Radicar la solicitud antes de iniciar la instalación",
+      "responsable": "Camila Rojas",
+      "fecha": "2026-11-20",
+      "hecha": false
+     }
+    ]
+   },
+   {
+    "id": "er3",
+    "titulo": "La tarifa de energía sube menos de lo proyectado",
+    "categoria": "financiero",
+    "causa": "Cambios regulatorios o un año de lluvias que baje el precio",
+    "consecuencia": "El ahorro anual es menor y la recuperación de la inversión se alarga",
+    "costo": 60000000.0,
+    "disparador": "Incremento real del año por debajo del 4 %",
+    "p": 3,
+    "i": 2,
+    "rp": 0,
+    "ri": 0,
+    "respuesta": "aceptar",
+    "estado": "Abierto",
+    "creado": "2026-09-02",
+    "acciones": []
+   },
+   {
+    "id": "er4",
+    "titulo": "La cubierta del proyecto 2 no soporta la carga de los paneles",
+    "categoria": "ejecucion",
+    "causa": "Diseño original sin margen para cargas adicionales",
+    "consecuencia": "Hay que reforzar la estructura o cambiar de proyecto",
+    "costo": 45000000.0,
+    "disparador": "Resultado del estudio estructural",
+    "p": 2,
+    "i": 4,
+    "rp": 1,
+    "ri": 4,
+    "respuesta": "evitar",
+    "estado": "Cerrado",
+    "creado": "2026-08-18",
+    "acciones": [
+     {
+      "id": "er4a",
+      "texto": "Estudio estructural antes de comprometer el proyecto",
+      "responsable": "Andrés Torres",
+      "fecha": "2026-09-11",
+      "hecha": true
+     }
+    ]
+   },
+   {
+    "id": "er5",
+    "titulo": "Retraso del proveedor en la entrega de inversores",
+    "categoria": "ejecucion",
+    "causa": "Importación con alta demanda en el mercado",
+    "consecuencia": "Se corre la instalación del proyecto 2",
+    "costo": 7000000.0,
+    "disparador": "Fecha de despacho sin confirmar a 15 días de la instalación",
+    "p": 4,
+    "i": 3,
+    "rp": 3,
+    "ri": 3,
+    "respuesta": "mitigar",
+    "estado": "En tratamiento",
+    "creado": "2026-10-16",
+    "acciones": [
+     {
+      "id": "er5a",
+      "texto": "Pedir los inversores de los 2 proyectos en una sola orden",
+      "responsable": "Diego Martínez",
+      "fecha": "2026-11-05",
+      "hecha": false
+     }
+    ]
+   }
+  ]
+ },
+ "caso": {
+  "estado": "Aprobado",
+  "tasa": 12,
+  "anio_inicio": 2026,
+  "anios": 9,
+  "moneda": "COP",
+  "flujos": [
+   {
+    "id": "ej01",
+    "concepto": "Proyectos con paneles instalados (acumulado)",
+    "tipo": "supuesto",
+    "valores": [
+     2,
+     5,
+     9,
+     12
+    ],
+    "nota": "Proyectos entregados que tienen paneles al cierre de cada año. Desde 2029 se mantiene en 12 (piloto de 2 en 2026)."
+   },
+   {
+    "id": "ej02",
+    "concepto": "Potencia por proyecto (kWp)",
+    "tipo": "supuesto",
+    "valores": [
+     60
+    ],
+    "nota": "Sistema típico de una copropiedad de 300 unidades: cubiertas de zonas comunes y parqueaderos."
+   },
+   {
+    "id": "ej03",
+    "concepto": "Generación anual por kWp (kWh)",
+    "tipo": "supuesto",
+    "valores": [
+     1300
+    ],
+    "nota": "Promedio de radiación de la Sabana de Bogotá; en la costa sube a 1.500."
+   },
+   {
+    "id": "ej04",
+    "concepto": "Tarifa de energía de zonas comunes ($/kWh)",
+    "tipo": "supuesto",
+    "valores": [
+     850
+    ],
+    "nota": "Tarifa comercial promedio que hoy pagan las copropiedades por las zonas comunes."
+   },
+   {
+    "id": "ej05",
+    "concepto": "Incremento anual de la tarifa",
+    "tipo": "supuesto",
+    "valores": [
+     0,
+     0.06,
+     0.05,
+     0.04
+    ],
+    "pct": true,
+    "nota": "Reajuste de la tarifa: 6 % en 2027, 5 % en 2028 y 4 % desde 2029."
+   },
+   {
+    "id": "ej06",
+    "concepto": "Costo de instalación por kWp ($)",
+    "tipo": "supuesto",
+    "valores": [
+     3800000
+    ],
+    "nota": "Cotización de dos proveedores: paneles, inversores, estructura e instalación."
+   },
+   {
+    "id": "ej07",
+    "concepto": "Mantenimiento y seguros (% de la inversión acumulada)",
+    "tipo": "supuesto",
+    "valores": [
+     0.015
+    ],
+    "pct": true,
+    "nota": "Limpieza, revisión anual y póliza todo riesgo."
+   },
+   {
+    "id": "ej08",
+    "concepto": "Energía vendida a la red (% de la generación)",
+    "tipo": "supuesto",
+    "valores": [
+     0.1
+    ],
+    "pct": true,
+    "nota": "Lo que no se consume en el día se entrega a la red (autogenerador a pequeña escala)."
+   },
+   {
+    "id": "ej09",
+    "concepto": "Precio de venta a la red ($/kWh)",
+    "tipo": "supuesto",
+    "valores": [
+     320
+    ],
+    "nota": "Precio de bolsa promedio que reconoce el comercializador por los excedentes."
+   },
+   {
+    "id": "ej10",
+    "concepto": "Beneficio tributario Ley 1715 (% de la inversión)",
+    "tipo": "supuesto",
+    "valores": [
+     0.175
+    ],
+    "pct": true,
+    "nota": "La Ley 1715 permite deducir el 50 % de la inversión de la renta: 50 % × 35 % = 17,5 %."
+   },
+   {
+    "id": "ej11",
+    "concepto": "Costo anual de monitoreo ($)",
+    "tipo": "supuesto",
+    "valores": [
+     24000000
+    ],
+    "nota": "Plataforma de monitoreo en línea de todos los sistemas."
+   },
+   {
+    "id": "ej12",
+    "concepto": "IPC",
+    "tipo": "supuesto",
+    "valores": [
+     0,
+     0.05,
+     0.04,
+     0.03
+    ],
+    "pct": true,
+    "nota": "Reajuste de los gastos."
+   },
+   {
+    "id": "ej13",
+    "concepto": "Potencia instalada acumulada (kWp)",
+    "tipo": "supuesto",
+    "valores": [
+     120,
+     300,
+     540,
+     720,
+     720,
+     720,
+     720,
+     720,
+     720,
+     720
+    ],
+    "formulas": {
+     "0": "=[Proyectos con paneles instalados (acumulado)]*[Potencia por proyecto (kWp)]",
+     "1": "=[Proyectos con paneles instalados (acumulado)]*[Potencia por proyecto (kWp)]",
+     "2": "=[Proyectos con paneles instalados (acumulado)]*[Potencia por proyecto (kWp)]",
+     "3": "=[Proyectos con paneles instalados (acumulado)]*[Potencia por proyecto (kWp)]",
+     "4": "=[Proyectos con paneles instalados (acumulado)]*[Potencia por proyecto (kWp)]",
+     "5": "=[Proyectos con paneles instalados (acumulado)]*[Potencia por proyecto (kWp)]",
+     "6": "=[Proyectos con paneles instalados (acumulado)]*[Potencia por proyecto (kWp)]",
+     "7": "=[Proyectos con paneles instalados (acumulado)]*[Potencia por proyecto (kWp)]",
+     "8": "=[Proyectos con paneles instalados (acumulado)]*[Potencia por proyecto (kWp)]",
+     "9": "=[Proyectos con paneles instalados (acumulado)]*[Potencia por proyecto (kWp)]"
+    },
+    "nota": "Se calcula: proyectos × potencia por proyecto."
+   },
+   {
+    "id": "ej14",
+    "concepto": "Energía generada en el año (kWh)",
+    "tipo": "supuesto",
+    "valores": [
+     156000,
+     390000,
+     702000,
+     936000,
+     936000,
+     936000,
+     936000,
+     936000,
+     936000,
+     936000
+    ],
+    "formulas": {
+     "0": "=[Potencia instalada acumulada (kWp)]*[Generación anual por kWp (kWh)]",
+     "1": "=[Potencia instalada acumulada (kWp)]*[Generación anual por kWp (kWh)]",
+     "2": "=[Potencia instalada acumulada (kWp)]*[Generación anual por kWp (kWh)]",
+     "3": "=[Potencia instalada acumulada (kWp)]*[Generación anual por kWp (kWh)]",
+     "4": "=[Potencia instalada acumulada (kWp)]*[Generación anual por kWp (kWh)]",
+     "5": "=[Potencia instalada acumulada (kWp)]*[Generación anual por kWp (kWh)]",
+     "6": "=[Potencia instalada acumulada (kWp)]*[Generación anual por kWp (kWh)]",
+     "7": "=[Potencia instalada acumulada (kWp)]*[Generación anual por kWp (kWh)]",
+     "8": "=[Potencia instalada acumulada (kWp)]*[Generación anual por kWp (kWh)]",
+     "9": "=[Potencia instalada acumulada (kWp)]*[Generación anual por kWp (kWh)]"
+    },
+    "nota": "Se calcula: potencia instalada × generación por kWp."
+   },
+   {
+    "id": "ej15",
+    "concepto": "Tarifa del año ($/kWh)",
+    "tipo": "supuesto",
+    "valores": [
+     850,
+     901,
+     946.05,
+     983.892,
+     1023.24768,
+     1064.177587,
+     1106.74469,
+     1151.014478,
+     1197.055057,
+     1244.937259
+    ],
+    "formulas": {
+     "0": "=[Tarifa de energía de zonas comunes ($/kWh)]",
+     "1": "=[Tarifa del año ($/kWh); año anterior]*(1+[Incremento anual de la tarifa])",
+     "2": "=[Tarifa del año ($/kWh); año anterior]*(1+[Incremento anual de la tarifa])",
+     "3": "=[Tarifa del año ($/kWh); año anterior]*(1+[Incremento anual de la tarifa])",
+     "4": "=[Tarifa del año ($/kWh); año anterior]*(1+[Incremento anual de la tarifa])",
+     "5": "=[Tarifa del año ($/kWh); año anterior]*(1+[Incremento anual de la tarifa])",
+     "6": "=[Tarifa del año ($/kWh); año anterior]*(1+[Incremento anual de la tarifa])",
+     "7": "=[Tarifa del año ($/kWh); año anterior]*(1+[Incremento anual de la tarifa])",
+     "8": "=[Tarifa del año ($/kWh); año anterior]*(1+[Incremento anual de la tarifa])",
+     "9": "=[Tarifa del año ($/kWh); año anterior]*(1+[Incremento anual de la tarifa])"
+    },
+    "nota": "Se calcula: tarifa del año anterior con su incremento."
+   },
+   {
+    "id": "ej16",
+    "concepto": "Ahorro en energía de zonas comunes",
+    "tipo": "beneficio",
+    "valores": [
+     119340000,
+     316251000,
+     597714390,
+     828830620.8,
+     861983845.63,
+     896463199.29,
+     932321726.86,
+     969614596.27,
+     1008399180.02,
+     1048735146.98
+    ],
+    "categoria": "ahorro",
+    "formulas": {
+     "0": "=[Energía generada en el año (kWh)]*(1-[Energía vendida a la red (% de la generación)])*[Tarifa del año ($/kWh)]",
+     "1": "=[Energía generada en el año (kWh)]*(1-[Energía vendida a la red (% de la generación)])*[Tarifa del año ($/kWh)]",
+     "2": "=[Energía generada en el año (kWh)]*(1-[Energía vendida a la red (% de la generación)])*[Tarifa del año ($/kWh)]",
+     "3": "=[Energía generada en el año (kWh)]*(1-[Energía vendida a la red (% de la generación)])*[Tarifa del año ($/kWh)]",
+     "4": "=[Energía generada en el año (kWh)]*(1-[Energía vendida a la red (% de la generación)])*[Tarifa del año ($/kWh)]",
+     "5": "=[Energía generada en el año (kWh)]*(1-[Energía vendida a la red (% de la generación)])*[Tarifa del año ($/kWh)]",
+     "6": "=[Energía generada en el año (kWh)]*(1-[Energía vendida a la red (% de la generación)])*[Tarifa del año ($/kWh)]",
+     "7": "=[Energía generada en el año (kWh)]*(1-[Energía vendida a la red (% de la generación)])*[Tarifa del año ($/kWh)]",
+     "8": "=[Energía generada en el año (kWh)]*(1-[Energía vendida a la red (% de la generación)])*[Tarifa del año ($/kWh)]",
+     "9": "=[Energía generada en el año (kWh)]*(1-[Energía vendida a la red (% de la generación)])*[Tarifa del año ($/kWh)]"
+    },
+    "nota": "Energía que ya no se compra a la red."
+   },
+   {
+    "id": "ej17",
+    "concepto": "Venta de energía a la red",
+    "tipo": "beneficio",
+    "valores": [
+     4992000,
+     12480000,
+     22464000,
+     29952000,
+     29952000,
+     29952000,
+     29952000,
+     29952000,
+     29952000,
+     29952000
+    ],
+    "categoria": "ingresos",
+    "formulas": {
+     "0": "=[Energía generada en el año (kWh)]*[Energía vendida a la red (% de la generación)]*[Precio de venta a la red ($/kWh)]",
+     "1": "=[Energía generada en el año (kWh)]*[Energía vendida a la red (% de la generación)]*[Precio de venta a la red ($/kWh)]",
+     "2": "=[Energía generada en el año (kWh)]*[Energía vendida a la red (% de la generación)]*[Precio de venta a la red ($/kWh)]",
+     "3": "=[Energía generada en el año (kWh)]*[Energía vendida a la red (% de la generación)]*[Precio de venta a la red ($/kWh)]",
+     "4": "=[Energía generada en el año (kWh)]*[Energía vendida a la red (% de la generación)]*[Precio de venta a la red ($/kWh)]",
+     "5": "=[Energía generada en el año (kWh)]*[Energía vendida a la red (% de la generación)]*[Precio de venta a la red ($/kWh)]",
+     "6": "=[Energía generada en el año (kWh)]*[Energía vendida a la red (% de la generación)]*[Precio de venta a la red ($/kWh)]",
+     "7": "=[Energía generada en el año (kWh)]*[Energía vendida a la red (% de la generación)]*[Precio de venta a la red ($/kWh)]",
+     "8": "=[Energía generada en el año (kWh)]*[Energía vendida a la red (% de la generación)]*[Precio de venta a la red ($/kWh)]",
+     "9": "=[Energía generada en el año (kWh)]*[Energía vendida a la red (% de la generación)]*[Precio de venta a la red ($/kWh)]"
+    }
+   },
+   {
+    "id": "ej18",
+    "concepto": "Menor impuesto de renta (Ley 1715)",
+    "tipo": "beneficio",
+    "valores": [
+     79800000,
+     119700000,
+     159600000,
+     119700000
+    ],
+    "categoria": "ahorro",
+    "formulas": {
+     "0": "=[Inversión en paneles e inversores]*[Beneficio tributario Ley 1715 (% de la inversión)]",
+     "1": "=[Inversión en paneles e inversores]*[Beneficio tributario Ley 1715 (% de la inversión)]",
+     "2": "=[Inversión en paneles e inversores]*[Beneficio tributario Ley 1715 (% de la inversión)]",
+     "3": "=[Inversión en paneles e inversores]*[Beneficio tributario Ley 1715 (% de la inversión)]",
+     "4": "=[Inversión en paneles e inversores]*[Beneficio tributario Ley 1715 (% de la inversión)]",
+     "5": "=[Inversión en paneles e inversores]*[Beneficio tributario Ley 1715 (% de la inversión)]",
+     "6": "=[Inversión en paneles e inversores]*[Beneficio tributario Ley 1715 (% de la inversión)]",
+     "7": "=[Inversión en paneles e inversores]*[Beneficio tributario Ley 1715 (% de la inversión)]",
+     "8": "=[Inversión en paneles e inversores]*[Beneficio tributario Ley 1715 (% de la inversión)]",
+     "9": "=[Inversión en paneles e inversores]*[Beneficio tributario Ley 1715 (% de la inversión)]"
+    },
+    "nota": "Se toma el mismo año de la inversión."
+   },
+   {
+    "id": "ej19",
+    "concepto": "Mantenimiento y seguros",
+    "tipo": "costo",
+    "valores": [
+     6840000,
+     17100000,
+     30780000,
+     41040000,
+     41040000,
+     41040000,
+     41040000,
+     41040000,
+     41040000,
+     41040000
+    ],
+    "formulas": {
+     "0": "=[Potencia instalada acumulada (kWp)]*[Costo de instalación por kWp ($)]*[Mantenimiento y seguros (% de la inversión acumulada)]",
+     "1": "=[Potencia instalada acumulada (kWp)]*[Costo de instalación por kWp ($)]*[Mantenimiento y seguros (% de la inversión acumulada)]",
+     "2": "=[Potencia instalada acumulada (kWp)]*[Costo de instalación por kWp ($)]*[Mantenimiento y seguros (% de la inversión acumulada)]",
+     "3": "=[Potencia instalada acumulada (kWp)]*[Costo de instalación por kWp ($)]*[Mantenimiento y seguros (% de la inversión acumulada)]",
+     "4": "=[Potencia instalada acumulada (kWp)]*[Costo de instalación por kWp ($)]*[Mantenimiento y seguros (% de la inversión acumulada)]",
+     "5": "=[Potencia instalada acumulada (kWp)]*[Costo de instalación por kWp ($)]*[Mantenimiento y seguros (% de la inversión acumulada)]",
+     "6": "=[Potencia instalada acumulada (kWp)]*[Costo de instalación por kWp ($)]*[Mantenimiento y seguros (% de la inversión acumulada)]",
+     "7": "=[Potencia instalada acumulada (kWp)]*[Costo de instalación por kWp ($)]*[Mantenimiento y seguros (% de la inversión acumulada)]",
+     "8": "=[Potencia instalada acumulada (kWp)]*[Costo de instalación por kWp ($)]*[Mantenimiento y seguros (% de la inversión acumulada)]",
+     "9": "=[Potencia instalada acumulada (kWp)]*[Costo de instalación por kWp ($)]*[Mantenimiento y seguros (% de la inversión acumulada)]"
+    }
+   },
+   {
+    "id": "ej20",
+    "concepto": "Monitoreo y gestión de la plataforma",
+    "tipo": "costo",
+    "valores": [
+     24000000,
+     25200000,
+     26208000,
+     26994240,
+     27804067.2,
+     28638189.22,
+     29497334.9,
+     30382254.95,
+     31293722.6,
+     32232534.28
+    ],
+    "formulas": {
+     "0": "=[Costo anual de monitoreo ($)]",
+     "1": "=[Monitoreo y gestión de la plataforma; año anterior]*(1+[IPC])",
+     "2": "=[Monitoreo y gestión de la plataforma; año anterior]*(1+[IPC])",
+     "3": "=[Monitoreo y gestión de la plataforma; año anterior]*(1+[IPC])",
+     "4": "=[Monitoreo y gestión de la plataforma; año anterior]*(1+[IPC])",
+     "5": "=[Monitoreo y gestión de la plataforma; año anterior]*(1+[IPC])",
+     "6": "=[Monitoreo y gestión de la plataforma; año anterior]*(1+[IPC])",
+     "7": "=[Monitoreo y gestión de la plataforma; año anterior]*(1+[IPC])",
+     "8": "=[Monitoreo y gestión de la plataforma; año anterior]*(1+[IPC])",
+     "9": "=[Monitoreo y gestión de la plataforma; año anterior]*(1+[IPC])"
+    }
+   },
+   {
+    "id": "ej21",
+    "concepto": "Inversión en paneles e inversores",
+    "tipo": "inversion",
+    "valores": [
+     456000000,
+     684000000,
+     912000000,
+     684000000
+    ],
+    "formulas": {
+     "0": "=[Potencia instalada acumulada (kWp)]*[Costo de instalación por kWp ($)]",
+     "1": "=([Potencia instalada acumulada (kWp)]-[Potencia instalada acumulada (kWp); año anterior])*[Costo de instalación por kWp ($)]",
+     "2": "=([Potencia instalada acumulada (kWp)]-[Potencia instalada acumulada (kWp); año anterior])*[Costo de instalación por kWp ($)]",
+     "3": "=([Potencia instalada acumulada (kWp)]-[Potencia instalada acumulada (kWp); año anterior])*[Costo de instalación por kWp ($)]",
+     "4": "=([Potencia instalada acumulada (kWp)]-[Potencia instalada acumulada (kWp); año anterior])*[Costo de instalación por kWp ($)]",
+     "5": "=([Potencia instalada acumulada (kWp)]-[Potencia instalada acumulada (kWp); año anterior])*[Costo de instalación por kWp ($)]",
+     "6": "=([Potencia instalada acumulada (kWp)]-[Potencia instalada acumulada (kWp); año anterior])*[Costo de instalación por kWp ($)]",
+     "7": "=([Potencia instalada acumulada (kWp)]-[Potencia instalada acumulada (kWp); año anterior])*[Costo de instalación por kWp ($)]",
+     "8": "=([Potencia instalada acumulada (kWp)]-[Potencia instalada acumulada (kWp); año anterior])*[Costo de instalación por kWp ($)]",
+     "9": "=([Potencia instalada acumulada (kWp)]-[Potencia instalada acumulada (kWp); año anterior])*[Costo de instalación por kWp ($)]"
+    },
+    "nota": "Solo los kWp nuevos de cada año."
+   },
+   {
+    "id": "ej22",
+    "concepto": "Estudios, diseños e interventoría",
+    "tipo": "inversion",
+    "valores": [
+     180000000,
+     120000000,
+     90000000
+    ],
+    "nota": "Estudio estructural de cubiertas, diseño eléctrico, trámite ante el operador de red e interventoría."
+   }
+  ],
+  "consideraciones": "1. Alcance y base del modelo\n• Proyección a 10 años (2026 a 2035) en pesos colombianos, con tasa de descuento del 12 %.\n• Paneles solares en las cubiertas de zonas comunes de los proyectos ya entregados: piloto en 2 proyectos en 2026 y 12 proyectos en 2029.\n• Este es un proyecto de EJEMPLO para mostrar cómo se ve una iniciativa completa: no suma en los totales del portafolio.\n\n2. Ingresos\n• Ahorro en la factura de energía de las zonas comunes: energía generada × lo que se consume en el día × tarifa del año.\n• Venta de excedentes a la red: el 10 % de la generación, al precio de bolsa.\n• Menor impuesto de renta por la Ley 1715 (17,5 % de la inversión del año).\n\n3. Gastos\n• Mantenimiento y seguros: 1,5 % anual de la inversión acumulada.\n• Monitoreo en línea: $24 millones al año, reajustados con el IPC.\n\n4. Supuestos e inflación\n• Generación de 1.300 kWh por kWp al año y tarifa inicial de $850 por kWh, con reajuste del 6 %, 5 % y luego 4 %.\n• Costo de instalación de $3,8 millones por kWp, según dos cotizaciones.\n\n5. Riesgos\n• Que la asamblea de copropietarios no apruebe la instalación (ver la pestaña Riesgos).\n• Demora del operador de red en aprobar la conexión como autogenerador.\n\n6. Decisión que se pide al comité\n• Aprobar el piloto en 2 proyectos por $636 millones y volver al comité con los resultados de 6 meses antes de escalar.",
+  "captado": [
+   {
+    "mes": "2026-07",
+    "categoria": "ahorro",
+    "valor": 6800000
+   },
+   {
+    "mes": "2026-08",
+    "categoria": "ahorro",
+    "valor": 7400000
+   },
+   {
+    "mes": "2026-09",
+    "categoria": "ahorro",
+    "valor": 7100000
+   },
+   {
+    "mes": "2026-10",
+    "categoria": "ahorro",
+    "valor": 7900000
+   }
+  ],
+  "origen": ""
+ },
+ "secciones": [
+  [
+   "s0",
+   "0 · Arranque"
+  ],
+  [
+   "s1",
+   "1 · Estudios y diseño"
+  ],
+  [
+   "s2",
+   "2 · Piloto en 2 proyectos"
+  ],
+  [
+   "s3",
+   "3 · Escalamiento a 12 proyectos"
+  ]
+ ],
+ "actividades": [
+  {
+   "id": "ea01",
+   "sec": "s0",
+   "name": "Kick off con Construcciones y Servicio al cliente",
+   "responsable": "Laura Gómez",
+   "inicio": "2026-08-03",
+   "fin": "2026-08-03",
+   "avance": 100,
+   "hito": true,
+   "duracion": 1,
+   "deps": [],
+   "entregable": "Equipo, alcance y roles acordados",
+   "area": "Generación de Valor",
+   "real_ini": "2026-08-03",
+   "real_fin": "2026-08-03",
+   "position": 0
+  },
+  {
+   "id": "ea02",
+   "sec": "s0",
+   "name": "Selección de los 2 proyectos piloto",
+   "responsable": "Laura Gómez",
+   "inicio": "2026-08-04",
+   "fin": "2026-08-14",
+   "avance": 100,
+   "hito": false,
+   "duracion": 9,
+   "deps": [
+    "ea01"
+   ],
+   "entregable": "Dos copropiedades con cubierta apta y administrador interesado",
+   "area": "Generación de Valor",
+   "real_ini": "2026-08-04",
+   "real_fin": "2026-08-14",
+   "position": 1
+  },
+  {
+   "id": "ea03",
+   "sec": "s1",
+   "name": "Estudio estructural de cubiertas",
+   "responsable": "Andrés Torres",
+   "inicio": "2026-08-18",
+   "fin": "2026-09-11",
+   "avance": 100,
+   "hito": false,
+   "duracion": 19,
+   "deps": [
+    "ea02"
+   ],
+   "entregable": "Concepto de carga de las cubiertas",
+   "area": "Construcciones",
+   "real_ini": "2026-08-18",
+   "real_fin": "2026-09-11",
+   "position": 0
+  },
+  {
+   "id": "ea04",
+   "sec": "s1",
+   "name": "Diseño eléctrico y de conexión",
+   "responsable": "Camila Rojas",
+   "inicio": "2026-09-14",
+   "fin": "2026-10-09",
+   "avance": 100,
+   "hito": false,
+   "duracion": 20,
+   "deps": [
+    "ea03"
+   ],
+   "entregable": "Planos y memoria de cálculo",
+   "area": "Ingeniería",
+   "real_ini": "2026-09-14",
+   "real_fin": "2026-10-09",
+   "position": 1
+  },
+  {
+   "id": "ea05",
+   "sec": "s1",
+   "name": "Cotización y selección del proveedor",
+   "responsable": "Diego Martínez",
+   "inicio": "2026-09-14",
+   "fin": "2026-10-16",
+   "avance": 100,
+   "hito": false,
+   "duracion": 25,
+   "deps": [
+    "ea03"
+   ],
+   "entregable": "Proveedor contratado con garantía de 25 años",
+   "area": "Compras",
+   "real_ini": "2026-09-14",
+   "real_fin": "2026-10-16",
+   "position": 2
+  },
+  {
+   "id": "ea06",
+   "sec": "s1",
+   "name": "Aprobación del comité de valor",
+   "responsable": "Laura Gómez",
+   "inicio": "2026-10-20",
+   "fin": "2026-10-20",
+   "avance": 100,
+   "hito": true,
+   "duracion": 1,
+   "deps": [
+    "ea04",
+    "ea05"
+   ],
+   "entregable": "",
+   "area": "Generación de Valor",
+   "real_ini": "2026-10-20",
+   "real_fin": "2026-10-20",
+   "position": 3
+  },
+  {
+   "id": "ea07",
+   "sec": "s2",
+   "name": "Presentación a las asambleas de copropietarios",
+   "responsable": "Valentina Ruiz",
+   "inicio": "2026-10-21",
+   "fin": "2026-11-06",
+   "avance": 100,
+   "hito": false,
+   "duracion": 13,
+   "deps": [
+    "ea06"
+   ],
+   "entregable": "Acta de asamblea con la aprobación",
+   "area": "Servicio al cliente",
+   "real_ini": "2026-10-21",
+   "real_fin": "2026-11-06",
+   "position": 0
+  },
+  {
+   "id": "ea08",
+   "sec": "s2",
+   "name": "Trámite de conexión ante el operador de red",
+   "responsable": "Camila Rojas",
+   "inicio": "2026-10-21",
+   "fin": "2026-11-13",
+   "avance": 70,
+   "hito": false,
+   "duracion": 18,
+   "deps": [
+    "ea06"
+   ],
+   "entregable": "Aprobación como autogenerador a pequeña escala",
+   "area": "Ingeniería",
+   "real_ini": "2026-10-21",
+   "real_fin": null,
+   "position": 1
+  },
+  {
+   "id": "ea09",
+   "sec": "s2",
+   "name": "Instalación en el proyecto 1",
+   "responsable": "Andrés Torres",
+   "inicio": "2026-11-09",
+   "fin": "2026-12-04",
+   "avance": 35,
+   "hito": false,
+   "duracion": 20,
+   "deps": [
+    "ea07"
+   ],
+   "entregable": "Sistema de 60 kWp instalado",
+   "area": "Construcciones",
+   "real_ini": "2026-11-09",
+   "real_fin": null,
+   "position": 2
+  },
+  {
+   "id": "ea10",
+   "sec": "s2",
+   "name": "Instalación en el proyecto 2",
+   "responsable": "Andrés Torres",
+   "inicio": "2026-12-07",
+   "fin": "2027-01-22",
+   "avance": 0,
+   "hito": false,
+   "duracion": 35,
+   "deps": [
+    "ea09"
+   ],
+   "entregable": "Sistema de 60 kWp instalado",
+   "area": "Construcciones",
+   "real_ini": null,
+   "real_fin": null,
+   "position": 3
+  },
+  {
+   "id": "ea11",
+   "sec": "s2",
+   "name": "Puesta en marcha y medición del ahorro",
+   "responsable": "Camila Rojas",
+   "inicio": "2027-01-25",
+   "fin": "2027-02-05",
+   "avance": 0,
+   "hito": false,
+   "duracion": 10,
+   "deps": [
+    "ea10"
+   ],
+   "entregable": "",
+   "area": "Ingeniería",
+   "real_ini": null,
+   "real_fin": null,
+   "position": 4
+  },
+  {
+   "id": "ea12",
+   "sec": "s2",
+   "name": "Resultados del piloto al comité",
+   "responsable": "Laura Gómez",
+   "inicio": "2027-07-30",
+   "fin": "2027-07-30",
+   "avance": 0,
+   "hito": true,
+   "duracion": 1,
+   "deps": [
+    "ea11"
+   ],
+   "entregable": "",
+   "area": "Generación de Valor",
+   "real_ini": null,
+   "real_fin": null,
+   "position": 5
+  },
+  {
+   "id": "ea13",
+   "sec": "s3",
+   "name": "Plan de escalamiento a 10 proyectos más",
+   "responsable": "Laura Gómez",
+   "inicio": "2027-08-02",
+   "fin": "2027-08-27",
+   "avance": 0,
+   "hito": false,
+   "duracion": 20,
+   "deps": [
+    "ea12"
+   ],
+   "entregable": "",
+   "area": "Generación de Valor",
+   "real_ini": null,
+   "real_fin": null,
+   "position": 0
+  },
+  {
+   "id": "ea14",
+   "sec": "s3",
+   "name": "Contrato marco con el proveedor",
+   "responsable": "Diego Martínez",
+   "inicio": "2027-08-30",
+   "fin": "2027-09-24",
+   "avance": 0,
+   "hito": false,
+   "duracion": 20,
+   "deps": [
+    "ea13"
+   ],
+   "entregable": "",
+   "area": "Compras",
+   "real_ini": null,
+   "real_fin": null,
+   "position": 1
+  }
+ ]
+}

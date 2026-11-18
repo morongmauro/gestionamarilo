@@ -28,7 +28,7 @@
   }
 
   function filas() {
-    const d = App.Dash.datos({ anio: null, estado: '', tipo: '', alcance: 'todos' });
+    const d = App.Dash.datos({ anio: null, estado: '', tipo: '', alcance: 'todos', conEjemplo: true });
     const sg = App.Dash.senales(d), alerta = new Map(sg.map(z => [z.x.p.id, z.out.filter(o => o.sev >= 2).sort((a, b) => b.sev - a.sev)]));
     const tv = App.S.columns.find(c => c.id === 'tipo_valor') || App.S.columns.find(c => /tipo de valor/i.test(c.name));
     return {
@@ -132,7 +132,7 @@
       : r.valor ? `<span class="pf-caso"><b>${esc(m(r.valor))}</b><small class="pf-inc" title="Sin caso de negocio: valor del Income"> Income</small></span>` : (App.canEdit() && !inactiva(r) ? `<a class="pf-crear" href="#/proyectos/${r.p.id}/caso" title="Crear el caso de negocio"><span class="a">Sin caso</span><span class="b">+ Crear caso</span></a>` : '<span class="faint">Sin caso</span>');
     const al = r.al[0];
     return `<tr data-pid="${r.p.id}" class="${inactiva(r) ? 'pf-inact' : ''}">
-      <td class="pf-nm"><a href="#/proyectos/${r.p.id}"><b>${esc(App.projectName(r.p))}</b></a><small>${est ? `<span class="pill pf-etapa cl-${App.optColor(ec, est)}" title="${esc(est)}">${esc(corto(est))}</span>` : ''}${responsables(r.p).map(n => `<span class="pf-per" title="${esc(n)}"><i class="cl-${App.colorPersona(n)}"></i>${esc(nombreCorto(n))}</span>`).join('')}</small></td>
+      <td class="pf-nm"><a href="#/proyectos/${r.p.id}"><b>${esc(App.projectName(r.p))}</b></a>${App.tagEjemplo(r.p)}<small>${est ? `<span class="pill pf-etapa cl-${App.optColor(ec, est)}" title="${esc(est)}">${esc(corto(est))}</span>` : ''}${responsables(r.p).map(n => `<span class="pf-per" title="${esc(n)}"><i class="cl-${App.colorPersona(n)}"></i>${esc(nombreCorto(n))}</span>`).join('')}</small></td>
       <td>${okr}</td><td><div class="pf-tvs">${tipos}</div></td>
       <td class="n">${ice == null ? '<span class="faint">—</span>' : `<b>${esc(App.num(ice, 1))}</b>`}</td>
       <td>${av}</td>
@@ -148,7 +148,8 @@
   }
 
   function render(main) {
-    const { d, rows: todas } = filas();
+    const { d, rows: conEj } = filas();
+    const todas = conEj.filter(r => !App.esEjemplo(r.p)), ejs = conEj.filter(r => App.esEjemplo(r.p));
     // Iniciativas activas: las que tienen «¿Revisión DGV?» en SI. Las demás se ocultan mientras el filtro esté puesto.
     const rows = todas.filter(r => App.enAlcance(r.p)), fuera = todas.length - rows.length;
     const vis = ordenar(rows.filter(r => pasaFiltros(r)));
@@ -173,7 +174,7 @@
         <span class="sp"></span><div class="seg"><button data-modo="riesgos" class="${R.modo === 'riesgos' ? 'on' : ''}" aria-pressed="${R.modo === 'riesgos'}" title="Todos los riesgos del portafolio" style="order:2">Riesgos</button><button data-modo="tabla" class="${R.modo !== 'mapa' ? 'on' : ''}" aria-pressed="${R.modo !== 'mapa'}">Resumen</button><button data-modo="mapa" class="${R.modo === 'mapa' ? 'on' : ''}" aria-pressed="${R.modo === 'mapa'}" title="Iniciativas por ICE e Income, en cuadrantes">Mapa ICE</button><button data-vista-pf="tabla" title="Tabla tipo Notion: aquí se editan las columnas">Tabla completa</button><button data-vista-pf="tablero" title="Tarjetas agrupadas por fase">Por fase</button></div></div>
       ${R.modo === 'riesgos' && App.Riesgos ? App.Riesgos.portafolioHTML(vis.map(r => r.p)) : R.modo === 'mapa' ? mapaHTML(vis) : `<section class="t-card pf-tbl-card"><div class="pf-wrap"><table class="pf-tbl">
         <thead><tr>${th('nombre', 'Iniciativa', 'fase · responsables')}${th('okr', 'OKR')}${th('tipo', 'Tipo de valor')}${th('ice', 'ICE', '', 'n')}${th('avance', 'Avance', 'real · ┃ esperado')}${th('fin', 'Cronograma', `${+d.hoy.slice(0, 4)} – ${+d.hoy.slice(0, 4) + 1}`)}${th('valor', 'Valor a 2 años', 'caso de negocio')}${th('alertas', 'Alertas')}<th aria-hidden="true"></th></tr></thead>
-        <tbody>${cuerpo(vis) || `<tr><td colspan="9"><div class="t-vacio">${rows.length ? 'Ninguna iniciativa cumple estos filtros.' : fuera ? `Ninguna iniciativa tiene «¿Revisión DGV?» en SI. <button class="t-lnk" data-pf="dgv">Ver las ${fuera} iniciativas</button>` : 'Aún no hay iniciativas.'}</div></td></tr>`}</tbody></table></div>
+        <tbody>${cuerpo(vis)}${ejs.length && !R.alertas ? `<tr class="pf-grp pf-grp-ej"><td colspan="9"><b>Ejemplo</b><small>no suma en los totales ni en el tablero</small></td></tr>${ejs.map(filaHTML).join('')}` : ''}${cuerpo(vis) ? '' : `<tr><td colspan="9"><div class="t-vacio">${rows.length ? 'Ninguna iniciativa cumple estos filtros.' : fuera ? `Ninguna iniciativa tiene «¿Revisión DGV?» en SI. <button class="t-lnk" data-pf="dgv">Ver las ${fuera} iniciativas</button>` : 'Aún no hay iniciativas.'}</div></td></tr>`}</tbody></table></div>
         <div class="t-pie t-pie-row"><span class="t-tag">${vis.length} de ${rows.length} iniciativas · ordenadas por ${ORDEN[oAct].t}${R.okr != null ? ` · OKR «${esc(R.okr || 'sin asignar')}»` : ''}${fuera ? ` · <button class="t-lnk" data-pf="dgv">${fuera} ocultas por no tener «¿Revisión DGV?»: SI</button>` : ''}</span><span class="t-tag">Clic en un encabezado ordena · clic en un grupo lo pliega</span></div></section>`}`;
     const svg = $('#pfMapa', main); if (svg) dibujarMapa(svg, vis);
     const q = $('#pfq', main);

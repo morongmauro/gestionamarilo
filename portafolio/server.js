@@ -377,8 +377,10 @@ function fechaCorta(d = new Date()) {
 // ---------- Exportación para el data lake ----------
 route('GET', '/api/export', 'export', async () => ({ tablas: exporter.TABLAS, formatos: ['json', 'csv'] }));
 async function exportData() {
-  const [projects, activities, sections, cases, sessions, committees] = await Promise.all(COLLS.map(c => store.list(c)));
-  return { columns: await projectColumns(), projects, activities, sections, cases, sessions, committees };
+  const [todos, acts, secs, casos, sessions, committees] = await Promise.all(COLLS.map(c => store.list(c)));
+  // El proyecto de ejemplo no sale en las exportaciones ni en el data lake
+  const ej = new Set(todos.filter(p => p.ejemplo).map(p => p.id)), fuera = x => !ej.has(x.project_id);
+  return { columns: await projectColumns(), projects: todos.filter(p => !p.ejemplo), activities: acts.filter(fuera), sections: secs.filter(fuera), cases: casos.filter(fuera), sessions, committees };
 }
 route('GET', '/api/export/:tabla', 'export', async (req, ctx) => {
   if (!exporter.TABLAS.includes(ctx.params.tabla)) throw new HttpError(404, 'Tabla desconocida');
@@ -831,6 +833,39 @@ async function prepare() {
     }
     if (creadas.length || nsas) console.log(`Iniciativas: ${creadas.length ? 'creadas ' + creadas.join(', ') : 'ya existían'}${nsas ? ' · caso de Nueva SAS cargado' : ''}`);
     await store.setConfig('migr_iniciativas_nov26_v1', true);
+  }
+  // Proyecto de ejemplo: una iniciativa completa (ficha, caso, cronograma, riesgos) para mostrar cómo se ve todo.
+  // Lleva «ejemplo: true» y por eso no suma en los totales, el tablero ni las exportaciones. Si se borra, no vuelve.
+  if (!(await store.getConfig('migr_ejemplo_v1')) && (await store.list('projects')).length) {
+    const sem = JSON.parse(fs.readFileSync(path.join(__dirname, 'lib', 'semillas', 'ejemplo.json'), 'utf8'));
+    const cols = await store.getConfig('project_columns') || [];
+    const t = cols.find(c => c.type === 'title') || { id: 'proyecto' };
+    const ec = cols.find(c => c.type === 'select' && /estado|fase/i.test(c.name));
+    const ps = await store.list('projects');
+    if (!ps.some(p => p.ejemplo)) {
+      const props = { [t.id]: sem.proyecto.nombre };
+      const f2 = ec && (ec.options || []).find(o => Fases.clasificar(o.name) === 2 && /^fase/i.test(o.name)); if (f2) props[ec.id] = f2.name;
+      const dgv = cols.find(c => c.id === 'revision_dgv'); const si = dgv && (dgv.options || []).find(o => /^s[ií]$/i.test(o.name)); if (si) props[dgv.id] = si.name;
+      // Solo las columnas que existen; en las listas, solo opciones que existen
+      for (const [k, v] of Object.entries(sem.proyecto.props)) {
+        const c = cols.find(x => x.id === k); if (!c) continue;
+        if (c.type === 'select' && !(c.options || []).some(o => o.name === v)) continue;
+        props[k] = v;
+      }
+      const pid = newId(), meta = { created_at: now(), updated_at: now(), updated_by_name: 'Sistema' };
+      await store.insert('projects', { id: pid, props, ejemplo: true, frase: sem.proyecto.frase, area: sem.proyecto.area, fecha_meta: sem.proyecto.fecha_meta, miembros: sem.proyecto.miembros, riesgos: sem.proyecto.riesgos, position: ps.reduce((m, p) => Math.max(m, p.position ?? 0), -1) + 1, ...meta });
+      await store.insert('cases', { id: 'caso-' + pid, project_id: pid, ...sem.caso, ...meta });
+      const sid = {};
+      for (const [i, [k, name]] of sem.secciones.entries()) { sid[k] = newId(); await store.insert('sections', { id: sid[k], project_id: pid, name, position: i, parent_id: null, enabled: true, ...meta }); }
+      const aid = Object.fromEntries(sem.actividades.map(a => [a.id, newId()]));
+      for (const a of sem.actividades) {
+        const { id, sec, ...resto } = a;
+        await store.insert('activities', { ...resto, id: aid[id], project_id: pid, section_id: sid[sec], deps: a.deps.map(d => aid[d]).filter(Boolean), dep_tipos: {}, notas: '', base_ini: null, base_fin: null, ...meta });
+      }
+      await store.insert('historial', { id: newId(), created_at: now(), user_id: 'sistema', user_name: 'Sistema', accion: 'creó', coll: 'projects', record_id: pid, nombre: 'Proyecto de ejemplo: ' + sem.proyecto.nombre, campos: [] });
+      console.log('Proyecto de ejemplo creado: ' + sem.proyecto.nombre);
+    }
+    await store.setConfig('migr_ejemplo_v1', true);
   }
   if (!(await store.getConfig('seeded_committees'))) {
     if (!(await store.list('committees')).length) for (const c of defaults.committees()) await store.insert('committees', { ...c, id: newId(), created_at: now(), updated_at: now() });

@@ -715,7 +715,7 @@
     if (params[0] === 'todos') pid = null;
     App.store.set(LS_SEL, pid || 'todos');
     // Solo las iniciativas activas («¿Revisión DGV?»: SI, si el filtro está puesto) y, en la vista de todo el portafolio, solo las que tienen cronograma
-    const visibles = ps.filter(p => App.enAlcance(p) && (!filtro || !ec || (p.props || {})[ec.id] === filtro));
+    const visibles = ps.filter(p => App.enAlcance(p) && !App.esEjemplo(p) && (!filtro || !ec || (p.props || {})[ec.id] === filtro));
     const conPlan = visibles.filter(p => App.S.activities.some(a => a.project_id === p.id)), sinPlan = visibles.filter(p => !conPlan.includes(p));
     const acts = App.S.activities.filter(a => conPlan.some(p => p.id === a.project_id));
     const late = acts.filter(a => a.fin && a.fin < hoy() && (a.avance || 0) < 100 && !a.real_fin).length;

@@ -338,7 +338,7 @@
   // (si ese filtro está en uso). Las cerradas, en pausa o canceladas no lo necesitan.
   function cobertura() {
     const ec = App.estadoCol();
-    return App.projectsSorted().map(p => {
+    return App.projectsSorted().filter(p => !App.esEjemplo(p)).map(p => {
       const est = ec ? (p.props || {})[ec.id] || '' : '', fa = window.Fases ? Fases.de(est) : null;
       const dgvNo = App.dgvHay() && !App.dgvSi(p);
       const aplica = !dgvNo && !!fa && !fa.fuera;
@@ -383,7 +383,7 @@
   function section(main, params) {
     if (params[0]) return detalle(main, params[0]);
     if (CF.vista === 'cobertura') return vistaCobertura(main, params);
-    const D = App.Dash.datos({}), Y = D.Y, frac = D.corrido / 12;
+    const D = App.Dash.datos({ conEjemplo: true }), Y = D.Y, frac = D.corrido / 12;
     const porId = new Map(D.proyectos.map(x => [x.p.id, x]));
     const ec = App.estadoCol();
     const todos = App.projectsSorted().map(p => {
@@ -395,17 +395,17 @@
       const est = ec ? (p.props || {})[ec.id] || '' : '', fase = window.Fases ? Fases.clasificar(est) : null;
       return { p, c, f, usd, proy, cap, esp: proy * frac, cats, est, fase };
     });
-    const casos = todos.filter(r => r.c);
+    const casos = todos.filter(r => r.c), sumables = casos.filter(r => !App.esEjemplo(r.p));
     const nq = App.norm ? App.norm(CF.q) : CF.q.toLowerCase();
     const pasa = r => (!CF.q || (App.norm ? App.norm(App.projectName(r.p)) : App.projectName(r.p).toLowerCase()).includes(nq))
       && (!CF.estado || (CF.estado === 'Sin caso' ? !r.c : r.c && (r.c.estado || 'Borrador') === CF.estado))
       && (!CF.fase || String(r.fase) === CF.fase)
       && (!CF.cat || r.cats.includes(CF.cat));
     const vis = todos.filter(pasa);
-    const aprob = casos.filter(r => r.c.estado === 'Aprobado'), aprobCOP = aprob.filter(r => !r.usd), nUSD = aprob.length - aprobCOP.length;
+    const aprob = sumables.filter(r => r.c.estado === 'Aprobado'), aprobCOP = aprob.filter(r => !r.usd), nUSD = aprob.length - aprobCOP.length;
     const vpnAprob = aprobCOP.reduce((a, r) => a + (Number.isFinite(r.f.vpn) ? r.f.vpn : 0), 0);
-    const capT = casos.reduce((a, r) => a + r.cap, 0), proyT = casos.reduce((a, r) => a + r.proy, 0);
-    const nRev = casos.filter(r => r.c.estado === 'En revisión').length;
+    const capT = sumables.reduce((a, r) => a + r.cap, 0), proyT = sumables.reduce((a, r) => a + r.proy, 0);
+    const nRev = sumables.filter(r => r.c.estado === 'En revisión').length;
     const m = v => App.moneyShort(v);
     const cap = CF.modo === 'cap';
     const bullet = r => {
@@ -421,7 +421,7 @@
       const sub = `${per.map(n => `<span class="pf-per" title="${esc(n)}"><i class="cl-${App.colorPersona(n)}"></i>${esc(n)}</span>`).join('')}${r.est ? `<span class="cn-fase">${esc(window.Fases && Fases.de(r.est) ? Fases.de(r.est).corto : r.est)}</span>` : ''}`;
       if (!r.c) return `<tr class="cn-sin" data-pid="${r.p.id}"><td class="pf-nm"><b>${nm}</b><small>${sub}</small></td><td colspan="8" class="faint">${App.canEdit() ? '<span class="t-lnk">+ Crear caso de negocio</span> · ' : ''}${(r.p.props || {}).income ? `con su Income se arma un caso preliminar` : 'sin caso todavía'}</td><td class="go" aria-hidden="true">›</td></tr>`;
       const c = r.c, f = r.f, mo = c.moneda, sc = supuestoClave(c);
-      return `<tr data-pid="${r.p.id}"><td class="pf-nm"><b title="${nm}">${nm}</b><small>${sub}</small></td>
+      return `<tr data-pid="${r.p.id}"><td class="pf-nm"><b title="${nm}">${nm}</b>${App.tagEjemplo(r.p)}<small>${sub}</small></td>
         <td><span class="pill cl-${estadoColor(c.estado)}">${esc(c.estado || 'Borrador')}</span>${c.origen === 'ice' ? ' <span class="cn-pre" title="Caso preliminar construido desde el ICE">preliminar</span>' : ''}</td>
         <td class="n">${f.totalInversion ? esc(App.moneyShort(f.totalInversion, mo)) : '<span class="faint">—</span>'}</td>
         <td class="n cn-vpn">${f.vpn == null || !f.totalInversion ? '<span class="faint">—</span>' : `<b class="${f.vpn >= 0 ? '' : 'neg'}">${esc(App.moneyShort(f.vpn, mo))}</b>`}</td>
@@ -440,7 +440,7 @@
       + (sin.length ? `<tr class="cn-grp cn-tog" data-cn-sin="1" role="button" aria-expanded="${sinAbierto}"><td colspan="${COLS}"><b>${sinAbierto ? '▾' : '▸'} Sin caso de negocio</b> <small>${sin.length} ${sin.length === 1 ? 'iniciativa' : 'iniciativas'}${sinAbierto ? '' : ' · clic para verlas'}</small></td></tr>${sinAbierto ? sin.map(fila).join('') : ''}` : '');
     const sel = (attr, label, val, opts) => `<label class="cn-f"><span>${label}</span><select data-cf="${attr}">${opts.map(([v, t]) => `<option value="${esc(v)}" ${String(val) === String(v) ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>`;
     main.innerHTML = `<div class="pg-top"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Casos de negocio</h1>
-        <div class="kl"><span><b>${casos.length}</b>${casos.length === 1 ? 'caso' : 'casos'}</span><span><b>${esc(m(vpnAprob))}</b>VPN total aprobado${nUSD ? ` · ${nUSD} en USD aparte` : ''}</span><span><b>${esc(m(capT))}</b>captado ${Y} de ${esc(m(proyT))}</span><span><b class="${nRev ? 'r' : ''}">${nRev}</b>por aprobar en comité</span></div>
+        <div class="kl"><span><b>${sumables.length}</b>${sumables.length === 1 ? 'caso' : 'casos'}</span><span><b>${esc(m(vpnAprob))}</b>VPN total aprobado${nUSD ? ` · ${nUSD} en USD aparte` : ''}</span><span><b>${esc(m(capT))}</b>captado ${Y} de ${esc(m(proyT))}</span><span><b class="${nRev ? 'r' : ''}">${nRev}</b>por aprobar en comité</span></div>
         <span class="sp"></span><button class="btn ghost sm" data-cn="csv">Exportar a Excel</button>${App.canEdit() ? '<button class="btn primary sm" data-cn="nuevo">+ Nuevo caso</button>' : ''}</div>
       <div class="pf-bar"><label class="search"><span>⌕</span><input id="cnq" placeholder="Buscar caso o iniciativa…" value="${esc(CF.q)}"></label>
         ${sel('estado', 'Estado', CF.estado, [['', 'Todos'], ...ESTADOS.map(e => [e.name, e.name]), ['Sin caso', 'Sin caso']])}
