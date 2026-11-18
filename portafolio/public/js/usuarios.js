@@ -18,11 +18,11 @@
     users.sort((a, b) => a.name.localeCompare(b.name));
     const base = location.origin;
     const tablas = ['proyectos', 'actividades', 'casos', 'flujos', 'sesiones', 'compromisos', 'comites'];
-    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><div><h1>Usuarios</h1><div class="sub">${users.length} ${users.length === 1 ? 'persona' : 'personas'} con acceso · cada quien entra con su correo y contraseña</div></div><span class="sp"></span><button class="btn primary" data-u="new">+ Nuevo usuario</button></div>
+    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><div><h1>Usuarios</h1><div class="sub">${users.length} ${users.length === 1 ? 'persona' : 'personas'} con acceso · cada quien entra con su correo y su propia contraseña</div></div><span class="sp"></span><button class="btn primary" data-u="new">+ Invitar persona</button></div>
       <div class="card-box" style="padding:0;overflow:auto;margin-bottom:16px"><table class="lst"><thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th>Último ingreso</th><th></th></tr></thead><tbody>
         ${users.map(u => `<tr class="${u.active ? '' : 'off'}" data-id="${u.id}"><td><span style="display:inline-flex;align-items:center;gap:8px"><span class="av">${esc(App.initials(u.name))}</span><b>${esc(u.name)}</b>${u.id === App.S.me.id ? ' <span class="tag">tú</span>' : ''}</span></td><td>${esc(u.email)}</td>
           <td><select data-u="role" title="${esc(ROL_HELP[u.role])}">${Object.entries(ROLES).map(([k, l]) => `<option value="${k}" ${k === u.role ? 'selected' : ''}>${l}</option>`).join('')}</select></td>
-          <td>${u.active ? (u.must_change ? '<span class="tag warn">Debe cambiar la contraseña</span>' : '<span class="tag">Activo</span>') : '<span class="tag">Desactivado</span>'}</td>
+          <td>${!u.active ? '<span class="tag">Desactivado</span>' : u.pide_clave ? `<button class="tag warn" data-u="enlace" title="Pidió restablecer su contraseña ${esc(App.d.ago(u.pide_clave))}. Clic para generar el enlace">Pidió restablecer su contraseña · enviar enlace</button>` : u.invitado ? `<span class="tag warn" title="${u.enlace_vence ? 'El enlace vence ' + esc(App.d.fmt(u.enlace_vence.slice(0, 10))) : ''}">Invitación pendiente</span>` : u.must_change ? '<span class="tag warn">Debe cambiar la contraseña</span>' : '<span class="tag">Activo</span>'}</td>
           <td class="muted">${u.last_login ? esc(App.d.ago(u.last_login)) : 'Nunca'}</td>
           <td style="white-space:nowrap;text-align:right"><button class="btn sm" data-u="more">···</button></td></tr>`).join('')}
       </tbody></table></div>
@@ -45,8 +45,9 @@
       }
       const b = e.target.closest('[data-u]'); if (!b) return;
       if (b.dataset.u === 'new') return nuevo(b);
+      if (b.dataset.u === 'enlace') { const u0 = users.find(x => x.id === (b.closest('[data-id]') || {}).dataset.id); if (u0) return accion('enlace', u0, b); }
       const id = b.closest('[data-id]') && b.closest('[data-id]').dataset.id; const u = users.find(x => x.id === id);
-      if (b.dataset.u === 'more') App.menu(b, [{ id: 'name', label: '✎ Cambiar nombre' }, { id: 'reset', label: '⚿ Restablecer contraseña' }, { id: 'active', label: u.active ? '◌ Desactivar acceso' : '● Reactivar acceso' }, '-', { id: 'del', label: '🗑 Eliminar usuario', danger: true }], m => accion(m, u, b), 240);
+      if (b.dataset.u === 'more') App.menu(b, [{ id: 'name', label: '✎ Cambiar nombre' }, { id: 'enlace', label: u.invitado ? '✉ Enviar de nuevo la invitación' : '✉ Enviar enlace para restablecer la contraseña' }, { id: 'reset', label: '⚿ Poner una contraseña temporal' }, { id: 'active', label: u.active ? '◌ Desactivar acceso' : '● Reactivar acceso' }, '-', { id: 'del', label: '🗑 Eliminar usuario', danger: true }], m => accion(m, u, b), 240);
     };
     main.onchange = e => {
       const s = e.target.closest('[data-u=role]'); if (!s) return;
@@ -76,27 +77,40 @@
     if (m === 'name') return App.editText(anchor, u.name, { placeholder: 'Nombre', width: 300, onSave: v => v && v !== u.name && App.guard(async () => { await App.api('PATCH', '/api/usuarios/' + u.id, { name: v }); App.render(); }) });
     if (m === 'active') return App.guard(async () => { await App.api('PATCH', '/api/usuarios/' + u.id, { active: !u.active }); App.toast(u.active ? 'Acceso desactivado: su sesión se cerró' : 'Acceso reactivado'); App.render(); });
     if (m === 'del') { if (!confirm(`¿Eliminar a ${u.name}? Su historial de cambios se conserva.`)) return; return App.guard(async () => { await App.api('DELETE', '/api/usuarios/' + u.id); App.render(); }); }
+    if (m === 'enlace') return App.guard(async () => { const r = await App.api('POST', `/api/usuarios/${u.id}/enlace`); mostrarEnlace(u.name, u.email, r); App.render(); });
     if (m === 'reset') {
       const pw = tempPass();
       if (!confirm(`¿Restablecer la contraseña de ${u.name}? Se cerrarán sus sesiones abiertas.`)) return;
       App.guard(async () => { await App.api('PATCH', '/api/usuarios/' + u.id, { password: pw }); credenciales(u.name, u.email, pw); });
     }
   }
+  // Invitar: la persona recibe (o se le comparte) un enlace para crear su propia contraseña
   function nuevo(anchor) {
-    const pw = tempPass();
-    const p = App.openPop(anchor, `<div class="lbl">Nuevo usuario</div>
+    const p = App.openPop(anchor, `<div class="lbl">Invitar a una persona</div>
       <input type="text" data-n="name" placeholder="Nombre y apellido" style="margin:0 4px 6px;width:calc(100% - 8px)">
-      <input type="text" data-n="email" placeholder="correo@empresa.com" style="margin:0 4px 6px;width:calc(100% - 8px)">
+      <input type="email" data-n="email" placeholder="correo@amarilo.com" style="margin:0 4px 6px;width:calc(100% - 8px)">
       <select data-n="role" style="margin:0 4px 6px;width:calc(100% - 8px)">${Object.entries(ROLES).map(([k, l]) => `<option value="${k}" ${k === 'editor' ? 'selected' : ''}>${l} · ${ROL_HELP[k]}</option>`).join('')}</select>
-      <div class="lbl">Contraseña temporal</div><input type="text" data-n="password" value="${pw}" style="margin:0 4px 6px;width:calc(100% - 8px)">
-      <div class="hint">Al entrar por primera vez, la app le pide cambiarla.</div>
-      <div class="row" style="padding:4px"><button class="btn primary" data-n="ok">Crear usuario</button></div>`, { width: 340 });
+      <div class="hint">Le llega un enlace para crear su contraseña (vence en 7 días). Si el correo no está configurado, te mostramos el enlace para que se lo envíes.</div>
+      <div class="row" style="padding:4px"><button class="btn primary" data-n="ok">Invitar</button></div>`, { width: 340 });
     p.onclick = e => {
       const ok = e.target.closest('[data-n=ok]'); if (!ok || ok.disabled) return;
       ok.disabled = true;
       const v = k => $(`[data-n=${k}]`, p).value.trim();
-      const body = { name: v('name'), email: v('email'), role: v('role'), password: v('password') };
-      App.guard(async () => { await App.api('POST', '/api/usuarios', body); App.closePop(true); credenciales(body.name, body.email, body.password); App.reload(); }).finally(() => { ok.disabled = false; });
+      const body = { name: v('name'), email: v('email'), role: v('role') };
+      App.guard(async () => { const r = await App.api('POST', '/api/usuarios/invitar', body); App.closePop(true); mostrarEnlace(r.user.name, r.user.email, Object.assign({ tipo: 'invitacion' }, r)); App.reload(); }).finally(() => { ok.disabled = false; });
+    };
+  }
+  function mostrarEnlace(name, email, r) {
+    const inv = r.tipo === 'invitacion';
+    const msg = inv ? `Hola ${name}, te di acceso al Portafolio de Generación de Valor.\nCrea tu contraseña aquí (el enlace vence en 7 días y sirve una sola vez):\n${r.link}` : `Hola ${name}, para poner una contraseña nueva en el Portafolio de Generación de Valor usa este enlace (vence en 48 horas y sirve una sola vez):\n${r.link}`;
+    const bg = document.createElement('div'); bg.className = 'modal-bg';
+    bg.innerHTML = `<div class="login-card"><h1>${inv ? 'Invitación lista' : 'Enlace listo'}</h1>
+      <p>${r.enviado ? `Se envió a <b>${esc(email)}</b>. Si no le llega, compártele este mensaje por Teams o correo.` : `El correo automático no está configurado: compártele este mensaje a <b>${esc(email)}</b> por Teams o correo.`}</p>
+      <div class="secret" style="white-space:pre-wrap;word-break:break-all">${esc(msg)}</div><button class="btn primary" data-m="copy">Copiar mensaje</button><button class="btn" data-m="close">Cerrar</button></div>`;
+    document.body.appendChild(bg);
+    bg.onclick = e => {
+      if (e.target.closest('[data-m=copy]')) { navigator.clipboard && navigator.clipboard.writeText(msg).then(() => App.toast('Copiado'), () => App.toast('Selecciona el texto y cópialo', true)); }
+      if (e.target.closest('[data-m=close]')) bg.remove();
     };
   }
   function credenciales(name, email, pw) {

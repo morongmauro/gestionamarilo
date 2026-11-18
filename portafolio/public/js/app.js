@@ -43,6 +43,20 @@
         <label>Contraseña</label><input class="fld" name="password" type="password" required autocomplete="new-password" placeholder="Mínimo 8 caracteres, letras y números">
         ${info.needCode ? '<label>Código de instalación</label><input class="fld" name="code" required autocomplete="off">' : ''}
         <button class="btn primary" type="submit">Crear administrador</button><div class="err"></div>`;
+    } else if (mode === 'clave') {
+      if (info.error) { f.innerHTML = `<h1>Este enlace ya no sirve</h1><p>${esc(info.error)}</p><button class="btn primary" type="button" data-l="ingreso">Ir al ingreso</button>`; }
+      else f.innerHTML = `<div class="eyebrow">${org}</div><h1>${info.tipo === 'invitacion' ? `Hola, ${esc(info.name)}` : 'Pon una contraseña nueva'}</h1>
+        <p>${info.tipo === 'invitacion' ? 'Te dieron acceso al Portafolio de Generación de Valor. Crea tu contraseña para entrar.' : 'Elige una contraseña nueva para tu cuenta.'}</p>
+        <label>Correo</label><input class="fld" name="email" type="email" value="${esc(info.email || '')}" readonly autocomplete="username">
+        <label>Contraseña</label><input class="fld" name="nueva" type="password" required autocomplete="new-password" placeholder="Mínimo 8 caracteres, letras y números">
+        <label>Repítela</label><input class="fld" name="nueva2" type="password" required autocomplete="new-password">
+        <button class="btn primary" type="submit">${info.tipo === 'invitacion' ? 'Crear contraseña y entrar' : 'Guardar y entrar'}</button><div class="err"></div>`;
+    } else if (mode === 'olvide') {
+      f.innerHTML = `<div class="eyebrow">${org}</div><h1>¿Olvidaste tu contraseña?</h1>
+        <p>${info.correo ? 'Escribe tu correo y te enviaremos un enlace para poner una nueva.' : 'Escribe tu correo y avisaremos a los administradores para que te envíen un enlace y pongas una nueva.'}</p>
+        <label>Correo</label><input class="fld" name="email" type="email" required autocomplete="username">
+        <button class="btn primary" type="submit">${info.correo ? 'Enviarme el enlace' : 'Avisar a los administradores'}</button><div class="err"></div>
+        <button class="btn ghost" type="button" data-l="ingreso" style="margin-top:8px">Volver al ingreso</button>`;
     } else if (mode === 'cambiar') {
       f.innerHTML = `<h1>Cambia tu contraseña</h1><p>Entraste con una contraseña temporal. Elige una propia para continuar.</p>
         <input type="hidden" name="actual" value="${esc(info.actual || '')}">
@@ -54,9 +68,11 @@
       f.innerHTML = `<div class="eyebrow">${org}</div><h1>Inicia sesión</h1><p>Usa tu correo corporativo y tu contraseña.</p>${info.demo ? '<div class="demo-note">Versión de demostración: usa solo datos de prueba.</div>' : ''}
         <label>Correo</label><input class="fld" name="email" type="email" required autocomplete="username">
         <label>Contraseña</label><input class="fld" name="password" type="password" required autocomplete="current-password">
-        <button class="btn primary" type="submit">Entrar</button><div class="err">${esc(info.msg || '')}</div>`;
+        <button class="btn primary" type="submit">Entrar</button><div class="err">${esc(info.msg || '')}</div>
+        <button class="btn ghost" type="button" data-l="olvide" style="margin-top:8px">¿Olvidaste tu contraseña?</button>`;
     }
-    const first = $('input:not([type=hidden])', f); if (first) first.focus();
+    const first = $('input:not([type=hidden]):not([readonly])', f); if (first) first.focus();
+    f.onclick = e => { const l = e.target.closest('[data-l]'); if (!l) return; if (location.hash.startsWith('#/clave/')) history.replaceState(null, '', location.pathname); showLogin(l.dataset.l === 'olvide' ? 'olvide' : 'login', info); };
     f.onsubmit = async e => {
       e.preventDefault();
       const d = Object.fromEntries(new FormData(f).entries());
@@ -64,6 +80,15 @@
       err.textContent = ''; btn.disabled = true;
       try {
         if (mode === 'setup') { await App.api('POST', '/api/auth/setup', d); await enter(); }
+        else if (mode === 'clave') {
+          if (d.nueva !== d.nueva2) throw new Error('Las dos contraseñas no coinciden');
+          await App.api('POST', '/api/clave/' + encodeURIComponent(info.token), { password: d.nueva });
+          history.replaceState(null, '', location.pathname + '#/tablero'); await enter();
+        } else if (mode === 'olvide') {
+          const r = await App.api('POST', '/api/auth/olvide', { email: d.email });
+          f.innerHTML = `<h1>Listo</h1><p>${r.correo ? 'Si ese correo tiene acceso, en unos minutos te llega un enlace para poner una contraseña nueva. Revisa también la carpeta de correo no deseado.' : 'Si ese correo tiene acceso, los administradores ya lo saben y te enviarán un enlace para poner una contraseña nueva.'}</p><button class="btn primary" type="button" data-l="ingreso">Volver al ingreso</button>`;
+          return;
+        }
         else if (mode === 'cambiar') {
           if (d.nueva !== d.nueva2) throw new Error('Las dos contraseñas no coinciden');
           await App.api('POST', '/api/auth/clave', { actual: d.actual, nueva: d.nueva }); await enter();
@@ -194,6 +219,9 @@
     try {
       const st = await App.api('GET', '/api/auth/estado');
       App.S.org = st.org;
+      // Enlace de invitación o para restablecer la contraseña: /#/clave/<código>
+      const mClave = /^#\/clave\/([A-Za-z0-9_-]{20,})/.exec(location.hash);
+      if (mClave) { try { const i = await App.api('GET', '/api/clave/' + mClave[1]); return showLogin('clave', Object.assign({}, st, i, { token: mClave[1] })); } catch (ex) { return showLogin('clave', Object.assign({}, st, { error: ex.message })); } }
       if (st.setup) return showLogin('setup', st);
       if (!st.user) return showLogin('login', st);
       // Con contraseña temporal el servidor no entrega datos: primero se cambia

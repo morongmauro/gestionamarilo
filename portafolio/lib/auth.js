@@ -104,7 +104,8 @@ function ipDe(req) {
   return (f || (req.socket && req.socket.remoteAddress) || '').slice(0, 64);
 }
 
-const publicUser = u => u && ({ id: u.id, name: u.name, email: u.email, role: u.role, active: u.active !== false, must_change: !!u.must_change, created_at: u.created_at, last_login: u.last_login || null });
+const publicUser = u => u && ({ id: u.id, name: u.name, email: u.email, role: u.role, active: u.active !== false, must_change: !!u.must_change, created_at: u.created_at, last_login: u.last_login || null,
+  invitado: !u.pass, enlace_vence: u.inv && u.inv.exp || null, pide_clave: u.pide_clave || null });
 
 module.exports = {
   COOKIE, ROLES, hashPassword, verifyPassword, checkPasswordRules, setSecret, makeToken, readToken,

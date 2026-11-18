@@ -130,7 +130,7 @@ async function titleColumn() { return (await projectColumns()).find(c => c.type 
 // ---------- Autenticación ----------
 route('GET', '/api/auth/estado', 'publico', async (req, ctx) => {
   const users = await store.list('users');
-  return { setup: users.length === 0, needCode: users.length === 0 && (PROD || !!process.env.SETUP_CODE), user: auth.publicUser(ctx.user), org: process.env.ORG_NAME || 'Amarilo', demo: process.env.MODO_DEMO === 'true' };
+  return { setup: users.length === 0, needCode: users.length === 0 && (PROD || !!process.env.SETUP_CODE), user: auth.publicUser(ctx.user), org: process.env.ORG_NAME || 'Amarilo', demo: process.env.MODO_DEMO === 'true', correo: correoListo() };
 });
 
 route('POST', '/api/auth/setup', 'publico', async (req, ctx) => {
@@ -153,7 +153,7 @@ route('POST', '/api/auth/login', 'publico', async (req, ctx) => {
   if (auth.loginBloqueado(email, ip)) throw new HttpError(429, 'Demasiados intentos. Espera 15 minutos.');
   const user = (await store.list('users')).find(u => u.email === email);
   // Si el correo no existe se verifica igual contra una clave falsa: así el tiempo de respuesta no lo delata
-  const okPass = auth.verifyPassword(ctx.body.password || '', user ? user.pass : DUMMY_HASH);
+  const okPass = auth.verifyPassword(ctx.body.password || '', user && user.pass ? user.pass : DUMMY_HASH);
   if (!user || user.active === false || !okPass) {
     auth.loginFallido(email, ip);
     throw new HttpError(401, 'Correo o contraseña incorrectos');
@@ -181,6 +181,71 @@ route('POST', '/api/auth/clave', 'usuario', async (req, ctx) => {
   return { user: auth.publicUser(u) };
 });
 
+// ---------- Invitaciones y enlaces para crear o restablecer la contraseña ----------
+// El enlace lleva un código aleatorio de un solo uso; en la base solo se guarda su huella (sha256).
+// Si hay un servicio de correo configurado, el enlace se envía; si no, el administrador lo copia y lo comparte.
+const huella = t => crypto.createHash('sha256').update(String(t)).digest('hex');
+const DIAS_INVITACION = 7, HORAS_RESTABLECER = 48;
+function enlaceNuevo(tipo) {
+  const token = crypto.randomBytes(32).toString('base64url');
+  const exp = new Date(Date.now() + (tipo === 'invitacion' ? DIAS_INVITACION * 864e5 : HORAS_RESTABLECER * 36e5)).toISOString();
+  return { token, inv: { h: huella(token), exp, tipo } };
+}
+function origenDe(req) {
+  if (process.env.APP_URL) return String(process.env.APP_URL).replace(/\/+$/, '');
+  const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+  const proto = String(req.headers['x-forwarded-proto'] || (auth.isHttps && auth.isHttps(req) ? 'https' : 'http')).split(',')[0].trim();
+  return `${proto}://${host}`;
+}
+// Correo saliente (opcional): RESEND_API_KEY y CORREO_REMITENTE (p. ej. «Portafolio <portafolio@tudominio.com>»)
+const correoListo = () => !!(process.env.RESEND_API_KEY && process.env.CORREO_REMITENTE);
+async function enviarCorreo(para, asunto, texto, boton, enlace) {
+  if (!correoListo()) return false;
+  const e = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const html = `<div style="font-family:Arial,sans-serif;font-size:15px;color:#160B29;max-width:520px">${texto.split('\n').map(l => `<p>${e(l)}</p>`).join('')}<p><a href="${e(enlace)}" style="display:inline-block;background:#160B29;color:#fff;text-decoration:none;font-weight:bold;padding:12px 20px;border-radius:999px">${e(boton)}</a></p><p style="color:#8B859A;font-size:12px">Si el botón no abre, copia este enlace en el navegador:<br>${e(enlace)}</p></div>`;
+  try {
+    const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: process.env.CORREO_REMITENTE, to: [para], subject: asunto, html, text: texto + '\n\n' + enlace }), signal: AbortSignal.timeout(10000) });
+    if (!r.ok) console.error('Correo no enviado:', r.status, (await r.text()).slice(0, 200));
+    return r.ok;
+  } catch (ex) { console.error('Correo no enviado:', ex.message); return false; }
+}
+async function mandarEnlace(req, u, token, tipo, por) {
+  const org = process.env.ORG_NAME || 'Amarilo', link = `${origenDe(req)}/#/clave/${token}`;
+  const enviado = tipo === 'invitacion'
+    ? await enviarCorreo(u.email, `Invitación al Portafolio de Generación de Valor de ${org}`, `Hola ${u.name}:\n${por ? por + ' te' : 'Te'} dio acceso al Portafolio de Generación de Valor de ${org}.\nCrea tu contraseña con el botón. El enlace vence en ${DIAS_INVITACION} días y sirve una sola vez.`, 'Crear mi contraseña', link)
+    : await enviarCorreo(u.email, 'Restablece tu contraseña del Portafolio de Generación de Valor', `Hola ${u.name}:\nPara poner una contraseña nueva usa el botón. El enlace vence en ${HORAS_RESTABLECER} horas y sirve una sola vez.\nSi no lo pediste, ignora este correo: tu contraseña actual sigue igual.`, 'Poner una contraseña nueva', link);
+  return { link, enviado };
+}
+const usuarioDeEnlace = async token => {
+  const h = huella(token || ''), ahora = now();
+  const u = (await store.list('users')).find(x => x.inv && x.inv.h === h);
+  if (!u || u.active === false || !(u.inv.exp > ahora)) throw new HttpError(404, 'El enlace no es válido o ya venció. Pide uno nuevo a un administrador.');
+  return u;
+};
+route('GET', '/api/clave/:token', 'publico', async (req, ctx) => { const u = await usuarioDeEnlace(ctx.params.token); return { name: u.name, email: u.email, tipo: u.inv.tipo }; });
+route('POST', '/api/clave/:token', 'publico', async (req, ctx) => {
+  const u0 = await usuarioDeEnlace(ctx.params.token);
+  const err = auth.checkPasswordRules(ctx.body.password); if (err) throw new HttpError(400, err);
+  const u = await store.update('users', u0.id, d => ({ ...d, pass: auth.hashPassword(ctx.body.password), must_change: false, inv: null, pide_clave: null, sv: (d.sv || 0) + 1, last_login: now(), updated_at: now() }));
+  await log(u, u0.inv.tipo === 'invitacion' ? 'creó su contraseña y entró por primera vez' : 'restableció su contraseña', 'users', u.id, u.name);
+  ctx.setCookie = auth.sessionCookie(req, auth.makeToken(u));
+  return { user: auth.publicUser(u) };
+});
+// «¿Olvidaste tu contraseña?»: con correo configurado llega un enlace; sin correo, se avisa a los administradores.
+// La respuesta es la misma exista o no el correo (no se delata quién tiene cuenta).
+route('POST', '/api/auth/olvide', 'publico', async (req, ctx) => {
+  const email = String(ctx.body.email || '').trim().toLowerCase().slice(0, 254), ip = auth.ipDe(req);
+  if (auth.loginBloqueado('olvide:' + email, ip)) throw new HttpError(429, 'Demasiadas solicitudes. Espera 15 minutos.');
+  auth.loginFallido('olvide:' + email, ip);
+  const u = (await store.list('users')).find(x => x.email === email && x.active !== false);
+  if (u) {
+    if (correoListo()) { const { token, inv } = enlaceNuevo('restablecer'); await store.update('users', u.id, d => ({ ...d, inv })); await mandarEnlace(req, u, token, 'restablecer'); }
+    else { await store.update('users', u.id, d => ({ ...d, pide_clave: now() })); await log(u, 'pidió restablecer su contraseña', 'users', u.id, u.name); }
+  }
+  return { ok: true, correo: correoListo() };
+});
+
 // ---------- Usuarios (solo administradores) ----------
 async function createUser(b, mustChange, idFijo) {
   const email = String(b.email || '').trim().toLowerCase();
@@ -197,6 +262,25 @@ route('POST', '/api/usuarios', 'admin', async (req, ctx) => {
   const u = await createUser(ctx.body, true);
   await log(ctx.user, 'creó', 'users', u.id, `${u.name} (${u.role})`);
   return { user: auth.publicUser(u) };
+});
+route('POST', '/api/usuarios/invitar', 'admin', async (req, ctx) => {
+  const b = ctx.body, email = String(b.email || '').trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new HttpError(400, 'Correo inválido');
+  const name = String(b.name || '').trim().slice(0, 120) || email.split('@')[0];
+  if (!auth.ROLES.includes(b.role)) throw new HttpError(400, 'Rol inválido');
+  if ((await store.list('users')).some(u => u.email === email)) throw new HttpError(409, 'Ya existe una persona con ese correo: usa «Enviar enlace» en su fila');
+  const { token, inv } = enlaceNuevo('invitacion');
+  const u = await store.insert('users', { id: newId(), email, name, role: b.role, active: true, pass: null, must_change: false, sv: 0, inv, invitado_por: ctx.user.name, created_at: now(), updated_at: now() });
+  await log(ctx.user, 'invitó a', 'users', u.id, `${u.name} (${u.role})`);
+  return { user: auth.publicUser(u), ...(await mandarEnlace(req, u, token, 'invitacion', ctx.user.name)) };
+});
+route('POST', '/api/usuarios/:id/enlace', 'admin', async (req, ctx) => {
+  const u0 = (await store.list('users')).find(u => u.id === ctx.params.id); if (!u0) throw new HttpError(404, 'Usuario no encontrado');
+  if (u0.active === false) throw new HttpError(400, 'Primero reactiva su acceso');
+  const tipo = u0.pass ? 'restablecer' : 'invitacion', { token, inv } = enlaceNuevo(tipo);
+  const u = await store.update('users', u0.id, d => ({ ...d, inv, pide_clave: null, updated_at: now() }));
+  await log(ctx.user, tipo === 'invitacion' ? 'reenvió la invitación a' : 'generó un enlace para restablecer la contraseña de', 'users', u.id, u.name);
+  return { tipo, ...(await mandarEnlace(req, u, token, tipo, ctx.user.name)) };
 });
 route('PATCH', '/api/usuarios/:id', 'admin', async (req, ctx) => {
   const b = ctx.body, id = ctx.params.id;
@@ -753,6 +837,22 @@ async function prepare() {
     await store.setConfig('seeded_committees', true);
   }
   // Primer administrador desde variables de entorno
+  // Rescate del administrador: con RESCATE_CORREO y RESCATE_CLAVE en la configuración del servidor, al arrancar esa persona
+  // queda como administradora activa con esa contraseña temporal (debe cambiarla al entrar) y se cierran sus sesiones.
+  // Se aplica una sola vez por cada pareja correo + clave; después conviene borrar las dos variables.
+  if (process.env.RESCATE_CORREO && process.env.RESCATE_CLAVE) {
+    const correo = String(process.env.RESCATE_CORREO).trim().toLowerCase(), clave = String(process.env.RESCATE_CLAVE);
+    const marca = huella(correo + '|' + clave), malo = auth.checkPasswordRules(clave);
+    if (malo) console.error('RESCATE_CLAVE no sirve:', malo);
+    else if ((await store.getConfig('rescate_aplicado')) !== marca) {
+      const u = (await store.list('users')).find(x => x.email === correo);
+      if (u) await store.update('users', u.id, d => ({ ...d, role: 'admin', active: true, pass: auth.hashPassword(clave), must_change: true, inv: null, sv: (d.sv || 0) + 1, updated_at: now() }));
+      else await store.insert('users', { id: newId(), email: correo, name: correo.split('@')[0], role: 'admin', active: true, pass: auth.hashPassword(clave), must_change: true, sv: 0, created_at: now(), updated_at: now() });
+      await store.insert('historial', { id: newId(), created_at: now(), user_id: 'sistema', user_name: 'Sistema', accion: 'restableció el acceso de administrador de', coll: 'users', record_id: u ? u.id : '', nombre: correo, campos: ['contraseña'] });
+      await store.setConfig('rescate_aplicado', marca);
+      console.log(`Rescate aplicado: ${correo} puede entrar con la clave temporal de RESCATE_CLAVE`);
+    }
+  }
   if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD && !(await store.list('users')).length) {
     const idFijo = store.kind === 'memoria' ? 'admin-' + crypto.createHash('sha256').update(String(process.env.ADMIN_EMAIL).trim().toLowerCase()).digest('hex').slice(0, 24) : null;
     await createUser({ name: process.env.ADMIN_NAME || 'Administrador', email: process.env.ADMIN_EMAIL, password: process.env.ADMIN_PASSWORD, role: 'admin' }, store.kind !== 'memoria', idFijo);
