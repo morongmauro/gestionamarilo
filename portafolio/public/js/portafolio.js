@@ -11,7 +11,7 @@
 (function () {
   const { $, esc } = App;
   const R = Object.assign({ okr: null, cat: '', etapa: '', q: '', alertas: false, modo: 'tabla', grupo: 'fase', orden: 'ice', dir: -1, cerr: {} }, App.store.get('portafolio', {}));
-  const guardar = () => App.store.set('portafolio', { okr: R.okr, cat: R.cat, etapa: R.etapa, alertas: R.alertas, modo: R.modo, grupo: R.grupo, orden: R.orden, dir: R.dir, cerr: R.cerr });
+  const guardar = () => App.store.set('portafolio', { graf: R.graf, okr: R.okr, cat: R.cat, etapa: R.etapa, alertas: R.alertas, modo: R.modo, grupo: R.grupo, orden: R.orden, dir: R.dir, cerr: R.cerr });
   const m = v => App.moneyShort(v);
   const ORDEN_CAT = ['ingresos', 'ahorro', 'tiempo', 'eficiencia', 'riesgo', 'otro'];
 
@@ -48,23 +48,25 @@
     && (!R.q || App.projectName(r.p).toLowerCase().includes(R.q.toLowerCase()) || r.okrs.join(' ').toLowerCase().includes(R.q.toLowerCase()));
 
   /* ---------- listas para hacer zoom ---------- */
-  function lentes(rows) {
+  // limpio = para el Tablero: sin los filtros del Portafolio y sin marcar nada; el clic abre el Portafolio ya filtrado
+  function lentes(rows, limpio) {
+    const pf = limpio ? () => true : pasaFiltros;
     // OKR: cuenta con los demás filtros puestos (menos el de OKR); el valor se reparte entre los OKR de cada iniciativa
-    const base = rows.filter(r => pasaFiltros(r, true, false));
+    const base = rows.filter(r => pf(r, true, false));
     const okr = new Map();
     base.forEach(r => (r.okrs.length ? r.okrs : ['']).forEach(o => { const z = okr.get(o) || { n: 0, v: 0 }; z.n++; z.v += r.valor / Math.max(1, r.okrs.length); okr.set(o, z); }));
     const lo = [...okr.entries()].sort((a, b) => (a[0] === '') - (b[0] === '') || b[1].v - a[1].v || a[0].localeCompare(b[0]));
     const maxO = Math.max(1, ...lo.map(([, z]) => z.v));
-    const baseC = rows.filter(r => pasaFiltros(r, false, true));
+    const baseC = rows.filter(r => pf(r, false, true));
     const lc = ORDEN_CAT.map(k => ({ k, n: baseC.filter(r => r.cats.includes(k)).length, v: baseC.reduce((a, r) => a + r.porCat[k], 0) })).filter(z => z.n);
     const maxC = Math.max(1, ...lc.map(z => z.v));
     const fila = (cls, attr, on, chip, nombre, n, v, max, color) => `<button class="pf-lr ${cls} ${on ? 'on' : ''}" ${attr} aria-pressed="${on}">${chip}<span class="nm" title="${esc(nombre)}">${esc(nombre)}</span><span class="cnt">${n} inic.</span><span class="b"><i style="width:${v / max * 100}%;${color ? `background:${color}` : ''}"></i></span><span class="v">${v ? esc(m(v)) : '—'}</span></button>`;
     return `<div class="pf-lentes">
-      <section class="t-card pf-lente"><h3>Por OKR <small>clic para ver solo esas iniciativas</small></h3>
-        ${lo.length ? lo.slice(0, 8).map(([o, z]) => fila('', `data-okr="${esc(o)}"`, R.okr === o, `<span class="pf-okr ${o ? '' : 'sin'}">${o ? 'OKR' : '—'}</span>`, o || 'Sin OKR asignado', z.n, z.v, maxO)).join('') : '<div class="t-vacio">Ninguna iniciativa tiene OKR todavía (columna «OKRs» del portafolio).</div>'}
+      <section class="t-card pf-lente"><h3>Por OKR <small>${limpio ? 'clic: abre el Portafolio con esas iniciativas' : 'clic para ver solo esas iniciativas'}</small></h3>
+        ${lo.length ? lo.slice(0, 8).map(([o, z]) => fila('', `data-okr="${esc(o)}"`, !limpio && R.okr === o, `<span class="pf-okr ${o ? '' : 'sin'}">${o ? 'OKR' : '—'}</span>`, o || 'Sin OKR asignado', z.n, z.v, maxO)).join('') : '<div class="t-vacio">Ninguna iniciativa tiene OKR todavía (columna «OKRs» del portafolio).</div>'}
         ${lo.length > 8 ? `<div class="pf-mas">y ${lo.length - 8} OKR más: búscalos con el buscador</div>` : ''}</section>
       <section class="t-card pf-lente"><h3>Por tipo de valor <small>cómo se captura el beneficio</small></h3>
-        ${lc.length ? lc.map(z => fila('cat', `data-cat="${z.k}"`, R.cat === z.k, `<span class="pf-dot" style="background:var(--cat-${z.k})"></span>`, App.catLabel(z.k), z.n, z.v, maxC, `var(--cat-${z.k})`)).join('') : '<div class="t-vacio">Aún no hay tipos de valor: salen de los beneficios del caso o de la columna «Tipo de valor».</div>'}
+        ${lc.length ? lc.map(z => fila('cat', `data-cat="${z.k}"`, !limpio && R.cat === z.k, `<span class="pf-dot" style="background:var(--cat-${z.k})"></span>`, App.catLabel(z.k), z.n, z.v, maxC, `var(--cat-${z.k})`)).join('') : '<div class="t-vacio">Aún no hay tipos de valor: salen de los beneficios del caso o de la columna «Tipo de valor».</div>'}
         <div class="pf-mas">Una iniciativa puede capturar de varias formas: cuenta en cada una.</div></section></div>`;
   }
 
@@ -164,17 +166,20 @@
     main.innerHTML = `<div class="pg-top"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Portafolio</h1>
         <div class="kl"><span><b>${rows.length}</b>iniciativas</span><span title="Iniciativas en Fase 1, Fase 2 y Fase 3">${[1, 2, 3].map(k => `<b>${rows.filter(r => window.Fases && Fases.clasificar(r.x.estado) === k).length}</b>F${k}`).join(' · ')}</span><span><b class="${nAl ? 'r' : ''}">${nAl}</b>con alertas</span><span><b>${rows.filter(sinDatos).length}</b>sin datos</span><span><b>${esc(m(total))}</b>valor proyectado · ${rows.filter(r => r.valor > 0).length} de ${rows.length} con cifras</span></div>
         <span class="sp"></span>${App.zoomCtl()}<button class="btn ghost sm" data-pf="csv">Exportar a Excel</button>${App.canEdit() ? '<button class="btn primary sm" data-pf="nuevo">+ Nueva iniciativa</button>' : ''}</div>
-      ${lentes(rows)}
       <div class="pf-bar"><label class="search"><span>⌕</span><input id="pfq" placeholder="Buscar iniciativa u OKR…" value="${esc(R.q)}"></label>${chips}
-        ${ec ? `<select class="pf-sel" data-pf-etapa aria-label="Fase"><option value="">Fase: todas</option>${(ec.options || []).map(o => `<option ${R.etapa === o.name ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}</select>` : ''}
+        ${ec ? `<select class="pf-sel" data-pf-okr aria-label="OKR"><option value="">OKR: todos</option>${[...new Set(rows.flatMap(r => r.okrs))].sort((a, b) => a.localeCompare(b)).map(o => `<option value="${esc(o)}" ${R.okr === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}<option value="__sin" ${R.okr === '' ? 'selected' : ''}>Sin OKR asignado</option></select>
+        <select class="pf-sel" data-pf-cat aria-label="Tipo de valor"><option value="">Tipo de valor: todos</option>${ORDEN_CAT.filter(k => rows.some(r => r.cats.includes(k))).map(k => `<option value="${k}" ${R.cat === k ? 'selected' : ''}>${esc(App.catLabel(k))}</option>`).join('')}</select>
+        <select class="pf-sel" data-pf-etapa aria-label="Fase"><option value="">Fase: todas</option>${(ec.options || []).map(o => `<option ${R.etapa === o.name ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}</select>` : ''}
         ${App.dgvHay() ? `<button class="pf-tg ${App.soloDgv() ? 'on' : ''}" data-pf="dgv" aria-pressed="${App.soloDgv()}" title="${App.soloDgv() ? `Se muestran solo las iniciativas con «¿Revisión DGV?»: SI. ${fuera} más están ocultas. Clic para verlas todas.` : 'Se muestran todas. Clic para ver solo las de «¿Revisión DGV?»: SI.'}">¿Revisión DGV?: ${App.soloDgv() ? 'SI' : 'todas'}</button>` : ''}
         <button class="pf-tg ${R.alertas ? 'on' : ''}" data-pf="alertas" aria-pressed="${R.alertas}">Solo con alertas</button>
+        <button class="pf-tg ${R.graf ? 'on' : ''}" data-pf="graf" aria-pressed="${!!R.graf}" title="Minigráficas por OKR y por tipo de valor de lo que está filtrado">▥ Gráficas</button>
         <select class="pf-sel" data-pf-grupo aria-label="Agrupar">${[['fase', 'Agrupar: por fase'], ...colsGrupo().map(c => ['col:' + c.id, 'Agrupar: por ' + c.name.toLowerCase()]), ['okr', 'Agrupar: por OKR'], ['tipo', 'Agrupar: por tipo de valor'], ['', 'Sin agrupar']].map(([k, l]) => `<option value="${k}" ${(R.grupo || '') === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
         <select class="pf-sel" data-pf-orden aria-label="Ordenar">${Object.entries(ORDEN).map(([k, o]) => `<option value="${k}" ${oAct === k ? 'selected' : ''}>Ordenar: ${o.t}${oAct === k ? (R.dir === 1 ? ' ▴' : ' ▾') : ''}</option>`).join('')}</select>
         <span class="sp"></span><div class="seg"><button data-modo="riesgos" class="${R.modo === 'riesgos' ? 'on' : ''}" aria-pressed="${R.modo === 'riesgos'}" title="Todos los riesgos del portafolio" style="order:2">Riesgos</button><button data-modo="tabla" class="${R.modo !== 'mapa' ? 'on' : ''}" aria-pressed="${R.modo !== 'mapa'}">Resumen</button><button data-modo="mapa" class="${R.modo === 'mapa' ? 'on' : ''}" aria-pressed="${R.modo === 'mapa'}" title="Iniciativas por ICE e Income, en cuadrantes">Mapa ICE</button><button data-vista-pf="tabla" title="Tabla tipo Notion: aquí se editan las columnas">Tabla completa</button><button data-vista-pf="tablero" title="Tarjetas agrupadas por fase">Por fase</button></div></div>
+      ${R.graf && R.modo !== 'riesgos' ? lentes(rows) : ''}
       ${R.modo === 'riesgos' && App.Riesgos ? App.Riesgos.portafolioHTML(vis.map(r => r.p)) : R.modo === 'mapa' ? mapaHTML(vis) : `<section class="t-card pf-tbl-card"><div class="pf-wrap"><table class="pf-tbl">
         <thead><tr>${th('nombre', 'Iniciativa', 'fase · responsables')}${th('okr', 'OKR')}${th('tipo', 'Tipo de valor')}${th('ice', 'ICE', '', 'n')}${th('avance', 'Avance', 'real · ┃ esperado')}${th('fin', 'Cronograma', `${+d.hoy.slice(0, 4)} – ${+d.hoy.slice(0, 4) + 1}`)}${th('valor', 'Valor a 2 años', 'caso de negocio')}${th('alertas', 'Alertas')}<th aria-hidden="true"></th></tr></thead>
-        <tbody>${cuerpo(vis)}${ejs.length && !R.alertas ? `<tr class="pf-grp pf-grp-ej"><td colspan="9"><b>Ejemplo</b><small>no suma en los totales ni en el tablero</small></td></tr>${ejs.map(filaHTML).join('')}` : ''}${cuerpo(vis) ? '' : `<tr><td colspan="9"><div class="t-vacio">${rows.length ? 'Ninguna iniciativa cumple estos filtros.' : fuera ? `Ninguna iniciativa tiene «¿Revisión DGV?» en SI. <button class="t-lnk" data-pf="dgv">Ver las ${fuera} iniciativas</button>` : 'Aún no hay iniciativas.'}</div></td></tr>`}</tbody></table></div>
+        <tbody>${cuerpo(vis)}${(ejV => ejV.length ? `<tr class="pf-grp pf-grp-ej"><td colspan="9"><b>Ejemplo</b><small>no suma en los totales ni en el tablero</small></td></tr>${ejV.map(filaHTML).join('')}` : '')(ejs.filter(r => pasaFiltros(r)))}${cuerpo(vis) ? '' : `<tr><td colspan="9"><div class="t-vacio">${rows.length ? 'Ninguna iniciativa cumple estos filtros.' : fuera ? `Ninguna iniciativa tiene «¿Revisión DGV?» en SI. <button class="t-lnk" data-pf="dgv">Ver las ${fuera} iniciativas</button>` : 'Aún no hay iniciativas.'}</div></td></tr>`}</tbody></table></div>
         <div class="t-pie t-pie-row"><span class="t-tag">${vis.length} de ${rows.length} iniciativas · ordenadas por ${ORDEN[oAct].t}${R.okr != null ? ` · OKR «${esc(R.okr || 'sin asignar')}»` : ''}${fuera ? ` · <button class="t-lnk" data-pf="dgv">${fuera} ocultas por no tener «¿Revisión DGV?»: SI</button>` : ''}</span><span class="t-tag">Clic en un encabezado ordena · clic en un grupo lo pliega</span></div></section>`}`;
     const svg = $('#pfMapa', main); if (svg) dibujarMapa(svg, vis);
     const q = $('#pfq', main);
@@ -191,6 +196,7 @@
       const fila = e.target.closest('.pf-tbl tbody tr[data-pid]'); if (fila && !e.target.closest('a,button,select,input')) return App.go('#/proyectos/' + fila.dataset.pid);
       const gr = e.target.closest('[data-grp]'); if (gr && !e.target.closest('a,button')) { R.cerr = Object.assign({}, R.cerr); if (R.cerr[gr.dataset.grp]) delete R.cerr[gr.dataset.grp]; else R.cerr[gr.dataset.grp] = true; guardar(); return render(main); }
       const b = e.target.closest('[data-pf]'); if (!b) return;
+      if (b.dataset.pf === 'graf') { R.graf = !R.graf; guardar(); return render(main); }
       if (b.dataset.pf === 'dgv') { App.store.set('alcance.dgv', App.soloDgv() ? 'todas' : 'si'); return render(main); }
       if (b.dataset.pf === 'dir') { R.dir = R.dir === 1 ? -1 : 1; guardar(); return render(main); }
       if (b.dataset.pf === 'alertas') { R.alertas = !R.alertas; guardar(); return render(main); }
@@ -199,6 +205,8 @@
     };
     main.onchange = e => {
       if (e.target.hasAttribute('data-pf-etapa')) { R.etapa = e.target.value; guardar(); render(main); }
+      if (e.target.hasAttribute('data-pf-okr')) { const v = e.target.value; R.okr = v === '' ? null : v === '__sin' ? '' : v; guardar(); render(main); }
+      if (e.target.hasAttribute('data-pf-cat')) { R.cat = e.target.value; guardar(); render(main); }
       if (e.target.hasAttribute('data-pf-grupo')) { R.grupo = e.target.value; guardar(); render(main); }
       if (e.target.hasAttribute('data-pf-orden')) { R.orden = e.target.value; R.dir = ORDEN[R.orden].dir; guardar(); render(main); }
     };
@@ -259,5 +267,8 @@
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `portafolio-${App.d.today()}.csv`; a.click(); URL.revokeObjectURL(a.href);
   }
 
-  App.Portafolio = { render };
+  // Para el Tablero: el mismo resumen por OKR y por tipo de valor; el clic lleva al Portafolio con ese filtro
+  const lentesTablero = () => { const { rows } = filas(); return lentes(rows.filter(r => App.enAlcance(r.p) && !App.esEjemplo(r.p)), true); };
+  const filtrar = f => { R.okr = f.okr != null ? f.okr : null; R.cat = f.cat || ''; R.etapa = ''; R.q = ''; R.alertas = false; R.modo = 'tabla'; R.graf = true; guardar(); App.go('#/proyectos'); };
+  App.Portafolio = { render, lentesTablero, filtrar };
 })();

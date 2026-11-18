@@ -323,6 +323,7 @@
       ${titulares(d, sg)}
       ${paso(1, 'Valor a crear', 'lo que proyectan los casos de negocio, año por año', seg('agrupar', F.agrupar || 'tipo', [['tipo', 'Por tipo de valor'], ['okr', 'Por OKR'], ['etapa', 'Por fase']]))}
       ${valorACrear(d)}
+      ${App.Portafolio && App.Portafolio.lentesTablero ? App.Portafolio.lentesTablero() : ''}
       ${paso(2, `Captura por iniciativa · ${d.Y}`, 'lo capturado frente a lo que debía llevar a la fecha', seg('cpi', F.cpi === 'brecha' ? 'brecha' : 'valor', [['valor', 'Mayor valor'], ['brecha', 'Mayor brecha']]))}
       ${capturaIniciativas(d)}
       ${paso(3, `Proyectado vs. capturado · ${d.Y}`, 'acumulado mes a mes')}
@@ -333,6 +334,7 @@
     main.onclick = e => {
       if (e.target.closest('.burger')) return App.toggleSide();
       if (e.target.closest('[data-dgv]')) { App.store.set('alcance.dgv', App.soloDgv() ? 'todas' : 'si'); return App.render(); }
+      const ln = e.target.closest('.pf-lentes [data-okr], .pf-lentes [data-cat]'); if (ln && App.Portafolio) return App.Portafolio.filtrar(ln.dataset.okr != null ? { okr: ln.dataset.okr } : { cat: ln.dataset.cat });
       const v = e.target.closest('[data-agrupar]'); if (v) { F.agrupar = v.dataset.agrupar; saveF(); return App.render(); }
       const c = e.target.closest('[data-cpi]'); if (c) { F.cpi = c.dataset.cpi; saveF(); return App.render(); }
       const ev = e.target.closest('[data-evid]'); if (ev) { const b = $('#evidBox', main); b.hidden = !b.hidden; ev.setAttribute('aria-expanded', !b.hidden); ev.textContent = b.hidden ? '¿De dónde sale lo capturado?' : 'Ocultar la evidencia'; return; }
