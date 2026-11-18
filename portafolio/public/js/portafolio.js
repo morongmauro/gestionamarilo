@@ -110,7 +110,7 @@
     l.forEach(r => { const z = g.de(r); if (!mapa.has(z.k)) mapa.set(z.k, { z, rows: [] }); mapa.get(z.k).rows.push(r); });
     return [...mapa.values()].sort((a, b) => a.z.o - b.z.o || a.z.t.localeCompare(b.z.t)).map(({ z, rows }) => {
       const id = R.grupo + ':' + z.k, cerrado = !!(R.cerr || {})[id], v = rows.reduce((a, r) => a + (dosAnios(r) || 0), 0), al = rows.filter(r => r.al.length).length;
-      return `<tr class="pf-grp" data-grp="${esc(id)}" role="button" aria-expanded="${!cerrado}"><td colspan="9"><b>${cerrado ? '▸' : '▾'} ${esc(z.t)}</b><small>${rows.length} ${rows.length === 1 ? 'iniciativa' : 'iniciativas'}${v ? ` · ${esc(m(v))} a dos años` : ''}${al ? ` · <span class="r">${al} con alertas</span>` : ''}</small></td></tr>${cerrado ? '' : rows.map(filaHTML).join('')}`;
+      return `<tr class="pf-grp" data-grp="${esc(id)}" role="button" aria-expanded="${!cerrado}"><td colspan="11"><b>${cerrado ? '▸' : '▾'} ${esc(z.t)}</b><small>${rows.length} ${rows.length === 1 ? 'iniciativa' : 'iniciativas'}${v ? ` · ${esc(m(v))} a dos años` : ''}${al ? ` · <span class="r">${al} con alertas</span>` : ''}</small></td></tr>${cerrado ? '' : rows.map(filaHTML).join('')}`;
     }).join('');
   }
 
@@ -125,7 +125,7 @@
   }
   function filaHTML(r) {
     const ec = App.estadoCol(), est = r.x.estado, ice = r.x.ice;
-    const okr = r.okrs.length ? `<div class="pf-okrbs">${r.okrs.slice(0, 1).map(o => `<button class="pf-okrb ${R.okr === o ? 'on' : ''}" data-okr="${esc(o)}" title="Ver solo las iniciativas de este OKR">${esc(o)}</button>`).join('')}${r.okrs.length > 1 ? `<span class="pf-mas2" title="${esc(r.okrs.slice(1).join('\n'))}">+${r.okrs.length - 1}</span>` : ''}</div>` : '<span class="faint">—</span>';
+    const okr = r.okrs.length ? `<button class="pf-okrs" data-okrs="${r.p.id}" title="Ver los OKR de esta iniciativa"><span class="t">${esc(r.okrs[0])}</span>${r.okrs.length > 1 ? `<em>+${r.okrs.length - 1}</em>` : ''}</button>` : '<span class="faint">—</span>';
     const todos = esc(r.cats.map(App.catLabel).join(', '));
     const tipos = r.cats.length ? `<span class="pf-tv" style="--c:var(--cat-${r.cats[0]})" title="${todos}">${esc(App.catLabel(r.cats[0]))}</span>${r.cats.length > 1 ? `<span class="pf-mas2" title="${todos}">+${r.cats.length - 1}</span>` : ''}` : '<span class="faint">—</span>';
     const av = r.pl.acts.length ? `<span class="pf-av"><span class="t"><i style="width:${r.pl.avance}%"></i>${r.esp != null ? `<u style="left:${r.esp}%" title="Esperado a hoy: ${r.esp} %"></u>` : ''}</span><b>${r.pl.avance} %</b></span>` : '<span class="faint">—</span>';
@@ -134,7 +134,8 @@
       : r.valor ? `<span class="pf-caso"><b>${esc(m(r.valor))}</b><small class="pf-inc" title="Sin caso de negocio: valor del Income"> Income</small></span>` : (App.canEdit() && !inactiva(r) ? `<a class="pf-crear" href="#/proyectos/${r.p.id}/caso" title="Crear el caso de negocio"><span class="a">Sin caso</span><span class="b">+ Crear caso</span></a>` : '<span class="faint">Sin caso</span>');
     const al = r.al[0];
     return `<tr data-pid="${r.p.id}" class="${inactiva(r) ? 'pf-inact' : ''}">
-      <td class="pf-nm"><a href="#/proyectos/${r.p.id}"><b>${esc(App.projectName(r.p))}</b></a>${App.tagEjemplo(r.p)}<small>${est ? `<span class="pill pf-etapa cl-${App.optColor(ec, est)}" title="${esc(est)}">${esc(corto(est))}</span>` : ''}${responsables(r.p).map(n => `<span class="pf-per" title="${esc(n)}"><i class="cl-${App.colorPersona(n)}"></i>${esc(nombreCorto(n))}</span>`).join('')}</small></td>
+      <td class="pf-nm"><a href="#/proyectos/${r.p.id}"><b>${esc(App.projectName(r.p))}</b></a>${App.tagEjemplo(r.p)}</td>
+      ${COLS_PER.map(k => { const c = App.S.columns.find(x => x.id === k); const v = (r.p.props || {})[k]; return `<td class="pf-per-c">${c && v && (!Array.isArray(v) || v.length) ? App.Tabla.renderValue(c, v) : '<span class="faint">—</span>'}</td>`; }).join('')}
       <td>${okr}</td><td><div class="pf-tvs">${tipos}</div></td>
       <td class="n">${ice == null ? '<span class="faint">—</span>' : `<b>${esc(App.num(ice, 1))}</b>`}</td>
       <td>${av}</td>
@@ -144,6 +145,7 @@
   }
   const corto = e => { const f = window.Fases && Fases.de(e); if (f) return f.corto; const mm = /^(L\d)\b/i.exec(e); return mm ? mm[1].toUpperCase() : e; };
   const cortoAlerta = t => t.replace(/ en el cronograma$/, '').replace(/^(\d+) actividad(?:es)? atrasadas?$/, (_, n) => n + (n === '1' ? ' atrasada' : ' atrasadas')).replace(/^1 compromiso de comité vencido$/, 'Compromiso vencido').replace(/^Captura (rezagada|por debajo): (\d+)%.*/, 'Captura al $2 %').replace(/^Termina (\d+) días? hábil(es)? después de la fecha meta$/, 'Meta +$1 días').replace(/ de comité vencidos?$/, ' vencido').replace(/^(\d+) actividad(es)? de la ruta crítica en riesgo$/, 'Ruta crítica en riesgo');
+  const COLS_PER = ['habilitadores', 'realizadores'];
   function responsables(p) {
     const v = p.props || {}; const n = [].concat(v.habilitadores || [], v.realizadores || []).filter(Boolean);
     return n.slice(0, 2);
@@ -178,14 +180,19 @@
         <span class="sp"></span><div class="seg"><button data-modo="riesgos" class="${R.modo === 'riesgos' ? 'on' : ''}" aria-pressed="${R.modo === 'riesgos'}" title="Todos los riesgos del portafolio" style="order:2">Riesgos</button><button data-modo="tabla" class="${R.modo !== 'mapa' ? 'on' : ''}" aria-pressed="${R.modo !== 'mapa'}">Resumen</button><button data-modo="mapa" class="${R.modo === 'mapa' ? 'on' : ''}" aria-pressed="${R.modo === 'mapa'}" title="Iniciativas por ICE e Income, en cuadrantes">Mapa ICE</button><button data-vista-pf="tabla" title="Tabla tipo Notion: aquí se editan las columnas">Tabla completa</button><button data-vista-pf="tablero" title="Tarjetas agrupadas por fase">Por fase</button></div></div>
       ${R.graf && R.modo !== 'riesgos' ? lentes(rows) : ''}
       ${R.modo === 'riesgos' && App.Riesgos ? App.Riesgos.portafolioHTML(vis.map(r => r.p)) : R.modo === 'mapa' ? mapaHTML(vis) : `<section class="t-card pf-tbl-card"><div class="pf-wrap"><table class="pf-tbl">
-        <thead><tr>${th('nombre', 'Iniciativa', 'fase · responsables')}${th('okr', 'OKR')}${th('tipo', 'Tipo de valor')}${th('ice', 'ICE', '', 'n')}${th('avance', 'Avance', 'real · ┃ esperado')}${th('fin', 'Cronograma', `${+d.hoy.slice(0, 4)} – ${+d.hoy.slice(0, 4) + 1}`)}${th('valor', 'Valor a 2 años', 'caso de negocio')}${th('alertas', 'Alertas')}<th aria-hidden="true"></th></tr></thead>
-        <tbody>${cuerpo(vis)}${(ejV => ejV.length ? `<tr class="pf-grp pf-grp-ej"><td colspan="9"><b>Ejemplo</b><small>no suma en los totales ni en el tablero</small></td></tr>${ejV.map(filaHTML).join('')}` : '')(ejs.filter(r => pasaFiltros(r)))}${cuerpo(vis) ? '' : `<tr><td colspan="9"><div class="t-vacio">${rows.length ? 'Ninguna iniciativa cumple estos filtros.' : fuera ? `Ninguna iniciativa tiene «¿Revisión DGV?» en SI. <button class="t-lnk" data-pf="dgv">Ver las ${fuera} iniciativas</button>` : 'Aún no hay iniciativas.'}</div></td></tr>`}</tbody></table></div>
+        <thead><tr>${th('nombre', 'Iniciativa')}<th>Habilitadores</th><th>Realizadores</th>${th('okr', 'OKR')}${th('tipo', 'Tipo de valor')}${th('ice', 'ICE', '', 'n')}${th('avance', 'Avance', 'real · ┃ esperado')}${th('fin', 'Cronograma', `${+d.hoy.slice(0, 4)} – ${+d.hoy.slice(0, 4) + 1}`)}${th('valor', 'Valor a 2 años', 'caso de negocio')}${th('alertas', 'Alertas')}<th aria-hidden="true"></th></tr></thead>
+        <tbody>${cuerpo(vis)}${(ejV => ejV.length ? `<tr class="pf-grp pf-grp-ej"><td colspan="11"><b>Ejemplo</b><small>no suma en los totales ni en el tablero</small></td></tr>${ejV.map(filaHTML).join('')}` : '')(ejs.filter(r => pasaFiltros(r)))}${cuerpo(vis) ? '' : `<tr><td colspan="11"><div class="t-vacio">${rows.length ? 'Ninguna iniciativa cumple estos filtros.' : fuera ? `Ninguna iniciativa tiene «¿Revisión DGV?» en SI. <button class="t-lnk" data-pf="dgv">Ver las ${fuera} iniciativas</button>` : 'Aún no hay iniciativas.'}</div></td></tr>`}</tbody></table></div>
         <div class="t-pie t-pie-row"><span class="t-tag">${vis.length} de ${rows.length} iniciativas · ordenadas por ${ORDEN[oAct].t}${R.okr != null ? ` · OKR «${esc(R.okr || 'sin asignar')}»` : ''}${fuera ? ` · <button class="t-lnk" data-pf="dgv">${fuera} ocultas por no tener «¿Revisión DGV?»: SI</button>` : ''}</span><span class="t-tag">Clic en un encabezado ordena · clic en un grupo lo pliega</span></div></section>`}`;
     const svg = $('#pfMapa', main); if (svg) dibujarMapa(svg, vis);
     const q = $('#pfq', main);
     q.oninput = () => { R.q = q.value; const pos = q.selectionStart; render(main); const n = $('#pfq', main); n.focus(); n.setSelectionRange(pos, pos); };
     main.onclick = e => {
       if (e.target.closest('.burger')) return App.toggleSide();
+      const ok = e.target.closest('[data-okrs]');
+      if (ok) { const p = App.byId('projects', ok.dataset.okrs), l = App.okrsDe(p);
+        const pp = App.openPop(ok, `<div class="lbl">OKR de ${esc(App.projectName(p))}</div><ul class="okr-lista">${l.map(o => `<li><span>${esc(o)}</span><button class="t-lnk" data-okr-ver="${esc(o)}">Ver las iniciativas con este OKR</button></li>`).join('')}</ul>`, { width: 380, nofocus: true });
+        pp.onclick = ev => { const b = ev.target.closest('[data-okr-ver]'); if (!b) return; App.closePop(true); R.okr = b.dataset.okrVer; guardar(); render(main); };
+        return; }
       const o = e.target.closest('[data-okr]'); if (o) { R.okr = R.okr === o.dataset.okr ? null : o.dataset.okr; guardar(); return render(main); }
       const c = e.target.closest('[data-cat]'); if (c) { R.cat = R.cat === c.dataset.cat ? '' : c.dataset.cat; guardar(); return render(main); }
       const qq = e.target.closest('[data-quitar]'); if (qq) { if (qq.dataset.quitar === 'okr') R.okr = null; else R[qq.dataset.quitar] = ''; guardar(); return render(main); }

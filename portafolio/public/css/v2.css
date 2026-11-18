@@ -631,3 +631,19 @@ a.p-nv:hover{border-color:var(--ink)}
 .leer-todo{white-space:pre-wrap;word-break:break-word;font-size:13px;line-height:1.55;padding:0 12px 10px;max-height:340px;overflow:auto}
 /* Celular: la fila de modos del Portafolio se desplaza dentro de su espacio, sin ensanchar la página */
 @media(max-width:700px){.pf-bar .seg,.pg-top .seg{max-width:100%;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}.pf-bar .seg::-webkit-scrollbar{display:none}}
+/* Portafolio: OKR (el clic abre la lista de esa iniciativa) y columnas de personas */
+.pf-okrs{display:flex;align-items:baseline;gap:6px;max-width:100%;font:inherit;font-size:12.5px;font-weight:600;color:var(--ink);background:none;border:0;padding:2px 0;cursor:pointer;text-align:left}
+.pf-okrs .t{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.pf-okrs em{font-style:normal;font-weight:800;color:var(--muted);white-space:nowrap}
+.pf-okrs:hover .t{text-decoration:underline;text-decoration-color:var(--accent,#FFC900);text-decoration-thickness:2px;text-underline-offset:3px}
+.okr-lista{list-style:none;margin:0;padding:0 12px 10px;display:grid;gap:10px}
+.okr-lista li{display:grid;gap:2px;font-size:13.5px;line-height:1.4}
+.okr-lista li span:before{content:'';display:inline-block;width:8px;height:8px;background:var(--accent,#FFC900);margin-right:8px;vertical-align:1px}
+.okr-lista .t-lnk{justify-self:start;font-size:12px;padding-left:16px}
+.pf-per-c .c-in{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:0}
+/* Portafolio: anchos con nombre, personas y OKR en columnas propias */
+.pf-tbl td.pf-nm{min-width:200px;width:17%}
+.pf-tbl td.pf-nm b{max-width:none;white-space:normal;overflow:visible;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pf-tbl td.pf-per-c{width:1%;white-space:nowrap;font-size:12.5px}
+.pf-tbl td:has(> .pf-okrs){width:16%;min-width:170px;max-width:240px}
+.pf-okrs{font-weight:500}
