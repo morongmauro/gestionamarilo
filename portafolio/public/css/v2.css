@@ -605,3 +605,27 @@ a.p-nv:hover{border-color:var(--ink)}
 .tbl th.col-drag{opacity:.45}
 .tbl th.col-ant{box-shadow:inset 3px 0 0 var(--accent,#FFD000)}
 .tbl th.col-des{box-shadow:inset -3px 0 0 var(--accent,#FFD000)}
+
+/* Tamaño de la vista del Portafolio */
+.zm{display:inline-flex;align-items:center;border:1px solid var(--line-2);border-radius:999px;background:var(--card);overflow:hidden;font-size:12px;flex:none}
+.zm button{font:inherit;font-weight:800;font-size:14px;line-height:1;width:28px;height:28px;border:0;background:none;color:var(--ink);cursor:pointer}
+.zm button:hover{background:var(--hover)}
+.zm b{min-width:44px;text-align:center;font-weight:700;color:var(--muted)}
+/* Barra lateral compactada: ícono con su nombre debajo (más fácil de leer y de atinar) */
+@media(min-width:901px){
+  .app.col .nav-side{width:92px}
+  .app.col .tab{flex-direction:column;align-items:center;gap:4px;padding:9px 3px 8px;border-radius:12px;margin:1px 4px}
+  .app.col .tab .ic{width:20px;height:20px}
+  .app.col .tab .lb{display:block;font-size:10px;font-weight:600;line-height:1.15;text-align:center;white-space:normal;letter-spacing:-.01em;max-width:84px;opacity:.9}
+  .app.col .tab.active .lb{opacity:1;font-weight:700}
+  .app.col .side-grp{margin:8px 14px 2px}
+  .app.col .side-col{margin:6px auto 0}
+}
+@media(min-width:701px){.tbl-wrap{max-height:calc((100vh - 150px) / var(--z,1))}}
+
+/* Tabla completa: la bitácora (Trazabilidad) en una línea, con «Leer más» */
+.tbl td .c-in.log1{display:flex;align-items:baseline;gap:8px;min-width:0}
+.tbl td .c-in.log1 .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
+.tbl td .c-in.log1 .leer{flex:none;font:inherit;font-size:11.5px;font-weight:700;color:var(--link,#2563EB);background:none;border:0;padding:0;cursor:pointer;white-space:nowrap}
+.tbl td .c-in.log1 .leer:hover{text-decoration:underline}
+.leer-todo{white-space:pre-wrap;word-break:break-word;font-size:13px;line-height:1.55;padding:0 12px 10px;max-height:340px;overflow:auto}

@@ -144,6 +144,8 @@
     const { sec, params } = route();
     const main = $('#main');
     main.className = App.canEdit() ? '' : 'ro';
+    const zPf = sec === 'proyectos' && !params[0] ? App.zoomPf() : null;
+    main.style.zoom = zPf || ''; main.style.setProperty('--z', zPf || 1);
     main.onclick = main.onchange = main.oninput = main.onmousedown = main.ondblclick = main.onmousemove = main.onmouseleave = null;
     main.ondragstart = main.ondragend = main.ondragover = main.ondrop = null;
     const keep = window.scrollY;

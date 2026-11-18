@@ -64,6 +64,16 @@ App.dgvHay = () => App.S.projects.some(p => { const v = App.dgvValor(p); return 
 App.soloDgv = () => App.dgvHay() && App.store.get('alcance.dgv', 'si') === 'si';
 App.enAlcance = p => !App.soloDgv() || App.dgvSi(p);
 // Proyecto de ejemplo: se ve completo al abrirlo, pero no suma en ningún total ni indicador del portafolio
+// Tamaño de la vista del Portafolio (como el zoom del navegador, pero solo ahí). Por defecto 90 %: cabe más.
+App.ZOOMS = [0.75, 0.8, 0.85, 0.9, 1, 1.1];
+App.zoomPf = () => { const z = Number(App.store.get('pf.zoom', 0.9)); return App.ZOOMS.includes(z) ? z : 0.9; };
+App.zoomCtl = () => `<span class="zm" title="Tamaño de la vista: más pequeño muestra más iniciativas y columnas (se guarda en este navegador)"><button data-zoom="-" aria-label="Más pequeño">−</button><b data-zoom-v>${Math.round(App.zoomPf() * 100)} %</b><button data-zoom="+" aria-label="Más grande">+</button></span>`;
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('[data-zoom]'); if (!b) return;
+  const i = App.ZOOMS.indexOf(App.zoomPf()), j = Math.max(0, Math.min(App.ZOOMS.length - 1, i + (b.dataset.zoom === '+' ? 1 : -1)));
+  App.store.set('pf.zoom', App.ZOOMS[j]); const m = document.getElementById('main'); if (m) { m.style.zoom = App.ZOOMS[j]; m.style.setProperty('--z', App.ZOOMS[j]); }
+  document.querySelectorAll('[data-zoom-v]').forEach(x => { x.textContent = Math.round(App.ZOOMS[j] * 100) + ' %'; });
+});
 App.esEjemplo = p => { const x = typeof p === 'string' ? App.byId('projects', p) : p; return !!(x && x.ejemplo); };
 App.tagEjemplo = p => (App.esEjemplo(p) ? '<span class="tag-ej" title="Proyecto de ejemplo: muestra cómo se ve una iniciativa completa. No suma en los totales ni en el tablero.">Ejemplo</span>' : '');
 // Una columna que ninguna iniciativa tiene diligenciada es una columna olvidada: no se muestra (sigue existiendo y se puede

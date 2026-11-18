@@ -96,6 +96,10 @@
     return `<div class="c-in">${esc(textOf(c, v))}</div>`;
   }
   function cellHTML(c, r) {
+    // Bitácora (p. ej. Trazabilidad): en la tabla solo la primera línea; el resto con «Leer más»
+    if (c.type === 'text' && c.log) { const v = String((r.props || {})[c.id] || '').trim(); if (!v) return '<div class="c-in txt empty">·</div>';
+      const l = v.split(/\n/), uno = l[0];
+      return `<div class="c-in log1"><span class="t">${esc(uno)}</span>${l.length > 1 || uno.length > 60 ? `<button class="leer" data-act="leer" data-id="${r.id}" data-col="${c.id}" title="Ver todo el texto">Leer más</button>` : ''}</div>`; }
     return renderValue(c, (r.props || {})[c.id]) + (c.type === 'title' ? `<button class="open" data-act="open" data-id="${r.id}" title="Abrir la iniciativa">⤢ Abrir</button>` : '');
   }
   // Columnas calculadas (solo lectura)
@@ -128,7 +132,7 @@
         <button class="tb ${P.group ? 'on' : ''}" data-act="grupo">▤ Agrupar</button>
         <button class="tb ${App.S.columns.some(c => c.hidden) || !P.calc ? 'on' : ''}" data-act="cols">▥ Columnas</button>
         <span class="sp"></span>
-        <button class="tb" data-act="csv" title="Descargar como CSV (se abre en Excel)">⇩ CSV</button>
+        ${App.zoomCtl()}<button class="tb" data-act="csv" title="Descargar como CSV (se abre en Excel)">⇩ CSV</button>
         ${ro ? '' : '<button class="tb primary" data-act="new">+ Nueva iniciativa</button>'}
       </div>
       <div class="chips" id="tchips"></div>
@@ -416,6 +420,9 @@
     const a = t.dataset.act;
     if (a === 'burger') App.toggleSide();
     else if (a === 'open') { e.stopPropagation(); App.go('#/proyectos/' + t.dataset.id); }
+    else if (a === 'leer') { const r = App.byId('projects', t.dataset.id), c = col(t.dataset.col), td = t.closest('td');
+      const p = App.openPop(td || t, `<div class="lbl">${esc(c.name)} · ${esc(App.projectName(r))}</div><div class="leer-todo">${esc((r.props || {})[c.id] || '')}</div>${App.canEdit() ? '<div style="padding:0 10px 10px"><button class="btn sm" data-leer-ed>✎ Editar</button></div>' : ''}`, { width: 520, nofocus: true });
+      p.onclick = ev => { if (ev.target.closest('[data-leer-ed]')) { App.closePop(true); openEditor(td, r.id, c.id); } }; }
     else if (a === 'edit') openEditor(t, t.dataset.id, t.dataset.col);
     else if (a === 'calc') App.go(`#/proyectos/${t.dataset.id}/${t.dataset.k === '_caso' ? 'caso' : t.dataset.k === '_ice' ? 'info' : 'cronograma'}`);
     else if (a === 'colmenu') { if (e.target.classList.contains('rz')) return; openColMenu(t, t.dataset.col); }
