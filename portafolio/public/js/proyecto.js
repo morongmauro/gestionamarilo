@@ -35,7 +35,7 @@
       <div class="p-head">
         <div class="p-title" data-p="titulo">${esc(App.projectName(p))}${App.esEjemplo(p) ? '<span class="ej-txt" title="Proyecto de ejemplo: muestra cómo se ve una iniciativa completa. No suma en los totales ni en el tablero.">ejemplo, no suma en los totales</span>' : ''}</div>
         <div class="facts">
-          ${ec ? `<button class="f-fase" data-p="estado" ${ro ? 'disabled' : ''} title="${ro ? '' : 'Cambiar la fase'}"><i class="sq" style="background:var(--c-${App.optColor(ec, estado) || 'gris'}-i)"></i>${esc(estado || 'Sin ' + ec.name.toLowerCase())}</button>` : ''}
+          ${ec ? `<button class="f-fase" data-p="estado" ${ro ? 'disabled' : ''} title="${ro ? '' : 'Cambiar la fase'}"><span class="pill cl-${App.optColor(ec, estado) || 'gris'}">${esc(estado || 'Sin ' + ec.name.toLowerCase())}</span></button>` : ''}
           <span>${pl.acts.length ? `<b>${pl.avance} %</b> de avance${pl.atrasadas ? `, <b class="r">${pl.atrasadas} atrasada${pl.atrasadas > 1 ? 's' : ''}</b>` : ''}${pl.fin ? `, termina el <b>${esc(App.d.fmt(pl.fin))}</b>` : ''}` : esc(App.sinPlan(p).corto)}</span>
           <span>${caso ? `Caso <b>${esc((caso.estado || 'Borrador').toLowerCase())}</b>${f.vpn != null && f.totalInversion > 0 ? `, VPN <b>${esc(App.moneyShort(f.vpn, caso.moneda))}</b>` : caso.origen === 'ice' ? ', preliminar' : ''}` : 'Sin caso de negocio'}</span>
           <span title="${esc((App.ICE.detalle(p).notas || []).join('\n'))}">ICE <b>${App.iceOf(p) == null ? '—' : esc(App.num(App.iceOf(p), 1))}</b>${ro ? '' : ' <button class="t-lnk" data-p="ice">editar</button>'}</span>

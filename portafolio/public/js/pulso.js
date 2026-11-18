@@ -87,9 +87,9 @@
   function decisiones(D) {
     const out = [];
     D.rev.slice(0, 2).forEach(c => { const p = App.byId('projects', c.project_id), f = Finanzas.calc(c);
-      out.push(`<div class="pv-d"><span class="sq" aria-hidden="true"></span><div><h3>Aprobar el caso de ${esc(App.projectName(p))}</h3><p>${f.vpn != null ? `VPN de ${esc(m(f.vpn))}` : 'Sin VPN todavía'}${f.tir != null ? ` y TIR de ${esc(App.pct(f.tir))}` : ''}${f.totalInversion ? `, con una inversión de ${esc(m(f.totalInversion))}` : ''}.${D.prox ? ` Va al comité del ${esc(fechaCorta(D.prox.fecha))}.` : ' No hay comité programado.'}</p></div>${btn(`#/proyectos/${p.id}/caso`, 'Ver el caso')}</div>`); });
+      out.push(`<div class="pv-d"><i class="ico ico-caso" aria-hidden="true"></i><div><h3>Aprobar el caso de ${esc(App.projectName(p))}</h3><p>${f.vpn != null ? `VPN de ${esc(m(f.vpn))}` : 'Sin VPN todavía'}${f.tir != null ? ` y TIR de ${esc(App.pct(f.tir))}` : ''}${f.totalInversion ? `, con una inversión de ${esc(m(f.totalInversion))}` : ''}.${D.prox ? ` Va al comité del ${esc(fechaCorta(D.prox.fecha))}.` : ' No hay comité programado.'}</p></div>${btn(`#/proyectos/${p.id}/caso`, 'Ver el caso')}</div>`); });
     D.crit.slice(0, 3 - out.length).forEach(z => { const fuertes = z.out.filter(o => o.sev >= 3).map(txt), crono = fuertes.some(t => /cronograma|ruta crítica|atrasad/i.test(t));
-      out.push(`<div class="pv-d"><span class="sq r" aria-hidden="true"></span><div><h3>${esc(App.projectName(z.x.p))} ${crono ? 'se está atrasando' : 'necesita atención'}</h3><p>${esc(fuertes.slice(0, 2).join('. '))}.</p></div>${btn(`#/proyectos/${z.x.p.id}${crono ? '' : '/info'}`, crono ? 'Ver el cronograma' : 'Ver la iniciativa', 'cl')}</div>`); });
+      out.push(`<div class="pv-d"><i class="ico ico-alerta r" aria-hidden="true"></i><div><h3>${esc(App.projectName(z.x.p))} ${crono ? 'se está atrasando' : 'necesita atención'}</h3><p>${esc(fuertes.slice(0, 2).join('. '))}.</p></div>${btn(`#/proyectos/${z.x.p.id}${crono ? '' : '/info'}`, crono ? 'Ver el cronograma' : 'Ver la iniciativa', 'cl')}</div>`); });
     return out.length ? out.join('') : '<p class="pv-vacio">Nada pendiente para la gerencia esta semana.</p>';
   }
 
@@ -171,7 +171,7 @@
       <p class="lema-s">Cada fila compara lo capturado con lo que se esperaba a esta altura del año. La línea roja es lo esperado a hoy.</p>
       ${sub('okr')}
       <div class="pv-okr">${L.map(z => { const [c, t] = est(z), e = z.pr * d.corrido / 12, mx = Math.max(z.pr, 1), best = z.l.slice().sort((a, b) => D.pr(b) - D.pr(a))[0];
-        return `<div class="pv-o"><span class="sq ${c}" aria-hidden="true"></span><div class="o"><b>${esc(z.o)}</b><span>${t} · ${plural(z.l.length, 'iniciativa', 'iniciativas')}</span></div>
+        return `<div class="pv-o"><i class="ico ${c === 'g' ? 'ico-ok g' : c === 'o' ? 'ico-reloj o' : c === 'r' ? 'ico-alerta r' : 'ico-pendiente n'}" aria-hidden="true"></i><div class="o"><b>${esc(z.o)}</b><span>${t} · ${plural(z.l.length, 'iniciativa', 'iniciativas')}</span></div>
           <div class="pv-t"><div class="c"><span class="e"></span><span class="l" style="width:${Math.min(100, z.ca / mx * 100)}%"></span>${z.pr ? `<span class="x" style="left:${Math.min(100, e / mx * 100)}%"></span>` : ''}</div><div class="s">${z.pr ? `${esc(m(z.ca))} de ${esc(m(e))} esperados a hoy` : 'Sus iniciativas aún no tienen beneficios para este año'}</div></div>
           <div class="v"><b>${z.pr ? esc(m(z.pr)) : '—'}</b><span>proyectado ${d.Y}</span></div>
           <a class="mejor" href="#/proyectos/${best.p.id}">${esc(App.projectName(best.p))}<span>la que más aporta</span></a></div>`; }).join('')}</div>`;
@@ -192,7 +192,7 @@
     main.innerHTML = `<div class="pm-top"><span>Generación de Valor</span><span class="sp"></span><span>${esc(fechaLarga(d.hoy))}</span><a href="#/tablero" class="pm-x" title="Salir del modo pantalla (Esc)">Salir</a></div>
       <p class="pm-lema">Llevamos <b>${esc(m(d.captadoY))}</b> en ${d.Y}${d.esperadoY ? `, el ${Math.round(d.captadoY / d.esperadoY * 100)} % de lo esperado a hoy` : ''}.</p>
       ${cota(D)}
-      <div class="pm-dos"><section><h2>Piden atención</h2>${pend.map(x => `<div class="pm-i"><span class="sq ${x.k}"></span><div><b>${esc(x.n)}</b><span>${esc(x.s)}</span></div></div>`).join('') || '<p>Nada pendiente.</p>'}</section>
+      <div class="pm-dos"><section><h2>Piden atención</h2>${pend.map(x => `<div class="pm-i"><i class="ico ${x.k === 'r' ? 'ico-alerta r' : 'ico-caso'}"></i><div><b>${esc(x.n)}</b><span>${esc(x.s)}</span></div></div>`).join('') || '<p>Nada pendiente.</p>'}</section>
         <section><h2>Próximos 30 días</h2>${evs.map(e => `<div class="pm-i"><span class="pm-f">${+e.f.slice(8)}<small>${App.d.MES3[+e.f.slice(5, 7) - 1]}</small></span><div><b>${esc(e.t)}</b><span>${e.k === 'c' ? 'Comité, ' : 'Hito de '}${esc(e.s)}</span></div></div>`).join('') || '<p>Sin comités ni hitos.</p>'}</section></div>
       <div class="pm-pie"><span>El portafolio proyecta <b>${esc(m(D.proyTotal))}</b> en ${d.anios.length} años</span><span><b>${D.ps.length}</b> iniciativas activas</span><span><b>${D.capt.length}</b> ya capturan valor</span></div>`;
     main.onclick = null;

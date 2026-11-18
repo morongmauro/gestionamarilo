@@ -110,7 +110,7 @@
     l.forEach(r => { const z = g.de(r); if (!mapa.has(z.k)) mapa.set(z.k, { z, rows: [] }); mapa.get(z.k).rows.push(r); });
     return [...mapa.values()].sort((a, b) => a.z.o - b.z.o || a.z.t.localeCompare(b.z.t)).map(({ z, rows }) => {
       const id = R.grupo + ':' + z.k, cerrado = !!(R.cerr || {})[id], v = rows.reduce((a, r) => a + (dosAnios(r) || 0), 0), al = rows.filter(r => r.al.length).length;
-      return `<tr class="pf-grp" data-grp="${esc(id)}" role="button" aria-expanded="${!cerrado}"><td colspan="12"><b>${cerrado ? '▸' : '▾'} ${R.grupo === 'fase' && App.estadoCol() ? `<i class="sq pf-grp-sq" style="background:var(--c-${App.optColor(App.estadoCol(), rows[0].x.estado) || 'gris'}-i)"></i>` : ''}${esc(z.t)}</b><small>${rows.length} ${rows.length === 1 ? 'iniciativa' : 'iniciativas'}${v ? ` · ${esc(m(v))} a dos años` : ''}${al ? ` · <span class="r">${al} con alertas</span>` : ''}</small></td></tr>${cerrado ? '' : rows.map(filaHTML).join('')}`;
+      return `<tr class="pf-grp" data-grp="${esc(id)}" role="button" aria-expanded="${!cerrado}"><td colspan="12"><b>${cerrado ? '▸' : '▾'} ${R.grupo === 'fase' && App.estadoCol() ? `<span class="pill cl-${App.optColor(App.estadoCol(), rows[0].x.estado) || 'gris'}">${esc(z.t)}</span>` : esc(z.t)}</b><small>${rows.length} ${rows.length === 1 ? 'iniciativa' : 'iniciativas'}${v ? ` · ${esc(m(v))} a dos años` : ''}${al ? ` · <span class="r">${al} con alertas</span>` : ''}</small></td></tr>${cerrado ? '' : rows.map(filaHTML).join('')}`;
     }).join('');
   }
 
@@ -135,7 +135,7 @@
     const al = r.al[0];
     return `<tr data-pid="${r.p.id}" class="${inactiva(r) ? 'pf-inact' : ''}">
       <td class="pf-nm"><a href="#/proyectos/${r.p.id}"><b>${esc(App.projectName(r.p))}</b></a>${App.tagEjemplo(r.p)}</td>
-      <td class="pf-fase-c">${ec ? `<button class="pf-fase" data-fase-ed="${r.p.id}" ${App.canEdit() ? '' : 'disabled'} title="${esc(est || 'Sin fase')}${App.canEdit() ? ' · clic para cambiarla' : ''}"><i class="sq" style="background:var(--c-${App.optColor(ec, est) || 'gris'}-i)"></i>${esc(est ? est.replace(/\s*·.*$/, '') : 'Sin fase')}</button>` : ''}</td>
+      <td class="pf-fase-c">${ec ? `<button class="pf-fase" data-fase-ed="${r.p.id}" ${App.canEdit() ? '' : 'disabled'} title="${esc(est || 'Sin fase')}${App.canEdit() ? ' · clic para cambiarla' : ''}"><span class="pill cl-${App.optColor(ec, est) || 'gris'}">${esc(est ? est.replace(/\s*·.*$/, '') : 'Sin fase')}</span></button>` : ''}</td>
       ${COLS_PER.map(k => { const c = App.S.columns.find(x => x.id === k); const v = (r.p.props || {})[k]; return `<td class="pf-per-c">${c && v && (!Array.isArray(v) || v.length) ? App.Tabla.renderValue(c, v) : '<span class="faint">—</span>'}</td>`; }).join('')}
       <td>${okr}</td><td><div class="pf-tvs">${tipos}</div></td>
       <td class="n">${ice == null ? '<span class="faint">—</span>' : `<b>${esc(App.num(ice, 1))}</b>`}</td>

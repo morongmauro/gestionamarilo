@@ -258,3 +258,46 @@ table.lst th{text-transform:none!important;letter-spacing:normal!important}
 .pl-est.Atrasada{color:var(--crit-ink)!important}
 .pl-tlp{background:linear-gradient(90deg,var(--c) var(--p),var(--line-2) var(--p)) left bottom/100% 3px no-repeat!important;color:var(--ink)!important;border-radius:0!important;height:22px!important;padding:0 2px!important;min-width:110px!important;justify-content:flex-start!important}
 .pl-tlp b{text-shadow:none!important;font-weight:600!important}
+
+/* ============================================================
+   Íconos (en lugar de cuadraditos) y fases en etiqueta ovalada
+   ============================================================ */
+.ico{display:inline-block;width:16px;height:16px;flex:none;background:currentColor;-webkit-mask:var(--i) center/contain no-repeat;mask:var(--i) center/contain no-repeat;vertical-align:-3px}
+.ico-ok{--i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M8 12.5l2.6 2.6L16 9.6'/%3E%3C/svg%3E")}
+.ico-alerta{--i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3.6L21.4 20H2.6z'/%3E%3Cpath d='M12 10v4.4M12 17.4h.01'/%3E%3C/svg%3E")}
+.ico-reloj{--i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7.4V12l3.2 2'/%3E%3C/svg%3E")}
+.ico-pendiente{--i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9' stroke-dasharray='2.6 3.4'/%3E%3C/svg%3E")}
+.ico-caso{--i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 3h7l4 4v14H7z'/%3E%3Cpath d='M14 3v4h4M10 12h5M10 16h5'/%3E%3C/svg%3E")}
+.ico-objetivo{--i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Ccircle cx='12' cy='12' r='5'/%3E%3Ccircle cx='12' cy='12' r='1.3' fill='black'/%3E%3C/svg%3E")}
+.ico-flecha{--i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M10.5 8.5L14 12l-3.5 3.5'/%3E%3C/svg%3E")}
+.ico-comite{--i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3.5' y='5' width='17' height='15' rx='2.5'/%3E%3Cpath d='M3.5 10h17M8.5 3v4M15.5 3v4'/%3E%3C/svg%3E")}
+.ico-hito{--i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3l7 9-7 9-7-9z'/%3E%3C/svg%3E")}
+
+/* Etiquetas de fase y estado: ovaladas, fondo suave y texto del mismo color */
+.pill:not(.ppl){background:var(--c-gris)!important;color:var(--c-gris-i)!important;border:0!important;padding:3px 10px!important;border-radius:999px!important;font-weight:700;font-size:12px;gap:6px;line-height:1.25}
+.pill:not(.ppl):before{content:none!important;display:none!important}
+.pill.cl-amarillo:not(.ppl){background:var(--c-amarillo)!important;color:var(--c-amarillo-i)!important}
+.pill.cl-azul:not(.ppl){background:var(--c-azul)!important;color:var(--c-azul-i)!important}
+.pill.cl-cafe:not(.ppl){background:var(--c-cafe)!important;color:var(--c-cafe-i)!important}
+.pill.cl-gris:not(.ppl){background:var(--c-gris)!important;color:var(--c-gris-i)!important}
+.pill.cl-morado:not(.ppl){background:var(--c-morado)!important;color:var(--c-morado-i)!important}
+.pill.cl-naranja:not(.ppl){background:var(--c-naranja)!important;color:var(--c-naranja-i)!important}
+.pill.cl-rojo:not(.ppl){background:var(--c-rojo)!important;color:var(--c-rojo-i)!important}
+.pill.cl-rosa:not(.ppl){background:var(--c-rosa)!important;color:var(--c-rosa-i)!important}
+.pill.cl-verde:not(.ppl){background:var(--c-verde)!important;color:var(--c-verde-i)!important}
+.pf-fase .pill,.f-fase .pill,.pf-grp .pill{pointer-events:none}
+.pf-grp .pill{font-size:12.5px;margin-right:4px}
+/* Cronograma: el estado con su ícono */
+.pl-est:before{background:currentColor!important;width:15px!important;height:15px!important;-webkit-mask:var(--i) center/contain no-repeat;mask:var(--i) center/contain no-repeat;--i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9' stroke-dasharray='2.6 3.4'/%3E%3C/svg%3E")}
+.pl-est.Completada{color:var(--good-ink)!important}.pl-est.Completada:before{--i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M8 12.5l2.6 2.6L16 9.6'/%3E%3C/svg%3E")}
+.pl-est.Atrasada{color:var(--crit-ink)!important}.pl-est.Atrasada:before{--i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3.6L21.4 20H2.6z'/%3E%3Cpath d='M12 10v4.4M12 17.4h.01'/%3E%3C/svg%3E")}
+.pl-est.En-curso{color:var(--warn-ink)!important}.pl-est.En-curso:before{--i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7.4V12l3.2 2'/%3E%3C/svg%3E")}
+.pl-est.Por-iniciar{color:var(--muted)!important}
+/* Listas de OKR: diana en vez de cuadrado */
+.fi-okr li:before,.okr-lista li span:before{content:''!important;width:15px!important;height:15px!important;background:var(--accent-ink,#6E5300)!important;-webkit-mask:var(--i) center/contain no-repeat;mask:var(--i) center/contain no-repeat;--i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Ccircle cx='12' cy='12' r='5'/%3E%3Ccircle cx='12' cy='12' r='1.3' fill='black'/%3E%3C/svg%3E");vertical-align:-3px!important}
+/* Íconos del tablero */
+.pv-d .ico,.pv-o .ico,.pm-i .ico{width:20px;height:20px;margin-top:1px}
+.pv-d .ico{color:var(--accent-ink,#6E5300)}.pv-d .ico.r,.pv-o .ico.r,.pm-i .ico.r{color:var(--crit-ink)}
+.pv-o .ico.g{color:var(--good-ink)}.pv-o .ico.o{color:var(--warn-ink)}.pv-o .ico.n{color:var(--muted)}
+.pm-i .ico{width:26px;height:26px;color:#FFC900}.pm-i .ico.r{color:#F0566E}
+
