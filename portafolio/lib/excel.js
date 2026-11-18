@@ -10,7 +10,7 @@ const ExcelJS = require('exceljs');
 const Finanzas = require('../public/js/finanzas');
 
 const MAX_FILAS = 400, MAX_COLS = 60, MAX_HOJAS = 20;
-const TIPO_TXT = { inversion: 'Inversión', costo: 'Costo', beneficio: 'Beneficio' };
+const TIPO_TXT = { supuesto: 'Supuesto', beneficio: 'Ingreso', costo: 'Gasto', inversion: 'Inversión', calculo: 'Resultado' };
 const SECCIONES = [
   ['problema', 'Problema u oportunidad'], ['objetivo', 'Objetivo'], ['alcance', 'Alcance'], ['fuera_alcance', 'Fuera de alcance'],
   ['beneficios_cual', 'Beneficios cualitativos'], ['riesgos', 'Riesgos'], ['supuestos', 'Supuestos'], ['recomendacion', 'Recomendación y decisión solicitada'],
@@ -57,11 +57,11 @@ const colL = n => { let s = ''; n++; while (n > 0) { const m = (n - 1) % 26; s =
 async function exportar(caso, nombreProyecto, plantilla) {
   const wb = new ExcelJS.Workbook();
   wb.creator = 'Portafolio de proyectos';
-  const anios = plantilla ? 10 : Math.max(1, Math.min(15, Math.round(caso.anios || 5)));
+  const anios = plantilla ? 9 : Math.max(1, Math.min(15, Math.round(caso.anios || 5)));
   const N = anios + 1, ini = caso.anio_inicio || null;
   const flujos = plantilla
-    ? [{ tipo: 'inversion', concepto: 'Inversión inicial', valores: [] }, { tipo: 'costo', concepto: 'Costos de operación', valores: [] }, { tipo: 'beneficio', concepto: 'Beneficio esperado', valores: [] }]
-    : ['inversion', 'costo', 'beneficio'].flatMap(t => (Array.isArray(caso.flujos) ? caso.flujos : []).filter(f => f && typeof f === 'object' && f.tipo === t));
+    ? require('../public/js/plantilla-caso').nuevo('', null).flujos
+    : ['supuesto', 'beneficio', 'costo', 'inversion', 'calculo'].flatMap(t => (Array.isArray(caso.flujos) ? caso.flujos : []).filter(f => f && typeof f === 'object' && f.tipo === t));
   const f = Finanzas.calc(plantilla ? { anios, flujos } : caso);
   const fmt = '#,##0;[Red]-#,##0';
   // La misma tasa que usa la app: sin tasa, 0 % (la plantilla sugiere 12 %)
@@ -77,7 +77,7 @@ async function exportar(caso, nombreProyecto, plantilla) {
   ws.getCell('A3').font = { italic: true, color: { argb: 'FF6E6858' } };
 
   const H = 5; // fila de encabezados
-  const head = ['Tipo', 'Concepto', ...Array.from({ length: N }, (_, t) => (ini ? `Año ${t} (${ini + t})` : `Año ${t}`)), 'Total'];
+  const head = ['Tipo', 'Concepto', ...Array.from({ length: N }, (_, t) => (ini ? `Año ${t + 1} (${ini + t})` : `Año ${t + 1}`)), 'Total'];
   ws.getRow(H).values = head;
   ws.getRow(H).font = { bold: true }; ws.getRow(H).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF4F2EC' } };
   const yc = t => colL(2 + t), last = colL(2 + N - 1), totCol = colL(2 + N);
@@ -87,9 +87,10 @@ async function exportar(caso, nombreProyecto, plantilla) {
     const row = ws.getRow(r);
     row.getCell(1).value = TIPO_TXT[fl.tipo] || 'Costo';
     row.getCell(2).value = fl.concepto || '';
-    for (let t = 0; t < N; t++) { const v = Number((Array.isArray(fl.valores) ? fl.valores : [])[t]) || 0; const cell = row.getCell(3 + t); cell.value = plantilla ? null : v; cell.numFmt = fmt; }
+    for (let t = 0; t < N; t++) { const v = Number((Array.isArray(fl.valores) ? fl.valores : [])[t]) || 0; const cell = row.getCell(3 + t); cell.value = plantilla || (fl.tipo === 'supuesto' && !v) ? null : v; cell.numFmt = fl.tipo === 'supuesto' && fl.pct ? '0.0%' : fmt; }
+    if (fl.nota) row.getCell(2).note = String(fl.nota);
     const sum = (Array.isArray(fl.valores) ? fl.valores : []).slice(0, N).reduce((a, b) => a + (Number(b) || 0), 0);
-    row.getCell(3 + N).value = { formula: `SUM(${yc(0)}${r}:${last}${r})`, result: plantilla ? 0 : sum };
+    row.getCell(3 + N).value = fl.tipo === 'supuesto' ? null : { formula: `SUM(${yc(0)}${r}:${last}${r})`, result: plantilla ? 0 : sum };
     row.getCell(3 + N).numFmt = fmt; row.getCell(3 + N).font = { bold: true };
     r++;
   }
@@ -104,13 +105,13 @@ async function exportar(caso, nombreProyecto, plantilla) {
       row.getCell(3 + t).value = { formula: `SUMIF(${tipoRng},"${tipo}",${rng(c)})`, result: plantilla ? 0 : res }; row.getCell(3 + t).numFmt = fmt; }
     return r++;
   };
+  const rBen = filaTot('Total ingresos y ahorros', TIPO_TXT.beneficio, f.beneficios);
+  const rCos = filaTot('Total gastos', TIPO_TXT.costo, f.costos);
   const rInv = filaTot('Total inversión', TIPO_TXT.inversion, f.inversion);
-  const rCos = filaTot('Total costos', TIPO_TXT.costo, f.costos);
-  const rBen = filaTot('Total beneficios', TIPO_TXT.beneficio, f.beneficios);
-  const rNet = r++; const rowN = ws.getRow(rNet); rowN.getCell(2).value = 'Flujo neto'; rowN.font = { bold: true };
+  const rNet = r++; const rowN = ws.getRow(rNet); rowN.getCell(2).value = 'Flujo de caja del año'; rowN.font = { bold: true };
   for (let t = 0; t <= N; t++) { const c = t < N ? yc(t) : totCol; const res = t < N ? f.netos[t] : f.netos.reduce((a, b) => a + b, 0);
     rowN.getCell(3 + t).value = { formula: `${c}${rBen}-${c}${rCos}-${c}${rInv}`, result: plantilla ? 0 : res }; rowN.getCell(3 + t).numFmt = fmt; }
-  const rAcu = r++; const rowA = ws.getRow(rAcu); rowA.getCell(2).value = 'Acumulado';
+  const rAcu = r++; const rowA = ws.getRow(rAcu); rowA.getCell(2).value = 'Flujo de caja acumulado';
   for (let t = 0; t < N; t++) { rowA.getCell(3 + t).value = { formula: t === 0 ? `${yc(0)}${rNet}` : `${yc(t - 1)}${rAcu}+${yc(t)}${rNet}`, result: plantilla ? 0 : f.acumulado[t] }; rowA.getCell(3 + t).numFmt = fmt; }
   r++;
   const kpi = (lbl, formula, result, numFmt) => { const row = ws.getRow(r++); row.getCell(2).value = lbl; row.getCell(2).font = { bold: true }; row.getCell(3).value = { formula, result: plantilla ? 0 : result }; row.getCell(3).numFmt = numFmt; row.getCell(3).font = { bold: true }; };
@@ -121,9 +122,13 @@ async function exportar(caso, nombreProyecto, plantilla) {
   const ws2 = wb.addWorksheet('Caso');
   ws2.columns = [{ width: 34 }, { width: 100 }];
   const datos = [['Proyecto', plantilla ? '' : nombreProyecto], ['Estado', caso.estado || 'Borrador'], ['Sponsor', caso.sponsor || ''], ['Fecha de comité', caso.fecha_comite || ''],
-    ['Moneda', caso.moneda || 'COP'], ['Tasa de descuento (%)', tasaCaso], ['Horizonte (años)', anios], ['Año 0', ini || ''],
+    ['Moneda', caso.moneda || 'COP'], ['Tasa de descuento (%)', tasaCaso], ['Horizonte (años)', anios + 1], ['Primer año', ini || ''],
     ...SECCIONES.map(([k, l]) => [l, plantilla ? '' : caso[k] || ''])];
   datos.forEach(([k, v], i) => { const row = ws2.getRow(i + 1); row.getCell(1).value = k; row.getCell(1).font = { bold: true }; row.getCell(2).value = v; row.getCell(2).alignment = { wrapText: true, vertical: 'top' }; });
+  // Consideraciones: una línea por renglón, como en el caso
+  const cons = String(caso.consideraciones || '').trim() || (plantilla ? require('../public/js/plantilla-caso').CONSIDERACIONES : require('../public/js/plantilla-caso').consideracionesDe(caso));
+  if (cons) { const ws3 = wb.addWorksheet('Consideraciones'); ws3.columns = [{ width: 120 }]; ws3.getCell('A1').value = 'CONSIDERACIONES'; ws3.getCell('A1').font = { bold: true, size: 13 };
+    cons.split('\n').forEach((l, i) => { const cell = ws3.getCell(`A${i + 3}`); cell.value = l; cell.alignment = { wrapText: true }; if (/^\d+\.\s/.test(l)) cell.font = { bold: true }; }); }
   return wb.xlsx.writeBuffer();
 }
 

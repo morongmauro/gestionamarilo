@@ -20,14 +20,9 @@
     ['supuestos', 'Supuestos', 'Lo que se da por cierto para que los números se cumplan.'],
     ['recomendacion', 'Recomendación y decisión solicitada', 'Qué se le pide al comité.'],
   ];
-  const TIPOS = [['supuesto', 'Supuestos · no suman, se usan en fórmulas (unidades, precios, %)'], ['beneficio', 'Beneficios'], ['costo', 'Costos de operación'], ['inversion', 'Inversión']];
-
-  function nuevoCaso(pid) {
-    return { project_id: pid, estado: 'Borrador', tasa: 12, anios: 5, moneda: 'COP', flujos: [
-      { id: App.uid(), concepto: 'Inversión inicial', tipo: 'inversion', valores: [] },
-      { id: App.uid(), concepto: 'Costos de operación', tipo: 'costo', valores: [] },
-      { id: App.uid(), concepto: 'Beneficio esperado', tipo: 'beneficio', valores: [] }] };
-  }
+  const TIPOS = PlantillaCaso.SECCIONES;
+  // Caso nuevo: el formato de la Oficina (supuestos, ingresos, gastos, inversión, 10 años y consideraciones)
+  const nuevoCaso = pid => PlantillaCaso.nuevo(pid, +App.d.today().slice(0, 4), App.uid);
 
   // Caso preliminar desde el ICE, para iniciativas que llegaron de Notion con Income pero sin caso.
   // Valor a dos años: la columna «Valor a crear/capturar» si existe; si no, el MÍNIMO del rango del Income
@@ -126,34 +121,33 @@
       if (App.Caso.chart) App.Caso.chart($('#cChart', el), Object.assign({}, c, { flujos: rows }), mon);
     };
 
-    const llenos = ['sponsor', 'fecha_comite', ...SECCIONES.map(x => x[0])].filter(k => String(c[k] || '').trim()).length;
+    const consid = String(c.consideraciones || '').trim() ? c.consideraciones : PlantillaCaso.consideracionesDe(c);
     const paso = (n, t, sub, extra) => `<div class="t-paso"><i>${n}</i><b>${t}</b><small>${sub}</small><span class="sp"></span>${extra || ''}</div>`;
     el.innerHTML = `<div class="cs-top"><div class="kl" id="cKpi"></div><span class="sp"></span>
         <select class="estado-sel cl-${estadoColor(c.estado)}" data-f="estado" ${dis} title="Estado del caso">${ESTADOS.map(e => `<option ${e.name === (c.estado || 'Borrador') ? 'selected' : ''}>${e.name}</option>`).join('')}</select>
         <span class="no-print cs-acc">${ro ? '' : '<button class="btn sm" data-c="importar">⇪ Subir Excel</button>'}<a class="btn sm" href="/api/cases/${c.id}/excel" download>⇩ Excel</a><button class="btn sm" data-c="print">⎙ PDF</button></span>
         <input type="file" accept=".xlsx" data-c="archivo" hidden></div>
       ${c.origen === 'ice' ? `<div class="cs-prelim">⚠️ <span><b>Caso preliminar, construido desde el ICE.</b> Las cifras son una estimación: reemplázalas con las reales y agrega la inversión cuando el equipo las tenga.</span>${ro ? '' : '<button class="btn sm" data-c="prelim-ok">Ya tiene cifras reales</button>'}</div>` : ''}
-      ${paso(1, 'Flujo del caso', 'barras: flujo neto de cada año · línea: acumulado')}
+      ${paso(1, `Flujo a ${n()} años`, 'barras: flujo de caja de cada año · línea: acumulado')}
       <section class="t-card t-pad"><div id="cChart" class="cf-chart"></div></section>
-      ${paso(2, 'Tabla del caso', 'se edita como Excel: celdas, filas, años y fórmulas', `<div class="seg no-print" title="Cómo se muestran y se escriben las cifras">${ESCALAS.map(([v, l]) => `<button data-escala="${v}" class="${v === escala ? 'on' : ''}">${l}</button>`).join('')}</div>${ro ? '' : '<button class="btn sm no-print" data-c="undo" title="Deshacer (Ctrl+Z)">↶</button><button class="btn sm no-print" data-c="redo" title="Rehacer (Ctrl+Y)">↷</button>'}<button class="btn sm no-print" data-c="atajos">? Atajos</button>`)}
+      ${paso(2, 'Supuestos, ingresos, gastos e inversión', 'una sola tabla, como en Excel: celdas, filas, años y fórmulas', `<div class="seg no-print" title="Cómo se muestran y se escriben las cifras">${ESCALAS.map(([v, l]) => `<button data-escala="${v}" class="${v === escala ? 'on' : ''}">${l}</button>`).join('')}</div>${ro ? '' : '<button class="btn sm no-print" data-c="undo" title="Deshacer (Ctrl+Z)">↶</button><button class="btn sm no-print" data-c="redo" title="Rehacer (Ctrl+Y)">↷</button>'}<button class="btn sm no-print" data-c="atajos">? Atajos</button>`)}
       <section class="t-card t-pad">
         <div class="cs-param"><span class="cs-pt">Parámetros</span>
           <label>Moneda <select class="fld" data-f="moneda" ${dis}>${['COP', 'USD'].map(m => `<option ${m === mon ? 'selected' : ''}>${m}</option>`).join('')}</select></label>
           <label>Tasa de descuento <input class="fld" type="number" step="0.1" data-f="tasa" value="${esc(c.tasa ?? '')}" ${dis}> %</label>
-          <label>Año 0 <input class="fld" type="number" data-f="anio_inicio" value="${esc(c.anio_inicio ?? '')}" placeholder="${new Date().getFullYear()}" ${dis}></label>
-          <label>Horizonte <select class="fld" data-f="anios" ${dis}>${Array.from({ length: App.Hoja.MAXY }, (_, i) => i + 1).map(y => `<option value="${y}" ${y === n() - 1 ? 'selected' : ''}>${y} ${y === 1 ? 'año' : 'años'}</option>`).join('')}</select></label>
+          <label>Primer año <input class="fld" type="number" data-f="anio_inicio" value="${esc(c.anio_inicio ?? '')}" placeholder="${new Date().getFullYear()}" ${dis}></label>
+          <label>Horizonte <select class="fld" data-f="anios" ${dis}>${Array.from({ length: App.Hoja.MAXY }, (_, i) => i + 1).map(y => `<option value="${y}" ${y === n() - 1 ? 'selected' : ''}>${y + 1} años</option>`).join('')}</select></label>
           ${ro ? '' : '<a class="t-lnk" href="/api/cases/plantilla/excel" download>Plantilla vacía</a>'}</div>
-        <div class="help" style="margin:2px 0 8px">Cifras en ${escala === 1 ? '' : escala === 1e3 ? 'miles de ' : 'millones de '}${esc(mon)}. El año 0 es el arranque. Copia y pega desde Excel, usa flechas y Enter, =150*12, 1,2M o +5% sobre el año anterior. <b>Fórmulas entre filas:</b> <code>=[Unidades vendidas]*[Precio promedio]*(1-[Comisión])</code> toma cada fila del mismo año y se recalcula sola. Flujo neto y acumulado se calculan solos.</div>
+        <div class="help" style="margin:2px 0 8px">Cifras en ${escala === 1 ? '' : escala === 1e3 ? 'miles de ' : 'millones de '}${esc(mon)}. Copia y pega desde Excel, usa flechas y Enter, =150*12, 1,2M o +5%. <b>Fórmulas entre filas:</b> <code>=[Ingreso renders; año anterior]*(1+[IPC])</code> · <code>=máx(0; [Utilidad antes de renta])*[Tarifa de renta]</code>. Un supuesto escrito en un año vale para los siguientes hasta que se cambie. Flujo neto y acumulado se calculan solos.</div>
         <div class="flujo-wrap hoja-wrap" id="cFlujo"></div>
       </section>
-      ${paso(3, 'Escenarios y margen de seguridad', 'cambia los porcentajes y mira cómo se mueve el caso')}
-      <section class="t-card t-pad"><div id="cSens"></div></section>
+      ${paso(3, 'Consideraciones', 'lo que hay que saber para leer el caso: alcance, de dónde salen las cifras, riesgos y la decisión que se pide')}
+      <section class="t-card t-pad cs-cons"><textarea class="cs-cons-t" data-f="consideraciones" ${dis} spellcheck="true" placeholder="${esc(PlantillaCaso.CONSIDERACIONES)}">${esc(consid || '')}</textarea>
+        <div class="help" style="margin:6px 0 0">Se escribe como un documento: un título por línea (1. Ingresos) y una viñeta (•) por idea. Se guarda al salir del texto.</div></section>
       ${paso(4, 'Valor captado (real)', 'lo que la iniciativa ya generó, mes a mes')}
       <section class="t-card t-pad" id="cCapt"></section>
-      ${paso(5, 'Contexto para el comité', 'lo que no son cifras')}
-      <details class="t-card cs-ctx" ${llenos ? '' : 'open'}><summary><b>Sponsor · fecha de comité · problema · objetivo · alcance · riesgos · recomendación</b><span class="faint"> — ${llenos} de ${SECCIONES.length + 2} llenos</span><span class="t-lnk cs-abrir">Abrir ▾</span></summary>
-        <div class="cs-ctx-in"><div class="cs-param"><label>Sponsor <input class="fld" data-f="sponsor" value="${esc(c.sponsor || '')}" ${dis} placeholder="Quién lo patrocina"></label><label>Fecha de comité <input class="fld" type="date" data-f="fecha_comite" value="${esc(c.fecha_comite || '')}" ${dis}></label></div>
-        ${SECCIONES.map(([k, t, h], i) => `<div class="sec"><h3><span class="nm">${i + 1}</span>${t}</h3><div class="help">${h}</div><textarea class="fld" data-f="${k}" rows="3" ${dis} placeholder="${ro ? '' : 'Escribe aquí…'}">${esc(c[k] || '')}</textarea></div>`).join('')}</div></details>
+      ${paso(5, 'Escenarios y margen de seguridad', 'cambia los porcentajes y mira cómo se mueve el caso')}
+      <details class="t-card t-pad cs-esc"><summary><b>Pesimista · base · optimista</b> <span class="faint">clic para abrir</span></summary><div id="cSens"></div></details>
       <div class="meta-line">${c.updated_by_name ? `Última edición: ${esc(c.updated_by_name)}, ${esc(App.d.ago(c.updated_at))}` : ''}${ro ? '' : ' · <button class="t-lnk" data-c="del" style="color:var(--crit)">Eliminar caso</button>'}</div>`;
 
     // Flujo: se guarda medio segundo después de cada cambio
@@ -165,9 +159,10 @@
       rows: fl, years: n(), escala, anioInicio: c.anio_inicio || null, ro, tipos: TIPOS,
       onLive: rows => refresh(rows),
       onCommit: rows => { refresh(rows); saveFlujo(); },
-      onYears: years => { flush(); App.patch('cases', c.id, { anios: years - 1, flujos: fl }).then(() => { App.toast(`Horizonte ampliado a ${years - 1} años`); editor(el, pid); }).catch(() => {}); },
+      onYears: years => { flush(); App.patch('cases', c.id, { anios: years - 1, flujos: fl }).then(() => { App.toast(`Horizonte ampliado a ${years} años`); editor(el, pid); }).catch(() => {}); },
     });
     refresh(fl);
+    const ta = $('.cs-cons-t', el); const alto = () => { ta.style.height = 'auto'; ta.style.height = Math.max(160, ta.scrollHeight + 4) + 'px'; }; alto(); ta.addEventListener('input', alto);
 
     // Valor captado (real), mes a mes, por tipo de valor
     const cap = JSON.parse(JSON.stringify(c.captado || []));
@@ -292,7 +287,7 @@
   /* ---------- sección «Casos de negocio» ---------- */
   /* ---------- lista de casos (Casos de negocio) ---------- */
   const CF = Object.assign({ q: '', estado: '', fase: '', cat: '', modo: 'cap' }, App.store.get('casos.f', {}));
-  const guardarCF = () => App.store.set('casos.f', { estado: CF.estado, fase: CF.fase, cat: CF.cat, modo: CF.modo });
+  const guardarCF = () => App.store.set('casos.f', { estado: CF.estado, fase: CF.fase, cat: CF.cat, modo: CF.modo, vista: CF.vista });
   const GRUPOS = [
     { k: 'rev', t: 'Por aprobar en comité', de: e => e === 'En revisión' },
     { k: 'apr', t: 'Aprobados', de: e => e === 'Aprobado' },
@@ -307,8 +302,55 @@
   };
   const responsablesDe = p => { const v = p.props || {}; return [].concat(v.habilitadores || [], v.realizadores || []).filter(Boolean).slice(0, 2); };
 
+  // ¿A qué iniciativas les aplica tener caso de negocio? A las activas: en Fase 1, 2 o 3 y con «¿Revisión DGV?» en SI
+  // (si ese filtro está en uso). Las cerradas, en pausa o canceladas no lo necesitan.
+  function cobertura() {
+    const ec = App.estadoCol();
+    return App.projectsSorted().map(p => {
+      const est = ec ? (p.props || {})[ec.id] || '' : '', fa = window.Fases ? Fases.de(est) : null;
+      const dgvNo = App.dgvHay() && !App.dgvSi(p);
+      const aplica = !dgvNo && !!fa && !fa.fuera;
+      const c = App.caseOf(p.id);
+      const tipo = !c ? 'sin' : c.origen === 'ice' ? 'pre' : 'hecho';
+      const motivo = aplica ? '' : dgvNo ? '«¿Revisión DGV?» no está en SI' : fa ? fa.nombre : 'sin fase';
+      return { p, c, est, fa, aplica, tipo, motivo };
+    });
+  }
+  const COB = { hecho: ['Hecho', 'verde'], pre: ['Preliminar (desde el ICE)', 'amarillo'], sin: ['Sin caso', 'gris'] };
+  function vistaCobertura(main, params) {
+    const l = cobertura(), ap = l.filter(x => x.aplica), no = l.filter(x => !x.aplica);
+    const n = (arr, t) => arr.filter(x => x.tipo === t).length;
+    const fila = x => `<tr data-pid="${x.p.id}"><td class="pf-nm"><b>${esc(App.projectName(x.p))}</b><small>${esc(x.fa ? x.fa.nombre : x.est || 'Sin fase')}</small></td>
+      <td><span class="pill cl-${COB[x.tipo][1]}">${COB[x.tipo][0]}</span>${x.c ? ` <span class="faint">· ${esc(x.c.estado || 'Borrador')}</span>` : ''}</td>
+      <td>${x.c ? esc(x.c.updated_by_name || '') : '<span class="faint">—</span>'}</td><td class="cn-act">${x.c && x.c.updated_at ? esc(App.d.ago(x.c.updated_at)) : ''}</td>
+      <td>${x.aplica ? (x.tipo === 'hecho' ? '<span class="faint">—</span>' : App.canEdit() ? '<span class="t-lnk">' + (x.tipo === 'pre' ? 'Completar el caso →' : 'Crear el caso →') + '</span>' : '') : `<span class="faint">No aplica: ${esc(x.motivo)}</span>`}</td></tr>`;
+    const grupo = (t, arr, abierto) => arr.length ? `<tr class="cn-grp"><td colspan="5"><b>${t}</b> <small>${arr.length}</small></td></tr>${abierto ? arr.map(fila).join('') : ''}` : '';
+    main.innerHTML = `<div class="pg-top"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Casos de negocio</h1>
+        <div class="kl"><span><b>${ap.length}</b>iniciativas a las que aplica</span><span><b>${n(ap, 'hecho')}</b>con caso hecho</span><span><b>${n(ap, 'pre')}</b>preliminares</span><span><b class="${n(ap, 'sin') ? 'r' : ''}">${n(ap, 'sin')}</b>sin caso</span><span><b>${no.length}</b>no aplica</span></div>
+        <span class="sp"></span><button class="btn ghost sm" data-cob="csv">Exportar a Excel</button></div>
+      <div class="pf-bar"><div class="seg"><button data-vista-cn="casos">Casos</button><button class="on" data-vista-cn="cobertura">Cobertura</button></div>
+        <span class="t-tag">Aplica a las iniciativas activas: Fase 1, 2 o 3${App.dgvHay() ? ' y «¿Revisión DGV?» en SI' : ''}. «Hecho» es un caso armado por una persona; «preliminar» lo armó el sitio desde el ICE.</span></div>
+      <section class="t-card pf-tbl-card"><div class="pf-wrap"><table class="pf-tbl cn-tbl"><thead><tr><th>Iniciativa <small>fase</small></th><th>Caso de negocio</th><th>Última edición por</th><th>Cuándo</th><th>Qué falta</th></tr></thead><tbody>
+        ${grupo('Aplica · sin caso', ap.filter(x => x.tipo === 'sin'), true)}${grupo('Aplica · preliminar desde el ICE', ap.filter(x => x.tipo === 'pre'), true)}${grupo('Aplica · caso hecho', ap.filter(x => x.tipo === 'hecho'), true)}${grupo('No aplica', no, true)}
+        ${l.length ? '' : '<tr><td colspan="5"><div class="t-vacio">Aún no hay iniciativas.</div></td></tr>'}</tbody></table></div>
+        <div class="t-pie t-pie-row"><span class="t-tag">Clic en una fila abre el caso de esa iniciativa</span></div></section>`;
+    main.onchange = null;
+    main.onclick = e => {
+      if (e.target.closest('.burger')) return App.toggleSide();
+      const v = e.target.closest('[data-vista-cn]'); if (v) { CF.vista = v.dataset.vistaCn; guardarCF(); return section(main, params); }
+      if (e.target.closest('[data-cob=csv]')) {
+        const cell = v => { let t = String(v == null ? '' : v); if (/^[=+\-@\t\r]/.test(t)) t = "'" + t; return /[",\n;]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+        const lines = [['Iniciativa', 'Fase', '¿Aplica caso?', 'Caso de negocio', 'Estado del caso', 'Última edición por', 'Fecha', 'Motivo si no aplica'].map(cell).join(';'),
+          ...l.map(x => [App.projectName(x.p), x.fa ? x.fa.nombre : x.est, x.aplica ? 'Sí' : 'No', COB[x.tipo][0], x.c ? x.c.estado || 'Borrador' : '', x.c ? x.c.updated_by_name || '' : '', x.c && x.c.updated_at ? x.c.updated_at.slice(0, 10) : '', x.motivo].map(cell).join(';'))];
+        const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' })); a.download = 'cobertura-casos-' + App.d.today() + '.csv'; a.click(); URL.revokeObjectURL(a.href); return;
+      }
+      const r = e.target.closest('tr[data-pid]'); if (r) App.go('#/casos/' + r.dataset.pid);
+    };
+  }
+
   function section(main, params) {
     if (params[0]) return detalle(main, params[0]);
+    if (CF.vista === 'cobertura') return vistaCobertura(main, params);
     const D = App.Dash.datos({}), Y = D.Y, frac = D.corrido / 12;
     const porId = new Map(D.proyectos.map(x => [x.p.id, x]));
     const ec = App.estadoCol();
@@ -372,7 +414,7 @@
         ${sel('estado', 'Estado', CF.estado, [['', 'Todos'], ...ESTADOS.map(e => [e.name, e.name]), ['Sin caso', 'Sin caso']])}
         ${sel('fase', 'Fase', CF.fase, [['', 'Todas'], ...(window.Fases ? Fases.FASES.map(x => [String(x.id), x.fuera ? x.nombre : x.corto + ' · ' + x.nombre.split(' · ')[1].split(',')[0]]) : [])])}
         ${sel('cat', 'Tipo de valor', CF.cat, [['', 'Todos'], ...App.CATS.map(x => [x.id, App.catLabel(x.id)])])}
-        <span class="sp"></span><div class="seg"><button data-modo="cap" class="${cap ? 'on' : ''}" aria-pressed="${cap}">Captado vs. proyectado</button><button data-modo="proy" class="${cap ? '' : 'on'}" aria-pressed="${!cap}">Proyectado</button></div></div>
+        <div class="seg"><button class="on" data-vista-cn="casos">Casos</button><button data-vista-cn="cobertura" title="Qué iniciativas tienen caso, cuáles no y a cuáles les aplica">Cobertura</button></div><span class="sp"></span><div class="seg"><button data-modo="cap" class="${cap ? 'on' : ''}" aria-pressed="${cap}">Captado vs. proyectado</button><button data-modo="proy" class="${cap ? '' : 'on'}" aria-pressed="${!cap}">Proyectado</button></div></div>
       <section class="t-card pf-tbl-card"><div class="pf-wrap"><table class="pf-tbl cn-tbl">
         <thead><tr><th>Iniciativa <small>responsables · fase</small></th><th>Estado del caso</th><th class="n">Inversión</th><th class="n">VPN</th><th class="n">TIR</th><th class="n">Payback</th>
           <th>${cap ? `Captado ${Y} <small>real / proyectado · ┃ esperado a hoy</small>` : `Beneficio ${Y} <small>proyectado · total del caso</small>`}</th><th>Supuesto clave</th><th>Actualizado</th><th></th></tr></thead>
@@ -385,6 +427,7 @@
       if (e.target.closest('.burger')) return App.toggleSide();
       const md = e.target.closest('[data-modo]'); if (md) { CF.modo = md.dataset.modo; guardarCF(); return section(main, params); }
       const b = e.target.closest('[data-cn]');
+      const vc = e.target.closest('[data-vista-cn]'); if (vc) { CF.vista = vc.dataset.vistaCn; guardarCF(); return section(main, params); }
       if (b && b.dataset.cn === 'csv') return csvCasos(vis.filter(r => r.c), Y);
       if (b && b.dataset.cn === 'nuevo') return nuevoCaso2(b);
       if (e.target.closest('[data-cn-sin]')) { CF.sin = !CF.sin; return section(main, params); }
@@ -414,7 +457,7 @@
     editor($('#cBox', main), pid);
   }
 
-  App.Caso = { editor, estadoColor, ESTADOS, preliminar, tarjetaPreliminares };
+  App.Caso = { editor, estadoColor, ESTADOS, preliminar, tarjetaPreliminares, nuevoCaso };
   window.addEventListener('pagehide', () => { if (App.Caso._flush) App.Caso._flush(); });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && App.Caso._flush) App.Caso._flush(); });
   App.views.casos = { render: section };

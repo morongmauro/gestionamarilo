@@ -88,7 +88,7 @@ const SCHEMAS = {
   cases: {
     project_id: 'id', estado: 'str', sponsor: 'str', fecha_comite: 'date', origen: 'str', // origen «ice» = caso preliminar
     problema: 'text', objetivo: 'text', alcance: 'text', fuera_alcance: 'text', beneficios_cual: 'text',
-    riesgos: 'text', supuestos: 'text', recomendacion: 'text',
+    riesgos: 'text', supuestos: 'text', recomendacion: 'text', consideraciones: 'text',
     tasa: 'num', anios: 'num', anio_inicio: 'num', moneda: 'str', flujos: 'objs', escenarios: 'obj', captado: 'objs',
     validacion: 'obj', // { '2026': { hasta: 'AAAA-MM', por, fecha, url, nota } } · lo captado hasta ese mes cuenta como verificado
   },

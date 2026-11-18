@@ -1,0 +1,641 @@
+{
+ "fuente": "Caso_de_Negocio_Nueva_SAS.xlsx",
+ "anio_inicio": 2026,
+ "anios": 9,
+ "moneda": "COP",
+ "flujos": [
+  {
+   "id": "nsas01",
+   "concepto": "Tarifa de ICA",
+   "tipo": "supuesto",
+   "valores": [
+    0.0
+   ],
+   "pct": true,
+   "nota": "Sobre los ingresos totales del año. La diligencia Tributaria."
+  },
+  {
+   "id": "nsas02",
+   "concepto": "Tarifa de renta",
+   "tipo": "supuesto",
+   "valores": [
+    0.35
+   ],
+   "pct": true,
+   "nota": "Sobre la utilidad antes de renta. La diligencia Tributaria."
+  },
+  {
+   "id": "nsas03",
+   "concepto": "Avalúo equipos en inventario",
+   "tipo": "supuesto",
+   "valores": [
+    1828317210.0
+   ],
+   "nota": "Fuente: caso de negocio MyE."
+  },
+  {
+   "id": "nsas04",
+   "concepto": "Aprovechamiento de ingresos",
+   "tipo": "supuesto",
+   "valores": [
+    0.85
+   ],
+   "pct": true,
+   "nota": "Ingreso anual de la maquinaria actual = avalúo × aprovechamiento."
+  },
+  {
+   "id": "nsas05",
+   "concepto": "Crecimiento anual maquinaria actual",
+   "tipo": "supuesto",
+   "valores": [
+    0.15
+   ],
+   "pct": true
+  },
+  {
+   "id": "nsas06",
+   "concepto": "Mantenimiento (% del ingreso de maquinaria actual)",
+   "tipo": "supuesto",
+   "valores": [
+    0.1
+   ],
+   "pct": true
+  },
+  {
+   "id": "nsas07",
+   "concepto": "Ingreso anual maquinaria nueva (desde el año 2)",
+   "tipo": "supuesto",
+   "valores": [
+    2621485361.25
+   ],
+   "nota": "Fuente: caso de negocio MyE. Arriendo de las máquinas a otros proyectos."
+  },
+  {
+   "id": "nsas08",
+   "concepto": "Inversión anual maquinaria nueva (desde el año 2)",
+   "tipo": "supuesto",
+   "valores": [
+    1771458678.4545
+   ],
+   "nota": "Fuente: caso de negocio MyE. Compra de máquinas cada año."
+  },
+  {
+   "id": "nsas09",
+   "concepto": "Número de lanzamientos (renders)",
+   "tipo": "supuesto",
+   "valores": [
+    18.0
+   ],
+   "nota": "Informativo: no entra en el cálculo."
+  },
+  {
+   "id": "nsas10",
+   "concepto": "Ventas base (renders)",
+   "tipo": "supuesto",
+   "valores": [
+    4553763324000.0
+   ]
+  },
+  {
+   "id": "nsas11",
+   "concepto": "Porcentaje de visualización (renders)",
+   "tipo": "supuesto",
+   "valores": [
+    0.0003
+   ],
+   "pct": true
+  },
+  {
+   "id": "nsas12",
+   "concepto": "Gasto operativo base renders",
+   "tipo": "supuesto",
+   "valores": [
+    702107400.0
+   ],
+   "nota": "Fuente: caso de negocio Renders."
+  },
+  {
+   "id": "nsas13",
+   "concepto": "Incremento del gasto operativo renders",
+   "tipo": "supuesto",
+   "valores": [
+    0.0
+   ],
+   "pct": true
+  },
+  {
+   "id": "nsas14",
+   "concepto": "Honorarios mensuales BPO contable y tributario",
+   "tipo": "supuesto",
+   "valores": [
+    8330000.0
+   ],
+   "nota": "Outsourcing contable, tributario y software contable: 7.000.000 + IVA (19 %). Contabilidad / Financiera."
+  },
+  {
+   "id": "nsas15",
+   "concepto": "Honorarios anuales declaración de renta",
+   "tipo": "supuesto",
+   "valores": [
+    17850000.0
+   ],
+   "nota": "Declaración de renta y medios magnéticos nacionales y distritales (18 municipios): 15.000.000 + IVA. Se paga una vez al año."
+  },
+  {
+   "id": "nsas16",
+   "concepto": "Honorarios de implementación BPO",
+   "tipo": "supuesto",
+   "valores": [
+    8330000.0
+   ],
+   "nota": "Implementación del outsourcing contable y tributario: 7.000.000 + IVA. Gasto único del año 1."
+  },
+  {
+   "id": "nsas17",
+   "concepto": "IPC",
+   "tipo": "supuesto",
+   "valores": [
+    0,
+    0.069,
+    0.043,
+    0.03
+   ],
+   "pct": true,
+   "nota": "Reajuste de precios y gastos: 6,9 % en 2027 y 4,3 % en 2028 (pronóstico del Banco de la República); 3 % anual desde 2029 (meta de largo plazo)."
+  },
+  {
+   "id": "nsas18",
+   "concepto": "Ingreso maquinaria actual",
+   "tipo": "beneficio",
+   "valores": [
+    1554069628.5,
+    1787180072.77,
+    2055257083.69,
+    2363545646.24,
+    2718077493.18,
+    3125789117.16,
+    3594657484.73,
+    4133856107.44,
+    4753934523.56,
+    5467024702.09
+   ],
+   "formulas": {
+    "0": "=[Avalúo equipos en inventario]*[Aprovechamiento de ingresos]",
+    "1": "=[Ingreso maquinaria actual; año anterior]*(1+[Crecimiento anual maquinaria actual])",
+    "2": "=[Ingreso maquinaria actual; año anterior]*(1+[Crecimiento anual maquinaria actual])",
+    "3": "=[Ingreso maquinaria actual; año anterior]*(1+[Crecimiento anual maquinaria actual])",
+    "4": "=[Ingreso maquinaria actual; año anterior]*(1+[Crecimiento anual maquinaria actual])",
+    "5": "=[Ingreso maquinaria actual; año anterior]*(1+[Crecimiento anual maquinaria actual])",
+    "6": "=[Ingreso maquinaria actual; año anterior]*(1+[Crecimiento anual maquinaria actual])",
+    "7": "=[Ingreso maquinaria actual; año anterior]*(1+[Crecimiento anual maquinaria actual])",
+    "8": "=[Ingreso maquinaria actual; año anterior]*(1+[Crecimiento anual maquinaria actual])",
+    "9": "=[Ingreso maquinaria actual; año anterior]*(1+[Crecimiento anual maquinaria actual])"
+   },
+   "categoria": "ingresos"
+  },
+  {
+   "id": "nsas19",
+   "concepto": "Ingreso maquinaria nueva",
+   "tipo": "beneficio",
+   "valores": [
+    0.0,
+    2621485361.25,
+    2734209231.78,
+    2816235508.74,
+    2900722574.0,
+    2987744251.22,
+    3077376578.76,
+    3169697876.12,
+    3264788812.4,
+    3362732476.77
+   ],
+   "formulas": {
+    "1": "=[Ingreso anual maquinaria nueva (desde el año 2)]",
+    "2": "=[Ingreso maquinaria nueva; año anterior]*(1+[IPC])",
+    "3": "=[Ingreso maquinaria nueva; año anterior]*(1+[IPC])",
+    "4": "=[Ingreso maquinaria nueva; año anterior]*(1+[IPC])",
+    "5": "=[Ingreso maquinaria nueva; año anterior]*(1+[IPC])",
+    "6": "=[Ingreso maquinaria nueva; año anterior]*(1+[IPC])",
+    "7": "=[Ingreso maquinaria nueva; año anterior]*(1+[IPC])",
+    "8": "=[Ingreso maquinaria nueva; año anterior]*(1+[IPC])",
+    "9": "=[Ingreso maquinaria nueva; año anterior]*(1+[IPC])"
+   },
+   "categoria": "ingresos"
+  },
+  {
+   "id": "nsas20",
+   "concepto": "Ingreso renders",
+   "tipo": "beneficio",
+   "valores": [
+    1366128997.2,
+    1460391898.01,
+    1523188749.62,
+    1568884412.11,
+    1615950944.47,
+    1664429472.81,
+    1714362356.99,
+    1765793227.7,
+    1818767024.53,
+    1873330035.27
+   ],
+   "formulas": {
+    "0": "=[Ventas base (renders)]*[Porcentaje de visualización (renders)]",
+    "1": "=[Ingreso renders; año anterior]*(1+[IPC])",
+    "2": "=[Ingreso renders; año anterior]*(1+[IPC])",
+    "3": "=[Ingreso renders; año anterior]*(1+[IPC])",
+    "4": "=[Ingreso renders; año anterior]*(1+[IPC])",
+    "5": "=[Ingreso renders; año anterior]*(1+[IPC])",
+    "6": "=[Ingreso renders; año anterior]*(1+[IPC])",
+    "7": "=[Ingreso renders; año anterior]*(1+[IPC])",
+    "8": "=[Ingreso renders; año anterior]*(1+[IPC])",
+    "9": "=[Ingreso renders; año anterior]*(1+[IPC])"
+   },
+   "categoria": "ingresos"
+  },
+  {
+   "id": "nsas21",
+   "concepto": "Mantenimiento maquinaria actual",
+   "tipo": "costo",
+   "valores": [
+    155406962.85,
+    178718007.28,
+    205525708.37,
+    236354564.62,
+    271807749.32,
+    312578911.72,
+    359465748.47,
+    413385610.74,
+    475393452.36,
+    546702470.21
+   ],
+   "formulas": {
+    "0": "=[Ingreso maquinaria actual]*[Mantenimiento (% del ingreso de maquinaria actual)]",
+    "1": "=[Ingreso maquinaria actual]*[Mantenimiento (% del ingreso de maquinaria actual)]",
+    "2": "=[Ingreso maquinaria actual]*[Mantenimiento (% del ingreso de maquinaria actual)]",
+    "3": "=[Ingreso maquinaria actual]*[Mantenimiento (% del ingreso de maquinaria actual)]",
+    "4": "=[Ingreso maquinaria actual]*[Mantenimiento (% del ingreso de maquinaria actual)]",
+    "5": "=[Ingreso maquinaria actual]*[Mantenimiento (% del ingreso de maquinaria actual)]",
+    "6": "=[Ingreso maquinaria actual]*[Mantenimiento (% del ingreso de maquinaria actual)]",
+    "7": "=[Ingreso maquinaria actual]*[Mantenimiento (% del ingreso de maquinaria actual)]",
+    "8": "=[Ingreso maquinaria actual]*[Mantenimiento (% del ingreso de maquinaria actual)]",
+    "9": "=[Ingreso maquinaria actual]*[Mantenimiento (% del ingreso de maquinaria actual)]"
+   }
+  },
+  {
+   "id": "nsas22",
+   "concepto": "Inversión maquinaria nueva",
+   "tipo": "costo",
+   "valores": [
+    0.0,
+    1771458678.45,
+    1847631401.63,
+    1903060343.68,
+    1960152153.99,
+    2018956718.61,
+    2079525420.17,
+    2141911182.77,
+    2206168518.25,
+    2272353573.8
+   ],
+   "formulas": {
+    "1": "=[Inversión anual maquinaria nueva (desde el año 2)]",
+    "2": "=[Inversión maquinaria nueva; año anterior]*(1+[IPC])",
+    "3": "=[Inversión maquinaria nueva; año anterior]*(1+[IPC])",
+    "4": "=[Inversión maquinaria nueva; año anterior]*(1+[IPC])",
+    "5": "=[Inversión maquinaria nueva; año anterior]*(1+[IPC])",
+    "6": "=[Inversión maquinaria nueva; año anterior]*(1+[IPC])",
+    "7": "=[Inversión maquinaria nueva; año anterior]*(1+[IPC])",
+    "8": "=[Inversión maquinaria nueva; año anterior]*(1+[IPC])",
+    "9": "=[Inversión maquinaria nueva; año anterior]*(1+[IPC])"
+   },
+   "nota": "Compra de máquinas cada año desde el año 2. Como en el Excel, se cuenta dentro de los gastos anuales."
+  },
+  {
+   "id": "nsas23",
+   "concepto": "Gasto renders in house",
+   "tipo": "costo",
+   "valores": [
+    702107400.0,
+    750552810.6,
+    782826581.46,
+    806311378.9,
+    830500720.27,
+    855415741.87,
+    881078214.13,
+    907510560.55,
+    934735877.37,
+    962777953.69
+   ],
+   "formulas": {
+    "0": "=[Gasto operativo base renders]*(1+[Incremento del gasto operativo renders])",
+    "1": "=[Gasto renders in house; año anterior]*(1+[IPC])",
+    "2": "=[Gasto renders in house; año anterior]*(1+[IPC])",
+    "3": "=[Gasto renders in house; año anterior]*(1+[IPC])",
+    "4": "=[Gasto renders in house; año anterior]*(1+[IPC])",
+    "5": "=[Gasto renders in house; año anterior]*(1+[IPC])",
+    "6": "=[Gasto renders in house; año anterior]*(1+[IPC])",
+    "7": "=[Gasto renders in house; año anterior]*(1+[IPC])",
+    "8": "=[Gasto renders in house; año anterior]*(1+[IPC])",
+    "9": "=[Gasto renders in house; año anterior]*(1+[IPC])"
+   }
+  },
+  {
+   "id": "nsas24",
+   "concepto": "Gastos de operación de la SAS",
+   "tipo": "costo",
+   "valores": [
+    117810000.0,
+    125938890.0,
+    131354262.27,
+    135294890.14,
+    139353736.84,
+    143534348.95,
+    147840379.42,
+    152275590.8,
+    156843858.52,
+    161549174.28
+   ],
+   "formulas": {
+    "0": "=[Honorarios mensuales BPO contable y tributario]*12+[Honorarios anuales declaración de renta]",
+    "1": "=[Gastos de operación de la SAS; año anterior]*(1+[IPC])",
+    "2": "=[Gastos de operación de la SAS; año anterior]*(1+[IPC])",
+    "3": "=[Gastos de operación de la SAS; año anterior]*(1+[IPC])",
+    "4": "=[Gastos de operación de la SAS; año anterior]*(1+[IPC])",
+    "5": "=[Gastos de operación de la SAS; año anterior]*(1+[IPC])",
+    "6": "=[Gastos de operación de la SAS; año anterior]*(1+[IPC])",
+    "7": "=[Gastos de operación de la SAS; año anterior]*(1+[IPC])",
+    "8": "=[Gastos de operación de la SAS; año anterior]*(1+[IPC])",
+    "9": "=[Gastos de operación de la SAS; año anterior]*(1+[IPC])"
+   }
+  },
+  {
+   "id": "nsas25",
+   "concepto": "Gastos de implementación de la SAS",
+   "tipo": "costo",
+   "valores": [
+    8330000.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "formulas": {
+    "0": "=[Honorarios de implementación BPO]"
+   },
+   "nota": "Gasto único del año 1. Constitución, estatutos y registro mercantil quedaron en $0."
+  },
+  {
+   "id": "nsas26",
+   "concepto": "ICA",
+   "tipo": "costo",
+   "valores": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "formulas": {
+    "0": "=[Total ingresos]*[Tarifa de ICA]",
+    "1": "=[Total ingresos]*[Tarifa de ICA]",
+    "2": "=[Total ingresos]*[Tarifa de ICA]",
+    "3": "=[Total ingresos]*[Tarifa de ICA]",
+    "4": "=[Total ingresos]*[Tarifa de ICA]",
+    "5": "=[Total ingresos]*[Tarifa de ICA]",
+    "6": "=[Total ingresos]*[Tarifa de ICA]",
+    "7": "=[Total ingresos]*[Tarifa de ICA]",
+    "8": "=[Total ingresos]*[Tarifa de ICA]",
+    "9": "=[Total ingresos]*[Tarifa de ICA]"
+   }
+  },
+  {
+   "id": "nsas27",
+   "concepto": "Impuesto de renta",
+   "tipo": "costo",
+   "valores": [
+    677790492.0,
+    1064836130.99,
+    1170860988.98,
+    1283675536.41,
+    1411527827.93,
+    1556616992.01,
+    1721470330.4,
+    1908992493.24,
+    2122522028.9,
+    2365896414.75
+   ],
+   "formulas": {
+    "0": "=máx(0; [Utilidad antes de renta])*[Tarifa de renta]",
+    "1": "=máx(0; [Utilidad antes de renta])*[Tarifa de renta]",
+    "2": "=máx(0; [Utilidad antes de renta])*[Tarifa de renta]",
+    "3": "=máx(0; [Utilidad antes de renta])*[Tarifa de renta]",
+    "4": "=máx(0; [Utilidad antes de renta])*[Tarifa de renta]",
+    "5": "=máx(0; [Utilidad antes de renta])*[Tarifa de renta]",
+    "6": "=máx(0; [Utilidad antes de renta])*[Tarifa de renta]",
+    "7": "=máx(0; [Utilidad antes de renta])*[Tarifa de renta]",
+    "8": "=máx(0; [Utilidad antes de renta])*[Tarifa de renta]",
+    "9": "=máx(0; [Utilidad antes de renta])*[Tarifa de renta]"
+   }
+  },
+  {
+   "id": "nsas28",
+   "concepto": "Aporte de capital inicial",
+   "tipo": "inversion",
+   "valores": [
+    500000000.0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "nota": "Patrimonio de los socios: no es un gasto. Se muestra como salida de caja en el año 1."
+  },
+  {
+   "id": "nsas29",
+   "concepto": "Ingreso neto maquinaria actual",
+   "tipo": "calculo",
+   "valores": [
+    1398662665.65,
+    1608462065.5,
+    1849731375.32,
+    2127191081.62,
+    2446269743.86,
+    2813210205.44,
+    3235191736.26,
+    3720470496.7,
+    4278541071.2,
+    4920322231.88
+   ],
+   "formulas": {
+    "0": "=[Ingreso maquinaria actual]-[Mantenimiento maquinaria actual]",
+    "1": "=[Ingreso maquinaria actual]-[Mantenimiento maquinaria actual]",
+    "2": "=[Ingreso maquinaria actual]-[Mantenimiento maquinaria actual]",
+    "3": "=[Ingreso maquinaria actual]-[Mantenimiento maquinaria actual]",
+    "4": "=[Ingreso maquinaria actual]-[Mantenimiento maquinaria actual]",
+    "5": "=[Ingreso maquinaria actual]-[Mantenimiento maquinaria actual]",
+    "6": "=[Ingreso maquinaria actual]-[Mantenimiento maquinaria actual]",
+    "7": "=[Ingreso maquinaria actual]-[Mantenimiento maquinaria actual]",
+    "8": "=[Ingreso maquinaria actual]-[Mantenimiento maquinaria actual]",
+    "9": "=[Ingreso maquinaria actual]-[Mantenimiento maquinaria actual]"
+   }
+  },
+  {
+   "id": "nsas30",
+   "concepto": "Ingreso neto maquinaria nueva",
+   "tipo": "calculo",
+   "valores": [
+    0.0,
+    850026682.8,
+    886577830.16,
+    913175165.06,
+    940570420.01,
+    968787532.61,
+    997851158.59,
+    1027786693.35,
+    1058620294.15,
+    1090378902.97
+   ],
+   "formulas": {
+    "0": "=[Ingreso maquinaria nueva]-[Inversión maquinaria nueva]",
+    "1": "=[Ingreso maquinaria nueva]-[Inversión maquinaria nueva]",
+    "2": "=[Ingreso maquinaria nueva]-[Inversión maquinaria nueva]",
+    "3": "=[Ingreso maquinaria nueva]-[Inversión maquinaria nueva]",
+    "4": "=[Ingreso maquinaria nueva]-[Inversión maquinaria nueva]",
+    "5": "=[Ingreso maquinaria nueva]-[Inversión maquinaria nueva]",
+    "6": "=[Ingreso maquinaria nueva]-[Inversión maquinaria nueva]",
+    "7": "=[Ingreso maquinaria nueva]-[Inversión maquinaria nueva]",
+    "8": "=[Ingreso maquinaria nueva]-[Inversión maquinaria nueva]",
+    "9": "=[Ingreso maquinaria nueva]-[Inversión maquinaria nueva]"
+   }
+  },
+  {
+   "id": "nsas31",
+   "concepto": "Ingreso neto renders",
+   "tipo": "calculo",
+   "valores": [
+    664021597.2,
+    709839087.41,
+    740362168.17,
+    762573033.21,
+    785450224.21,
+    809013730.93,
+    833284142.86,
+    858282667.15,
+    884031147.16,
+    910552081.58
+   ],
+   "formulas": {
+    "0": "=[Ingreso renders]-[Gasto renders in house]",
+    "1": "=[Ingreso renders]-[Gasto renders in house]",
+    "2": "=[Ingreso renders]-[Gasto renders in house]",
+    "3": "=[Ingreso renders]-[Gasto renders in house]",
+    "4": "=[Ingreso renders]-[Gasto renders in house]",
+    "5": "=[Ingreso renders]-[Gasto renders in house]",
+    "6": "=[Ingreso renders]-[Gasto renders in house]",
+    "7": "=[Ingreso renders]-[Gasto renders in house]",
+    "8": "=[Ingreso renders]-[Gasto renders in house]",
+    "9": "=[Ingreso renders]-[Gasto renders in house]"
+   }
+  },
+  {
+   "id": "nsas32",
+   "concepto": "Utilidad antes de renta",
+   "tipo": "calculo",
+   "valores": [
+    1936544262.85,
+    3042388945.7,
+    3345317111.37,
+    3667644389.75,
+    4032936651.24,
+    4447477120.04,
+    4918486658.3,
+    5454264266.4,
+    6064348653.99,
+    6759704042.15
+   ],
+   "formulas": {
+    "0": "=[Ingreso neto maquinaria actual]+[Ingreso neto maquinaria nueva]+[Ingreso neto renders]-[Gastos de operación de la SAS]-[Gastos de implementación de la SAS]-[ICA]",
+    "1": "=[Ingreso neto maquinaria actual]+[Ingreso neto maquinaria nueva]+[Ingreso neto renders]-[Gastos de operación de la SAS]-[Gastos de implementación de la SAS]-[ICA]",
+    "2": "=[Ingreso neto maquinaria actual]+[Ingreso neto maquinaria nueva]+[Ingreso neto renders]-[Gastos de operación de la SAS]-[Gastos de implementación de la SAS]-[ICA]",
+    "3": "=[Ingreso neto maquinaria actual]+[Ingreso neto maquinaria nueva]+[Ingreso neto renders]-[Gastos de operación de la SAS]-[Gastos de implementación de la SAS]-[ICA]",
+    "4": "=[Ingreso neto maquinaria actual]+[Ingreso neto maquinaria nueva]+[Ingreso neto renders]-[Gastos de operación de la SAS]-[Gastos de implementación de la SAS]-[ICA]",
+    "5": "=[Ingreso neto maquinaria actual]+[Ingreso neto maquinaria nueva]+[Ingreso neto renders]-[Gastos de operación de la SAS]-[Gastos de implementación de la SAS]-[ICA]",
+    "6": "=[Ingreso neto maquinaria actual]+[Ingreso neto maquinaria nueva]+[Ingreso neto renders]-[Gastos de operación de la SAS]-[Gastos de implementación de la SAS]-[ICA]",
+    "7": "=[Ingreso neto maquinaria actual]+[Ingreso neto maquinaria nueva]+[Ingreso neto renders]-[Gastos de operación de la SAS]-[Gastos de implementación de la SAS]-[ICA]",
+    "8": "=[Ingreso neto maquinaria actual]+[Ingreso neto maquinaria nueva]+[Ingreso neto renders]-[Gastos de operación de la SAS]-[Gastos de implementación de la SAS]-[ICA]",
+    "9": "=[Ingreso neto maquinaria actual]+[Ingreso neto maquinaria nueva]+[Ingreso neto renders]-[Gastos de operación de la SAS]-[Gastos de implementación de la SAS]-[ICA]"
+   }
+  },
+  {
+   "id": "nsas33",
+   "concepto": "Ingreso neto después de impuestos",
+   "tipo": "calculo",
+   "valores": [
+    1258753770.85,
+    1977552814.7,
+    2174456122.39,
+    2383968853.34,
+    2621408823.31,
+    2890860128.03,
+    3197016327.89,
+    3545271773.16,
+    3941826625.09,
+    4393807627.4
+   ],
+   "formulas": {
+    "0": "=[Utilidad antes de renta]-[Impuesto de renta]",
+    "1": "=[Utilidad antes de renta]-[Impuesto de renta]",
+    "2": "=[Utilidad antes de renta]-[Impuesto de renta]",
+    "3": "=[Utilidad antes de renta]-[Impuesto de renta]",
+    "4": "=[Utilidad antes de renta]-[Impuesto de renta]",
+    "5": "=[Utilidad antes de renta]-[Impuesto de renta]",
+    "6": "=[Utilidad antes de renta]-[Impuesto de renta]",
+    "7": "=[Utilidad antes de renta]-[Impuesto de renta]",
+    "8": "=[Utilidad antes de renta]-[Impuesto de renta]",
+    "9": "=[Utilidad antes de renta]-[Impuesto de renta]"
+   }
+  }
+ ],
+ "consideraciones": "1. Alcance y base del modelo\n• Es una proyección a 10 años. El Año 1 corresponde a 2026. Las cifras están en pesos colombianos (COP).\n• Los valores incorporan la inflación (IPC).\n• El modelo está construido con fórmulas: al modificar un supuesto, el flujo se recalcula solo.\n\n2. Ingresos\n• Maquinaria actual: ingreso a partir del avalúo de los equipos en inventario; desde el Año 2 crece 15% anual.\n• Maquinaria nueva: ingreso por arriendo de las máquinas a otros proyectos, desde el Año 2 (cifra del caso de negocio de MyE). Se ajustan con el IPC.\n• Renders: ventas base × 0,03% de visualización; desde el Año 2 crece con el IPC.\n\n3. Gastos\n• Mantenimiento de la maquinaria actual: 10% del ingreso de la maquinaria actual de cada año.\n• Maquinaria nueva: compra de máquinas cada año desde el Año 2, (cifra del caso de negocio de MyE). Se reajusta con el IPC.\n• Renders: gasto operativo del caso de negocio de Renders; desde el Año 2 crece con el IPC.\n• Operación de la SAS: honorarios del proveedor contable y tributario según cotización; se reajustan con el IPC desde el Año 2.\n• Implementación de la SAS: gasto único del Año 1.\n• ICA: porcentaje sobre los ingresos totales del año, incluido dentro de los gastos.\n\n4. Inflación (IPC)\n• Reajuste por IPC: 6,9% en el Año 2 (2027), 4,3% en el Año 3 (2028) y 3,0% anual del Año 4 al Año 10.\n• Referencia: proyecciones de inflación del Banco de la República (informe de política monetaria de julio de 2026) y su meta de largo plazo (3%). Son estimaciones que pueden actualizarse.\n\n5. Capital inicial\n• El aporte de capital inicial es patrimonio de los socios y no se registra como gasto. Se muestra en el flujo de caja para los socios como una salida en el Año 1.\n\n6. Cómo se calcula el resultado\n• Ingreso neto de cada proyecto = ingreso del proyecto - gastos de ese proyecto.\n• Utilidad antes de renta = ingreso neto de los proyectos - gastos de operación e implementación de la SAS - ICA.\n• Ingreso neto después de impuestos = utilidad antes de renta - impuesto de renta.\n• Los acumulados suman los valores de cada año\n\n7. Cómo leer la tabla\n• Supuestos: tarifas de impuestos (ICA y renta), datos generales del caso e inflación. Un valor escrito en un año vale para los siguientes.\n• Ingresos y gastos: se calculan con fórmulas a partir de los supuestos (pase el mouse sobre una celda azul para ver la fórmula).\n• Flujo de caja del año: ingresos − gastos − aporte de capital. Coincide con el «Flujo de caja para los socios» del Excel.",
+ "control": {
+  "flujo_caja_anio": [
+   758753770.85,
+   1977552814.7,
+   2174456122.39,
+   2383968853.34,
+   2621408823.31,
+   2890860128.03,
+   3197016327.89,
+   3545271773.16,
+   3941826625.09,
+   4393807627.4
+  ],
+  "acumulado": [
+   758753770.85,
+   2736306585.56,
+   4910762707.95,
+   7294731561.29,
+   9916140384.6,
+   12807000512.62,
+   16004016840.51,
+   19549288613.67,
+   23491115238.76,
+   27884922866.17
+  ]
+ }
+}

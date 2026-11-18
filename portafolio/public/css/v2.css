@@ -423,3 +423,20 @@ a.t-cpi:hover{background:var(--hover)}
 .cr-sin div{display:flex;flex-wrap:wrap;gap:6px 8px;margin-top:10px}
 .cr-sin a{color:var(--ink);text-decoration:none;background:var(--card);border:1px solid var(--line-2);border-radius:8px;padding:4px 9px;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cr-sin a:hover{border-color:var(--ink)}
+
+/* Hoja del caso: nota de la fila y supuestos heredados */
+.hoja td .rnota{position:absolute;left:3px;top:3px;width:13px;height:13px;border-radius:50%;background:var(--accent-soft,#FFF6D6);color:var(--accent-ink,#8A6A00);font:800 9px/13px var(--sans);text-align:center;cursor:help;font-style:italic;z-index:1}
+
+.hoja td input::placeholder{color:var(--faint);opacity:.75}
+
+/* Caso: consideraciones como documento, escenarios plegados */
+.cs-cons-t{width:100%;min-height:160px;border:1px solid var(--line);border-radius:10px;padding:14px 16px;font:inherit;font-size:var(--fs-sm);line-height:1.6;color:var(--ink);background:var(--card);resize:vertical}
+.cs-cons-t:focus{outline:none;border-color:var(--accent,#FFD000);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent,#FFD000) 30%,transparent)}
+.cs-esc summary{cursor:pointer;list-style:none;font-size:var(--fs-sm)}
+.cs-esc[open] summary{margin-bottom:10px}.cs-esc[open] summary .faint{display:none}
+.hoja td input.cpt{width:300px}
+.hoja td.con-nota input.cpt{padding-left:20px}
+.hoja td .rnota{top:50%;transform:translateY(-50%);left:5px}
+.hoja tr.grp .grp-t{cursor:pointer;user-select:none}
+.hoja tr.grp .grp-t em{font-style:normal;text-transform:none;letter-spacing:0;font-weight:600;color:var(--faint);margin-left:6px}
+.hoja-wrap{max-height:75vh}

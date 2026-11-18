@@ -6,7 +6,8 @@
   const num = v => (Number.isFinite(Number(v)) ? Number(v) : 0);
   // Solo filas de flujo válidas (un registro dañado no debe tumbar el cálculo ni los exportes).
   // Los «supuestos» (unidades, precio, %…) no son plata: se usan en fórmulas y no suman.
-  const filas = caso => ((caso && caso.flujos) || []).filter(f => f && typeof f === 'object' && f.tipo !== 'supuesto');
+  // Supuestos y resultados intermedios (utilidad antes de renta, etc.) se usan en fórmulas pero no suman al flujo.
+  const filas = caso => ((caso && caso.flujos) || []).filter(f => f && typeof f === 'object' && f.tipo !== 'supuesto' && f.tipo !== 'calculo');
   const vals = f => (Array.isArray(f.valores) ? f.valores : []);
 
   function vpn(netos, r) { return netos.reduce((a, v, t) => a + v / Math.pow(1 + r, t), 0); }

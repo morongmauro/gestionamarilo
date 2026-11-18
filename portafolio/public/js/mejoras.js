@@ -161,10 +161,11 @@
     const ver = caps.filter(c => verificado(c, caso)).reduce((a, c) => a + (Number(c.valor) || 0), 0), pre = caps.filter(c => !verificado(c, caso)).reduce((a, c) => a + (Number(c.valor) || 0), 0);
     const ultima = decisionesDe(p.id)[0];
     const hab = habilitador(p);
-    const porque = caso && (caso.problema || caso.objetivo);
+    const resumenCons = caso && !caso.problema && !caso.objetivo ? String(caso.consideraciones || '').split('\n').map(l => l.replace(/^\s*[•\-*]\s*/, '').trim()).filter(l => l && !/^\d+\.\s/.test(l)).slice(0, 2) : [];
+    const porque = caso && (caso.problema || caso.objetivo || resumenCons.length);
     return `<div class="card-box historia">
       <div class="hs"><div class="hs-k">En una frase</div><div class="hs-v frase ${p.frase ? '' : 'empty'}" data-h="frase">${p.frase ? esc(p.frase) : (ro ? '—' : 'Escribe en una frase qué cambia con esta iniciativa')}</div></div>
-      <div class="hs"><div class="hs-k">Por qué existe</div><div class="hs-v">${porque ? `${caso.problema ? `<p><b>Problema u oportunidad.</b> ${esc(caso.problema)}</p>` : ''}${caso.objetivo ? `<p><b>Objetivo.</b> ${esc(caso.objetivo)}</p>` : ''}` : `<span class="faint">Sin caso de negocio todavía${ro ? '' : ' · <a href="#/proyectos/' + p.id + '/caso">crearlo</a>'}</span>`}</div></div>
+      <div class="hs"><div class="hs-k">Por qué existe</div><div class="hs-v">${porque ? `${caso.problema ? `<p><b>Problema u oportunidad.</b> ${esc(caso.problema)}</p>` : ''}${caso.objetivo ? `<p><b>Objetivo.</b> ${esc(caso.objetivo)}</p>` : ''}${resumenCons.map(l => `<p>${esc(l)}</p>`).join('')}` : `<span class="faint">Sin caso de negocio todavía${ro ? '' : ' · <a href="#/proyectos/' + p.id + '/caso">crearlo</a>'}</span>`}</div></div>
       <div class="hs"><div class="hs-k">Dónde va</div><div class="hs-v hs-grid">
         <div><span class="l">Avance</span>${pl.acts.length ? `<span class="bar-mini"><i style="width:${pl.avance}%"></i></span> <b>${pl.avance}%</b>${pl.atrasadas ? ` <span class="crit">· ${pl.atrasadas} atrasada${pl.atrasadas > 1 ? 's' : ''}</span>` : ''}` : `<span class="faint">${esc(App.sinPlan(p).largo)}</span>`}</div>
         <div><span class="l">Próximos hitos</span><span class="hitos">${hitosHTML(p.id)}</span></div>

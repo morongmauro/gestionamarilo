@@ -694,6 +694,60 @@ async function prepare() {
     }
     await store.setConfig('migr_income_nombre_v2', true);
   }
+  // Migración (una sola vez): todos los casos pasan al formato de la Oficina (10 años y consideraciones).
+  // Las cifras no se tocan; el texto de los campos anteriores pasa a «Consideraciones» y los campos se conservan.
+  if (!(await store.getConfig('migr_formato_caso_v1'))) {
+    const Plantilla = require('./public/js/plantilla-caso');
+    let n = 0;
+    for (const c of await store.list('cases')) { const cambios = Plantilla.aplicar(c); if (Object.keys(cambios).length) { await store.update('cases', c.id, d => ({ ...d, ...cambios })); n++; } }
+    if (n) console.log(`Formato del caso aplicado a ${n} casos`);
+    await store.setConfig('migr_formato_caso_v1', true);
+  }
+  // Migración (una sola vez): iniciativas pedidas por la Oficina (nov. 2026) y el caso de negocio de Nueva SAS.
+  // - Cada iniciativa se crea solo si no hay otra con un nombre equivalente (se compara sin tildes ni mayúsculas).
+  // - Nueva SAS recibe el caso de su Excel (lib/semillas/nueva-sas.json). Si ya tenía caso, se reemplazan las cifras
+  //   y las consideraciones; se conservan el estado, la captura registrada y la verificación. Lo anterior queda en el historial.
+  // (con la base vacía no se hace nada todavía: primero entran los datos, o la demostración, y se aplica en el siguiente arranque)
+  if (!(await store.getConfig('migr_iniciativas_nov26_v1')) && (await store.list('projects')).length) {
+    const cols = await store.getConfig('project_columns');
+    const t = (cols || []).find(c => c.type === 'title') || { id: 'proyecto' };
+    const ec = (cols || []).find(c => c.type === 'select' && /estado|fase/i.test(c.name));
+    const dgv = (cols || []).find(c => c.id === 'revision_dgv') || (cols || []).find(c => /revisi[oó]n\s*dgv/i.test(c.name || ''));
+    const f1 = ec && (ec.options || []).find(o => Fases.clasificar(o.name) === 1 && /^fase/i.test(o.name));
+    const si = dgv && ((dgv.options || []).find(o => /^s[ií]$/i.test(o.name)) || { name: 'SI' });
+    const sinTildes = x => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const NUEVAS = [
+      { nombre: 'Nueva SAS', re: /nueva\s*sas|new\s*sas|\bnew\s*co\b|\bnewco\b/ },
+      { nombre: 'Comida en obra', re: /comida.*obra|alimentaci.*obra/ },
+      { nombre: 'Monetización data para IA', re: /monetiz.*(data|dato)/ },
+      { nombre: 'Tecnología para Obra China', re: /tecnolog.*china|china.*tecnolog/ },
+    ];
+    let ps = await store.list('projects'); const creadas = [];
+    for (const x of NUEVAS) {
+      if (ps.some(p => x.re.test(sinTildes((p.props || {})[t.id])))) continue;
+      const props = { [t.id]: x.nombre }; if (ec && f1) props[ec.id] = f1.name; if (dgv && si) props[dgv.id] = si.name;
+      const doc = { id: newId(), props, position: ps.reduce((m, p) => Math.max(m, p.position ?? 0), -1) + 1, created_at: now(), updated_at: now(), updated_by_name: 'Sistema' };
+      await store.insert('projects', doc); ps = ps.concat(doc); creadas.push(x.nombre);
+    }
+    if (creadas.length) await store.insert('historial', { id: newId(), created_at: now(), user_id: 'sistema', user_name: 'Sistema', accion: 'creó', coll: 'projects', record_id: '', nombre: `Iniciativas nuevas: ${creadas.join(', ')}`, campos: [] });
+    // Caso de Nueva SAS
+    const nsas = ps.find(p => NUEVAS[0].re.test(sinTildes((p.props || {})[t.id])));
+    if (nsas) {
+      const sem = JSON.parse(fs.readFileSync(path.join(__dirname, 'lib', 'semillas', 'nueva-sas.json'), 'utf8'));
+      const datos = { anio_inicio: sem.anio_inicio, anios: sem.anios, moneda: sem.moneda, flujos: sem.flujos, consideraciones: sem.consideraciones, origen: '' };
+      const antes = (await store.list('cases')).find(c => c.project_id === nsas.id);
+      if (antes) {
+        await store.insert('historial', { id: newId(), created_at: now(), user_id: 'sistema', user_name: 'Sistema', accion: 'reemplazó las cifras de', coll: 'cases', record_id: antes.id, nombre: 'Caso de negocio · Nueva SAS (desde ' + sem.fuente + ')', campos: ['flujos', 'consideraciones'], antes: { flujos: antes.flujos || [], anios: antes.anios, anio_inicio: antes.anio_inicio, consideraciones: antes.consideraciones || '' } });
+        await store.update('cases', antes.id, d => ({ ...d, ...datos, tasa: d.tasa ?? 12, updated_at: now(), updated_by_name: 'Sistema' }));
+      } else {
+        const doc = { id: 'caso-' + nsas.id, project_id: nsas.id, estado: 'Borrador', tasa: 12, ...datos, created_at: now(), updated_at: now(), updated_by_name: 'Sistema' };
+        await store.insert('cases', doc);
+        await store.insert('historial', { id: newId(), created_at: now(), user_id: 'sistema', user_name: 'Sistema', accion: 'creó', coll: 'cases', record_id: doc.id, nombre: 'Caso de negocio · Nueva SAS (desde ' + sem.fuente + ')', campos: [] });
+      }
+    }
+    if (creadas.length || nsas) console.log(`Iniciativas: ${creadas.length ? 'creadas ' + creadas.join(', ') : 'ya existían'}${nsas ? ' · caso de Nueva SAS cargado' : ''}`);
+    await store.setConfig('migr_iniciativas_nov26_v1', true);
+  }
   if (!(await store.getConfig('seeded_committees'))) {
     if (!(await store.list('committees')).length) for (const c of defaults.committees()) await store.insert('committees', { ...c, id: newId(), created_at: now(), updated_at: now() });
     await store.setConfig('seeded_committees', true);
