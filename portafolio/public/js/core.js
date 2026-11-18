@@ -59,7 +59,9 @@ App.projectColor = p => { const c = App.estadoCol(); return c ? App.optColor(c, 
 // Mientras el filtro esté puesto, el Portafolio y el Tablero solo cuentan esas. Si ninguna iniciativa tiene el dato, no se filtra nada.
 App.dgvCol = () => App.S.columns.find(c => c.id === 'revision_dgv') || App.S.columns.find(c => /revisi[oó]n\s*dgv/i.test(c.name)) || null;
 App.dgvValor = p => { const c = App.dgvCol(), v = ((p && p.props) || {})[c ? c.id : 'revision_dgv']; return Array.isArray(v) ? v[0] : v; };
-App.dgvSi = p => { const v = App.dgvValor(p); return v === true || /^\s*s[ií]\s*$/i.test(String(v == null ? '' : v)); };
+// En el foco DGV: marcada SI, o creada después de la fecha de corte y sin marcar NO (lo nuevo entra solo)
+App.dgvSi = p => { const v = App.dgvValor(p); if (v === true || /^\s*s[ií]\s*$/i.test(String(v == null ? '' : v))) return true;
+  const vacio = v == null || v === '' || v === false; return vacio && !!App.S.dgvCorte && !!(p && p.created_at) && p.created_at >= App.S.dgvCorte; };
 App.dgvHay = () => App.S.projects.some(p => { const v = App.dgvValor(p); return v != null && v !== '' && v !== false; });
 App.soloDgv = () => App.dgvHay() && App.store.get('alcance.dgv', 'si') === 'si';
 App.enAlcance = p => !App.soloDgv() || App.dgvSi(p);

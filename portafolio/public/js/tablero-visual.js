@@ -134,7 +134,7 @@
     main.className = 'tv';
     main.innerHTML = `<div class="tv-h"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Tablero</h1><span class="s">Datos al ${esc(App.d.fmt(d.hoy))}</span><span class="sp"></span>
         <div class="tv-f"><label>Año <select data-tvf="anio">${d.anios.map(y => `<option ${y === Y ? 'selected' : ''}>${y}</option>`).join('')}</select></label>
-        ${dgv ? `<button class="tv-fb" data-dgv>${App.soloDgv() ? 'Iniciativas con revisión DGV' : 'Todas las iniciativas'}</button>` : ''}
+        ${dgv ? `<button class="tv-fb" data-dgv>${App.soloDgv() ? 'Foco DGV' : 'Con históricas'}</button>` : ''}
         ${ec ? `<label>Fase <select data-tvf="fase"><option value="">todas</option>${[1, 2, 3, 'pausa', 'cerrada', 'cancelada'].map(k => `<option value="${k}" ${F.fase === String(k) ? 'selected' : ''}>${esc(faseNombre(k))}</option>`).join('')}</select></label>` : ''}</div></div>
       ${sub}
       <div class="tv-kpi">

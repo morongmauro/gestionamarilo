@@ -324,6 +324,7 @@ route('GET', '/api/estado', 'usuario', async (req, ctx) => {
     columns: await projectColumns(),
     tablero: (await store.getConfig('tablero')) || { income_unidad: 1e6 },
     vistaPf: (await store.getConfig('vista_portafolio')) || null,
+    dgvCorte: (await store.getConfig('dgv_corte')) || null,
     direccion: (await store.getConfig('direccion')) || null,
     projects, activities, sections, cases, sessions, committees,
     people: users.filter(u => u.active !== false).map(u => ({ id: u.id, name: u.name, email: u.email })),
@@ -888,6 +889,9 @@ async function prepare() {
     }
     await store.setConfig('migr_ejemplo_v1', true);
   }
+  // Foco DGV: desde esta fecha, toda iniciativa nueva cuenta en el foco aunque no tenga marcado «¿Revisión DGV?».
+  // Las que ya existían sin SI siguen siendo históricas. No se modifica ninguna iniciativa.
+  if (!(await store.getConfig('dgv_corte'))) await store.setConfig('dgv_corte', now());
   if (!(await store.getConfig('seeded_committees'))) {
     if (!(await store.list('committees')).length) for (const c of defaults.committees()) await store.insert('committees', { ...c, id: newId(), created_at: now(), updated_at: now() });
     await store.setConfig('seeded_committees', true);

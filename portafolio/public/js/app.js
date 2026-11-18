@@ -108,7 +108,7 @@
     App.S.demo = !!d.demo;
     App.S.almacenamiento = d.almacenamiento;
     App.S.direccion = d.direccion || null;
-    Object.assign(App.S, { me: d.me, org: d.org, columns: d.columns, projects: d.projects, activities: d.activities, sections: d.sections || [], cases: d.cases, sessions: d.sessions, committees: d.committees, people: d.people, tablero: d.tablero || { income_unidad: 1e6 }, vistaPf: d.vistaPf || null });
+    Object.assign(App.S, { me: d.me, org: d.org, columns: d.columns, projects: d.projects, activities: d.activities, sections: d.sections || [], cases: d.cases, sessions: d.sessions, committees: d.committees, people: d.people, tablero: d.tablero || { income_unidad: 1e6 }, vistaPf: d.vistaPf || null, dgvCorte: d.dgvCorte || null });
   }
   App.reload = async () => { try { await loadState(); App.render(); } catch (e) { console.error(e); } };
 

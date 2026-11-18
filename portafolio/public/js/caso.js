@@ -344,7 +344,7 @@
       const aplica = !dgvNo && !!fa && !fa.fuera;
       const c = App.caseOf(p.id);
       const tipo = !c ? 'sin' : c.origen === 'ice' ? 'pre' : 'hecho';
-      const motivo = aplica ? '' : dgvNo ? '«¿Revisión DGV?» no está en SI' : fa ? fa.nombre : 'sin fase';
+      const motivo = aplica ? '' : dgvNo ? 'histórica (fuera del foco DGV)' : fa ? fa.nombre : 'sin fase';
       return { p, c, est, fa, aplica, tipo, motivo };
     });
   }
@@ -361,7 +361,7 @@
         <div class="kl"><span><b>${ap.length}</b>iniciativas a las que aplica</span><span><b>${n(ap, 'hecho')}</b>con caso hecho</span><span><b>${n(ap, 'pre')}</b>preliminares</span><span><b class="${n(ap, 'sin') ? 'r' : ''}">${n(ap, 'sin')}</b>sin caso</span><span><b>${no.length}</b>no aplica</span></div>
         <span class="sp"></span><button class="btn ghost sm" data-cob="csv">Exportar a Excel</button></div>
       <div class="pf-bar"><div class="seg"><button data-vista-cn="casos">Casos</button><button class="on" data-vista-cn="cobertura">Cobertura</button></div>
-        <span class="t-tag">Aplica a las iniciativas activas: Fase 1, 2 o 3${App.dgvHay() ? ' y «¿Revisión DGV?» en SI' : ''}. «Hecho» es un caso armado por una persona; «preliminar» lo armó el sitio desde el ICE.</span></div>
+        <span class="t-tag">Aplica a las iniciativas activas: Fase 1, 2 o 3${App.dgvHay() ? ' y del foco DGV' : ''}. «Hecho» es un caso armado por una persona; «preliminar» lo armó el sitio desde el ICE.</span></div>
       <section class="t-card pf-tbl-card"><div class="pf-wrap"><table class="pf-tbl cn-tbl"><thead><tr><th>Iniciativa <small>fase</small></th><th>Caso de negocio</th><th>Última edición por</th><th>Cuándo</th><th>Qué falta</th><th aria-hidden="true"></th></tr></thead><tbody>
         ${grupo('Aplica · sin caso', ap.filter(x => x.tipo === 'sin'), true)}${grupo('Aplica · preliminar desde el ICE', ap.filter(x => x.tipo === 'pre'), true)}${grupo('Aplica · caso hecho', ap.filter(x => x.tipo === 'hecho'), true)}${grupo('No aplica', no, true)}
         ${l.length ? '' : '<tr><td colspan="5"><div class="t-vacio">Aún no hay iniciativas.</div></td></tr>'}</tbody></table></div>
