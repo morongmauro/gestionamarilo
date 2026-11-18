@@ -614,20 +614,13 @@
   function cabecera() {
     const M = cur.M, ed = editable(), p = cur.pid ? App.byId('projects', cur.pid) : null;
     const n = pila.filter(x => x.pid === cur.pid).length;
-    let lb = '';
-    if (p && M.lineaBase) {
-      const f = new Date(M.lineaBase).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
-      lb = `<span class="lb-chip" title="Las fechas de la línea base no se mueven. Lo que cambia es lo proyectado (por fechas reales y dependencias) y se ve el desvío.">🔒 Línea base del ${esc(f)}</span>${ed ? '<button class="btn sm" data-ph="lb-otra" title="Vuelve a congelar con las fechas proyectadas de hoy">Volver a fijar</button><button class="btn sm" data-ph="lb-quitar">Quitar</button>' : ''}`;
-    } else if (p && ed) lb = '<button class="btn sm" data-ph="lb" title="Congela las fechas planeadas de hoy: desde ahí se comparan contra lo real">🔒 Fijar línea base</button>';
-    const info = 'Todo se edita aquí mismo y se guarda solo. Si mueves el fin de una actividad, lo que depende de ella se corre en cascada (días hábiles, sin fines de semana ni festivos de Colombia). Flechas: arrastra el punto del final de una barra hasta otra actividad para conectarlas; haz clic en una flecha para cambiar su tipo o quitarla. Clic derecho en una fila: insertar, duplicar, mover, eliminar. Arrastra el borde del título «Actividad» para ensanchar la columna.';
-    return `<div class="plan-head-l"><span id="plan-saving" class="saving-dot" style="opacity:${guardando ? 1 : 0}">guardando…</span>${lb}</div>
-      <div class="plan-head-r">${kpis(M)}
-        ${p ? `<span class="plan-info" title="${esc(info)}">ⓘ</span>` : ''}
-        ${p && ed ? `<button class="btn sm undo-btn" data-ph="undo" ${n ? '' : 'disabled'} title="${n ? 'Deshacer: ' + esc(pila.filter(x => x.pid === cur.pid).slice(-1)[0].desc) + ' (Ctrl+Z)' : 'Nada que deshacer'}">↶ Deshacer${n ? ` <em>${n}</em>` : ''}</button>` : ''}
-        ${p ? `<button class="btn sm" data-ph="meta" ${ed ? '' : 'disabled'} title="Fecha en que la iniciativa debe terminar: el plan avisa si se pasa">⚑ ${p.fecha_meta ? 'Meta ' + esc(App.d.fmtShort(p.fecha_meta)) : 'Fecha meta'}</button>
-        ${ed ? '<button class="btn sm" data-ph="gestion" title="Traer el cronograma desde un enlace compartido de la app de gestión">⇣ Traer de la app de gestión</button>' : ''}
-        <button class="btn sm" data-ph="inv" title="Quiénes participan en la iniciativa y de qué área son">👥 Involucrados${(p.miembros || []).length ? ` · ${p.miembros.length}` : ''}</button>` : ''}
-        <button class="btn sm mesa-btn${mesa ? ' on' : ''}" data-ph="mesa" title="${mesa ? 'Volver a la vista normal (Esc)' : 'Solo el cronograma, a pantalla completa: para mesas de trabajo de revisión'}">${mesa ? '✕ Salir de mesa' : '⛶ Mesa de trabajo'}</button>
+    const lbF = p && M.lineaBase ? new Date(M.lineaBase).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+    // Una fila: el resumen a la izquierda; a la derecha deshacer, la acción principal y «⋯ Más» con lo ocasional
+    return `<div class="plan-head-l">${kpis(M)}${p && M.lineaBase ? `<span class="lb-chip" title="Las fechas de la línea base no se mueven: se compara contra ellas. Se cambia en «⋯ Más».">🔒 Línea base del ${esc(lbF)}</span>` : ''}<span id="plan-saving" class="saving-dot" style="opacity:${guardando ? 1 : 0}">guardando…</span></div>
+      <div class="plan-head-r">
+        ${p && ed ? `<button class="btn sm ic" data-ph="undo" ${n ? '' : 'disabled'} title="${n ? 'Deshacer: ' + esc(pila.filter(x => x.pid === cur.pid).slice(-1)[0].desc) + ' (Ctrl+Z)' : 'Nada que deshacer'}" aria-label="Deshacer">↶</button>` : ''}
+        ${p && ed ? '<button class="btn primary sm" data-ph="nueva">+ Actividad</button>' : ''}
+        ${mesa ? '<button class="btn sm mesa-btn on" data-ph="mesa" title="Volver a la vista normal (Esc)">✕ Salir de mesa</button>' : `<button class="btn sm" data-ph="mas" aria-haspopup="menu">⋯ Más</button>`}
       </div>`;
   }
 
@@ -661,6 +654,22 @@
       if (a === 'inv') involucrados();
       if (a === 'gestion') traerDeGestion(b);
       if (a === 'mesa') toggleMesa();
+      if (a === 'nueva') { // lleva al renglón «＋ Actividad» de la etapa elegida (o de la última) y lo deja listo para escribir
+        const ins = [...cur.el.querySelectorAll('tr.pl-add input')]; const act = ins.filter(i => /Actividad/.test(i.placeholder)); const i = act[act.length - 1] || ins[ins.length - 1];
+        if (i) { i.scrollIntoView({ block: 'center' }); i.focus(); } else toast('Primero cree una etapa abajo («＋ Nueva etapa»)', false);
+      }
+      if (a === 'mas') {
+        const M = cur.M, p = cur.pid ? App.byId('projects', cur.pid) : null, ed = editable(), it = [];
+        if (p && ed) it.push({ id: 'gestion', label: '⇣ Traer de la app de gestión' });
+        if (p && ed) { if (M.lineaBase) { it.push({ id: 'lb-otra', label: '🔒 Volver a fijar la línea base' }); it.push({ id: 'lb-quitar', label: '🔓 Quitar la línea base' }); } else it.push({ id: 'lb', label: '🔒 Fijar línea base' }); }
+        if (p) { it.push({ id: 'meta', label: '⚑ ' + (p.fecha_meta ? 'Fecha meta: ' + App.d.fmtShort(p.fecha_meta) : 'Fecha meta') }); it.push({ id: 'inv', label: '👥 Involucrados' + ((p.miembros || []).length ? ' · ' + p.miembros.length : '') }); }
+        it.push('-'); it.push({ id: 'mesa', label: '⛶ Mesa de trabajo (pantalla completa)' }); if (p) it.push({ id: 'ayuda', label: 'ⓘ Cómo se usa el cronograma' });
+        return App.menu(b, it, m => {
+          if (m === 'gestion') traerDeGestion(b); if (m === 'lb') fijarLineaBase(false); if (m === 'lb-otra') fijarLineaBase(true); if (m === 'lb-quitar') quitarLineaBase();
+          if (m === 'meta') fechaMeta(b); if (m === 'inv') involucrados(); if (m === 'mesa') toggleMesa();
+          if (m === 'ayuda') App.openPop(b, '<div class="lbl">Cómo se usa</div><div style="padding:0 12px 12px;font-size:13px;line-height:1.55">Todo se edita aquí mismo y se guarda solo. Si mueves el fin de una actividad, lo que depende de ella se corre en cascada (días hábiles, sin fines de semana ni festivos de Colombia). Flechas: arrastra el punto del final de una barra hasta otra actividad para conectarlas; haz clic en una flecha para cambiarla o quitarla. Ctrl+Z deshace.</div>', { width: 360 });
+        }, 270);
+      }
     });
     pintar();
   }

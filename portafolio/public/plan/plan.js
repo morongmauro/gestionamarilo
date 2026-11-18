@@ -605,19 +605,18 @@
     if (!opts.compacto) return opciones + `<div class="pl-bar-r" style="margin:0 0 8px">${colsBtn}</div>` + (opts.verCols ? columnasHtml(opts, cols, base) : '') + filtro;
     // Modo compacto (enlace para directivos): una barra delgada y las opciones escondidas
     const solo = opts.plegadas === '*';
-    return `<div class="pl-bar-c">
-        <div class="pl-areas pl-areas-c">
-          <button class="pl-chip todas${opts.grupo ? '' : ' on'}" onclick="planSetOpt('grupo',null)">${agr === 'area' ? 'Todas las áreas' : 'Todas las etapas'}</button>
-          ${vivas.map(chip).join('')}
-        </div>
+    const prom = g => { const ac = g.todas || g.acts; return ac.length ? Math.round(ac.reduce((q, a) => q + (a.pctComplete || 0), 0) / ac.length) : 0; };
+    return `<div class="pl-bar-c pl-bar-fil">
+        <select class="pl-sel" onchange="planSetOpt('grupo',this.value||null)" title="Ver una sola ${agr === 'area' ? 'área' : 'etapa'}"><option value="">${agr === 'area' ? 'Área: todas' : 'Etapa: todas'}</option>${vivas.map(g => `<option value="${esc(g.key)}"${opts.grupo === g.key ? ' selected' : ''}>${esc(g.name)} · ${prom(g)} %</option>`).join('')}</select>
+        <select class="pl-sel" onchange="planSetOpt('resp',this.value)" title="Ver solo lo de un responsable"><option value="">Responsable: todos</option>${personas.map(p => `<option value="${esc(p)}"${norm(opts.resp) === norm(p) ? ' selected' : ''}>${esc(p)}</option>`).join('')}</select>
         <div class="pl-bar-r">
           <button class="pl-optbtn${solo ? ' on' : ''}" onclick="planSetOpt('soloEtapas',${!solo})" title="Ver solo el resumen de cada etapa (vista macro)">${solo ? '▸ Ver actividades' : '▾ Solo etapas'}</button>
           ${colsBtn}
-          <button class="pl-optbtn${opts.verOpciones ? ' on' : ''}" onclick="planSetOpt('verOpciones',${!opts.verOpciones})" title="Vista, agrupación, escala, filtros y qué mostrar">⚙ Opciones de vista</button>
+          <button class="pl-optbtn${opts.verOpciones ? ' on' : ''}" onclick="planSetOpt('verOpciones',${!opts.verOpciones})" title="Gantt o tabla, agrupación, escala y qué mostrar">⚙ Vista</button>
         </div>
       </div>
       ${opts.verCols ? columnasHtml(opts, cols, base) : ''}
-      ${opts.verOpciones ? `<div class="pl-opts-c">${opciones}${filtro}</div>` : ''}`;
+      ${opts.verOpciones ? `<div class="pl-opts-c">${opciones}</div>` : ''}`;
   }
 
   function celdaFecha(a, campo, editable, extra) {

@@ -118,42 +118,47 @@
     const refresh = rows => {
       $('#cKpi', el).innerHTML = kpiHTML(rows);
       $('#cSens', el).innerHTML = sensHTML(rows);
-      if (App.Caso.chart) App.Caso.chart($('#cChart', el), Object.assign({}, c, { flujos: rows }), mon);
+      const ch = $('#cChart', el); if (App.Caso.chart && ch && ch.offsetParent) App.Caso.chart(ch, Object.assign({}, c, { flujos: rows }), mon);
     };
 
     const consid = String(c.consideraciones || '').trim() ? c.consideraciones : PlantillaCaso.consideracionesDe(c);
     const paso = (n, t, sub, extra) => `<div class="t-paso"><i>${n}</i><b>${t}</b><small>${sub}</small><span class="sp"></span>${extra || ''}</div>`;
-    el.innerHTML = `<div class="cs-top"><div class="kl" id="cKpi"></div><span class="sp"></span>
-        <select class="estado-sel cl-${estadoColor(c.estado)}" data-f="estado" ${dis} title="Estado del caso">${ESTADOS.map(e => `<option ${e.name === (c.estado || 'Borrador') ? 'selected' : ''}>${e.name}</option>`).join('')}</select>
-        <span class="no-print cs-acc">${ro ? '' : '<button class="btn sm" data-c="importar">⇪ Subir Excel</button>'}<a class="btn sm" href="/api/cases/${c.id}/excel" download>⇩ Excel</a><button class="btn sm" data-c="print">⎙ PDF</button></span>
+    // Una barra: estado y cifras a la izquierda; la acción principal y «⋯ Más» a la derecha. Debajo, una pestaña a la vez.
+    const PESTANAS = [['tabla', 'Tabla'], ['grafico', 'Gráfico del flujo'], ['consideraciones', 'Consideraciones'], ['captado', 'Valor captado'], ['escenarios', 'Escenarios']];
+    const pest = PESTANAS.some(x => x[0] === App.store.get('caso.tab', 'tabla')) ? App.store.get('caso.tab', 'tabla') : 'tabla';
+    const est = c.estado || 'Borrador';
+    const prox = App.S.sessions.filter(x => x.fecha >= App.d.today() && x.estado !== 'Cancelada').sort((x, y) => (x.fecha + (x.hora_ini || '')).localeCompare(y.fecha + (y.hora_ini || '')))[0] || null;
+    const enAgenda = !!(prox && (prox.proyectos || []).includes(pid));
+    const accion = ro ? '' : ['Borrador', 'Aplazado', 'Rechazado'].includes(est) ? '<button class="btn primary sm" data-c="comite" title="Pasa el caso a «En revisión» y lo agrega a la agenda del próximo comité">Enviar a comité</button>'
+      : est === 'En revisión' ? `<a class="btn sm" href="#/agenda">${enAgenda ? 'En agenda · ' + esc(App.d.fmtShort(prox.fecha)) : 'Ver el comité'}</a>` : '<button class="btn sm" data-tab-c="captado">Registrar captura</button>';
+    el.innerHTML = `<div class="cs-bar">
+        <select class="estado-sel cs-est cl-${estadoColor(c.estado)}" data-f="estado" ${dis} title="Estado del caso">${ESTADOS.map(e => `<option ${e.name === est ? 'selected' : ''}>${e.name}</option>`).join('')}</select>
+        <div class="kl" id="cKpi"></div><span class="sp"></span>
+        <span class="cs-guard" id="cGuard" aria-live="polite"></span>${accion}
+        <button class="btn sm no-print" data-c="mas" aria-haspopup="menu">⋯ Más</button>
         <input type="file" accept=".xlsx" data-c="archivo" hidden></div>
       ${c.origen === 'ice' ? `<div class="cs-prelim">⚠️ <span><b>Caso preliminar, construido desde el ICE.</b> Las cifras son una estimación: reemplázalas con las reales y agrega la inversión cuando el equipo las tenga.</span>${ro ? '' : '<button class="btn sm" data-c="prelim-ok">Ya tiene cifras reales</button>'}</div>` : ''}
-      ${paso(1, `Flujo a ${n()} años`, 'barras: flujo de caja de cada año · línea: acumulado')}
-      <section class="t-card t-pad"><div id="cChart" class="cf-chart"></div></section>
-      ${paso(2, 'Supuestos, ingresos, gastos e inversión', 'una sola tabla, como en Excel: celdas, filas, años y fórmulas', `<div class="seg no-print" title="Cómo se muestran y se escriben las cifras">${ESCALAS.map(([v, l]) => `<button data-escala="${v}" class="${v === escala ? 'on' : ''}">${l}</button>`).join('')}</div>${ro ? '' : '<button class="btn sm no-print" data-c="undo" title="Deshacer (Ctrl+Z)">↶</button><button class="btn sm no-print" data-c="redo" title="Rehacer (Ctrl+Y)">↷</button>'}<button class="btn sm no-print" data-c="atajos">? Atajos</button>`)}
-      <section class="t-card t-pad">
-        <div class="cs-param"><span class="cs-pt">Parámetros</span>
-          <label>Moneda <select class="fld" data-f="moneda" ${dis}>${['COP', 'USD'].map(m => `<option ${m === mon ? 'selected' : ''}>${m}</option>`).join('')}</select></label>
-          <label>Tasa de descuento <input class="fld" type="number" step="0.1" data-f="tasa" value="${esc(c.tasa ?? '')}" ${dis}> %</label>
-          <label>Primer año <input class="fld" type="number" data-f="anio_inicio" value="${esc(c.anio_inicio ?? '')}" placeholder="${new Date().getFullYear()}" ${dis}></label>
-          <label>Horizonte <select class="fld" data-f="anios" ${dis}>${Array.from({ length: App.Hoja.MAXY }, (_, i) => i + 1).map(y => `<option value="${y}" ${y === n() - 1 ? 'selected' : ''}>${y + 1} años</option>`).join('')}</select></label>
-          ${ro ? '' : '<a class="t-lnk" href="/api/cases/plantilla/excel" download>Plantilla vacía</a>'}</div>
-        <div class="help" style="margin:2px 0 8px">Cifras en ${escala === 1 ? '' : escala === 1e3 ? 'miles de ' : 'millones de '}${esc(mon)}. Copia y pega desde Excel, usa flechas y Enter, =150*12, 1,2M o +5%. <b>Fórmulas entre filas:</b> <code>=[Ingreso renders; año anterior]*(1+[IPC])</code> · <code>=máx(0; [Utilidad antes de renta])*[Tarifa de renta]</code>. Un supuesto escrito en un año vale para los siguientes hasta que se cambie. Flujo neto y acumulado se calculan solos.</div>
-        <div class="flujo-wrap hoja-wrap" id="cFlujo"></div>
-      </section>
-      ${paso(3, 'Consideraciones', 'lo que hay que saber para leer el caso: alcance, de dónde salen las cifras, riesgos y la decisión que se pide')}
-      <section class="t-card t-pad cs-cons"><textarea class="cs-cons-t" data-f="consideraciones" ${dis} spellcheck="true" placeholder="${esc(PlantillaCaso.CONSIDERACIONES)}">${esc(consid || '')}</textarea>
+      <nav class="cs-tabs no-print" role="tablist">${PESTANAS.map(([k, l]) => `<button role="tab" data-tab-c="${k}" class="${k === pest ? 'on' : ''}" aria-selected="${k === pest}">${l}</button>`).join('')}</nav>
+      <section class="t-card t-pad cs-pane" data-pane="tabla" ${pest === 'tabla' ? '' : 'hidden'}>
+        <div class="cs-th"><h3>Supuestos, ingresos, gastos e inversión</h3><span class="sp"></span>
+          <button class="cs-chip" data-c="param" title="Moneda, tasa de descuento, primer año y horizonte">⚙ ${esc(mon)} · tasa ${App.num(c.tasa, 2) || 0} % · desde ${c.anio_inicio || new Date().getFullYear()} · ${n()} años</button>
+          <select class="cs-chip" data-c-escala title="Cómo se muestran y se escriben las cifras">${ESCALAS.map(([v, l]) => `<option value="${v}" ${v === escala ? 'selected' : ''}>Cifras: ${l.toLowerCase()}</option>`).join('')}</select>
+          ${ro ? '' : '<button class="cs-chip ic" data-c="undo" title="Deshacer (Ctrl+Z)" aria-label="Deshacer">↶</button><button class="cs-chip ic" data-c="redo" title="Rehacer (Ctrl+Y)" aria-label="Rehacer">↷</button>'}
+          <button class="cs-chip ic" data-c="atajos" title="Cómo escribir cifras y fórmulas" aria-label="Ayuda">?</button></div>
+        <div class="flujo-wrap hoja-wrap" id="cFlujo"></div></section>
+      <section class="t-card t-pad cs-pane" data-pane="grafico" ${pest === 'grafico' ? '' : 'hidden'}><div class="cs-th"><h3>Flujo a ${n()} años</h3><small>barras: flujo de caja de cada año · línea: acumulado</small></div><div id="cChart" class="cf-chart"></div></section>
+      <section class="t-card t-pad cs-pane cs-cons" data-pane="consideraciones" ${pest === 'consideraciones' ? '' : 'hidden'}><div class="cs-th"><h3>Consideraciones</h3><small>alcance, de dónde salen las cifras, riesgos y la decisión que se pide</small></div>
+        <textarea class="cs-cons-t" data-f="consideraciones" ${dis} spellcheck="true" placeholder="${esc(PlantillaCaso.CONSIDERACIONES)}">${esc(consid || '')}</textarea>
         <div class="help" style="margin:6px 0 0">Se escribe como un documento: un título por línea (1. Ingresos) y una viñeta (•) por idea. Se guarda al salir del texto.</div></section>
-      ${paso(4, 'Valor captado (real)', 'lo que la iniciativa ya generó, mes a mes')}
-      <section class="t-card t-pad" id="cCapt"></section>
-      ${paso(5, 'Escenarios y margen de seguridad', 'cambia los porcentajes y mira cómo se mueve el caso')}
-      <details class="t-card t-pad cs-esc"><summary><b>Pesimista · base · optimista</b> <span class="faint">clic para abrir</span></summary><div id="cSens"></div></details>
-      <div class="meta-line">${c.updated_by_name ? `Última edición: ${esc(c.updated_by_name)}, ${esc(App.d.ago(c.updated_at))}` : ''}${ro ? '' : ' · <button class="t-lnk" data-c="del" style="color:var(--crit)">Eliminar caso</button>'}</div>`;
+      <section class="t-card t-pad cs-pane" data-pane="captado" id="cCapt" ${pest === 'captado' ? '' : 'hidden'}></section>
+      <section class="t-card t-pad cs-pane" data-pane="escenarios" ${pest === 'escenarios' ? '' : 'hidden'}><div class="cs-th"><h3>Escenarios y margen de seguridad</h3><small>cambia los porcentajes y mira cómo se mueve el caso</small></div><div id="cSens"></div></section>
+      <div class="meta-line">${c.updated_by_name ? `Última edición: ${esc(c.updated_by_name)}, ${esc(App.d.ago(c.updated_at))}` : ''}</div>`;
 
     // Flujo: se guarda medio segundo después de cada cambio
     let tSave = null;
-    const flush = () => { if (tSave) { clearTimeout(tSave); tSave = null; App.patch('cases', c.id, { flujos: fl }).catch(() => {}); } };
-    const saveFlujo = () => { clearTimeout(tSave); tSave = setTimeout(flush, 500); };
+    const guard = t => { const g = $('#cGuard', el); if (g) g.textContent = t; };
+    const flush = () => { if (tSave) { clearTimeout(tSave); tSave = null; guard('Guardando…'); App.patch('cases', c.id, { flujos: fl }).then(() => guard('✓ Guardado')).catch(() => guard('')); } };
+    const saveFlujo = () => { clearTimeout(tSave); guard('Guardando…'); tSave = setTimeout(flush, 500); };
     App.Caso._flush = flush; // si se cierra o recarga la pestaña, se envía lo pendiente
     grid = App.Hoja.mount($('#cFlujo', el), {
       rows: fl, years: n(), escala, anioInicio: c.anio_inicio || null, ro, tipos: TIPOS,
@@ -236,9 +241,19 @@
       t.blur(); if (nx) nx.focus(); else t.focus();
     });
 
+    function parametros(anchor) {
+      const p = App.openPop(anchor, `<div class="lbl">Parámetros del caso</div><div class="cs-params">
+        <label>Moneda <select class="fld" data-pp="moneda" ${dis}>${['COP', 'USD'].map(m => `<option ${m === mon ? 'selected' : ''}>${m}</option>`).join('')}</select></label>
+        <label>Tasa de descuento (%) <input class="fld" type="number" step="0.1" data-pp="tasa" value="${esc(c.tasa ?? '')}" ${dis}></label>
+        <label>Primer año <input class="fld" type="number" data-pp="anio_inicio" value="${esc(c.anio_inicio ?? '')}" placeholder="${new Date().getFullYear()}" ${dis}></label>
+        <label>Horizonte <select class="fld" data-pp="anios" ${dis}>${Array.from({ length: App.Hoja.MAXY }, (_, i) => i + 1).map(y => `<option value="${y}" ${y === n() - 1 ? 'selected' : ''}>${y + 1} años</option>`).join('')}</select></label></div>`, { width: 300 });
+      p.onchange = e => { const t = e.target, k = t.dataset.pp; if (!k || ro) return; let v = t.value; if (k === 'tasa' || k === 'anio_inicio') v = v === '' ? null : Number(v); if (k === 'anios') v = Number(v);
+        flush(); App.guard(async () => { await App.patch('cases', c.id, { [k]: v }); App.closePop(true); editor(el, pid); }); };
+    }
     // Guardar narrativa, datos generales y escenarios al salir del campo
     el.onchange = e => {
       const t = e.target;
+      if (t.hasAttribute && t.hasAttribute('data-c-escala')) { flush(); App.store.set('caso.escala', Number(t.value)); return editor(el, pid); }
       if (t.dataset.e && !ro) {
         const [k, f] = t.dataset.e.split('.'); const v = Number(String(t.value).replace(',', '.').replace('%', ''));
         esc0[k] = Object.assign({}, esc0[k], { [f]: Number.isFinite(v) ? v : 0 });
@@ -255,16 +270,32 @@
       if (['anios', 'moneda', 'estado', 'tasa', 'anio_inicio'].includes(f)) editor(el, pid);
     };
     el.onclick = e => {
+      const tb = e.target.closest('[data-tab-c]');
+      if (tb) { const k = tb.dataset.tabC; App.store.set('caso.tab', k); el.querySelectorAll('[data-tab-c]').forEach(x => { const on = x.dataset.tabC === k; x.classList.toggle('on', on); x.setAttribute('aria-selected', on); }); el.querySelectorAll('.cs-pane').forEach(p => { p.hidden = p.dataset.pane !== k; }); if (k === 'grafico') refresh(fl); return; }
       const es = e.target.closest('[data-escala]');
       if (es) { flush(); App.store.set('caso.escala', Number(es.dataset.escala)); return editor(el, pid); }
       const b = e.target.closest('[data-c]'); if (!b) return;
       const a = b.dataset.c;
       if (a === 'print') return window.print();
+      if (a === 'mas') return App.menu(b, [{ id: 'excel', label: '⇩ Descargar Excel' }, { id: 'pdf', label: '⎙ Imprimir o guardar PDF' }].concat(ro ? [] : [{ id: 'importar', label: '⇪ Reemplazar con un Excel' }, { id: 'plantilla', label: '⇩ Plantilla vacía' }, '-', { id: 'del', label: '🗑 Eliminar el caso', danger: true }]), m => {
+        const bajar = u => { const l = document.createElement('a'); l.href = u; l.download = ''; document.body.appendChild(l); l.click(); l.remove(); };
+        if (m === 'excel') bajar(`/api/cases/${c.id}/excel`); if (m === 'plantilla') bajar('/api/cases/plantilla/excel'); if (m === 'pdf') window.print();
+        if (m === 'importar') $('[data-c=archivo]', el).click();
+        if (m === 'del') { if (!confirm('¿Eliminar el caso de negocio de esta iniciativa? Se pierde toda su información.')) return; App.guard(async () => { await App.remove('cases', c.id); App.render(); }); }
+      }, 260);
+      if (a === 'param') return parametros(b);
+      if (a === 'comite') return App.guard(async () => {
+        if (!confirm(`¿Pasar el caso a «En revisión»${prox && !enAgenda ? ` y agregarlo a la agenda del ${App.Agenda ? App.Agenda.tituloOf(prox) : 'comité'} del ${App.d.fmtShort(prox.fecha)}` : ''}?`)) return;
+        flush(); await App.patch('cases', c.id, { estado: 'En revisión' });
+        if (prox && !enAgenda) await App.patch('sessions', prox.id, { proyectos: (prox.proyectos || []).concat(pid) });
+        App.toast(prox ? (enAgenda ? 'Caso en revisión' : `Caso en revisión y en la agenda del ${App.d.fmtShort(prox.fecha)}`) : 'Caso en revisión. No hay comité programado: agéndelo en Comité de valor');
+        editor(el, pid);
+      });
       if (a === 'prelim-ok') return App.guard(async () => { await App.patch('cases', c.id, { origen: '' }); editor(el, pid); });
       if (a === 'undo') return grid.undo();
       if (a === 'redo') return grid.redo();
       if (a === 'importar') return $('[data-c=archivo]', el).click();
-      if (a === 'atajos') return App.openPop(b, `<div class="lbl">Atajos de la hoja</div><div class="atajos">
+      if (a === 'atajos') return App.openPop(b, `<div class="lbl">Cómo escribir en la tabla</div><div class="atajos-int">Cifras en ${escala === 1 ? '' : escala === 1e3 ? 'miles de ' : 'millones de '}${esc(mon)}. Copia y pega desde Excel, usa flechas y Enter. <b>Fórmulas entre filas:</b> <code>=[Ingreso renders; año anterior]*(1+[IPC])</code> · <code>=máx(0; [Utilidad antes de renta])*[Tarifa de renta]</code>. Un supuesto escrito en un año vale para los siguientes hasta que se cambie. Totales: <code>[Total ingresos]</code>, <code>[Total gastos]</code>, <code>[Total inversión]</code>.</div><div class="lbl">Atajos</div><div class="atajos">
         <div><b>Flechas · Enter · Tab</b><span>moverse (Shift+Enter sube)</span></div>
         <div><b>Shift + flechas / arrastrar</b><span>seleccionar un rango</span></div>
         <div><b>Ctrl+C · Ctrl+V</b><span>copiar y pegar con Excel, también tablas completas</span></div>

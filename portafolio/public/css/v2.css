@@ -557,3 +557,29 @@ textarea.rk-in{resize:vertical;min-height:34px}
 .rk-lista .pf-tbl td{white-space:normal}.rk-lista .pf-tbl td:first-child{min-width:260px}
 .rk-a .t-lnk{white-space:nowrap}
 .rk-port .pf-tbl td{white-space:normal}
+
+/* ============ Barras de botones ordenadas ============ */
+.cs-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border-radius:var(--r-lg,14px);box-shadow:var(--shadow);padding:10px 14px;margin:0 0 10px}
+.cs-bar .sp{flex:1}.cs-bar .kl{flex-wrap:wrap}
+.cs-bar .cs-est{border-radius:999px;font-weight:700}
+.cs-guard{font-size:var(--fs-xs);font-weight:700;color:var(--good-ink,var(--good));white-space:nowrap}
+.cs-tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:4px 0 12px;overflow-x:auto}
+.cs-tabs button{font:inherit;font-size:13px;font-weight:700;color:var(--muted);background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:8px 14px;cursor:pointer;white-space:nowrap}
+.cs-tabs button:hover{color:var(--ink)}.cs-tabs button.on{color:var(--ink);border-bottom-color:var(--accent,#FFD000)}
+.cs-pane[hidden]{display:none!important}
+.cs-th{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px}.cs-th .sp{flex:1}
+.cs-th h3{font-size:15px;font-weight:800;margin:0}.cs-th small{color:var(--muted);font-size:var(--fs-xs)}
+.cs-chip{font:inherit;font-size:12.5px;font-weight:600;color:var(--ink);background:var(--card);border:1px solid var(--line-2);border-radius:8px;padding:5px 10px;cursor:pointer}
+.cs-chip:hover{border-color:var(--ink)}.cs-chip.ic{width:32px;padding:5px 0;text-align:center;font-weight:800}
+.cs-params{display:grid;gap:8px;padding:0 12px 12px}.cs-params label{display:grid;gap:3px;font-size:12px;font-weight:700;color:var(--muted)}
+.atajos-int{padding:0 12px 8px;font-size:12.5px;line-height:1.55;color:var(--ink)}.atajos-int code{font-size:11.5px}
+@media print{.cs-pane[hidden]{display:block!important}}
+/* Cronograma: una fila de resumen y acciones, y una línea delgada de filtros */
+.plan-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.plan-head .plan-head-l{display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:1;min-width:0}
+.plan-head .plan-head-r{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}
+.plan-head .btn.ic{width:34px;padding-left:0;padding-right:0;text-align:center;font-weight:800}
+.pl-bar-fil{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pl-bar-fil .pl-sel{font:inherit;font-size:12.5px;font-weight:600;border:1px solid var(--line-2);border-radius:8px;padding:5px 8px;background:var(--card);color:var(--ink);max-width:260px}
+.pl-bar-fil .pl-bar-r{margin-left:auto}
+.cs-pane .cf-chart{margin-top:0}.cs-pane .cf-chart:empty{display:block;min-height:40px}
