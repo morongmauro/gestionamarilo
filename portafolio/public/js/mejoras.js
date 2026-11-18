@@ -197,7 +197,7 @@
     const pend = decisiones().filter(d => d.estado !== 'Cumplida' && ps.some(p => p.id === d.project_id));
     const comp = (s.compromisos || []).filter(k => !k.hecho && (k.texto || '').trim());
     const compPrev = App.S.sessions.filter(x => x.id !== s.id && x.fecha < s.fecha).flatMap(x => (x.compromisos || []).filter(k => !k.hecho && (k.texto || '').trim()).map(k => ({ ...k, s: x })));
-    main.innerHTML = `<div class="page-h no-print"><button class="burger" data-act="burger">☰</button><a class="back" href="#/agenda">← Comités y decisiones</a><span class="sp"></span><button class="btn primary" data-print="1">⎙ Imprimir / PDF</button></div>
+    main.innerHTML = `<div class="page-h no-print"><button class="burger" data-act="burger">☰</button><a class="back" href="#/agenda">← Comités y decisiones</a><span class="sp"></span><button class="btn primary" data-print="1">Imprimir / PDF</button></div>
       <div class="card-box prep">
         <div class="eyebrow">Preparación del comité</div><h1>${esc(App.Agenda.tituloOf(s))}</h1>
         <div class="sub">${esc(App.d.fmtLong(s.fecha))}${s.hora_ini ? ' · ' + esc(s.hora_ini) + (s.hora_fin ? ' a ' + esc(s.hora_fin) : '') : ''}${s.lugar ? ' · ' + esc(s.lugar) : ''} · ${ps.length} iniciativa${ps.length === 1 ? '' : 's'}</div>

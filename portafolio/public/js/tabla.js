@@ -130,9 +130,9 @@
         <button class="tb ${P.filters.length ? 'on' : ''}" data-act="filtro">⚲ Filtrar</button>
         <button class="tb ${P.sort ? 'on' : ''}" data-act="orden">↕ Ordenar</button>
         <button class="tb ${P.group ? 'on' : ''}" data-act="grupo">▤ Agrupar</button>
-        <button class="tb ${App.S.columns.some(c => c.hidden) || !P.calc ? 'on' : ''}" data-act="cols">▥ Columnas</button>
+        <button class="tb ${App.S.columns.some(c => c.hidden) || !P.calc ? 'on' : ''}" data-act="cols">Columnas</button>
         <span class="sp"></span>
-        ${App.zoomCtl()}<button class="tb" data-act="csv" title="Descargar como CSV (se abre en Excel)">⇩ CSV</button>
+        ${App.zoomCtl()}<button class="tb" data-act="csv" title="Descargar como CSV (se abre en Excel)">CSV</button>
         ${ro ? '' : '<button class="tb primary" data-act="new">+ Nueva iniciativa</button>'}
       </div>
       <div class="chips" id="tchips"></div>
@@ -315,7 +315,7 @@
       ${['select', 'multi', 'people', 'check'].includes(c.type) ? '<button class="mi" data-p="group">▤ Agrupar por esta columna</button>' : ''}
       <div class="sep"></div>
       <button class="mi" data-p="left">← Mover a la izquierda</button><button class="mi" data-p="right">→ Mover a la derecha</button>
-      ${isTitle ? '' : '<button class="mi" data-p="hide">◌ Ocultar columna</button><div class="sep"></div><button class="mi danger" data-p="del">🗑 Eliminar columna</button>'}`, { width: 280, nofocus: true });
+      ${isTitle ? '' : '<button class="mi" data-p="hide">◌ Ocultar columna</button><div class="sep"></div><button class="mi danger" data-p="del">Eliminar columna</button>'}`, { width: 280, nofocus: true });
     const inp = $('input[type=text]', p), sel = $('select', p);
     const saveName = () => { const nn = inp.value.trim(); if (nn && nn !== c.name) { c.name = nn; App.saveColumns(); App.render(); } };
     inp.onkeydown = e => { if (e.key === 'Enter') { saveName(); App.closePop(true); } };
@@ -347,7 +347,7 @@
     $('[data-p=ok]', p).onclick = ok;
   }
   function openRowMenu(anchor, rowId) {
-    App.menu(anchor, [{ id: 'open', label: '⤢ Abrir la iniciativa' }, { id: 'dup', label: '⧉ Duplicar' }, '-', { id: 'del', label: '🗑 Eliminar', danger: true }], async a => {
+    App.menu(anchor, [{ id: 'open', label: '⤢ Abrir la iniciativa' }, { id: 'dup', label: '⧉ Duplicar' }, '-', { id: 'del', label: 'Eliminar', danger: true }], async a => {
       const r = App.byId('projects', rowId);
       if (a === 'open') App.go('#/proyectos/' + rowId);
       if (a === 'dup') App.guard(async () => { const props = JSON.parse(JSON.stringify(r.props || {})); const t = App.titleCol().id; props[t] = (props[t] || 'Iniciativa') + ' (copia)'; await App.create('projects', { props }); App.render(); });

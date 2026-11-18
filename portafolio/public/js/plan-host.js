@@ -385,7 +385,7 @@
       const ids = M.activities.filter(a => todas.includes(a.sectionId)).map(a => a.id);
       if (!confirm(`¿Eliminar ${sc.parentId ? 'el subcapítulo' : 'el capítulo'} «${sc.name}»${ids.length ? ` y sus ${ids.length} actividad${ids.length === 1 ? '' : 'es'}` : ''}${hijos.length ? ` (con ${hijos.length} subcapítulo${hijos.length === 1 ? '' : 's'})` : ''}?\n\nPuedes deshacerlo con «↶ Deshacer».`)) return;
       hacer(`eliminar capítulo «${sc.name}»`, M2 => { M2.sections = M2.sections.filter(x => !todas.includes(x.id)); M2.activities = M2.activities.filter(a => !ids.includes(a.id)); quitarDeps(M2, ids); });
-      return toast(`🗑 Capítulo eliminado${ids.length ? ` con ${ids.length} actividad${ids.length === 1 ? '' : 'es'}` : ''}`);
+      return toast(`Capítulo eliminado${ids.length ? ` con ${ids.length} actividad${ids.length === 1 ? '' : 'es'}` : ''}`);
     }
     if (acc === 'sacar') {
       return hacer('sacar subcapítulo', M2 => {
@@ -502,7 +502,7 @@
         <table class="lst pd-inv"><thead><tr><th>Nombre</th><th>Área</th><th>Rol</th>${ro ? '' : '<th></th>'}</tr></thead><tbody>${ms.map(fila).join('') || `<tr><td colspan="4" class="faint">Aún no hay involucrados.</td></tr>`}</tbody></table>
         ${ro ? '' : '<div style="margin-top:10px;display:flex;gap:8px"><button class="btn" data-add="1">+ Agregar persona</button><span class="sp"></span><button class="btn primary" data-ok="1">Guardar</button></div>'}`;
     };
-    const d = App.openDrawer(`<div class="d-top"><span class="faint" style="font-size:11.5px;font-weight:700">${esc(App.projectName(p))}</span><button class="x" data-x="1" title="Cerrar (Esc)">✕</button></div><h2>👥 Involucrados</h2>
+    const d = App.openDrawer(`<div class="d-top"><span class="faint" style="font-size:11.5px;font-weight:700">${esc(App.projectName(p))}</span><button class="x" data-x="1" title="Cerrar (Esc)">✕</button></div><h2>Involucrados</h2>
       <p class="muted" style="font-size:12.5px;margin:0 0 12px">Quiénes participan y de qué área son. Con esto, el plan colorea por área, sugiere responsables y deja agrupar por «Área responsable».</p><div id="pdInv">${pintarLista()}</div>`);
     const leer = () => { $$('#pdInv tbody tr[data-i]').forEach(tr => { const m = ms[Number(tr.dataset.i)]; tr.querySelectorAll('input[data-k]').forEach(i => { m[i.dataset.k] = i.value.trim(); }); }); };
     const $$ = (s) => Array.from(d.querySelectorAll(s));
@@ -529,7 +529,7 @@
     if (!confirm(msg)) return;
     const pid = cur.pid, at = new Date().toISOString();
     hacer('fijar línea base', M => { M.activities.forEach(a => { a.baselineStart = a.startDate || null; a.baselineEnd = a.deadline || null; }); M.lineaBase = at; });
-    App.patch('projects', pid, { linea_base_at: at }).then(() => { toast('🔒 Línea base fijada'); pintar(); }).catch(() => {});
+    App.patch('projects', pid, { linea_base_at: at }).then(() => { toast('Línea base fijada'); pintar(); }).catch(() => {});
   }
   function quitarLineaBase() {
     if (!editable() || !confirm('¿Quitar la línea base? Se pierde la comparación contra lo pactado.')) return;
@@ -616,7 +616,7 @@
     const n = pila.filter(x => x.pid === cur.pid).length;
     const lbF = p && M.lineaBase ? new Date(M.lineaBase).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
     // Una fila: el resumen a la izquierda; a la derecha deshacer, la acción principal y «⋯ Más» con lo ocasional
-    return `<div class="plan-head-l">${kpis(M)}${p && M.lineaBase ? `<span class="lb-chip" title="Las fechas de la línea base no se mueven: se compara contra ellas. Se cambia en «⋯ Más».">🔒 Línea base del ${esc(lbF)}</span>` : ''}<span id="plan-saving" class="saving-dot" style="opacity:${guardando ? 1 : 0}">guardando…</span></div>
+    return `<div class="plan-head-l">${kpis(M)}${p && M.lineaBase ? `<span class="lb-chip" title="Las fechas de la línea base no se mueven: se compara contra ellas. Se cambia en «⋯ Más».">Línea base del ${esc(lbF)}</span>` : ''}<span id="plan-saving" class="saving-dot" style="opacity:${guardando ? 1 : 0}">guardando…</span></div>
       <div class="plan-head-r">
         ${p && ed ? `<button class="btn sm ic" data-ph="undo" ${n ? '' : 'disabled'} title="${n ? 'Deshacer: ' + esc(pila.filter(x => x.pid === cur.pid).slice(-1)[0].desc) + ' (Ctrl+Z)' : 'Nada que deshacer'}" aria-label="Deshacer">↶</button>` : ''}
         ${p && ed ? '<button class="btn primary sm" data-ph="nueva">+ Actividad</button>' : ''}
@@ -632,7 +632,7 @@
     const head = $('.plan-head', cur.el), body = $('#plan-body', cur.el);
     head.innerHTML = cabecera();
     const wrap = $('#pl-wrap', body), keep = wrap ? [wrap.scrollLeft, wrap.scrollTop] : null;
-    o.vacioHtml = cur.pid ? (editable() ? 'Aún no hay actividades. Tráelo de la app de gestión («⇣ Traer de la app de gestión», arriba), crea el primer capítulo abajo («＋ Nueva etapa») o pega filas desde Excel.' : 'Aún no hay actividades en este plan.') : 'Aún no hay actividades en ninguna iniciativa.';
+    o.vacioHtml = cur.pid ? (editable() ? 'Aún no hay actividades. Tráelo de la app de gestión («Traer de la app de gestión», arriba), crea el primer capítulo abajo («＋ Nueva etapa») o pega filas desde Excel.' : 'Aún no hay actividades en este plan.') : 'Aún no hay actividades en ninguna iniciativa.';
     const ancho = (body.clientWidth || cur.el.clientWidth || 1100) - (o.panel ? 236 : 0);
     o.anchoTL = P.anchoAjuste(ancho, (o.vista === 'tabla' ? 1300 : 700) + P.extraNombre());
     body.innerHTML = P.render(cur.M, o);
@@ -660,10 +660,10 @@
       }
       if (a === 'mas') {
         const M = cur.M, p = cur.pid ? App.byId('projects', cur.pid) : null, ed = editable(), it = [];
-        if (p && ed) it.push({ id: 'gestion', label: '⇣ Traer de la app de gestión' });
-        if (p && ed) { if (M.lineaBase) { it.push({ id: 'lb-otra', label: '🔒 Volver a fijar la línea base' }); it.push({ id: 'lb-quitar', label: '🔓 Quitar la línea base' }); } else it.push({ id: 'lb', label: '🔒 Fijar línea base' }); }
-        if (p) { it.push({ id: 'meta', label: '⚑ ' + (p.fecha_meta ? 'Fecha meta: ' + App.d.fmtShort(p.fecha_meta) : 'Fecha meta') }); it.push({ id: 'inv', label: '👥 Involucrados' + ((p.miembros || []).length ? ' · ' + p.miembros.length : '') }); }
-        it.push('-'); it.push({ id: 'mesa', label: '⛶ Mesa de trabajo (pantalla completa)' }); if (p) it.push({ id: 'ayuda', label: 'ⓘ Cómo se usa el cronograma' });
+        if (p && ed) it.push({ id: 'gestion', label: 'Traer de la app de gestión' });
+        if (p && ed) { if (M.lineaBase) { it.push({ id: 'lb-otra', label: 'Volver a fijar la línea base' }); it.push({ id: 'lb-quitar', label: 'Quitar la línea base' }); } else it.push({ id: 'lb', label: 'Fijar línea base' }); }
+        if (p) { it.push({ id: 'meta', label: (p.fecha_meta ? 'Fecha meta: ' + App.d.fmtShort(p.fecha_meta) : 'Fecha meta') }); it.push({ id: 'inv', label: 'Involucrados' + ((p.miembros || []).length ? ' · ' + p.miembros.length : '') }); }
+        it.push('-'); it.push({ id: 'mesa', label: 'Mesa de trabajo (pantalla completa)' }); if (p) it.push({ id: 'ayuda', label: 'ⓘ Cómo se usa el cronograma' });
         return App.menu(b, it, m => {
           if (m === 'gestion') traerDeGestion(b); if (m === 'lb') fijarLineaBase(false); if (m === 'lb-otra') fijarLineaBase(true); if (m === 'lb-quitar') quitarLineaBase();
           if (m === 'meta') fechaMeta(b); if (m === 'inv') involucrados(); if (m === 'mesa') toggleMesa();

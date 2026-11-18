@@ -133,3 +133,128 @@ html.pv-pantalla .app{grid-template-columns:minmax(0,1fr)!important;gap:0}
 #main.pv-pm .pv-cota .eje{top:60px}#main.pv-pm .pv-cota .lleno{top:54px;height:13px}
 #main.pv-pm .pv-cota .m i{top:54px;height:28px}#main.pv-pm .pv-cota .m.abajo{top:74px}#main.pv-pm .pv-cota .m.abajo i{top:-20px;height:20px}
 .pv-e{grid-template-columns:120px minmax(0,1fr) 100px}.pv-e .v{white-space:nowrap}
+
+/* ============================================================
+   Pasada general «Plano de valor»: fuera los rasgos de plantilla
+   ============================================================ */
+/* 1 · La página es blanca y las tarjetas desaparecen: los bloques se separan con aire */
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--paper:#FFFFFF!important}}
+:root[data-theme="light"]{--paper:#FFFFFF!important}
+:root{--shadow:none}
+.card-box,.t-card,.t-tit,.tbl-wrap,.pf-plan,.cs-bar,.dash-card,.kpi,.side-card,.cal,.ag-list .up-item,.ctab,.pf-tbl-card,.pf-lente,.av-box,.t-dest{background:transparent!important;box-shadow:none!important;border:0!important}
+.card-box,.t-card{padding-left:0;padding-right:0}
+.t-pad{padding-left:0!important;padding-right:0!important}
+/* 2 · Sin franjas de color al costado o arriba */
+.t-tit,.t-tit.ok,.t-tit.warn,.t-tit.crit{border-top:0!important}
+.ej-aviso{border-left:0!important;background:none!important;padding:0!important;color:var(--muted)}
+.cv-ev,.ev{border-left:0!important}
+/* 3 · Sin degradados de adorno ni círculos numerados que no son una secuencia */
+.t-dest{background:none!important}
+.t-paso i{display:none}
+/* 4 · Sin MAYÚSCULAS espaciadas en etiquetas */
+.ag-list .mes,
+.cal-h div,
+.compo-t,
+.cp-chip,
+.cs-param .cs-pt,
+.cv-h div,
+.cv-lbl,
+.dec-t,
+.drawer h4,
+.ds-h,
+.exec .lbl,
+.eyebrow,
+.flujo tr.grp td,
+.h-day,
+.hero .lbl,
+.historia .hs-k,
+.hs-grid .l,
+.kpi .l,
+.pf-tbl th,
+.pl th,
+.pl-ol,
+.pl-rel-t,
+.pl-sel-g,
+.pl-side-a,
+.pl-side-h,
+.pop .lbl,
+.prep-g .l,
+.prox .dt,
+.que-es .qe-t,
+.rk-f label,
+.rk-pt,
+.side-card h3,
+.side-grp,
+.side-proj-h,
+.t-cpi-h,
+.t-eyb,
+.t-f small,
+.t-tit .l,
+.tag-ej,
+.tile .l,
+.up-date span,
+.val-r label,
+.xk-g,
+table.lst th{text-transform:none!important;letter-spacing:normal!important}
+/* 5 · Etiquetas: el estado se dice con el cuadrado de Amarilo y el texto, no con una pastilla de color */
+.pill:not(.ppl){background:none!important;border:0!important;padding:0!important;border-radius:0!important;color:var(--ink)!important;font-weight:600;gap:6px}
+.pill:not(.ppl):before{content:'';flex:none;width:8px;height:8px;background:var(--c-gris-i)}
+.pill.cl-amarillo:not(.ppl):before{background:var(--c-amarillo-i)}
+.pill.cl-azul:not(.ppl):before{background:var(--c-azul-i)}
+.pill.cl-cafe:not(.ppl):before{background:var(--c-cafe-i)}
+.pill.cl-gris:not(.ppl):before{background:var(--c-gris-i)}
+.pill.cl-morado:not(.ppl):before{background:var(--c-morado-i)}
+.pill.cl-naranja:not(.ppl):before{background:var(--c-naranja-i)}
+.pill.cl-rojo:not(.ppl):before{background:var(--c-rojo-i)}
+.pill.cl-rosa:not(.ppl):before{background:var(--c-rosa-i)}
+.pill.cl-verde:not(.ppl):before{background:var(--c-verde-i)}
+.pf-okr{display:none}
+.tag-ej{display:none}
+.ej-txt{font-size:13px;font-weight:600;color:var(--muted);margin-left:12px;letter-spacing:0;vertical-align:middle}
+/* 6 · Ficha: el nombre y una línea de datos */
+.p-head{gap:4px;margin:4px 0 0}
+.p-title{font-size:28px}
+.facts{font-size:13.5px;color:var(--muted);gap:6px 22px}
+.facts b{color:var(--ink)}.facts b.r{color:var(--crit-ink)}
+.f-fase{display:inline-flex;align-items:center;gap:7px;font:inherit;font-weight:700;color:var(--ink);background:none;border:0;padding:2px 0;cursor:pointer}
+.f-fase:disabled{cursor:default}.f-fase .sq{width:10px;height:10px}
+.f-fase:not(:disabled):hover{text-decoration:underline;text-decoration-color:var(--accent);text-decoration-thickness:2px;text-underline-offset:3px}
+.av-line{font-size:13.5px;color:var(--muted);line-height:1.45;margin:2px 0 0}
+.av-line b{color:var(--ink)}.av-line a{color:var(--ink);text-decoration:underline;text-decoration-color:var(--crit);text-decoration-thickness:2px;text-underline-offset:3px}
+.av-line.listo a,.av-line.listo .t-lnk{color:var(--good-ink)}
+.ptabs{margin:14px 0 16px}
+/* información general como texto */
+.fi{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(220px,1fr);gap:48px;max-width:1150px;margin:0 0 18px}
+.fi h2{font-size:19px;font-weight:800;margin:0 0 6px}
+.fi h3{font-size:14px;font-weight:700;color:var(--muted);margin:18px 0 6px}
+.fi-frase{font-size:16px;line-height:1.55;margin:0;max-width:680px;cursor:text;border-radius:6px}
+.fi-frase:hover{background:var(--hover)}.fi-frase.vacia{color:var(--muted)}
+.fi-gente{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 24px;font-size:14px}
+.fi-gente span{display:block;font-size:12.5px;color:var(--muted)}
+.fi-okr{list-style:none;margin:0;padding:0;display:grid;gap:4px;font-size:14px}
+.fi-okr li:before{content:'';display:inline-block;width:8px;height:8px;background:var(--accent);margin-right:8px;vertical-align:1px}
+.fi-b{display:grid;gap:16px;align-content:start}
+.fi-b b{display:block;font-size:26px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.fi-b span{font-size:13px;color:var(--muted)}
+.fi-campos{margin:6px 0 0}
+.fi-campos>summary{cursor:pointer;font-size:14px;font-weight:700;color:var(--ink);padding:8px 0;list-style:none}
+.fi-campos>summary::-webkit-details-marker{display:none}
+.fi-campos>summary:before{content:'▸ ';color:var(--muted)}.fi-campos[open]>summary:before{content:'▾ '}
+@media (max-width:860px){.fi{grid-template-columns:1fr;gap:24px}.fi-gente{grid-template-columns:1fr}}
+/* Portafolio: fase editable con su color, y color en el grupo */
+.pf-fase{display:inline-flex;align-items:center;gap:7px;font:inherit;font-size:12.5px;font-weight:600;color:var(--ink);background:none;border:0;padding:3px 0;cursor:pointer;white-space:nowrap}
+.pf-fase .sq{width:9px;height:9px}
+.pf-fase:not(:disabled):hover{text-decoration:underline;text-decoration-color:var(--accent);text-decoration-thickness:2px;text-underline-offset:3px}
+.pf-fase:disabled{cursor:default}
+.pf-tbl td.pf-fase-c{width:1%}
+.pf-grp-sq{width:10px;height:10px;margin:0 6px 0 2px;vertical-align:0}
+
+/* El estado del caso: sin pastilla de color */
+.cs-bar .estado-sel{background-color:var(--pv-chip)!important;color:var(--ink)!important;border:0!important}
+/* Cronograma: el estado es texto con su cuadrado; las fechas, texto con una línea de avance debajo (no pastillas) */
+.pl td.pl-stc .pl-est,.pl-est{background:none!important;color:var(--ink)!important;justify-content:flex-start!important;gap:7px;height:auto!important;min-width:0!important;padding:0!important;border-radius:0!important;font-size:12px!important;font-weight:600!important}
+.pl-est:before{content:'';flex:none;width:9px;height:9px;background:#BDB8C9}
+.pl-est.Completada:before{background:var(--pv-g)}.pl-est.Atrasada:before{background:var(--pv-r)}.pl-est.En-curso:before{background:var(--pv-y)}
+.pl-est.Atrasada{color:var(--crit-ink)!important}
+.pl-tlp{background:linear-gradient(90deg,var(--c) var(--p),var(--line-2) var(--p)) left bottom/100% 3px no-repeat!important;color:var(--ink)!important;border-radius:0!important;height:22px!important;padding:0 2px!important;min-width:110px!important;justify-content:flex-start!important}
+.pl-tlp b{text-shadow:none!important;font-weight:600!important}

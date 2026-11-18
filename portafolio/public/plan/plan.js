@@ -429,7 +429,7 @@
     });
     const qOrig = sel.querySelector('input.pl-sel-q') ? sel.querySelector('input.pl-sel-q').value.trim() : '';
     const nuevo = tipo !== 'deps' && qOrig && !ops.some(o => norm(o.valor) === norm(qOrig)) ? `<button class="pl-sel-o nuevo" data-v="${esc(qOrig)}"><i>＋</i><span><b>Agregar «${esc(qOrig)}»</b><em>${tipo === 'resp' ? 'nombre que no está en Involucrados' : 'área nueva'}</em></span></button>` : '';
-    sel.querySelector('.pl-sel-l').innerHTML = (html || nuevo ? html + nuevo : `<div class="pl-sel-v">${(ultimoModelo && (ultimoModelo.miembros || []).length) ? 'Nada coincide' : 'Aún no hay involucrados: regístralos en «👥 Involucrados» o escribe un nombre'}</div>`);
+    sel.querySelector('.pl-sel-l').innerHTML = (html || nuevo ? html + nuevo : `<div class="pl-sel-v">${(ultimoModelo && (ultimoModelo.miembros || []).length) ? 'Nada coincide' : 'Aún no hay involucrados: regístralos en «Involucrados» o escribe un nombre'}</div>`);
     const rel = sel.querySelector('.pl-sel-rel');
     if (rel) {
       rel.innerHTML = elegidos.length ? `<div class="pl-rel-t">Cómo se relaciona con cada una</div>` + elegidos.map(v => {
@@ -578,7 +578,7 @@
     const full = opts.vista === 'tabla';
     const opciones = `<div class="pl-opts">
         <div class="pl-og"><span class="pl-ol">Vista</span>
-          <div class="pl-seg">${seg('vista', 'gantt', '📊 Gantt', opts.vista || 'gantt', 'Lo esencial y el cronograma a la vista')}${seg('vista', 'tabla', '▤ Tabla completa', opts.vista || 'gantt', 'Todas las columnas: área, entregable, fechas reales, dependencias…')}</div></div>
+          <div class="pl-seg">${seg('vista', 'gantt', 'Gantt', opts.vista || 'gantt', 'Lo esencial y el cronograma a la vista')}${seg('vista', 'tabla', '▤ Tabla completa', opts.vista || 'gantt', 'Todas las columnas: área, entregable, fechas reales, dependencias…')}</div></div>
         <div class="pl-og"><span class="pl-ol">Agrupar por</span>
           <div class="pl-seg">${seg('agrupar', 'etapa', 'Etapa', agr, 'Etapas del plan (1, 2, 3…)')}${seg('agrupar', 'area', 'Área responsable', agr, 'Área de cada responsable (según los involucrados)')}</div></div>
         <div class="pl-og"><span class="pl-ol">Escala del cronograma</span>
@@ -612,7 +612,7 @@
         <div class="pl-bar-r">
           <button class="pl-optbtn${solo ? ' on' : ''}" onclick="planSetOpt('soloEtapas',${!solo})" title="Ver solo el resumen de cada etapa (vista macro)">${solo ? '▸ Ver actividades' : '▾ Solo etapas'}</button>
           ${colsBtn}
-          <button class="pl-optbtn${opts.verOpciones ? ' on' : ''}" onclick="planSetOpt('verOpciones',${!opts.verOpciones})" title="Gantt o tabla, agrupación, escala y qué mostrar">⚙ Vista</button>
+          <button class="pl-optbtn${opts.verOpciones ? ' on' : ''}" onclick="planSetOpt('verOpciones',${!opts.verOpciones})" title="Gantt o tabla, agrupación, escala y qué mostrar">Vista</button>
         </div>
       </div>
       ${opts.verCols ? columnasHtml(opts, cols, base) : ''}
@@ -717,9 +717,9 @@
   // Dibujo de la nubecita: llena con el número de comentarios, o solo el contorno si no hay
   const NUBE = 'M7.5 17h12a5 5 0 0 0 .9-9.92A7 7 0 0 0 7.2 6.6 5.2 5.2 0 0 0 7.5 17z';
   const nube = n => `<svg viewBox="0 0 26 18" aria-hidden="true"><path d="${NUBE}"/></svg>${n ? `<b>${n > 99 ? '99+' : n}</b>` : ''}`;
-  // ＋ insertar fila debajo · 🗑 eliminar (al pasar el mouse por la fila)
+  // ＋ insertar fila debajo · eliminar (al pasar el mouse por la fila)
   function accionesFila(a) {
-    return has('planOnRow') ? `<span class="pl-ra"><button onclick="planOnRow('insertar-debajo','${a.id}')" title="Insertar una fila debajo (Ctrl+Enter)">＋</button><button onclick="planOnRow('eliminar','${a.id}')" title="Eliminar esta fila">🗑</button></span>` : '';
+    return has('planOnRow') ? `<span class="pl-ra"><button onclick="planOnRow('insertar-debajo','${a.id}')" title="Insertar una fila debajo (Ctrl+Enter)">＋</button><button onclick="planOnRow('eliminar','${a.id}')" title="Eliminar esta fila">×</button></span>` : '';
   }
   // Día (en Bogotá) de un comentario
   const diaDe = iso => { const d = iso ? new Date(iso) : new Date(); try { return (isNaN(d) ? new Date() : d).toLocaleDateString('en-CA', { timeZone: 'America/Bogota' }); } catch (e) { return String(iso || '').slice(0, 10); } };
@@ -1033,7 +1033,7 @@
     menu.className = 'pl-menu';
     menu.innerHTML = it('insertar-arriba', '↥ Insertar fila arriba') + it('insertar-debajo', '↧ Insertar fila debajo', 'Ctrl+Enter') + it('duplicar', '⧉ Duplicar fila') +
       '<hr>' + it('subir', '▲ Subir', 'Alt+↑') + it('bajar', '▼ Bajar', 'Alt+↓') +
-      '<hr>' + it('detalle', '☰ Notas y tareas') + it('eliminar', '🗑 Eliminar fila', '', 'peligro');
+      '<hr>' + it('detalle', '☰ Notas y tareas') + it('eliminar', 'Eliminar fila', '', 'peligro');
     document.body.appendChild(menu);
     const w = menu.offsetWidth, h = menu.offsetHeight;
     menu.style.left = Math.min(ev.clientX, window.innerWidth - w - 8) + 'px';
@@ -1079,7 +1079,7 @@
     pop.innerHTML = `<div class="pl-pop-h"><div><span class="pl-pop-cod">${a._cod || ''}</span>${esc(a.name)}</div><button data-acc="cerrar" title="Cerrar">×</button></div>
       ${cs.length ? `<div class="pl-pop-n">💬 ${cs.length} comentario${cs.length === 1 ? '' : 's'} · del más antiguo al más reciente</div>` : ''}
       <div class="pl-pop-l${cs.length ? ' linea' : ''}" data-n="${cs.length}">${cs.length ? cs.map((n, k) => `<div class="pl-pc${k === cs.length - 1 ? ' ult' : ''}">
-          <div class="pl-pc-f"><span>📅 ${fechaCmt(n.createdAt)}</span><span class="pl-pc-a">${esTarea(n, ts) ? '<em>✓ ya es tarea</em>' : `<button data-acc="tarea" data-n="${n.id}" title="Crear una tarea de esta actividad con este texto">→ Tarea</button>`}<button data-acc="borrar" data-n="${n.id}" title="Borrar comentario">×</button></span></div>
+          <div class="pl-pc-f"><span>${fechaCmt(n.createdAt)}</span><span class="pl-pc-a">${esTarea(n, ts) ? '<em>✓ ya es tarea</em>' : `<button data-acc="tarea" data-n="${n.id}" title="Crear una tarea de esta actividad con este texto">→ Tarea</button>`}<button data-acc="borrar" data-n="${n.id}" title="Borrar comentario">×</button></span></div>
           <div class="pl-pc-t">${esc(n.texto).replace(/\n/g, '<br>')}</div></div>`).join('')
         : '<div class="pl-pop-v">Sin comentarios todavía. Escribe el primero 👇</div>'}</div>
       <div class="pl-pop-add">
@@ -1291,7 +1291,7 @@
         <input type="number" min="0" max="730" value="${Math.abs(x.d) || ''}" placeholder="0" title="Cuántos días de desfase">
         <select class="pl-rlu" title="Días hábiles (sin fines de semana ni festivos) o corridos (calendario)"><option value="h"${x.u !== 'c' ? ' selected' : ''}>días hábiles</option><option value="c"${x.u === 'c' ? ' selected' : ''}>días corridos</option></select></span>
         <em class="pl-rel-x">${esc(textoDep(x.t, x.d, x.u, cod))}</em></div>
-      <div class="pl-sel-f"><button class="pl-fl-quitar" data-quitar-fl="1" title="Borrar esta precedencia">🗑 Quitar flecha</button><button class="ok" data-listo="1">Listo</button></div>`;
+      <div class="pl-sel-f"><button class="pl-fl-quitar" data-quitar-fl="1" title="Borrar esta precedencia">Quitar flecha</button><button class="ok" data-listo="1">Listo</button></div>`;
     document.body.appendChild(flPop);
     const w = flPop.offsetWidth, h = flPop.offsetHeight;
     flPop.style.left = Math.max(10, Math.min(ev.clientX - 20, window.innerWidth - w - 10)) + 'px';
@@ -1910,7 +1910,7 @@
       <th class="pl-sk pl-c-id" data-col="id">ID</th><th class="pl-sk pl-c-nm" data-col="nm">Actividad<span class="pl-resz" title="Arrastra para ensanchar o angostar la columna · doble clic: ajustar a los nombres (otro doble clic: volver al ancho normal)"></span></th><th class="pl-c-rs" data-col="rs">Responsable</th>
       ${cols.area ? `<th class="pl-c-ar" data-col="ar" title="Elígela de la lista de áreas de «Involucrados». Si la dejas en automática, sale del área de cada responsable">${full ? 'Área responsable' : 'Área'}</th>` : ''}
       ${cols.entregable ? '<th class="pl-c-en" data-col="en">Entregable / resultado</th>' : ''}
-      ${cols.base ? '<th class="pl-c-lb" data-col="lb" title="Fechas congeladas al fijar la línea base: no se mueven">🔒 Línea base</th>' : ''}
+      ${cols.base ? '<th class="pl-c-lb" data-col="lb" title="Fechas congeladas al fijar la línea base: no se mueven">Línea base</th>' : ''}
       ${full ? `<th class="pl-c-d" data-col="ini" title="${base ? 'Inicio proyectado: se recalcula solo con las fechas reales y las dependencias' : 'Inicio planeado'}">${lbI}</th>
       <th class="pl-c-d" data-col="fin" title="${base ? 'Fin proyectado: se recalcula solo con las fechas reales y las dependencias' : 'Fin planeado'}">${lbF}</th>`
       : `<th class="pl-c-tl" data-col="tl" title="${base ? 'Fechas proyectadas (se recalculan con lo real y las dependencias)' : 'Fechas planeadas'}">${base ? 'Cronograma proy.' : 'Cronograma'}</th>`}
@@ -1949,7 +1949,7 @@
       const avg = acts.length ? Math.round(acts.reduce((s, a) => s + (a.pctComplete || 0), 0) / acts.length) : 0;
       const hechas = acts.filter(a => estado(a, today) === 'Completada').length;
       const estA = acts.length ? (avg >= 100 ? 'Completada' : fF && today > fF ? 'Atrasada' : fI && today >= fI ? 'En curso' : 'Por iniciar') : '';
-      const tools = opts.owner && g.id && agr === 'etapa' ? `<span class="pl-tools"><button onclick="planOnSection('rename','${g.id}')" title="Renombrar">✎</button>${g.padre ? `<button onclick="planOnSection('sacar','${g.id}')" title="Sacarlo del capítulo: queda como capítulo">⇱ sacar</button>` : ''}</span>${editable ? `<button class="pl-sdel" onclick="planOnSection('remove','${g.id}')" title="Eliminar ${g.padre ? 'el subcapítulo' : 'el capítulo'} y sus actividades">🗑</button>` : ''}` : '';
+      const tools = opts.owner && g.id && agr === 'etapa' ? `<span class="pl-tools"><button onclick="planOnSection('rename','${g.id}')" title="Renombrar">✎</button>${g.padre ? `<button onclick="planOnSection('sacar','${g.id}')" title="Sacarlo del capítulo: queda como capítulo">⇱ sacar</button>` : ''}</span>${editable ? `<button class="pl-sdel" onclick="planOnSection('remove','${g.id}')" title="Eliminar ${g.padre ? 'el subcapítulo' : 'el capítulo'} y sus actividades">×</button>` : ''}` : '';
       const sdrag = editable && opts.owner && agr === 'etapa' && g.id ? `<span class="pl-sdrag" title="Arrastra para cambiar el orden: suéltalo arriba o abajo de otro capítulo${g.hijos && g.hijos.length ? '' : ', o en su centro para volverlo subcapítulo'}">⠿</span>` : '';
       const sum = fI ? `<span class="pl-sum" style="left:${E.x(fI)}px;width:${Math.max(6, E.x(addDays(fF, 1)) - E.x(fI))}px;--c:${g.color}"><i style="width:${avg}%"></i></span>` : '';
       const dvs = acts.map(desvio).filter(d => d != null);

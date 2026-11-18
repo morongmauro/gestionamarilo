@@ -56,7 +56,7 @@
 
     main.innerHTML = `<div class="pg-top"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Comité de valor</h1>
         <div class="kl"><span><b>${sig ? esc(App.d.fmtShort(sig.fecha)) : '—'}</b>próxima sesión</span><span><b>${sig ? (sig.proyectos || []).length : 0}</b>iniciativas en agenda</span><span><b class="${vencidos.length ? 'r' : ''}">${vencidos.length}</b>compromisos vencidos</span><span><b>${decsY.length}</b>decisiones en ${Y}</span></div>
-        <span class="sp"></span>${sig ? `<a class="btn ghost sm" href="/api/sesiones/${sig.id}/ics" download title="Agregar la próxima sesión a Outlook">⇩ Próxima sesión a Outlook</a>` : ''}${ro ? '' : '<button class="btn primary sm" data-new="">+ Sesión</button>'}</div>
+        <span class="sp"></span>${sig ? `<a class="btn ghost sm" href="/api/sesiones/${sig.id}/ics" download title="Agregar la próxima sesión a Outlook">Próxima sesión a Outlook</a>` : ''}${ro ? '' : '<button class="btn primary sm" data-new="">+ Sesión</button>'}</div>
       <div class="cv-tabs" role="tablist">${TABS.map(([k, l]) => `<button role="tab" data-tab="${k}" class="${tab === k ? 'on' : ''}" aria-selected="${tab === k}">${l}${k === 'comp' && abiertos.length ? ` <em class="${vencidos.length ? 'r' : ''}">${abiertos.length}</em>` : ''}</button>`).join('')}
         <span class="sp"></span>${tab === 'cal' ? `${A.view === 'mes' ? `<div class="cv-mes"><button class="btn sm" data-nav="-1" aria-label="Mes anterior">‹</button><b>${App.d.MESES[m - 1].replace(/^./, c => c.toUpperCase())} ${y}</b><button class="btn sm" data-nav="1" aria-label="Mes siguiente">›</button>${mes !== today.slice(0, 7) ? '<button class="btn ghost sm" data-nav="0">Hoy</button>' : ''}</div>` : ''}
         <div class="seg"><button data-v="mes" class="${A.view === 'mes' ? 'on' : ''}">Mes</button><button data-v="lista" class="${A.view === 'lista' ? 'on' : ''}">Lista</button></div>` : ''}</div>
@@ -170,7 +170,7 @@
       <div class="lbl">Frecuencia</div><input type="text" data-k="frecuencia" value="${esc(c.frecuencia || '')}" placeholder="Ej.: quincenal, primer martes del mes" style="margin:0 4px 6px;width:calc(100% - 8px)">
       <div class="lbl">Integrantes</div><textarea data-k="integrantes" rows="3" placeholder="Nombres, uno por línea" style="margin:0 4px 6px;width:calc(100% - 8px)">${esc(c.integrantes || '')}</textarea>
       <div class="lbl">Descripción</div><textarea data-k="descripcion" rows="2" style="margin:0 4px 6px;width:calc(100% - 8px)">${esc(c.descripcion || '')}</textarea>
-      <div class="sep"></div><button class="mi danger" data-p="del">🗑 Eliminar comité</button>`, { width: 300, onClose: cancel => {
+      <div class="sep"></div><button class="mi danger" data-p="del">Eliminar comité</button>`, { width: 300, onClose: cancel => {
         if (cancel) return; // Escape cancela
         const patch = {}; $$('[data-k]', p).forEach(f => { if ((c[f.dataset.k] || '') !== f.value) patch[f.dataset.k] = f.value; });
         if (patch.name === '') delete patch.name;
@@ -221,7 +221,7 @@
       ${App.vista && App.vista.nueva ? '<div id="sDec" style="margin:12px 0"></div>' : ''}
       <h4>Compromisos</h4><div id="sComp">${compHTML()}</div>${ro ? '' : '<button class="btn sm" data-cadd="1" style="margin-top:4px">+ Compromiso</button>'}
       <datalist id="pplList">${App.S.people.map(u => `<option value="${esc(u.name)}">`).join('')}</datalist>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:22px"><a class="btn" href="/api/sesiones/${s.id}/ics" download>⇩ Agregar a Outlook (.ics)</a>${App.vista && App.vista.nueva ? `<a class="btn amarillo" href="#/agenda/preparar/${s.id}" data-prep="1">⎙ Preparar el comité</a>` : ''}${ro ? '' : '<button class="btn" data-rep="1">↻ Repetir…</button><span style="flex:1"></span><button class="btn danger" data-sdel="1">Eliminar sesión</button>'}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:22px"><a class="btn" href="/api/sesiones/${s.id}/ics" download>Agregar a Outlook (.ics)</a>${App.vista && App.vista.nueva ? `<a class="btn amarillo" href="#/agenda/preparar/${s.id}" data-prep="1">Preparar el comité</a>` : ''}${ro ? '' : '<button class="btn" data-rep="1">↻ Repetir…</button><span style="flex:1"></span><button class="btn danger" data-sdel="1">Eliminar sesión</button>'}</div>
       <div class="meta-line">${s.updated_by_name ? `Última edición: ${esc(s.updated_by_name)}, ${esc(App.d.ago(s.updated_at))}` : ''}</div>`, { onClose: () => App.render() });
 
     const saveComp = () => App.patch('sessions', id, { compromisos: comp }).catch(() => {});

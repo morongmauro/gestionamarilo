@@ -67,7 +67,7 @@
     const c = App.caseOf(pid), ro = !App.canEdit();
     if (grid) { grid.destroy(); grid = null; }
     if (!c) {
-      el.innerHTML = `<div class="card-box"><div class="empty-box"><b>Esta iniciativa aún no tiene caso de negocio</b>${ro ? 'Cuando el equipo lo cree, aparecerá aquí.' : 'Arma la justificación: problema, objetivo, beneficios, costos y la decisión que se le pide al comité. Puedes empezar desde cero o subir el Excel que ya tienes.'}${ro ? '' : '<div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn primary" data-c="crear">+ Crear caso de negocio</button><button class="btn" data-c="crear-excel">⇪ Crear desde un Excel</button></div>'}</div></div>`;
+      el.innerHTML = `<div class="card-box"><div class="empty-box"><b>Esta iniciativa aún no tiene caso de negocio</b>${ro ? 'Cuando el equipo lo cree, aparecerá aquí.' : 'Arma la justificación: problema, objetivo, beneficios, costos y la decisión que se le pide al comité. Puedes empezar desde cero o subir el Excel que ya tienes.'}${ro ? '' : '<div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn primary" data-c="crear">+ Crear caso de negocio</button><button class="btn" data-c="crear-excel">Crear desde un Excel</button></div>'}</div></div>`;
       const b = $('[data-c=crear]', el); if (b) b.onclick = () => App.guard(async () => { await App.create('cases', nuevoCaso(pid)); App.render(); });
       const pre = preliminar(App.byId('projects', pid));
       if (pre && !ro) { const box = $('.empty-box', el); if (box) box.insertAdjacentHTML('beforeend', `<div class="cs-prelim" style="margin-top:12px;text-align:left">⤴ <span>Esta iniciativa ya tiene ${esc(pre.porque)}. <b>Arma un caso preliminar</b> con ese valor y complétalo después.</span><button class="btn primary sm" data-c="crear-ice">Armar caso desde el ICE</button></div>`); }
@@ -141,7 +141,7 @@
       <nav class="cs-tabs no-print" role="tablist">${PESTANAS.map(([k, l]) => `<button role="tab" data-tab-c="${k}" class="${k === pest ? 'on' : ''}" aria-selected="${k === pest}">${l}</button>`).join('')}</nav>
       <section class="t-card t-pad cs-pane" data-pane="tabla" ${pest === 'tabla' ? '' : 'hidden'}>
         <div class="cs-th"><h3>Supuestos, ingresos, gastos e inversión</h3><span class="sp"></span>
-          <button class="cs-chip" data-c="param" title="Moneda, tasa de descuento, primer año y horizonte">⚙ ${esc(mon)} · tasa ${App.num(c.tasa, 2) || 0} % · desde ${c.anio_inicio || new Date().getFullYear()} · ${n()} años</button>
+          <button class="cs-chip" data-c="param" title="Moneda, tasa de descuento, primer año y horizonte">${esc(mon)} · tasa ${App.num(c.tasa, 2) || 0} % · desde ${c.anio_inicio || new Date().getFullYear()} · ${n()} años</button>
           <select class="cs-chip" data-c-escala title="Cómo se muestran y se escriben las cifras">${ESCALAS.map(([v, l]) => `<option value="${v}" ${v === escala ? 'selected' : ''}>Cifras: ${l.toLowerCase()}</option>`).join('')}</select>
           ${ro ? '' : '<button class="cs-chip ic" data-c="undo" title="Deshacer (Ctrl+Z)" aria-label="Deshacer">↶</button><button class="cs-chip ic" data-c="redo" title="Rehacer (Ctrl+Y)" aria-label="Rehacer">↷</button>'}
           <button class="cs-chip ic" data-c="atajos" title="Cómo escribir cifras y fórmulas" aria-label="Ayuda">?</button></div>
@@ -277,7 +277,7 @@
       const b = e.target.closest('[data-c]'); if (!b) return;
       const a = b.dataset.c;
       if (a === 'print') return window.print();
-      if (a === 'mas') return App.menu(b, [{ id: 'excel', label: '⇩ Descargar Excel' }, { id: 'pdf', label: '⎙ Imprimir o guardar PDF' }].concat(ro ? [] : [{ id: 'importar', label: '⇪ Reemplazar con un Excel' }, { id: 'plantilla', label: '⇩ Plantilla vacía' }, '-', { id: 'del', label: '🗑 Eliminar el caso', danger: true }]), m => {
+      if (a === 'mas') return App.menu(b, [{ id: 'excel', label: 'Descargar Excel' }, { id: 'pdf', label: 'Imprimir o guardar PDF' }].concat(ro ? [] : [{ id: 'importar', label: 'Reemplazar con un Excel' }, { id: 'plantilla', label: 'Plantilla vacía' }, '-', { id: 'del', label: 'Eliminar el caso', danger: true }]), m => {
         const bajar = u => { const l = document.createElement('a'); l.href = u; l.download = ''; document.body.appendChild(l); l.click(); l.remove(); };
         if (m === 'excel') bajar(`/api/cases/${c.id}/excel`); if (m === 'plantilla') bajar('/api/cases/plantilla/excel'); if (m === 'pdf') window.print();
         if (m === 'importar') $('[data-c=archivo]', el).click();

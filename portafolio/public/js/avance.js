@@ -48,10 +48,11 @@
 
   function html(p, ro) {
     const a = de(p); if (!a) return '';
-    return `<div class="card-box av-box ${a.listo ? 'listo' : ''}">
-      <div class="av-h"><b>${a.listo ? `✓ Lista para pasar a ${esc(a.sig.nombre)}` : `Para pasar a ${esc(a.sig.nombre)}`}</b><span class="faint">${esc(a.fase.criterio || '')}</span>
-        ${a.listo && !ro ? `<button class="btn primary sm" data-p="avanzar" data-fase="${esc(a.sig.nombre)}">Pasar a ${esc(a.sig.corto)}</button>` : `<span class="faint">${a.faltan ? `falta${a.faltan === 1 ? '' : 'n'} ${a.faltan}` : ''}</span>`}</div>
-      <div class="av-l">${a.crit.map(c => `<a href="${c.href}" class="${c.ok ? 'ok' : 'no'}"><span>${c.ok ? '✓' : '✕'}</span>${esc(c.txt)}</a>`).join('')}</div></div>`;
+    // Una frase: qué le falta para pasar de fase (o el botón si ya cumple)
+    const no = a.crit.filter(c => !c.ok), si = a.crit.filter(c => c.ok);
+    return `<div class="av-line ${a.listo ? 'listo' : ''}" title="${esc(a.fase.criterio || '')}">${a.listo
+      ? `Cumple lo necesario para pasar a <b>${esc(a.sig.nombre)}</b>.${ro ? '' : ` <button class="t-lnk" data-p="avanzar" data-fase="${esc(a.sig.nombre)}">Pasar a ${esc(a.sig.corto)}</button>`}`
+      : `Para pasar a <b>${esc(a.sig.nombre)}</b> le falta: ${no.map(c => `<a href="${c.href}">${esc((/^[A-ZÁÉÍÓÚ][a-záéíóúñ]/.test(c.txt) ? c.txt.charAt(0).toLowerCase() + c.txt.slice(1) : c.txt))}</a>`).join('; ')}.${si.length ? ` <span class="faint">Ya cumple: ${si.map(c => esc((/^[A-ZÁÉÍÓÚ][a-záéíóúñ]/.test(c.txt) ? c.txt.charAt(0).toLowerCase() + c.txt.slice(1) : c.txt))).join('; ')}.</span>` : ''}`}</div>`;
   }
 
   App.Avance = { de, html, verificado, dosAnios };

@@ -32,7 +32,7 @@
       <div class="card-box" style="margin-bottom:16px" id="lakeBox"><h3 style="font-size:14px;font-weight:800;margin-bottom:6px">Data lake de Azure</h3><div class="muted" style="font-size:12.5px">Consultando…</div></div>
       <div class="card-box"><h3 style="font-size:14px;font-weight:800;margin-bottom:6px">Exportación por API</h3>
         <div class="muted" style="font-size:12.5px;margin-bottom:10px">Otra forma de llevar los datos al lago: Data Factory o Databricks leen estas direcciones con el encabezado <code class="u">Authorization: Bearer EXPORT_TOKEN</code> (variable de entorno). Como administrador también puedes descargarlas aquí.</div>
-        <table class="lst"><tbody>${tablas.map(t => `<tr><td><b>${t}</b></td><td><code class="u">${esc(base)}/api/export/${t}?format=csv</code></td><td style="text-align:right;white-space:nowrap"><a class="btn sm" href="/api/export/${t}?format=csv" download>⇩ CSV</a> <a class="btn sm" href="/api/export/${t}" target="_blank" rel="noopener">JSON</a></td></tr>`).join('')}</tbody></table></div>`;
+        <table class="lst"><tbody>${tablas.map(t => `<tr><td><b>${t}</b></td><td><code class="u">${esc(base)}/api/export/${t}?format=csv</code></td><td style="text-align:right;white-space:nowrap"><a class="btn sm" href="/api/export/${t}?format=csv" download>CSV</a> <a class="btn sm" href="/api/export/${t}" target="_blank" rel="noopener">JSON</a></td></tr>`).join('')}</tbody></table></div>`;
 
     lakeCard($('#lakeBox', main));
     if (App.vista && App.vista.nueva) App.Mejoras.adminExtras(main);
@@ -47,7 +47,7 @@
       if (b.dataset.u === 'new') return nuevo(b);
       if (b.dataset.u === 'enlace') { const u0 = users.find(x => x.id === (b.closest('[data-id]') || {}).dataset.id); if (u0) return accion('enlace', u0, b); }
       const id = b.closest('[data-id]') && b.closest('[data-id]').dataset.id; const u = users.find(x => x.id === id);
-      if (b.dataset.u === 'more') App.menu(b, [{ id: 'name', label: '✎ Cambiar nombre' }, { id: 'enlace', label: u.invitado ? '✉ Enviar de nuevo la invitación' : '✉ Enviar enlace para restablecer la contraseña' }, { id: 'reset', label: '⚿ Poner una contraseña temporal' }, { id: 'active', label: u.active ? '◌ Desactivar acceso' : '● Reactivar acceso' }, '-', { id: 'del', label: '🗑 Eliminar usuario', danger: true }], m => accion(m, u, b), 240);
+      if (b.dataset.u === 'more') App.menu(b, [{ id: 'name', label: '✎ Cambiar nombre' }, { id: 'enlace', label: u.invitado ? '✉ Enviar de nuevo la invitación' : '✉ Enviar enlace para restablecer la contraseña' }, { id: 'reset', label: '⚿ Poner una contraseña temporal' }, { id: 'active', label: u.active ? '◌ Desactivar acceso' : '● Reactivar acceso' }, '-', { id: 'del', label: 'Eliminar usuario', danger: true }], m => accion(m, u, b), 240);
     };
     main.onchange = e => {
       const s = e.target.closest('[data-u=role]'); if (!s) return;
@@ -65,7 +65,7 @@
         <div><span class="muted">Acceso:</span> ${esc(st.autenticacion)} · <span class="muted">Formato:</span> ${esc(st.formato.toUpperCase())} · <span class="muted">Envío automático:</span> ${st.hora == null ? 'apagado' : `todos los días a las ${st.hora}:00`}</div>
         <div><span class="muted">Archivos:</span> <code class="u">&lt;tabla&gt;/fecha=AAAA-MM-DD/</code> (histórico) y <code class="u">&lt;tabla&gt;/actual/</code> (última foto)</div>
         <div style="margin-top:6px">${ult}</div></div>
-        <div style="margin-top:10px"><button class="btn primary" data-lake="enviar">⇪ Enviar ahora</button></div>`
+        <div style="margin-top:10px"><button class="btn primary" data-lake="enviar">Enviar ahora</button></div>`
       : `<div class="muted" style="font-size:12.5px">Para que la app escriba sola en el lago, agrega en la configuración del App Service <code class="u">LAKE_ACCOUNT</code> (la cuenta de almacenamiento del lago) y dale a la identidad de la app el rol <b>Storage Blob Data Contributor</b> sobre ese contenedor. Los pasos están en LEEME.md.</div>`}`;
   }
   function enviarLago(btn) {

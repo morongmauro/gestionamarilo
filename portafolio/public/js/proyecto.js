@@ -32,18 +32,17 @@
         <button class="p-nsel" data-nav="elegir" title="Ir a otra iniciativa sin cambiar de pestaña"><b>${esc(App.projectName(p))}</b> ▾</button><span class="p-npos">${pos + 1} de ${ids.length} · ${esc(de.de)}</span>
         ${sig ? `<a class="p-nv" href="${ir(sig)}" title="Siguiente: ${esc(nomb(sig))} (Alt + →)">Siguiente ›</a>` : '<span class="p-nv off">Siguiente ›</span>'}</nav>`;
     main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><a class="back" href="${de.href}">← ${esc(de.de)}</a>${nav}<span class="sp"></span>${ro ? '' : '<button class="btn" data-p="menu">··· Opciones</button>'}</div>
-      <div class="card-box p-head">
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${ec ? `<span class="pill cl-${App.optColor(ec, estado)}" data-p="estado" style="cursor:${ro ? 'default' : 'pointer'}">${esc(estado || 'Sin ' + ec.name.toLowerCase())}</span>` : ''}</div>
-        <div class="p-title" data-p="titulo">${esc(App.projectName(p))}${App.tagEjemplo(p)}</div>${App.esEjemplo(p) ? '<div class="ej-aviso">Proyecto de <b>ejemplo</b>: muestra cómo se ve una iniciativa completa (información, caso de negocio, cronograma y riesgos). No suma en los totales del portafolio ni en el tablero.</div>' : ''}
+      <div class="p-head">
+        <div class="p-title" data-p="titulo">${esc(App.projectName(p))}${App.esEjemplo(p) ? '<span class="ej-txt" title="Proyecto de ejemplo: muestra cómo se ve una iniciativa completa. No suma en los totales ni en el tablero.">ejemplo, no suma en los totales</span>' : ''}</div>
         <div class="facts">
-          <span>Cronograma: <b>${pl.ini ? `${esc(App.d.fmt(pl.ini))} – ${esc(App.d.fmt(pl.fin))}` : esc(App.sinPlan(p).corto)}</b></span>
-          ${pl.acts.length ? `<span><span class="bar-mini"><i style="width:${pl.avance}%"></i></span><b>${pl.avance}%</b> de avance${pl.atrasadas ? ` · <b style="color:var(--crit-ink)">${pl.atrasadas} atrasada${pl.atrasadas > 1 ? 's' : ''}</b>` : ''}</span>` : ''}
-          <span>Caso: ${caso ? `<span class="pill cl-${App.Caso.estadoColor(caso.estado)}">${esc(caso.estado || 'Borrador')}</span>${f.vpn != null && f.totalInversion > 0 ? ` <b>VPN ${esc(App.moneyShort(f.vpn, caso.moneda))}</b>` : caso.origen === 'ice' ? ' <span class="faint">preliminar</span>' : ''}` : '<b>sin caso</b>'}</span>
-          <span title="${esc((App.ICE.detalle(p).notas || []).join('\n'))}">ICE: <b>${App.iceOf(p) == null ? '—' : esc(App.num(App.iceOf(p), 1))}</b>${ro ? '' : ' <button class="t-lnk" data-p="ice">calcular / editar</button>'}</span>
-          <span>Próximo comité: <b>${prox ? `${esc(App.d.fmtShort(prox.fecha))} · ${esc(App.Agenda.tituloOf(prox))}` : 'ninguno'}</b></span>
+          ${ec ? `<button class="f-fase" data-p="estado" ${ro ? 'disabled' : ''} title="${ro ? '' : 'Cambiar la fase'}"><i class="sq" style="background:var(--c-${App.optColor(ec, estado) || 'gris'}-i)"></i>${esc(estado || 'Sin ' + ec.name.toLowerCase())}</button>` : ''}
+          <span>${pl.acts.length ? `<b>${pl.avance} %</b> de avance${pl.atrasadas ? `, <b class="r">${pl.atrasadas} atrasada${pl.atrasadas > 1 ? 's' : ''}</b>` : ''}${pl.fin ? `, termina el <b>${esc(App.d.fmt(pl.fin))}</b>` : ''}` : esc(App.sinPlan(p).corto)}</span>
+          <span>${caso ? `Caso <b>${esc((caso.estado || 'Borrador').toLowerCase())}</b>${f.vpn != null && f.totalInversion > 0 ? `, VPN <b>${esc(App.moneyShort(f.vpn, caso.moneda))}</b>` : caso.origen === 'ice' ? ', preliminar' : ''}` : 'Sin caso de negocio'}</span>
+          <span title="${esc((App.ICE.detalle(p).notas || []).join('\n'))}">ICE <b>${App.iceOf(p) == null ? '—' : esc(App.num(App.iceOf(p), 1))}</b>${ro ? '' : ' <button class="t-lnk" data-p="ice">editar</button>'}</span>
+          <span>${prox ? `Comité el <b>${esc(App.d.fmtShort(prox.fecha))}</b>` : 'Sin comité programado'}</span>
         </div>
+        ${App.Avance ? App.Avance.html(p, ro) : ''}
       </div>
-      ${App.Avance ? App.Avance.html(p, ro) : ''}
       <nav class="ptabs">${TABS.map(([k, l]) => `<a href="#/proyectos/${id}/${k}" class="${k === tab ? 'on' : ''}">${l}${k === 'cronograma' && pl.acts.length ? `<span class="n">${pl.acts.length}</span>` : ''}${k === 'comites' && ses.length ? `<span class="n">${ses.length}</span>` : ''}${k === 'riesgos' && App.Riesgos ? (q => (q.criticos ? `<span class="n r">${q.criticos} crítico${q.criticos === 1 ? '' : 's'}</span>` : q.n ? `<span class="n">${q.n}</span>` : ''))(App.Riesgos.resumen(p)) : ''}</a>`).join('')}</nav>
       <div id="pTab"></div>`;
     const box = $('#pTab', main);
@@ -60,9 +59,22 @@
       const viejas = todas.filter(c => hayIce && VIEJOS.includes(c.id) && (p.props || {})[c.id] != null && (p.props || {})[c.id] !== '');
       const fila = c => { const v = (p.props || {})[c.id]; const vacio = v == null || v === '' || (Array.isArray(v) && !v.length);
         return `<div class="k"><span class="ic">${App.Tabla.TYPES[c.type].icon}</span>${esc(c.name)}</div><div class="v ${vacio && c.type !== 'check' ? 'empty' : ''}" data-col="${c.id}">${vacio && c.type !== 'check' ? `<div class="c-in">${ro ? '—' : 'Vacío'}</div>` : App.Tabla.renderValue(c, v)}</div>`; };
-      const historia = App.vista && App.vista.nueva ? App.Mejoras.historia(p, { pl, caso, f, prox, ro, d: filaDe(id) }) : '';
-      box.innerHTML = historia + `<div class="card-box"><div class="props ${ro ? '' : 'editable'}">${cols.map(fila).join('')}</div>${viejas.length ? `<details class="props-viejas"><summary>${viejas.length} campo${viejas.length === 1 ? '' : 's'} del método anterior (guardado${viejas.length === 1 ? '' : 's'}, ya no se usa${viejas.length === 1 ? '' : 'n'} para el ICE)</summary><div class="props">${viejas.map(fila).join('')}</div></details>` : ''}${vacias.length && !ro ? `<details class="props-viejas"><summary>${vacias.length} campo${vacias.length === 1 ? '' : 's'} que ninguna iniciativa tiene diligenciado${vacias.length === 1 ? '' : 's'}</summary><div class="props">${vacias.map(fila).join('')}</div></details>` : ''}
-        <div class="meta-line">Creado ${esc(App.d.ago(p.created_at))}${p.updated_by_name ? ` · Última edición: ${esc(p.updated_by_name)}, ${esc(App.d.ago(p.updated_at))}` : ''}${ro ? '' : ' · Las columnas se administran en Portafolio → Tabla completa'}</div></div>`;
+      const okrs = App.okrsDe ? App.okrsDe(p) : [];
+      const gente = (p.miembros || []).length ? p.miembros : [].concat((p.props || {}).habilitadores || [], (p.props || {}).realizadores || []).filter(Boolean).map(n => ({ nombre: n, area: '', rol: '' }));
+      const Y = +App.d.today().slice(0, 4), capY = caso ? (caso.captado || []).filter(x => String(x.mes || '').startsWith(Y + '-')).reduce((a, x) => a + (Number(x.valor) || 0), 0) : 0;
+      const dos = caso && App.Avance ? App.Avance.dosAnios(f) : 0;
+      const fi = `<div class="fi"><div class="fi-a">
+          <h2>Qué es</h2>
+          <p class="fi-frase ${p.frase ? '' : 'vacia'}" data-h="frase" title="${ro ? '' : 'Clic para editar'}">${p.frase ? esc(p.frase) : (ro ? 'Sin descripción.' : 'Escriba en una frase qué cambia con esta iniciativa.')}</p>
+          ${gente.length ? `<h3>Quiénes participan</h3><div class="fi-gente">${gente.map(m => `<div>${esc(m.nombre)}${m.area || m.rol ? `<span>${esc([m.area, (m.rol || '').toLowerCase()].filter(Boolean).join(', '))}</span>` : ''}</div>`).join('')}</div>` : ''}
+          ${okrs.length ? `<h3>A qué objetivos aporta</h3><ul class="fi-okr">${okrs.map(o => `<li>${esc(o)}</li>`).join('')}</ul>` : ''}
+        </div><div class="fi-b">
+          <div><b>${dos ? esc(App.moneyShort(dos, caso.moneda)) : '—'}</b><span>${caso ? 'valor en los dos primeros años del caso' : 'sin caso de negocio todavía'}</span></div>
+          <div><b>${esc(App.moneyShort(capY))}</b><span>capturados en ${Y}</span></div>
+          <div><b>${App.iceOf(p) == null ? '—' : esc(App.num(App.iceOf(p), 1))}</b><span>prioridad (ICE)${ro ? '' : ' · <button class="t-lnk" data-p="ice">ver y editar sus datos</button>'}</span></div>
+        </div></div>`;
+      box.innerHTML = fi + `<details class="fi-campos"><summary>Todos los campos de la iniciativa</summary><div class="props ${ro ? '' : 'editable'}">${cols.map(fila).join('')}</div>${viejas.length ? `<details class="props-viejas"><summary>${viejas.length} campo${viejas.length === 1 ? '' : 's'} del método anterior (guardado${viejas.length === 1 ? '' : 's'}, ya no se usa${viejas.length === 1 ? '' : 'n'} para el ICE)</summary><div class="props">${viejas.map(fila).join('')}</div></details>` : ''}${vacias.length && !ro ? `<details class="props-viejas"><summary>${vacias.length} campo${vacias.length === 1 ? '' : 's'} que ninguna iniciativa tiene diligenciado${vacias.length === 1 ? '' : 's'}</summary><div class="props">${vacias.map(fila).join('')}</div></details>` : ''}
+        <div class="meta-line">Creado ${esc(App.d.ago(p.created_at))}${p.updated_by_name ? ` · Última edición: ${esc(p.updated_by_name)}, ${esc(App.d.ago(p.updated_at))}` : ''}${ro ? '' : ' · Las columnas se administran en Portafolio → Tabla completa'}</div></details>`;
     } else if (tab === 'cronograma') {
       App.PlanHost.render(box, id);
     } else if (tab === 'caso') {
@@ -92,7 +104,7 @@
       if (a === 'avanzar' && ec) { const nueva = b.dataset.fase; if (!confirm(`¿Pasar «${App.projectName(p)}» a ${nueva}?\n\nQueda en la trazabilidad. Si lo decidió el comité, regístralo también en la sesión.`)) return;
         return App.guard(async () => { await App.patch('projects', id, { props: { [ec.id]: nueva } }); App.toast('Cambió de fase'); App.render(); }); }
       if (a === 'agendar') App.Agenda.openNewSession(App.d.add(App.d.today(), 7), { proyectos: [id] });
-      if (a === 'menu') App.menu(b, [{ id: 'tabla', label: '▤ Ver en la tabla' }, { id: 'agenda', label: '▦ Agendar en comité' }, '-', { id: 'del', label: '🗑 Eliminar iniciativa', danger: true }], m => {
+      if (a === 'menu') App.menu(b, [{ id: 'tabla', label: '▤ Ver en la tabla' }, { id: 'agenda', label: '▦ Agendar en comité' }, '-', { id: 'del', label: 'Eliminar iniciativa', danger: true }], m => {
         if (m === 'tabla') App.go('#/proyectos');
         if (m === 'agenda') App.Agenda.openNewSession(App.d.add(App.d.today(), 7), { proyectos: [id] });
         if (m === 'del') confirmDelete(id);

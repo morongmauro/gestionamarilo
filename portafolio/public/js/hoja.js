@@ -350,7 +350,7 @@
         { id: 'dist', label: '÷ Repartir un total entre varios años' },
         '-', { id: 'nota', label: r.nota ? '✎ Editar la nota o fuente' : '✎ Agregar nota o fuente' }, { id: 'mover', label: '⇄ Mover a otra sección' },
         '-', { id: 'dup', label: '⧉ Duplicar fila' }, { id: 'up', label: '↑ Subir' }, { id: 'down', label: '↓ Bajar' },
-        '-', { id: 'del', label: '🗑 Eliminar fila', danger: true }], m => {
+        '-', { id: 'del', label: 'Eliminar fila', danger: true }], m => {
         const first = () => { for (let t = 0; t < NC(); t++) if (val(idx, t)) return t; return -1; };
         if (m === 'nota') return App.editText(anchor, r.nota || '', { multi: true, placeholder: 'De dónde sale este dato o cómo se calcula', onSave: x => op(() => { const t = String(x || '').trim().slice(0, 1000); if (t) r.nota = t; else delete r.nota; }, true) });
         if (m === 'mover') return App.menu(anchor, o.tipos.filter(([k]) => k !== r.tipo).map(([k, l]) => ({ id: k, label: l.split(' · ')[0] })), k => op(() => { r.tipo = k; if (k !== 'supuesto') delete r.pct; }, true));
