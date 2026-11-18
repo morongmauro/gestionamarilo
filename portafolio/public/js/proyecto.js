@@ -5,7 +5,7 @@
 'use strict';
 (function () {
   const { $, esc } = App;
-  const TABS = [['info', 'Información'], ['cronograma', 'Cronograma'], ['caso', 'Caso de negocio'], ['comites', 'Comités']];
+  const TABS = [['info', 'Información'], ['cronograma', 'Cronograma'], ['caso', 'Caso de negocio'], ['riesgos', 'Riesgos'], ['comites', 'Comités']];
 
   function render(main, params) {
     const [id, tab0] = params;
@@ -31,7 +31,7 @@
         </div>
       </div>
       ${App.Avance ? App.Avance.html(p, ro) : ''}
-      <nav class="ptabs">${TABS.map(([k, l]) => `<a href="#/proyectos/${id}/${k}" class="${k === tab ? 'on' : ''}">${l}${k === 'cronograma' && pl.acts.length ? `<span class="n">${pl.acts.length}</span>` : ''}${k === 'comites' && ses.length ? `<span class="n">${ses.length}</span>` : ''}</a>`).join('')}</nav>
+      <nav class="ptabs">${TABS.map(([k, l]) => `<a href="#/proyectos/${id}/${k}" class="${k === tab ? 'on' : ''}">${l}${k === 'cronograma' && pl.acts.length ? `<span class="n">${pl.acts.length}</span>` : ''}${k === 'comites' && ses.length ? `<span class="n">${ses.length}</span>` : ''}${k === 'riesgos' && App.Riesgos ? (q => (q.criticos ? `<span class="n r">${q.criticos} crítico${q.criticos === 1 ? '' : 's'}</span>` : q.n ? `<span class="n">${q.n}</span>` : ''))(App.Riesgos.resumen(p)) : ''}</a>`).join('')}</nav>
       <div id="pTab"></div>`;
     const box = $('#pTab', main);
 
@@ -48,12 +48,14 @@
       const fila = c => { const v = (p.props || {})[c.id]; const vacio = v == null || v === '' || (Array.isArray(v) && !v.length);
         return `<div class="k"><span class="ic">${App.Tabla.TYPES[c.type].icon}</span>${esc(c.name)}</div><div class="v ${vacio && c.type !== 'check' ? 'empty' : ''}" data-col="${c.id}">${vacio && c.type !== 'check' ? `<div class="c-in">${ro ? '—' : 'Vacío'}</div>` : App.Tabla.renderValue(c, v)}</div>`; };
       const historia = App.vista && App.vista.nueva ? App.Mejoras.historia(p, { pl, caso, f, prox, ro, d: filaDe(id) }) : '';
-      box.innerHTML = historia + `<div class="card-box"><div class="props">${cols.map(fila).join('')}</div>${viejas.length ? `<details class="props-viejas"><summary>${viejas.length} campo${viejas.length === 1 ? '' : 's'} del método anterior (guardado${viejas.length === 1 ? '' : 's'}, ya no se usa${viejas.length === 1 ? '' : 'n'} para el ICE)</summary><div class="props">${viejas.map(fila).join('')}</div></details>` : ''}${vacias.length && !ro ? `<details class="props-viejas"><summary>${vacias.length} campo${vacias.length === 1 ? '' : 's'} que ninguna iniciativa tiene diligenciado${vacias.length === 1 ? '' : 's'}</summary><div class="props">${vacias.map(fila).join('')}</div></details>` : ''}
+      box.innerHTML = historia + `<div class="card-box"><div class="props ${ro ? '' : 'editable'}">${cols.map(fila).join('')}</div>${viejas.length ? `<details class="props-viejas"><summary>${viejas.length} campo${viejas.length === 1 ? '' : 's'} del método anterior (guardado${viejas.length === 1 ? '' : 's'}, ya no se usa${viejas.length === 1 ? '' : 'n'} para el ICE)</summary><div class="props">${viejas.map(fila).join('')}</div></details>` : ''}${vacias.length && !ro ? `<details class="props-viejas"><summary>${vacias.length} campo${vacias.length === 1 ? '' : 's'} que ninguna iniciativa tiene diligenciado${vacias.length === 1 ? '' : 's'}</summary><div class="props">${vacias.map(fila).join('')}</div></details>` : ''}
         <div class="meta-line">Creado ${esc(App.d.ago(p.created_at))}${p.updated_by_name ? ` · Última edición: ${esc(p.updated_by_name)}, ${esc(App.d.ago(p.updated_at))}` : ''}${ro ? '' : ' · Las columnas se administran en Portafolio → Tabla completa'}</div></div>`;
     } else if (tab === 'cronograma') {
       App.PlanHost.render(box, id);
     } else if (tab === 'caso') {
       App.Caso.editor(box, id);
+    } else if (tab === 'riesgos') {
+      App.Riesgos.render(box, id);
     } else {
       box.innerHTML = `<div class="card-box">${ro ? '' : '<div style="margin-bottom:10px"><button class="btn primary" data-p="agendar">+ Agendar en un comité</button></div>'}
         ${ses.length ? `<table class="lst"><thead><tr><th>Fecha</th><th>Comité</th><th>Estado</th><th>Temas</th><th>Decisiones</th></tr></thead><tbody>${ses.map(s => `<tr class="clic" data-ses="${s.id}"><td style="white-space:nowrap"><b>${esc(App.d.fmt(s.fecha))}</b><div class="faint" style="font-size:11px">${esc(s.hora_ini || '')}</div></td><td><span class="pill cl-${App.Agenda.colorOf(s)}">${esc(App.Agenda.tituloOf(s))}</span></td><td>${esc(s.estado || 'Programada')}</td><td class="muted" style="max-width:260px">${esc((s.temas || '').slice(0, 140))}</td><td style="max-width:300px">${esc((s.decisiones || '').slice(0, 180))}</td></tr>`).join('')}</tbody></table>`

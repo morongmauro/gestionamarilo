@@ -297,8 +297,9 @@
   const supuestoClave = c => {
     const t = String(c.supuestos || '').split(/\n|•|;|\. /).map(x => x.replace(/^[-*\s]+/, '').trim()).find(Boolean);
     if (t) return t;
-    const r = (c.flujos || []).find(x => x && x.tipo === 'supuesto' && (x.concepto || '').trim());
-    return r ? r.concepto.trim() : '';
+    // Si no hay texto de supuestos, la primera idea de las consideraciones (sin los títulos ni la plantilla vacía)
+    const l = String(c.consideraciones || '').split('\n').map(x => x.replace(/^\s*[•\-*]\s*/, '').trim()).find(x => x && !/^\d+\.\s/.test(x));
+    return l || '';
   };
   const responsablesDe = p => { const v = p.props || {}; return [].concat(v.habilitadores || [], v.realizadores || []).filter(Boolean).slice(0, 2); };
 
@@ -323,14 +324,14 @@
     const fila = x => `<tr data-pid="${x.p.id}"><td class="pf-nm"><b>${esc(App.projectName(x.p))}</b><small>${esc(x.fa ? x.fa.nombre : x.est || 'Sin fase')}</small></td>
       <td><span class="pill cl-${COB[x.tipo][1]}">${COB[x.tipo][0]}</span>${x.c ? ` <span class="faint">· ${esc(x.c.estado || 'Borrador')}</span>` : ''}</td>
       <td>${x.c ? esc(x.c.updated_by_name || '') : '<span class="faint">—</span>'}</td><td class="cn-act">${x.c && x.c.updated_at ? esc(App.d.ago(x.c.updated_at)) : ''}</td>
-      <td>${x.aplica ? (x.tipo === 'hecho' ? '<span class="faint">—</span>' : App.canEdit() ? '<span class="t-lnk">' + (x.tipo === 'pre' ? 'Completar el caso →' : 'Crear el caso →') + '</span>' : '') : `<span class="faint">No aplica: ${esc(x.motivo)}</span>`}</td></tr>`;
-    const grupo = (t, arr, abierto) => arr.length ? `<tr class="cn-grp"><td colspan="5"><b>${t}</b> <small>${arr.length}</small></td></tr>${abierto ? arr.map(fila).join('') : ''}` : '';
+      <td>${x.aplica ? (x.tipo === 'hecho' ? '<span class="faint">—</span>' : App.canEdit() ? '<span class="t-lnk">' + (x.tipo === 'pre' ? 'Completar el caso' : 'Crear el caso') + '</span>' : '') : `<span class="faint">No aplica: ${esc(x.motivo)}</span>`}</td><td class="go" aria-hidden="true">›</td></tr>`;
+    const grupo = (t, arr, abierto) => arr.length ? `<tr class="cn-grp"><td colspan="6"><b>${t}</b> <small>${arr.length}</small></td></tr>${abierto ? arr.map(fila).join('') : ''}` : '';
     main.innerHTML = `<div class="pg-top"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Casos de negocio</h1>
         <div class="kl"><span><b>${ap.length}</b>iniciativas a las que aplica</span><span><b>${n(ap, 'hecho')}</b>con caso hecho</span><span><b>${n(ap, 'pre')}</b>preliminares</span><span><b class="${n(ap, 'sin') ? 'r' : ''}">${n(ap, 'sin')}</b>sin caso</span><span><b>${no.length}</b>no aplica</span></div>
         <span class="sp"></span><button class="btn ghost sm" data-cob="csv">Exportar a Excel</button></div>
       <div class="pf-bar"><div class="seg"><button data-vista-cn="casos">Casos</button><button class="on" data-vista-cn="cobertura">Cobertura</button></div>
         <span class="t-tag">Aplica a las iniciativas activas: Fase 1, 2 o 3${App.dgvHay() ? ' y «¿Revisión DGV?» en SI' : ''}. «Hecho» es un caso armado por una persona; «preliminar» lo armó el sitio desde el ICE.</span></div>
-      <section class="t-card pf-tbl-card"><div class="pf-wrap"><table class="pf-tbl cn-tbl"><thead><tr><th>Iniciativa <small>fase</small></th><th>Caso de negocio</th><th>Última edición por</th><th>Cuándo</th><th>Qué falta</th></tr></thead><tbody>
+      <section class="t-card pf-tbl-card"><div class="pf-wrap"><table class="pf-tbl cn-tbl"><thead><tr><th>Iniciativa <small>fase</small></th><th>Caso de negocio</th><th>Última edición por</th><th>Cuándo</th><th>Qué falta</th><th aria-hidden="true"></th></tr></thead><tbody>
         ${grupo('Aplica · sin caso', ap.filter(x => x.tipo === 'sin'), true)}${grupo('Aplica · preliminar desde el ICE', ap.filter(x => x.tipo === 'pre'), true)}${grupo('Aplica · caso hecho', ap.filter(x => x.tipo === 'hecho'), true)}${grupo('No aplica', no, true)}
         ${l.length ? '' : '<tr><td colspan="5"><div class="t-vacio">Aún no hay iniciativas.</div></td></tr>'}</tbody></table></div>
         <div class="t-pie t-pie-row"><span class="t-tag">Clic en una fila abre el caso de esa iniciativa</span></div></section>`;
@@ -387,7 +388,7 @@
     const fila = r => {
       const nm = esc(App.projectName(r.p)), per = responsablesDe(r.p);
       const sub = `${per.map(n => `<span class="pf-per" title="${esc(n)}"><i class="cl-${App.colorPersona(n)}"></i>${esc(n)}</span>`).join('')}${r.est ? `<span class="cn-fase">${esc(window.Fases && Fases.de(r.est) ? Fases.de(r.est).corto : r.est)}</span>` : ''}`;
-      if (!r.c) return `<tr class="cn-sin" data-pid="${r.p.id}"><td class="pf-nm"><b>${nm}</b><small>${sub}</small></td><td colspan="8" class="faint">${App.canEdit() ? '<span class="t-lnk">+ Crear caso de negocio</span> · ' : ''}${(r.p.props || {}).income ? `con su Income se arma un caso preliminar` : 'sin caso todavía'}</td><td class="cn-go">↗</td></tr>`;
+      if (!r.c) return `<tr class="cn-sin" data-pid="${r.p.id}"><td class="pf-nm"><b>${nm}</b><small>${sub}</small></td><td colspan="8" class="faint">${App.canEdit() ? '<span class="t-lnk">+ Crear caso de negocio</span> · ' : ''}${(r.p.props || {}).income ? `con su Income se arma un caso preliminar` : 'sin caso todavía'}</td><td class="go" aria-hidden="true">›</td></tr>`;
       const c = r.c, f = r.f, mo = c.moneda, sc = supuestoClave(c);
       return `<tr data-pid="${r.p.id}"><td class="pf-nm"><b title="${nm}">${nm}</b><small>${sub}</small></td>
         <td><span class="pill cl-${estadoColor(c.estado)}">${esc(c.estado || 'Borrador')}</span>${c.origen === 'ice' ? ' <span class="cn-pre" title="Caso preliminar construido desde el ICE">preliminar</span>' : ''}</td>
@@ -397,7 +398,7 @@
         <td class="n">${f.payback == null ? '<span class="faint">—</span>' : esc(App.num(f.payback, 1)) + ' años'}</td>
         <td>${cap ? bullet(r) : `<span class="cn-proy"><b>${r.proy ? esc(m(r.proy)) : '—'}</b> <small>${esc(App.moneyShort(f.totalBeneficio, mo))} en ${Math.round(c.anios || 0)} años</small></span>`}</td>
         <td class="cn-sup" title="${esc(sc)}">${sc ? esc(sc) : '<span class="faint">—</span>'}</td>
-        <td class="cn-act">${c.updated_at ? esc(App.d.ago(c.updated_at)) : ''}</td><td class="cn-go">↗</td></tr>`;
+        <td class="cn-act">${c.updated_at ? esc(App.d.ago(c.updated_at)) : ''}</td><td class="go" aria-hidden="true">›</td></tr>`;
     };
     const grupos = GRUPOS.map(g => ({ g, l: vis.filter(r => r.c && g.de(r.c.estado)) })).filter(z => z.l.length);
     const sin = vis.filter(r => !r.c);
@@ -417,7 +418,7 @@
         <div class="seg"><button class="on" data-vista-cn="casos">Casos</button><button data-vista-cn="cobertura" title="Qué iniciativas tienen caso, cuáles no y a cuáles les aplica">Cobertura</button></div><span class="sp"></span><div class="seg"><button data-modo="cap" class="${cap ? 'on' : ''}" aria-pressed="${cap}">Captado vs. proyectado</button><button data-modo="proy" class="${cap ? '' : 'on'}" aria-pressed="${!cap}">Proyectado</button></div></div>
       <section class="t-card pf-tbl-card"><div class="pf-wrap"><table class="pf-tbl cn-tbl">
         <thead><tr><th>Iniciativa <small>responsables · fase</small></th><th>Estado del caso</th><th class="n">Inversión</th><th class="n">VPN</th><th class="n">TIR</th><th class="n">Payback</th>
-          <th>${cap ? `Captado ${Y} <small>real / proyectado · ┃ esperado a hoy</small>` : `Beneficio ${Y} <small>proyectado · total del caso</small>`}</th><th>Supuesto clave</th><th>Actualizado</th><th></th></tr></thead>
+          <th>${cap ? `Captado ${Y} <small>real / proyectado · ┃ esperado a hoy</small>` : `Beneficio ${Y} <small>proyectado · total del caso</small>`}</th><th class="cn-sup">Supuesto clave</th><th>Actualizado</th><th></th></tr></thead>
         <tbody>${cuerpo || `<tr><td colspan="${COLS}"><div class="t-vacio">${todos.length ? 'Ningún caso cumple estos filtros.' : 'Aún no hay iniciativas.'}</div></td></tr>`}</tbody></table></div>
         <div class="t-pie t-pie-row"><span class="t-tag">Clic en una fila abre el caso con su tabla y flujos</span><span class="t-tag">Cifras en pesos · VPN con la tasa de descuento de cada caso${D.usd ? ' · casos en USD aparte' : ''}</span></div></section>`;
     const q = $('#cnq', main);
@@ -452,7 +453,7 @@
   function detalle(main, pid) {
     const p = App.byId('projects', pid);
     if (!p) { main.innerHTML = '<div class="empty-box"><b>Iniciativa no encontrada</b><a href="#/casos" class="back">← Casos de negocio</a></div>'; return; }
-    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><a class="back" href="#/casos">← Casos de negocio</a><div><h1>${esc(App.projectName(p))}</h1><div class="sub">Caso de negocio</div></div><span class="sp"></span><a class="btn" href="#/proyectos/${pid}">Ver la iniciativa →</a></div><div id="cBox"></div>`;
+    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><a class="back" href="#/casos">← Casos de negocio</a><div><h1>${esc(App.projectName(p))}</h1><div class="sub">Caso de negocio</div></div><span class="sp"></span><a class="btn" href="#/proyectos/${pid}">Ver la iniciativa</a></div><div id="cBox"></div>`;
     main.onclick = e => { if (e.target.closest('.burger')) App.toggleSide(); };
     editor($('#cBox', main), pid);
   }

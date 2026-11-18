@@ -713,7 +713,7 @@
     const actual = pid ? App.byId('projects', pid) : null;
     main.innerHTML = `<div class="pg-top"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Cronogramas</h1>
         <div class="kl"><span><b>${conPlan.length}</b>con cronograma</span><span><b>${sinPlan.length}</b>sin cronograma</span><span><b>${acts.length}</b>actividades</span><span><b class="${late ? 'r' : ''}">${late}</b>atrasadas</span></div>
-        <span class="sp"></span>${pid ? `<a class="btn ghost sm" href="#/proyectos/${pid}">Abrir la iniciativa →</a>` : ''}</div>
+        <span class="sp"></span>${pid ? `<a class="btn ghost sm" href="#/proyectos/${pid}">Abrir la iniciativa</a>` : ''}</div>
       <div class="pf-bar cr-bar"><div class="seg"><a class="${pid ? '' : 'on'}" href="#/cronograma/todos" title="Todas las iniciativas con cronograma, en uno solo (solo lectura)">Todo el portafolio</a>${actual ? `<a class="on" href="#/cronograma/${pid}" title="${esc(App.projectName(actual))}">${esc(App.projectName(actual))}</a>` : ''}</div>
         <button class="btn sm" data-cr="elegir">${actual ? 'Cambiar de iniciativa' : 'Abrir el cronograma de una iniciativa'} ▾</button>
         ${!pid && ec ? `<select class="pf-sel" id="gEstado" aria-label="Fase"><option value="">Fase: todas</option>${(ec.options || []).map(o => `<option ${filtro === o.name ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}</select>` : ''}
