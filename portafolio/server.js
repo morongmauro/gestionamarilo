@@ -323,12 +323,19 @@ route('GET', '/api/estado', 'usuario', async (req, ctx) => {
     demo: process.env.MODO_DEMO === 'true',
     columns: await projectColumns(),
     tablero: (await store.getConfig('tablero')) || { income_unidad: 1e6 },
+    vistaPf: (await store.getConfig('vista_portafolio')) || null,
     direccion: (await store.getConfig('direccion')) || null,
     projects, activities, sections, cases, sessions, committees,
     people: users.filter(u => u.active !== false).map(u => ({ id: u.id, name: u.name, email: u.email })),
   };
 });
 route('GET', '/api/historial', 'usuario', async () => store.recent('historial', 200));
+// Portafolio · Resumen: qué columnas se ven y en qué orden (igual para todos)
+route('PUT', '/api/config/vista-portafolio', 'editor', async (req, ctx) => {
+  const cols = Array.isArray(ctx.body && ctx.body.cols) ? ctx.body.cols.filter(x => typeof x === 'string' && x.length < 80).slice(0, 60) : null;
+  if (!cols) throw new HttpError(400, 'Columnas inválidas');
+  const v = { cols }; await store.setConfig('vista_portafolio', v); return v;
+});
 // Tablero: una foto de las cifras por semana (lunes) para comparar «frente a la semana anterior». Se guardan las últimas 26.
 route('GET', '/api/pulso/fotos', 'usuario', async () => (await store.getConfig('pulso_fotos')) || {});
 route('POST', '/api/pulso/fotos', 'usuario', async (req, ctx) => {

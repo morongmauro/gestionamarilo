@@ -122,7 +122,7 @@
     return `<section class="pv-com"><p>El próximo comité es el <b>${esc(fechaLarga(s.fecha))}</b>${esc(hora(s.hora_ini))}, con ${plural((s.proyectos || []).length, 'iniciativa', 'iniciativas')} en agenda${D.venc ? ` y ${plural(D.venc, 'compromiso vencido', 'compromisos vencidos')}` : ''}.</p>${btn('#/agenda', 'Ver la agenda', 'cl')}<button class="pv-btn" data-pv="prep">Preparar la presentación</button></section>`;
   }
 
-  const sub = act => `<nav class="pv-sub" aria-label="Vistas del tablero">${[['', 'Esta semana'], ['okr', 'Cómo vamos en cada OKR'], ['analisis', 'Valor a crear año por año']].map(([k, l]) => `<a href="#/tablero${k ? '/' + k : ''}" class="${act === k ? 'on' : ''}">${l}</a>`).join('')}<span class="sp"></span><a href="#/tablero/pantalla" class="pv-pant">Modo pantalla</a></nav>`;
+  const sub = act => `<nav class="pv-sub" aria-label="Vistas del tablero">${[['', 'Tablero'], ['semana', 'La semana'], ['okr', 'Cómo vamos en cada OKR'], ['analisis', 'Valor a crear año por año']].map(([k, l]) => `<a href="#/tablero${k ? '/' + k : ''}" class="${act === k ? 'on' : ''}">${l}</a>`).join('')}<span class="sp"></span><a href="#/tablero/pantalla" class="pv-pant">Modo pantalla</a></nav>`;
 
   /* ---------- vistas ---------- */
   async function pulso(main) {
@@ -137,7 +137,7 @@
       <p class="lema">${esc(lema)}</p>
       <p class="lema-s">${esc(frases)} El portafolio proyecta ${esc(m(D.proyTotal))} en ${D.d.anios.length} años.</p>
       ${cota(D)}
-      ${sub('')}
+      ${sub('semana')}
       <section class="pv-sec"><h2 class="pv-q">¿Qué cambió esta semana?<small>sale de los datos, nadie tiene que reportarlo</small></h2><div id="pvSem"><p class="pv-vacio">Cargando…</p></div></section>
       <section class="pv-sec"><h2 class="pv-q">¿Qué tiene que decidir la gerencia?</h2><div class="pv-dec">${decisiones(D)}</div></section>
       <section class="pv-sec pv-two">
@@ -203,6 +203,7 @@
   function render(main, params) {
     const k = (params || [])[0];
     if (k !== 'pantalla') document.documentElement.classList.remove('pv-pantalla');
+    if (!k && App.TableroVisual) return App.TableroVisual.render(main, sub(''));
     if (k === 'okr') return okr(main);
     if (k === 'pantalla') return pantalla(main);
     if (k === 'analisis' && analisis) {

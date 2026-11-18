@@ -445,7 +445,7 @@
     document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
   }
 
-  App.Tabla = { TYPES, renderValue, openEditor, render };
+  App.Tabla = { TYPES, renderValue, openEditor, render, openAddColumn };
   function setView(v) { const antes = P.view; P.view = v; savePrefs(); if (antes === 'resumen' || v === 'resumen' || !root) App.render(); else paint(); }
   App.Tabla.setView = setView;
   App.views.proyectos = { render: main => render(main) };
