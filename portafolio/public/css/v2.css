@@ -629,3 +629,5 @@ a.p-nv:hover{border-color:var(--ink)}
 .tbl td .c-in.log1 .leer{flex:none;font:inherit;font-size:11.5px;font-weight:700;color:var(--link,#2563EB);background:none;border:0;padding:0;cursor:pointer;white-space:nowrap}
 .tbl td .c-in.log1 .leer:hover{text-decoration:underline}
 .leer-todo{white-space:pre-wrap;word-break:break-word;font-size:13px;line-height:1.55;padding:0 12px 10px;max-height:340px;overflow:auto}
+/* Celular: la fila de modos del Portafolio se desplaza dentro de su espacio, sin ensanchar la página */
+@media(max-width:700px){.pf-bar .seg,.pg-top .seg{max-width:100%;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}.pf-bar .seg::-webkit-scrollbar{display:none}}

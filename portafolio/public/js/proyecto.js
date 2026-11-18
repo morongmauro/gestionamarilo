@@ -5,12 +5,13 @@
 'use strict';
 (function () {
   const { $, esc } = App;
-  const TABS = [['info', 'Información'], ['cronograma', 'Cronograma'], ['caso', 'Caso de negocio'], ['riesgos', 'Riesgos'], ['comites', 'Comités']];
+  // Orden pedido por la Oficina: lo primero al abrir un proyecto es su cronograma; la información general va al final
+  const TABS = [['cronograma', 'Cronograma'], ['caso', 'Caso de negocio'], ['riesgos', 'Riesgos'], ['comites', 'Comités'], ['info', 'Información general']];
 
   document.addEventListener('keydown', ev => { if (App.Proyecto && App.Proyecto._teclas) App.Proyecto._teclas(ev); });
   function render(main, params) {
     const [id, tab0] = params;
-    const tab = TABS.some(t => t[0] === tab0) ? tab0 : 'info';
+    const tab = TABS.some(t => t[0] === tab0) ? tab0 : 'cronograma';
     const p = App.byId('projects', id);
     if (!p) { main.innerHTML = `<div class="page-h"><a class="back" href="#/proyectos">← Portafolio</a></div><div class="card-box"><div class="empty-box"><b>Esta iniciativa no existe o fue eliminada</b></div></div>`; return; }
     const ro = !App.canEdit(), tc = App.titleCol(), ec = App.estadoCol();
@@ -25,7 +26,7 @@
     const ids = enL ? L.ids.filter(x => App.byId('projects', x)) : App.projectsSorted().filter(x => (App.enAlcance(x) && !App.esEjemplo(x)) || x.id === id).map(x => x.id);
     const pos = ids.indexOf(id), ant = pos > 0 ? ids[pos - 1] : null, sig = pos >= 0 && pos < ids.length - 1 ? ids[pos + 1] : null;
     const de = enL ? L : { de: 'Portafolio', href: '#/proyectos' };
-    const ir = x => `#/proyectos/${x}${tab === 'info' ? '' : '/' + tab}`;
+    const ir = x => `#/proyectos/${x}${tab === 'cronograma' ? '' : '/' + tab}`;
     const nomb = x => App.projectName(App.byId('projects', x));
     const nav = `<nav class="p-nav" aria-label="Recorrer iniciativas">${ant ? `<a class="p-nv" href="${ir(ant)}" title="Anterior: ${esc(nomb(ant))} (Alt + ←)">‹ Anterior</a>` : '<span class="p-nv off">‹ Anterior</span>'}
         <button class="p-nsel" data-nav="elegir" title="Ir a otra iniciativa sin cambiar de pestaña"><b>${esc(App.projectName(p))}</b> ▾</button><span class="p-npos">${pos + 1} de ${ids.length} · ${esc(de.de)}</span>
