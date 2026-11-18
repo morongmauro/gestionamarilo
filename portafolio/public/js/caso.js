@@ -483,6 +483,8 @@
   }
   function detalle(main, pid) {
     const p = App.byId('projects', pid);
+    // El caso se abre dentro de la ficha de la iniciativa: así se recorre con «‹ Anterior · Siguiente ›» sin salir de la pestaña
+    if (p) { location.replace('#/proyectos/' + pid + '/caso'); return; }
     if (!p) { main.innerHTML = '<div class="empty-box"><b>Iniciativa no encontrada</b><a href="#/casos" class="back">← Casos de negocio</a></div>'; return; }
     main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><a class="back" href="#/casos">← Casos de negocio</a><div><h1>${esc(App.projectName(p))}</h1><div class="sub">Caso de negocio</div></div><span class="sp"></span><a class="btn" href="#/proyectos/${pid}">Ver la iniciativa</a></div><div id="cBox"></div>`;
     main.onclick = e => { if (e.target.closest('.burger')) App.toggleSide(); };

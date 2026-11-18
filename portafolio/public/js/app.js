@@ -150,6 +150,11 @@
     if (sec === 'proyectos' && params[0]) App.Proyecto.render(main, params);
     else (App.views[sec] || App.views.proyectos).render(main, params);
     window.scrollTo(0, keep);
+    const LISTAS = { proyectos: ['Portafolio', null], casos: ['Casos de negocio', 'caso'], riesgos: ['Riesgos', 'riesgos'] };
+    if (LISTAS[sec] && !params[0]) {
+      const ids = []; main.querySelectorAll('[data-pid],[data-rk-ir]').forEach(el => { const id = el.dataset.pid || el.dataset.rkIr; if (el.offsetParent !== null && App.byId('projects', id) && !ids.includes(id) && (sec !== 'casos' || App.caseOf(id))) ids.push(id); });
+      if (ids.length) App.store.set('nav.lista', { de: LISTAS[sec][0], href: '#/' + sec, tab: LISTAS[sec][1], ids });
+    }
     $$('.tab[data-sec]').forEach(t => t.classList.toggle('active', t.dataset.sec === sec));
     sideProjects(sec === 'proyectos' ? params[0] : sec === 'casos' ? params[0] : null);
     $('#app').classList.remove('open');

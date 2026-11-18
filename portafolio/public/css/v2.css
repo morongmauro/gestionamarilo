@@ -589,3 +589,19 @@ textarea.rk-in{resize:vertical;min-height:34px}
 .p-title .tag-ej{font-size:11px;position:relative;top:-3px}
 .ej-aviso{margin:6px 0 2px;font-size:12.5px;color:var(--muted);background:#FFF8DB;border-left:3px solid #FFD000;border-radius:6px;padding:6px 10px}
 .pf-grp-ej td{background:#FFF8DB!important}
+
+/* Recorrer iniciativas desde la ficha */
+.p-nav{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
+.p-nv{font-size:13px;font-weight:700;color:var(--ink);border:1px solid var(--line-2);background:var(--card);border-radius:8px;padding:5px 11px;text-decoration:none;white-space:nowrap}
+a.p-nv:hover{border-color:var(--ink)}
+.p-nv.off{color:var(--faint);border-style:dashed;cursor:default}
+.p-nsel{font:inherit;font-size:13px;color:var(--ink);border:1px solid var(--line-2);background:var(--card);border-radius:8px;padding:5px 11px;cursor:pointer;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.p-nsel:hover{border-color:var(--ink)}
+.p-npos{font-size:12px;color:var(--muted);white-space:nowrap}
+@media (max-width:760px){.p-npos{display:none}.p-nsel{max-width:180px}}
+
+/* Tabla completa: arrastrar columnas */
+.tbl th .th-in[draggable=true]{cursor:grab}
+.tbl th.col-drag{opacity:.45}
+.tbl th.col-ant{box-shadow:inset 3px 0 0 var(--accent,#FFD000)}
+.tbl th.col-des{box-shadow:inset -3px 0 0 var(--accent,#FFD000)}

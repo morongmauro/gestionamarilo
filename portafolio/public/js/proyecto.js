@@ -7,6 +7,7 @@
   const { $, esc } = App;
   const TABS = [['info', 'Información'], ['cronograma', 'Cronograma'], ['caso', 'Caso de negocio'], ['riesgos', 'Riesgos'], ['comites', 'Comités']];
 
+  document.addEventListener('keydown', ev => { if (App.Proyecto && App.Proyecto._teclas) App.Proyecto._teclas(ev); });
   function render(main, params) {
     const [id, tab0] = params;
     const tab = TABS.some(t => t[0] === tab0) ? tab0 : 'info';
@@ -18,7 +19,18 @@
     const prox = ses.find(s => s.fecha >= App.d.today() && s.estado !== 'Cancelada');
     const estado = ec ? (p.props || {})[ec.id] : null;
 
-    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><a class="back" href="#/proyectos">← Portafolio</a><span class="sp"></span>${ro ? '' : '<button class="btn" data-p="menu">··· Opciones</button>'}</div>
+    // Recorrer iniciativas sin salir de la pestaña: el orden es el de la última lista vista (Portafolio, Casos o Riesgos)
+    const L = App.store.get('nav.lista', null);
+    const enL = L && Array.isArray(L.ids) && L.ids.includes(id);
+    const ids = enL ? L.ids.filter(x => App.byId('projects', x)) : App.projectsSorted().filter(x => (App.enAlcance(x) && !App.esEjemplo(x)) || x.id === id).map(x => x.id);
+    const pos = ids.indexOf(id), ant = pos > 0 ? ids[pos - 1] : null, sig = pos >= 0 && pos < ids.length - 1 ? ids[pos + 1] : null;
+    const de = enL ? L : { de: 'Portafolio', href: '#/proyectos' };
+    const ir = x => `#/proyectos/${x}${tab === 'info' ? '' : '/' + tab}`;
+    const nomb = x => App.projectName(App.byId('projects', x));
+    const nav = `<nav class="p-nav" aria-label="Recorrer iniciativas">${ant ? `<a class="p-nv" href="${ir(ant)}" title="Anterior: ${esc(nomb(ant))} (Alt + ←)">‹ Anterior</a>` : '<span class="p-nv off">‹ Anterior</span>'}
+        <button class="p-nsel" data-nav="elegir" title="Ir a otra iniciativa sin cambiar de pestaña"><b>${esc(App.projectName(p))}</b> ▾</button><span class="p-npos">${pos + 1} de ${ids.length} · ${esc(de.de)}</span>
+        ${sig ? `<a class="p-nv" href="${ir(sig)}" title="Siguiente: ${esc(nomb(sig))} (Alt + →)">Siguiente ›</a>` : '<span class="p-nv off">Siguiente ›</span>'}</nav>`;
+    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><a class="back" href="${de.href}">← ${esc(de.de)}</a>${nav}<span class="sp"></span>${ro ? '' : '<button class="btn" data-p="menu">··· Opciones</button>'}</div>
       <div class="card-box p-head">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${ec ? `<span class="pill cl-${App.optColor(ec, estado)}" data-p="estado" style="cursor:${ro ? 'default' : 'pointer'}">${esc(estado || 'Sin ' + ec.name.toLowerCase())}</span>` : ''}</div>
         <div class="p-title" data-p="titulo">${esc(App.projectName(p))}${App.tagEjemplo(p)}</div>${App.esEjemplo(p) ? '<div class="ej-aviso">Proyecto de <b>ejemplo</b>: muestra cómo se ve una iniciativa completa (información, caso de negocio, cronograma y riesgos). No suma en los totales del portafolio ni en el tablero.</div>' : ''}
@@ -62,8 +74,12 @@
           : '<div class="empty-box"><b>Esta iniciativa aún no ha pasado por comité</b>Agenda una sesión para presentarlo.</div>'}</div>`;
     }
 
+    App.Proyecto._teclas = ev => { if (!ev.altKey || !/^#\/proyectos\/[^/]+/.test(location.hash) || /input|textarea|select/i.test((document.activeElement || {}).tagName || '')) return; if (ev.key === 'ArrowLeft' && ant) { ev.preventDefault(); App.go(ir(ant)); } if (ev.key === 'ArrowRight' && sig) { ev.preventDefault(); App.go(ir(sig)); } };
     main.onclick = e => {
       if (e.target.closest('.burger')) return App.toggleSide();
+      const ne = e.target.closest('[data-nav=elegir]');
+      if (ne) return App.pickList(ne, { multi: false, placeholder: 'Buscar iniciativa…', empty: 'No hay iniciativas', selected: [id],
+        items: ids.map(x => ({ id: x, label: nomb(x), color: App.projectColor(App.byId('projects', x)) })), onSave: x => { if (x && x !== id) App.go(ir(x)); } });
       const s = e.target.closest('[data-ses]'); if (s) return App.Agenda.openSession(s.dataset.ses);
       const fr = e.target.closest('[data-h=frase]'); if (fr && !ro) return App.editText(fr, p.frase || '', { placeholder: 'En una frase: qué cambia con esta iniciativa', width: 420, onSave: v => App.guard(async () => { await App.patch('projects', id, { frase: String(v || '').slice(0, 500) }); App.render(); }) });
       if (tab === 'info' && !ro) { const v = e.target.closest('.props .v'); if (v && !e.target.closest('a')) return App.Tabla.openEditor(v, id, v.dataset.col); }

@@ -136,13 +136,27 @@
     $('#tq', main).addEventListener('input', e => { q = e.target.value; paint(); });
     main.onclick = onClick;
     main.onmousedown = onResize;
-    main.ondragstart = e => { const c = e.target.closest('.card'); if (!c) return; dragId = c.dataset.id; c.classList.add('drag'); };
-    main.ondragend = e => { const c = e.target.closest('.card'); if (c) c.classList.remove('drag'); $$('.bcol.over', main).forEach(x => x.classList.remove('over')); };
-    main.ondragover = e => { const l = e.target.closest('.bcol'); if (!l || !dragId) return; e.preventDefault(); $$('.bcol.over', main).forEach(x => x.classList.remove('over')); l.classList.add('over'); };
-    main.ondrop = e => { const l = e.target.closest('.bcol'); if (!l || !dragId) return; e.preventDefault(); setValue(dragId, boardColumn().id, l.dataset.lane); dragId = null; };
+    // Columnas: se arrastra el encabezado y el nuevo orden queda guardado para todos los usuarios
+    const MARCAS = ['col-ant', 'col-des', 'col-drag'];
+    const limpiaCol = () => $$('.tbl th', main).forEach(x => MARCAS.forEach(k => x.classList.toggle(k, false)));
+    main.ondragstart = e => {
+      const th = e.target.closest && e.target.closest('th[data-col]');
+      if (th && App.canEdit()) { if (e.target.closest('.rz')) return e.preventDefault(); dragCol = th.dataset.col; th.classList.add('col-drag'); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', dragCol); } catch (x) { /* */ } return; }
+      const c = e.target.closest('.card'); if (!c) return; dragId = c.dataset.id; c.classList.add('drag'); };
+    main.ondragend = e => { if (dragCol) { dragCol = null; limpiaCol(); return; } const c = e.target.closest('.card'); if (c) c.classList.remove('drag'); $$('.bcol.over', main).forEach(x => x.classList.remove('over')); };
+    main.ondragover = e => {
+      if (dragCol) { const th = e.target.closest('th[data-col]'); if (!th) return; e.preventDefault(); const r = th.getBoundingClientRect(), antes = e.clientX < r.left + r.width / 2;
+        $$('.tbl th', main).forEach(x => { x.classList.toggle('col-ant', false); x.classList.toggle('col-des', false); }); if (th.dataset.col !== dragCol) th.classList.add(antes ? 'col-ant' : 'col-des'); return; }
+      const l = e.target.closest('.bcol'); if (!l || !dragId) return; e.preventDefault(); $$('.bcol.over', main).forEach(x => x.classList.remove('over')); l.classList.add('over'); };
+    main.ondrop = e => {
+      if (dragCol) { const th = e.target.closest('th[data-col]'); const de = dragCol; dragCol = null; limpiaCol(); if (!th || th.dataset.col === de) return; e.preventDefault();
+        const cs = App.S.columns, c = cs.find(x => x.id === de), r = th.getBoundingClientRect(), antes = e.clientX < r.left + r.width / 2;
+        if (!c) return; cs.splice(cs.indexOf(c), 1); const j = cs.findIndex(x => x.id === th.dataset.col); cs.splice(antes ? j : j + 1, 0, c);
+        App.saveColumns(); App.toast('Orden de columnas guardado para todos'); return App.render(); }
+      const l = e.target.closest('.bcol'); if (!l || !dragId) return; e.preventDefault(); setValue(dragId, boardColumn().id, l.dataset.lane); dragId = null; };
     paint();
   }
-  let dragId = null;
+  let dragId = null, dragCol = null;
   function paint() {
     if (!root) return;
     $$('.seg button', root).forEach(b => b.classList.toggle('on', b.dataset.view === P.view));
@@ -164,7 +178,7 @@
     const groups = P.group && col(P.group) ? groupRows(rows, P.group) : [{ key: null, rows }];
     const total = cols.reduce((a, c) => a + (c.width || 180), 0) + calc.reduce((a, c) => a + c.width, 0) + 46 + 40;
     const colgroup = `<colgroup>${cols.map(c => `<col style="width:${c.width || 180}px">`).join('')}${calc.map(c => `<col style="width:${c.width}px">`).join('')}<col style="width:46px"><col style="width:40px"></colgroup>`;
-    const thead = `<thead><tr>${cols.map(c => `<th data-col="${c.id}"><div class="th-in" data-act="colmenu" data-col="${c.id}"><span class="ic">${TYPES[c.type].icon}</span><span class="nm">${esc(c.name)}</span>${P.sort && P.sort.col === c.id ? `<span class="srt">${P.sort.dir === 'desc' ? '▼' : '▲'}</span>` : ''}<span class="rz" data-act="resize" data-col="${c.id}"></span></div></th>`).join('')}${calc.map(c => `<th title="Columna calculada: sale del ${c.id === '_caso' ? 'caso de negocio' : 'cronograma'}"><div class="th-in" style="cursor:default"><span class="ic">${c.icon}</span><span class="nm">${esc(c.name)}</span></div></th>`).join('')}<th class="addc">${App.canEdit() ? '<div class="th-in" data-act="addcol" title="Agregar columna">+</div>' : ''}</th><th></th></tr></thead>`;
+    const thead = `<thead><tr>${cols.map(c => `<th data-col="${c.id}"><div class="th-in" data-act="colmenu" data-col="${c.id}"${App.canEdit() ? ` draggable="true" title="Clic: opciones de la columna · arrastre para cambiarla de lugar (para todos)"` : ""}><span class="ic">${TYPES[c.type].icon}</span><span class="nm">${esc(c.name)}</span>${P.sort && P.sort.col === c.id ? `<span class="srt">${P.sort.dir === 'desc' ? '▼' : '▲'}</span>` : ''}<span class="rz" data-act="resize" data-col="${c.id}"></span></div></th>`).join('')}${calc.map(c => `<th title="Columna calculada: sale del ${c.id === '_caso' ? 'caso de negocio' : 'cronograma'}"><div class="th-in" style="cursor:default"><span class="ic">${c.icon}</span><span class="nm">${esc(c.name)}</span></div></th>`).join('')}<th class="addc">${App.canEdit() ? '<div class="th-in" data-act="addcol" title="Agregar columna">+</div>' : ''}</th><th></th></tr></thead>`;
     const trRow = r => `<tr data-id="${r.id}">${cols.map(c => `<td class="cell ${c.id === tc.id ? 'ttl-col' : ''}" data-act="edit" data-id="${r.id}" data-col="${c.id}">${cellHTML(c, r)}</td>`).join('')}${calc.map(c => `<td class="cell" data-act="calc" data-id="${r.id}" data-k="${c.id}">${calcHTML(c.id, r)}</td>`).join('')}<td></td><td class="menu-col">${App.canEdit() ? `<button data-act="rowmenu" data-id="${r.id}" title="Opciones">···</button>` : ''}</td></tr>`;
     const span = cols.length + calc.length + 2;
     const newBtn = (g) => App.canEdit() ? `<tr class="newrow"><td colspan="${span}"><button data-act="new" data-gkey="${g.key === null ? '' : esc(g.key)}" data-gcol="${P.group || ''}">+ Nuevo</button></td></tr>` : '';

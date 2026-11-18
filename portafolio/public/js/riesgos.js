@@ -176,5 +176,16 @@
       </tbody></table></div></section></div>`;
   }
 
+  function seccion(main) {
+    const ps = App.projectsSorted().filter(p => App.enAlcance(p) && !App.esEjemplo(p));
+    const todos = ps.flatMap(p => lista(p).filter(activo).map(r => actual(r)));
+    const crit = todos.filter(v => v >= 15).length, venc = ps.reduce((a, p) => a + lista(p).filter(activo).reduce((b, r) => b + vencidas(r).length, 0), 0);
+    main.innerHTML = `<div class="pg-top"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Riesgos</h1>
+      <div class="kl"><span><b>${todos.length}</b>riesgos activos</span><span><b class="${crit ? 'r' : ''}">${crit}</b>críticos</span><span><b class="${venc ? 'r' : ''}">${venc}</b>acciones vencidas</span></div><span class="sp"></span></div>
+      ${portafolioHTML(ps)}
+      <div class="t-pie t-pie-row"><span class="t-tag">Clic en un riesgo abre los riesgos de esa iniciativa · con «Siguiente ›» pasa a los de la siguiente</span></div>`;
+    main.onclick = e => { if (e.target.closest('.burger')) return App.toggleSide(); const ir = e.target.closest('[data-rk-ir]'); if (ir) App.go('#/proyectos/' + ir.dataset.rkIr + '/riesgos'); };
+  }
+  App.views.riesgos = { render: seccion };
   App.Riesgos = { render, alertas, resumen, actual, nivelDe, portafolioHTML, lista };
 })();
