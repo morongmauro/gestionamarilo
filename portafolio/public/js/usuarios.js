@@ -1,11 +1,11 @@
 /* ============================================================
-   USUARIOS (solo administradores) · HISTORIAL (todos)
+   USUARIOS (solo administradores), HISTORIAL (todos)
    ============================================================ */
 'use strict';
 (function () {
   const { $, esc } = App;
   const ROLES = { admin: 'Administrador', editor: 'Editor', lector: 'Lector' };
-  const ROL_HELP = { admin: 'Todo, incluso administrar usuarios', editor: 'Crea y edita proyectos, cronogramas, casos y agenda', lector: 'Solo consulta' };
+  const ROL_HELP = { admin: 'Todo, incluso administrar usuarios', editor: 'Crea y edita iniciativas, cronogramas, casos y agenda', lector: 'Solo consulta' };
   const tempPass = () => { const L = 'abcdefghjkmnpqrstuvwxyz', r = n => Array.from(crypto.getRandomValues(new Uint32Array(n))); return 'Pf-' + r(4).map(x => x % 10).join('') + '-' + r(4).map(x => L[x % L.length]).join(''); };
 
   async function usuarios(main) {
@@ -18,11 +18,11 @@
     users.sort((a, b) => a.name.localeCompare(b.name));
     const base = location.origin;
     const tablas = ['proyectos', 'actividades', 'casos', 'flujos', 'sesiones', 'compromisos', 'comites'];
-    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><div><h1>Usuarios</h1><div class="sub">${users.length} ${users.length === 1 ? 'persona' : 'personas'} con acceso · cada quien entra con su correo y su propia contraseña</div></div><span class="sp"></span><button class="btn primary" data-u="new">+ Invitar persona</button></div>
+    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><div><h1>Usuarios</h1><div class="sub">${users.length} ${users.length === 1 ? 'persona' : 'personas'} con acceso, cada quien entra con su correo y su propia contraseña</div></div><span class="sp"></span><button class="btn primary" data-u="new">+ Invitar persona</button></div>
       <div class="card-box" style="padding:0;overflow:auto;margin-bottom:16px"><table class="lst"><thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th>Último ingreso</th><th></th></tr></thead><tbody>
         ${users.map(u => `<tr class="${u.active ? '' : 'off'}" data-id="${u.id}"><td><span style="display:inline-flex;align-items:center;gap:8px"><span class="av">${esc(App.initials(u.name))}</span><b>${esc(u.name)}</b>${u.id === App.S.me.id ? ' <span class="tag">tú</span>' : ''}</span></td><td>${esc(u.email)}</td>
           <td><select data-u="role" title="${esc(ROL_HELP[u.role])}">${Object.entries(ROLES).map(([k, l]) => `<option value="${k}" ${k === u.role ? 'selected' : ''}>${l}</option>`).join('')}</select></td>
-          <td>${!u.active ? '<span class="tag">Desactivado</span>' : u.pide_clave ? `<button class="tag warn" data-u="enlace" title="Pidió restablecer su contraseña ${esc(App.d.ago(u.pide_clave))}. Clic para generar el enlace">Pidió restablecer su contraseña · enviar enlace</button>` : u.invitado ? `<span class="tag warn" title="${u.enlace_vence ? 'El enlace vence ' + esc(App.d.fmt(u.enlace_vence.slice(0, 10))) : ''}">Invitación pendiente</span>` : u.must_change ? '<span class="tag warn">Debe cambiar la contraseña</span>' : '<span class="tag">Activo</span>'}</td>
+          <td>${!u.active ? '<span class="tag">Desactivado</span>' : u.pide_clave ? `<button class="tag warn" data-u="enlace" title="Pidió restablecer su contraseña ${esc(App.d.ago(u.pide_clave))}. Clic para generar el enlace">Pidió restablecer su contraseña, enviar enlace</button>` : u.invitado ? `<span class="tag warn" title="${u.enlace_vence ? 'El enlace vence ' + esc(App.d.fmt(u.enlace_vence.slice(0, 10))) : ''}">Invitación pendiente</span>` : u.must_change ? '<span class="tag warn">Debe cambiar la contraseña</span>' : '<span class="tag">Activo</span>'}</td>
           <td class="muted">${u.last_login ? esc(App.d.ago(u.last_login)) : 'Nunca'}</td>
           <td style="white-space:nowrap;text-align:right"><button class="btn sm" data-u="more">···</button></td></tr>`).join('')}
       </tbody></table></div>
@@ -59,10 +59,10 @@
     let st;
     try { st = await App.api('GET', '/api/lake'); } catch (e) { box.innerHTML = `<h3 style="font-size:14px;font-weight:800">Data lake de Azure</h3><div class="muted">${esc(e.message)}</div>`; return; }
     const u = st.ultimo;
-    const ult = !u ? 'Aún no se ha enviado' : u.ok ? `Último envío: ${esc(App.d.ago(u.at))} (${esc(u.origen)}${u.por && u.origen === 'manual' ? ', ' + esc(u.por) : ''}) · ${u.archivos.reduce((a, x) => a + x.filas, 0)} filas en ${u.archivos.length} tablas` : `<span style="color:var(--crit-ink);font-weight:700">Falló el último envío (${esc(App.d.ago(u.at))}): ${esc(u.error)}</span>`;
+    const ult = !u ? 'Aún no se ha enviado' : u.ok ? `Último envío: ${esc(App.d.ago(u.at))} (${esc(u.origen)}${u.por && u.origen === 'manual' ? ', ' + esc(u.por) : ''}), ${u.archivos.reduce((a, x) => a + x.filas, 0)} filas en ${u.archivos.length} tablas` : `<span style="color:var(--crit-ink);font-weight:700">Falló el último envío (${esc(App.d.ago(u.at))}): ${esc(u.error)}</span>`;
     box.innerHTML = `<h3 style="font-size:14px;font-weight:800;margin-bottom:6px">Data lake de Azure ${st.configurado ? '<span class="tag" style="background:var(--c-verde);color:var(--c-verde-i)">Conectado</span>' : '<span class="tag">Sin configurar</span>'}</h3>
       ${st.configurado ? `<div style="font-size:12.5px;line-height:1.7"><div><span class="muted">Destino:</span> <code class="u">${esc(st.destino)}</code></div>
-        <div><span class="muted">Acceso:</span> ${esc(st.autenticacion)} · <span class="muted">Formato:</span> ${esc(st.formato.toUpperCase())} · <span class="muted">Envío automático:</span> ${st.hora == null ? 'apagado' : `todos los días a las ${st.hora}:00`}</div>
+        <div><span class="muted">Acceso:</span> ${esc(st.autenticacion)}, <span class="muted">Formato:</span> ${esc(st.formato.toUpperCase())}, <span class="muted">Envío automático:</span> ${st.hora == null ? 'apagado' : `todos los días a las ${st.hora}:00`}</div>
         <div><span class="muted">Archivos:</span> <code class="u">&lt;tabla&gt;/fecha=AAAA-MM-DD/</code> (histórico) y <code class="u">&lt;tabla&gt;/actual/</code> (última foto)</div>
         <div style="margin-top:6px">${ult}</div></div>
         <div style="margin-top:10px"><button class="btn primary" data-lake="enviar">Enviar ahora</button></div>`
@@ -89,7 +89,7 @@
     const p = App.openPop(anchor, `<div class="lbl">Invitar a una persona</div>
       <input type="text" data-n="name" placeholder="Nombre y apellido" style="margin:0 4px 6px;width:calc(100% - 8px)">
       <input type="email" data-n="email" placeholder="correo@amarilo.com" style="margin:0 4px 6px;width:calc(100% - 8px)">
-      <select data-n="role" style="margin:0 4px 6px;width:calc(100% - 8px)">${Object.entries(ROLES).map(([k, l]) => `<option value="${k}" ${k === 'editor' ? 'selected' : ''}>${l} · ${ROL_HELP[k]}</option>`).join('')}</select>
+      <select data-n="role" style="margin:0 4px 6px;width:calc(100% - 8px)">${Object.entries(ROLES).map(([k, l]) => `<option value="${k}" ${k === 'editor' ? 'selected' : ''}>${l}, ${ROL_HELP[k]}</option>`).join('')}</select>
       <div class="hint">Le llega un enlace para crear su contraseña (vence en 7 días). Si el correo no está configurado, te mostramos el enlace para que se lo envíes.</div>
       <div class="row" style="padding:4px"><button class="btn primary" data-n="ok">Invitar</button></div>`, { width: 340 });
     p.onclick = e => {
@@ -161,7 +161,7 @@
       if (h.coll === 'sessions' && App.byId('sessions', h.record_id)) return `ses:${h.record_id}`;
       return null;
     };
-    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><div><h1>Historial</h1><div class="sub">Quién cambió qué y cuándo · últimos ${items.length} cambios</div></div><span class="sp"></span>
+    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><div><h1>Historial</h1><div class="sub">Quién cambió qué y cuándo, últimos ${items.length} cambios</div></div><span class="sp"></span>
       <select class="fld" id="hQuien" style="width:auto"><option value="">Todas las personas</option>${personas.map(p => `<option ${p === quien ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select></div>
       ${vis.length ? agrupar(vis).map(h => { const d = h.created_at.slice(0, 10), hd = d !== day ? `<div class="h-day">${esc(App.d.fmtLong(new Date(h.created_at).toLocaleDateString('en-CA')))}</div>` : ''; day = d;
         const hora = new Date(h.created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });

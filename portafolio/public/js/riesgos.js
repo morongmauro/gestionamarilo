@@ -57,14 +57,14 @@
     if (!rs.some(r => r.id === S.sel)) S.sel = (rs[0] || {}).id || null;
     const r = rs.find(x => x.id === S.sel) || null, R = resumen(p);
     const dots = (pp, ii) => rs.filter(activo).map(x => {
-      const a = S.modo !== 'despues' && x.p === pp && x.i === ii ? `<span class="rk-dot inh ${x.id === S.sel ? 'sel' : ''}" data-rk-sel="${x.id}" title="${esc(x.titulo || '')} · antes de mitigar">${codigo(p, x)}</span>` : '';
-      const d = S.modo !== 'antes' && x.rp === pp && x.ri === ii ? `<span class="rk-dot res ${x.id === S.sel ? 'sel' : ''}" data-rk-sel="${x.id}" title="${esc(x.titulo || '')} · después de mitigar">${codigo(p, x)}</span>` : '';
+      const a = S.modo !== 'despues' && x.p === pp && x.i === ii ? `<span class="rk-dot inh ${x.id === S.sel ? 'sel' : ''}" data-rk-sel="${x.id}" title="${esc(x.titulo || '')}, antes de mitigar">${codigo(p, x)}</span>` : '';
+      const d = S.modo !== 'antes' && x.rp === pp && x.ri === ii ? `<span class="rk-dot res ${x.id === S.sel ? 'sel' : ''}" data-rk-sel="${x.id}" title="${esc(x.titulo || '')}, después de mitigar">${codigo(p, x)}</span>` : '';
       return a + d; }).join('');
     const celdaSel = r && (S.modo === 'despues' ? [r.rp, r.ri] : [r.p, r.i]);
     const matriz = `<div class="rk-mz">${[5, 4, 3, 2, 1].map(pp => `<div class="rk-ax">${pp}</div>` + [1, 2, 3, 4, 5].map(ii => `<div class="rk-c ${nivelDe(pp * ii)[0]} ${celdaSel && celdaSel[0] === pp && celdaSel[1] === ii ? 'sel' : ''}" data-rk-celda="${pp},${ii}" title="Probabilidad ${pp} (${P_TXT[pp]}) × impacto ${ii} (${I_TXT[ii]}) = ${pp * ii}">${dots(pp, ii)}</div>`).join('')).join('')}
       <div></div>${[1, 2, 3, 4, 5].map(ii => `<div class="rk-ax">${ii}</div>`).join('')}</div>
       <div class="rk-ejes"><span>↑ Probabilidad</span><span>Impacto →</span></div>`;
-    const pasos = (campo, v, txts) => `<span class="rk-esc" role="group">${[1, 2, 3, 4, 5].map(n => `<button class="${v >= n ? 'on' : ''}" data-rk-paso="${campo}:${n}" ${ro ? 'disabled' : ''} title="${n} · ${txts[n]}">${n}</button>`).join('')}<em>${v ? txts[v] : 'sin evaluar'}</em></span>`;
+    const pasos = (campo, v, txts) => `<span class="rk-esc" role="group">${[1, 2, 3, 4, 5].map(n => `<button class="${v >= n ? 'on' : ''}" data-rk-paso="${campo}:${n}" ${ro ? 'disabled' : ''} title="${n}, ${txts[n]}">${n}</button>`).join('')}<em>${v ? txts[v] : 'sin evaluar'}</em></span>`;
     const campo = (k, lbl, ph, multi) => `<div class="rk-f"><label>${lbl}</label>${ro ? `<span>${esc(r[k] || '—')}</span>` : multi ? `<textarea class="rk-in" data-rk-f="${k}" rows="2" placeholder="${ph}">${esc(r[k] || '')}</textarea>` : `<input class="rk-in" data-rk-f="${k}" value="${esc(r[k] || '')}" placeholder="${ph}">`}</div>`;
     const dos = (() => { const c = App.caseOf(pid); const f = c && c.moneda !== 'USD' ? Finanzas.calc(c) : null; return f && App.Avance ? App.Avance.dosAnios(f) : 0; })();
     const sugerido = r && Number(r.costo) > 0 && dos > 0 ? (q => (q >= 0.3 ? 5 : q >= 0.15 ? 4 : q >= 0.05 ? 3 : q >= 0.01 ? 2 : 1))(Number(r.costo) / dos) : null;
@@ -95,11 +95,11 @@
     const tabla = rs.length ? `<section class="t-card pf-tbl-card rk-lista"><div class="pf-wrap"><table class="pf-tbl"><thead><tr><th>Riesgo</th><th>Nivel <small>antes → después</small></th><th>Respuesta</th><th>Próxima acción</th><th>Responsable</th><th>Estado</th><th aria-hidden="true"></th></tr></thead><tbody>
       ${rs.map(x => { const pa = proxima(x), venc = pa && pa.fecha && pa.fecha < hoy(); return `<tr class="${x.id === S.sel ? 'rk-on' : ''} ${activo(x) ? '' : 'pf-inact'}" data-rk-sel="${x.id}"><td><b>${codigo(p, x)}</b> ${esc(x.titulo || 'Sin título')}<small class="rk-cat">${esc(catLabel(x.categoria))}</small></td>
         <td>${badge(val(x.p, x.i))}${val(x.rp, x.ri) ? ` → ${badge(val(x.rp, x.ri))}` : ''}</td><td>${esc((RESP.find(q => q[0] === x.respuesta) || ['', '—'])[1])}</td>
-        <td class="${venc ? 'rk-venc' : ''}">${pa ? `${esc(pa.texto || '')}${pa.fecha ? ` · ${venc ? 'vencida ' : ''}${esc(App.d.fmtShort(pa.fecha))}` : ''}` : '<span class="faint">—</span>'}</td><td>${esc((pa && pa.responsable) || '')}</td><td>${esc(x.estado || 'Abierto')}</td><td class="go" aria-hidden="true">›</td></tr>`; }).join('')}
+        <td class="${venc ? 'rk-venc' : ''}">${pa ? `${esc(pa.texto || '')}${pa.fecha ? `, ${venc ? 'vencida ' : ''}${esc(App.d.fmtShort(pa.fecha))}` : ''}` : '<span class="faint">—</span>'}</td><td>${esc((pa && pa.responsable) || '')}</td><td>${esc(x.estado || 'Abierto')}</td><td class="go" aria-hidden="true">›</td></tr>`; }).join('')}
       </tbody></table></div></section>` : '';
-    box.innerHTML = `<div class="rk-bar">${ro ? '' : '<button class="btn primary sm" data-rk="nuevo">+ Riesgo</button>'}
+    box.innerHTML = `<div class="rk-bar vl-bar">
         <span class="kl"><span><b>${R.n}</b>riesgos activos</span><span title="Nivel actual: después de mitigar si ya se evaluó"><b class="${R.criticos ? 'r' : ''}">${R.criticos}</b>críticos hoy</span><span><b class="${R.vencidas ? 'r' : ''}">${R.vencidas}</b>acciones vencidas</span>${R.sinEvaluar ? `<span><b>${R.sinEvaluar}</b>sin evaluar</span>` : ''}</span><span class="sp"></span>
-        <div class="seg" title="Qué puntos se ven en la matriz">${[['antes', 'Antes de mitigar'], ['despues', 'Después'], ['ambos', 'Ambos']].map(([k, l]) => `<button data-rk-modo="${k}" class="${S.modo === k ? 'on' : ''}">${l}</button>`).join('')}</div></div>
+        <div class="seg" title="Qué puntos se ven en la matriz">${[['antes', 'Antes de mitigar'], ['despues', 'Después'], ['ambos', 'Ambos']].map(([k, l]) => `<button data-rk-modo="${k}" class="${S.modo === k ? 'on' : ''}">${l}</button>`).join('')}</div>${ro ? '' : '<button class="btn primary sm" data-rk="nuevo">+ Riesgo</button>'}</div>
       <div class="rk-grid"><section class="t-card t-pad"><div class="rk-tt">${r && !ro ? `Haga clic en una celda para evaluar <b>${codigo(p, r)}</b> ${S.modo === 'despues' ? 'después de mitigar' : 'antes de mitigar'}` : 'Matriz de riesgos'}</div>${matriz}
         <div class="rk-ley"><span><i class="rk-dot inh"></i>antes de mitigar</span><span><i class="rk-dot res"></i>después (residual)</span></div></section>${detalle}</div>
       ${tabla}<datalist id="rkPersonas">${(App.S.people || []).map(u => `<option value="${esc(u.name)}">`).join('')}</datalist>`;
@@ -131,7 +131,7 @@
   }
 
   function nuevo(anchor, pid, listo) {
-    const p = App.openPop(anchor, `<div class="lbl">Nuevo riesgo · elija una pregunta guía o escriba el suyo</div>
+    const p = App.openPop(anchor, `<div class="lbl">Nuevo riesgo, elija una pregunta guía o escriba el suyo</div>
       <div style="padding:0 10px 8px"><input class="fld" data-n="t" placeholder="Qué puede pasar, en una frase" style="width:100%"></div>
       <div class="rk-guia">${CATS.map(([k, l, qs]) => `<div class="rk-gc"><b>${l}</b>${qs.map(q => `<button class="rk-gq" data-cat="${k}">${esc(q)}</button>`).join('')}</div>`).join('')}</div>
       <div class="row" style="justify-content:flex-end;padding:6px 10px 10px"><button class="btn primary sm" data-n="ok">Crear riesgo</button></div>`, { width: 560 });
@@ -167,12 +167,12 @@
     const celda = (pp, ii) => todos.filter(x => (x.r.rp > 0 && x.r.ri > 0 ? x.r.rp === pp && x.r.ri === ii : x.r.p === pp && x.r.i === ii));
     const top = todos.filter(x => x.v).sort((a, b) => b.v - a.v).slice(0, 10);
     const sinRiesgos = ps.filter(p => !lista(p).length).length, sinEval = todos.filter(x => !x.v).length;
-    return `<div class="rk-grid rk-port"><section class="t-card t-pad"><div class="rk-tt">Todos los riesgos activos · nivel actual (después de mitigar, si ya se evaluó)</div>
+    return `<div class="rk-grid rk-port"><section class="t-card t-pad"><div class="rk-tt">Todos los riesgos activos, nivel actual (después de mitigar, si ya se evaluó)</div>
         <div class="rk-mz">${[5, 4, 3, 2, 1].map(pp => `<div class="rk-ax">${pp}</div>` + [1, 2, 3, 4, 5].map(ii => { const c = celda(pp, ii); return `<div class="rk-c ${nivelDe(pp * ii)[0]}" title="${esc(c.map(x => App.projectName(x.p) + ': ' + (x.r.titulo || '')).join('\n'))}">${c.length ? `<span class="rk-n">${c.length}</span>` : ''}</div>`; }).join('')).join('')}
         <div></div>${[1, 2, 3, 4, 5].map(ii => `<div class="rk-ax">${ii}</div>`).join('')}</div><div class="rk-ejes"><span>↑ Probabilidad</span><span>Impacto →</span></div>
-        <div class="t-pie" style="padding:10px 0 0"><span class="t-tag">${todos.length} riesgos en ${ps.length - sinRiesgos} iniciativas${sinEval ? ` · ${sinEval} sin evaluar` : ''} · ${sinRiesgos} iniciativas sin riesgos identificados</span></div></section>
+        <div class="t-pie" style="padding:10px 0 0"><span class="t-tag">${todos.length} riesgos en ${ps.length - sinRiesgos} iniciativas${sinEval ? `, ${sinEval} sin evaluar` : ''}, ${sinRiesgos} iniciativas sin riesgos identificados</span></div></section>
       <section class="t-card pf-tbl-card"><div class="rk-tt" style="padding:14px 16px 0">Los 10 riesgos más altos</div><div class="pf-wrap"><table class="pf-tbl"><thead><tr><th>Iniciativa</th><th>Riesgo</th><th>Nivel</th><th>Próxima acción</th><th aria-hidden="true"></th></tr></thead><tbody>
-        ${top.map(x => { const pa = proxima(x.r), venc = pa && pa.fecha && pa.fecha < hoy(); return `<tr data-rk-ir="${x.p.id}"><td class="pf-nm"><b>${esc(App.projectName(x.p))}</b></td><td>${esc(x.r.titulo || '')}</td><td>${badge(x.v)}</td><td class="${venc ? 'rk-venc' : ''}">${pa ? esc(pa.texto || '') + (pa.fecha ? ` · ${esc(App.d.fmtShort(pa.fecha))}` : '') : (x.v >= 15 ? '<b class="rk-venc">sin plan</b>' : '<span class="faint">—</span>')}</td><td class="go" aria-hidden="true">›</td></tr>`; }).join('') || '<tr><td colspan="5"><div class="t-vacio">Aún no hay riesgos evaluados. Se identifican en la pestaña «Riesgos» de cada iniciativa.</div></td></tr>'}
+        ${top.map(x => { const pa = proxima(x.r), venc = pa && pa.fecha && pa.fecha < hoy(); return `<tr data-rk-ir="${x.p.id}"><td class="pf-nm"><b>${esc(App.projectName(x.p))}</b></td><td>${esc(x.r.titulo || '')}</td><td>${badge(x.v)}</td><td class="${venc ? 'rk-venc' : ''}">${pa ? esc(pa.texto || '') + (pa.fecha ? `, ${esc(App.d.fmtShort(pa.fecha))}` : '') : (x.v >= 15 ? '<b class="rk-venc">sin plan</b>' : '<span class="faint">—</span>')}</td><td class="go" aria-hidden="true">›</td></tr>`; }).join('') || '<tr><td colspan="5"><div class="t-vacio">Aún no hay riesgos evaluados. Se identifican en la pestaña «Riesgos» de cada iniciativa.</div></td></tr>'}
       </tbody></table></div></section></div>`;
   }
 
@@ -183,7 +183,7 @@
     main.innerHTML = `<div class="pg-top"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Riesgos</h1>
       <div class="kl"><span><b>${todos.length}</b>riesgos activos</span><span><b class="${crit ? 'r' : ''}">${crit}</b>críticos</span><span><b class="${venc ? 'r' : ''}">${venc}</b>acciones vencidas</span></div><span class="sp"></span></div>
       ${portafolioHTML(ps)}
-      <div class="t-pie t-pie-row"><span class="t-tag">Clic en un riesgo abre los riesgos de esa iniciativa · con «Siguiente ›» pasa a los de la siguiente</span></div>`;
+      <div class="t-pie t-pie-row"><span class="t-tag">Clic en un riesgo abre los riesgos de esa iniciativa, con «Siguiente ›» pasa a los de la siguiente</span></div>`;
     main.onclick = e => { if (e.target.closest('.burger')) return App.toggleSide(); const ir = e.target.closest('[data-rk-ir]'); if (ir) App.go('#/proyectos/' + ir.dataset.rkIr + '/riesgos'); };
   }
   App.views.riesgos = { render: seccion };

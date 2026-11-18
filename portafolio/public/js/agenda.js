@@ -1,5 +1,5 @@
 /* ============================================================
-   AGENDA DE COMITÉS · calendario mensual y lista
+   AGENDA DE COMITÉS, calendario mensual y lista
    Cada sesión: comité, fecha y hora, lugar o enlace de Teams,
    proyectos que se presentan, temas, asistentes, decisiones y
    compromisos. Se puede agregar a Outlook (.ics).
@@ -28,7 +28,7 @@
     if (c && c.estado === 'En revisión') return { t: 'Aprobar caso', cl: 'azul' };
     if (c && c.estado === 'Aplazado') return { t: 'Caso con ajustes', cl: 'naranja' };
     const av = App.Avance && App.Avance.de(p); if (av && av.listo && av.sig) return { t: 'Paso a ' + av.sig.corto, cl: 'azul' };
-    const pl = App.planOf(p.id); if (pl.atrasadas) return { t: `Atraso · ${pl.atrasadas} act.`, cl: 'rojo' };
+    const pl = App.planOf(p.id); if (pl.atrasadas) return { t: `Atraso, ${pl.atrasadas} act.`, cl: 'rojo' };
     if (App.Riesgos && App.Riesgos.resumen(p).criticos) return { t: 'Riesgo crítico', cl: 'rojo' };
     if (!c) return { t: 'Sin caso', cl: 'gris' };
     return { t: 'Avance', cl: 'gris' };
@@ -104,8 +104,8 @@
       const evs = ses.filter(s => s.fecha === d).sort(byDate);
       const hs = hitos.filter(a => a.fin === d);
       cells += `<div class="cv-d ${d.slice(0, 7) !== mes ? 'out' : ''} ${d === today ? 'hoy' : ''}" data-day="${d}"><div class="dn"><span>${+d.slice(8)}</span>${ro ? '' : `<button class="add" data-new="${d}" title="Nueva sesión este día" aria-label="Nueva sesión">+</button>`}</div>
-        ${evs.map(s => { const n = (s.proyectos || []).length; return `<button class="cv-ev ${sig && s.id === sig.id ? 'sig' : ''} ${s.estado === 'Cancelada' ? 'cancel' : ''}" data-ses="${s.id}" style="--ev:var(--c-${colorOf(s)});--evi:var(--c-${colorOf(s)}-i)" title="${esc(tituloOf(s))}"><b>${esc(tituloOf(s))}</b><span>${s.hora_ini ? esc(s.hora_ini) + ' · ' : ''}${n ? `${n} ${n === 1 ? 'iniciativa' : 'iniciativas'}` : esc(s.estado || 'Programada')}</span></button>`; }).join('')}
-        ${hs.map(a => { const p = App.byId('projects', a.project_id); return `<a class="cv-ev hito ${a.fin < today ? 'tarde' : ''}" href="#/cronograma/${a.project_id}" title="Hito del cronograma"><b>Hito · ${esc(a.name)}</b><span>${p ? esc(App.projectName(p)) : ''}</span></a>`; }).join('')}</div>`;
+        ${evs.map(s => { const n = (s.proyectos || []).length; return `<button class="cv-ev ${sig && s.id === sig.id ? 'sig' : ''} ${s.estado === 'Cancelada' ? 'cancel' : ''}" data-ses="${s.id}" style="--ev:var(--c-${colorOf(s)});--evi:var(--c-${colorOf(s)}-i)" title="${esc(tituloOf(s))}"><b>${esc(tituloOf(s))}</b><span>${s.hora_ini ? esc(s.hora_ini) + ', ' : ''}${n ? `${n} ${n === 1 ? 'iniciativa' : 'iniciativas'}` : esc(s.estado || 'Programada')}</span></button>`; }).join('')}
+        ${hs.map(a => { const p = App.byId('projects', a.project_id); return `<a class="cv-ev hito ${a.fin < today ? 'tarde' : ''}" href="#/cronograma/${a.project_id}" title="Hito del cronograma"><b>Hito, ${esc(a.name)}</b><span>${p ? esc(App.projectName(p)) : ''}</span></a>`; }).join('')}</div>`;
     }
     const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].slice(0, nd);
     return `<section class="t-card cv-cal" style="--nd:${nd}"><div class="cv-h">${dias.map(d => `<div><span class="l">${d}</span><span class="c">${d.slice(0, 3)}</span></div>`).join('')}</div><div class="cv-b">${cells}</div></section>`;
@@ -129,27 +129,27 @@
     const vence = abiertos.filter(x => x.k.fecha && x.k.fecha <= s.fecha).sort((a, b) => a.k.fecha.localeCompare(b.k.fecha));
     const sinFecha = abiertos.filter(x => !x.k.fecha).length;
     return `<aside class="t-card cv-side">
-      <div class="cv-sec"><div class="cv-lbl">Próxima sesión${s.fecha === today ? ' · hoy' : ''}</div>
-        <h3 class="cv-tit"><a data-ses="${s.id}" href="javascript:void 0">${esc(tituloOf(s))} · ${dia} ${+s.fecha.slice(8)} ${App.d.MES3[+s.fecha.slice(5, 7) - 1]}</a></h3>
-        <div class="cv-meta">${[s.hora_ini ? esc(s.hora_ini) + (s.hora_fin ? ' – ' + esc(s.hora_fin) : '') : '', s.lugar ? esc(s.lugar) : '', s.enlace && /^https?:\/\//i.test(s.enlace) ? `<a href="${esc(s.enlace)}" target="_blank" rel="noopener">Enlace de la reunión ↗</a>` : '', c ? esc(c.name) : ''].filter(Boolean).join(' · ') || '<span class="faint">Sin hora ni lugar todavía</span>'}</div>
+      <div class="cv-sec"><div class="cv-lbl">Próxima sesión${s.fecha === today ? ', hoy' : ''}</div>
+        <h3 class="cv-tit"><a data-ses="${s.id}" href="javascript:void 0">${esc(tituloOf(s))}, ${dia} ${+s.fecha.slice(8)} ${App.d.MES3[+s.fecha.slice(5, 7) - 1]}</a></h3>
+        <div class="cv-meta">${[s.hora_ini ? esc(s.hora_ini) + (s.hora_fin ? ' – ' + esc(s.hora_fin) : '') : '', s.lugar ? esc(s.lugar) : '', s.enlace && /^https?:\/\//i.test(s.enlace) ? `<a href="${esc(s.enlace)}" target="_blank" rel="noopener">Enlace de la reunión ↗</a>` : '', c ? esc(c.name) : ''].filter(Boolean).join(', ') || '<span class="faint">Sin hora ni lugar todavía</span>'}</div>
         <div class="cv-acc"><a class="btn sm" href="#/agenda/preparar/${s.id}">Preparar presentación</a><a class="btn sm" href="/api/sesiones/${s.id}/ics" download title="Agregar a Outlook">.ics</a><button class="btn sm" data-ses="${s.id}">Acta</button></div></div>
-      <div class="cv-sec"><div class="cv-lbl">Agenda · ${ps.length} ${ps.length === 1 ? 'iniciativa' : 'iniciativas'}</div>
+      <div class="cv-sec"><div class="cv-lbl">Agenda, ${ps.length} ${ps.length === 1 ? 'iniciativa' : 'iniciativas'}</div>
         ${ps.length ? `<ol class="cv-ag">${ps.map((p, i) => { const mo = motivo(p), r = responsableDe(p); return `<li data-goproj="${p.id}" title="Abrir la iniciativa"><span class="n">${i + 1}</span><span class="t"><b>${esc(App.projectName(p))}</b><small>${r ? `<span class="pf-per"><i class="cl-${App.colorPersona(r)}"></i>${esc(iniciales(r))}</span>` : '<span class="faint">sin responsable</span>'}</small></span><span class="pill cl-${mo.cl}">${esc(mo.t)}</span><span class="go" aria-hidden="true">›</span></li>`; }).join('')}</ol>` : '<div class="faint" style="margin:6px 0">Aún no hay iniciativas en la agenda.</div>'}
         ${ro ? '' : `<button class="t-lnk" data-agenda-add="${s.id}">+ Agregar iniciativa a la agenda</button>`}</div>
       <div class="cv-sec"><div class="cv-lbl">Compromisos que vencen antes de la sesión</div>
-        ${vence.length ? `<div class="cv-cps">${vence.slice(0, 8).map(({ s: s2, k, i }) => `<div class="cv-cp"><input type="checkbox" data-done="${s2.id}" data-i="${i}" ${ro ? 'disabled' : ''} title="Marcar como cumplido" aria-label="Cumplido"><span class="t" data-ses="${s2.id}"><b>${esc(k.texto)}</b>${k.responsable ? ` · ${esc(k.responsable)}` : ''}</span><span class="f ${k.fecha < today ? 'r' : ''}">${k.fecha < today ? 'vencido ' : ''}${esc(App.d.fmtShort(k.fecha))}</span></div>`).join('')}</div>` : '<div class="faint" style="margin:6px 0">Nada vence antes de la sesión.</div>'}
+        ${vence.length ? `<div class="cv-cps">${vence.slice(0, 8).map(({ s: s2, k, i }) => `<div class="cv-cp"><input type="checkbox" data-done="${s2.id}" data-i="${i}" ${ro ? 'disabled' : ''} title="Marcar como cumplido" aria-label="Cumplido"><span class="t" data-ses="${s2.id}"><b>${esc(k.texto)}</b>${k.responsable ? `, ${esc(k.responsable)}` : ''}</span><span class="f ${k.fecha < today ? 'r' : ''}">${k.fecha < today ? 'vencido ' : ''}${esc(App.d.fmtShort(k.fecha))}</span></div>`).join('')}</div>` : '<div class="faint" style="margin:6px 0">Nada vence antes de la sesión.</div>'}
         ${sinFecha ? `<button class="t-lnk" data-tab="comp">${sinFecha} compromiso${sinFecha === 1 ? '' : 's'} sin fecha →</button>` : ''}</div></aside>`;
   }
   function decisionesHTML(decs) {
     return `<section class="t-card pf-tbl-card"><div class="pf-wrap"><table class="pf-tbl cv-tbl"><thead><tr><th>Fecha</th><th>Tipo</th><th>Decisión</th><th>Iniciativa</th><th>Responsable</th><th>Estado</th><th>Sesión</th><th aria-hidden="true"></th></tr></thead><tbody>
       ${decs.map(({ d, s }) => { const p = d.project_id ? App.byId('projects', d.project_id) : null; return `<tr data-ses="${s.id}"><td>${esc(App.d.fmt(d.fecha || s.fecha))}</td><td><span class="pill cl-${/aprob/i.test(d.tipo || '') ? 'verde' : /rechaz|cancel/i.test(d.tipo || '') ? 'rojo' : 'gris'}">${esc(d.tipo || 'Decisión')}</span></td><td class="cv-txt">${esc(d.texto)}</td><td>${p ? `<a href="#/proyectos/${p.id}" data-goproj="${p.id}">${esc(App.projectName(p))}</a>` : '<span class="faint">—</span>'}</td><td>${esc(d.responsable || '')}</td><td>${d.estado === 'Cumplida' ? '<span class="pill cl-verde">Cumplida</span>' : `<span class="faint">${d.libre ? '—' : esc(d.estado || 'Pendiente')}</span>`}</td><td class="faint">${esc(tituloOf(s))}</td><td class="go" aria-hidden="true">›</td></tr>`; }).join('') || '<tr><td colspan="7"><div class="t-vacio">Aún no hay decisiones registradas. Se anotan en el acta de cada sesión.</div></td></tr>'}
-      </tbody></table></div><div class="t-pie t-pie-row"><span class="t-tag">${decs.length} decisiones · clic en una fila abre el acta de esa sesión</span></div></section>`;
+      </tbody></table></div><div class="t-pie t-pie-row"><span class="t-tag">${decs.length} decisiones, clic en una fila abre el acta de esa sesión</span></div></section>`;
   }
   function compromisosHTML(comps, today, ro) {
     const orden = comps.slice().sort((a, b) => (a.k.hecho - b.k.hecho) || (a.k.fecha || '9999').localeCompare(b.k.fecha || '9999'));
     return `<section class="t-card pf-tbl-card"><div class="pf-wrap"><table class="pf-tbl cv-tbl"><thead><tr><th></th><th>Compromiso</th><th>Responsable</th><th>Vence</th><th>Sesión</th></tr></thead><tbody>
-      ${orden.map(({ s, k, i }) => `<tr class="${k.hecho ? 'ok' : ''}"><td style="width:28px"><input type="checkbox" data-done="${s.id}" data-i="${i}" ${k.hecho ? 'checked' : ''} ${ro ? 'disabled' : ''} aria-label="Cumplido"></td><td class="cv-txt" data-ses="${s.id}">${esc(k.texto)}</td><td>${esc(k.responsable || '')}</td><td class="${!k.hecho && k.fecha && k.fecha < today ? 'cv-r' : ''}">${k.fecha ? (!k.hecho && k.fecha < today ? 'vencido ' : '') + esc(App.d.fmtShort(k.fecha)) : '<span class="faint">sin fecha</span>'}</td><td class="faint" data-ses="${s.id}">${esc(tituloOf(s))} · ${esc(App.d.fmtShort(s.fecha))}</td></tr>`).join('') || '<tr><td colspan="5"><div class="t-vacio">No hay compromisos. Se anotan en el acta de cada sesión.</div></td></tr>'}
-      </tbody></table></div><div class="t-pie t-pie-row"><span class="t-tag">${comps.filter(x => !x.k.hecho).length} abiertos · ${comps.filter(x => x.k.hecho).length} cumplidos · marca la casilla cuando se cumpla</span></div></section>`;
+      ${orden.map(({ s, k, i }) => `<tr class="${k.hecho ? 'ok' : ''}"><td style="width:28px"><input type="checkbox" data-done="${s.id}" data-i="${i}" ${k.hecho ? 'checked' : ''} ${ro ? 'disabled' : ''} aria-label="Cumplido"></td><td class="cv-txt" data-ses="${s.id}">${esc(k.texto)}</td><td>${esc(k.responsable || '')}</td><td class="${!k.hecho && k.fecha && k.fecha < today ? 'cv-r' : ''}">${k.fecha ? (!k.hecho && k.fecha < today ? 'vencido ' : '') + esc(App.d.fmtShort(k.fecha)) : '<span class="faint">sin fecha</span>'}</td><td class="faint" data-ses="${s.id}">${esc(tituloOf(s))}, ${esc(App.d.fmtShort(s.fecha))}</td></tr>`).join('') || '<tr><td colspan="5"><div class="t-vacio">No hay compromisos. Se anotan en el acta de cada sesión.</div></td></tr>'}
+      </tbody></table></div><div class="t-pie t-pie-row"><span class="t-tag">${comps.filter(x => !x.k.hecho).length} abiertos, ${comps.filter(x => x.k.hecho).length} cumplidos, marca la casilla cuando se cumpla</span></div></section>`;
   }
   function actasHTML(today) {
     const pas = App.S.sessions.filter(s => s.fecha && (s.fecha <= today || s.estado === 'Realizada') && s.estado !== 'Cancelada').sort((a, b) => byDate(b, a));
@@ -159,7 +159,7 @@
   }
   function itemHTML(s, full) {
     const c = comite(s);
-    return `<button class="up-item" data-ses="${s.id}"><div class="up-date" style="${s.estado === 'Cancelada' ? 'opacity:.5' : ''}"><b>${+s.fecha.slice(8)}</b><span>${App.d.MES3[+s.fecha.slice(5, 7) - 1]}</span></div><div class="up-t"><b style="${s.estado === 'Cancelada' ? 'text-decoration:line-through' : ''}">${esc(tituloOf(s))}</b><span>${s.hora_ini ? esc(s.hora_ini) + (s.hora_fin ? '–' + esc(s.hora_fin) : '') + ' · ' : ''}${(s.proyectos || []).length} ${(s.proyectos || []).length === 1 ? 'iniciativa' : 'iniciativas'}${full && c ? ' · ' + esc(c.name) : ''}${s.estado && s.estado !== 'Programada' ? ' · ' + esc(s.estado) : ''}</span></div><i style="width:10px;height:10px;border-radius:50%;flex-shrink:0;background:var(--c-${colorOf(s)}-i)"></i></button>`;
+    return `<button class="up-item" data-ses="${s.id}"><div class="up-date" style="${s.estado === 'Cancelada' ? 'opacity:.5' : ''}"><b>${+s.fecha.slice(8)}</b><span>${App.d.MES3[+s.fecha.slice(5, 7) - 1]}</span></div><div class="up-t"><b style="${s.estado === 'Cancelada' ? 'text-decoration:line-through' : ''}">${esc(tituloOf(s))}</b><span>${s.hora_ini ? esc(s.hora_ini) + (s.hora_fin ? '–' + esc(s.hora_fin) : '') + ', ' : ''}${(s.proyectos || []).length} ${(s.proyectos || []).length === 1 ? 'iniciativa' : 'iniciativas'}${full && c ? ', ' + esc(c.name) : ''}${s.estado && s.estado !== 'Programada' ? ', ' + esc(s.estado) : ''}</span></div><i style="width:10px;height:10px;border-radius:50%;flex-shrink:0;background:var(--c-${colorOf(s)}-i)"></i></button>`;
   }
 
   /* ---------- comités ---------- */
@@ -205,7 +205,7 @@
     const projHTML = () => (s.proyectos || []).map(pid => { const p = App.byId('projects', pid); return p ? `<span class="pill cl-${App.projectColor(p)}" data-goproj="${pid}" title="Abrir la iniciativa">${esc(App.projectName(p))}</span>` : ''; }).join('') + (ro ? '' : '<button class="btn sm" data-addproj="1">+ Iniciativa</button>') + (!(s.proyectos || []).length && ro ? '<span class="faint">Ninguno</span>' : '');
     const d = App.openDrawer(`<div class="d-top"><div style="display:flex;gap:8px;align-items:center"><span class="pill cl-${colorOf(s)}">${esc(c ? c.name : 'Sin comité')}</span><span class="tag ${s.estado === 'Cancelada' ? '' : 'warn'}">${esc(s.estado || 'Programada')}</span></div><button class="x" data-close="1" title="Cerrar">✕</button></div>
       <h2>${esc(tituloOf(s))}</h2>
-      <div class="faint" style="font-size:12px;margin:-6px 0 14px">${esc(App.d.fmtLong(s.fecha))}${s.hora_ini ? ' · ' + esc(s.hora_ini) + (s.hora_fin ? ' a ' + esc(s.hora_fin) : '') : ''}</div>
+      <div class="faint" style="font-size:12px;margin:-6px 0 14px">${esc(App.d.fmtLong(s.fecha))}${s.hora_ini ? ', ' + esc(s.hora_ini) + (s.hora_fin ? ' a ' + esc(s.hora_fin) : '') : ''}</div>
       <div class="frm">
         <label>Título</label><input class="fld" data-s="titulo" value="${esc(s.titulo || '')}" placeholder="${esc(c ? c.name : 'Sesión de comité')}" ${dis}>
         <label>Comité</label><select class="fld" data-s="comite_id" ${dis}><option value="">Sin comité</option>${App.S.committees.map(x => `<option value="${x.id}" ${x.id === s.comite_id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
@@ -229,7 +229,7 @@
     const cabecera = () => {
       const s2 = App.byId('sessions', id); if (!s2) return; const c2 = comite(s2);
       const top = $('.d-top > div', d); if (top) top.innerHTML = `<span class="pill cl-${colorOf(s2)}">${esc(c2 ? c2.name : 'Sin comité')}</span><span class="tag ${s2.estado === 'Cancelada' ? '' : 'warn'}">${esc(s2.estado || 'Programada')}</span>`;
-      const h = $('h2', d); if (h) { h.textContent = tituloOf(s2); const fl = h.nextElementSibling; if (fl) fl.textContent = App.d.fmtLong(s2.fecha) + (s2.hora_ini ? ' · ' + s2.hora_ini + (s2.hora_fin ? ' a ' + s2.hora_fin : '') : ''); }
+      const h = $('h2', d); if (h) { h.textContent = tituloOf(s2); const fl = h.nextElementSibling; if (fl) fl.textContent = App.d.fmtLong(s2.fecha) + (s2.hora_ini ? ', ' + s2.hora_ini + (s2.hora_fin ? ' a ' + s2.hora_fin : '') : ''); }
     };
     d.onchange = e => {
       const t = e.target;

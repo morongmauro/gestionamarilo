@@ -116,7 +116,7 @@
       const vencidos = App.S.sessions.filter(s => (s.proyectos || []).includes(p.id)).flatMap(s => s.compromisos || []).filter(k => !k.hecho && k.fecha && k.fecha < hoy && (k.texto || '').trim()).length;
       if (vencidos) out.push({ sev: 2, txt: `${vencidos} compromiso${vencidos > 1 ? 's' : ''} de comité vencido${vencidos > 1 ? 's' : ''}`, href: '#/agenda' });
       const ses = App.S.sessions.filter(s => (s.proyectos || []).includes(p.id) && s.fecha >= hoy && s.fecha <= en14 && s.estado !== 'Cancelada').sort((a, b) => a.fecha.localeCompare(b.fecha))[0];
-      if (ses) out.push({ sev: 1, txt: `Pasa por ${App.Agenda ? App.Agenda.tituloOf(ses) : 'comité'} el ${App.d.fmtShort(ses.fecha)}${x.caso && (x.caso.estado || 'Borrador') !== 'Aprobado' ? ' · caso ' + (x.caso.estado || 'en borrador').toLowerCase() : ''}`, href: `#/proyectos/${p.id}/comites` });
+      if (ses) out.push({ sev: 1, txt: `Pasa por ${App.Agenda ? App.Agenda.tituloOf(ses) : 'comité'} el ${App.d.fmtShort(ses.fecha)}${x.caso && (x.caso.estado || 'Borrador') !== 'Aprobado' ? ', caso ' + (x.caso.estado || 'en borrador').toLowerCase() : ''}`, href: `#/proyectos/${p.id}/comites` });
       const pausado = /paus|cancel|suspend|detenid/i.test(x.estado || '');
       const malo = out.some(z => z.sev >= 2);
       return { x, out, pausado, malo, max: out.reduce((mx, z) => Math.max(mx, z.sev), 0) };
@@ -125,11 +125,11 @@
   const SEV = { 3: ['crit', 'i-x', 'Crítico'], 2: ['warn', 'i-alerta', 'Atención'], 1: ['info', 'i-info', 'Próximo'] };
 
   /* ============================================================
-     TABLERO · en orden de lectura
+     TABLERO, en orden de lectura
      1 Valor a crear (lo que proyectan los casos, año por año)
      2 Captura por iniciativa (año elegido)
      3 Proyectado vs. capturado (curva del año)
-     4 Qué requiere atención · 5 Calendario
+     4 Qué requiere atención, 5 Calendario
      Lo azul con → es enlace; las filas con › se abren; el resto es lectura.
      ============================================================ */
   const ORDEN_CAT = ['ingresos', 'ahorro', 'tiempo', 'eficiencia', 'riesgo', 'otro'];
@@ -187,7 +187,7 @@
       <div class="t-hero-l">
         <div class="t-eyb">Valor proyectado ${filas.length ? `${filas[0].y} – ${filas.at(-1).y}` : ''}</div>
         <div class="t-big">${esc(m(tot))}</div>
-        <div class="t-cob"><b>${d.proyectos.filter(x => x.fuente).length} de ${d.proyectos.length}</b> iniciativas con cifras${d.proyectos.some(x => !x.fuente) ? ` · <a class="t-lnk" href="#/casos">${d.proyectos.filter(x => !x.fuente).length} aún sin caso →</a>` : ''}</div>
+        <div class="t-cob"><b>${d.proyectos.filter(x => x.fuente).length} de ${d.proyectos.length}</b> iniciativas con cifras${d.proyectos.some(x => !x.fuente) ? `, <a class="t-lnk" href="#/casos">${d.proyectos.filter(x => !x.fuente).length} aún sin caso →</a>` : ''}</div>
         <p class="t-frase">${frase}</p>
         <div class="t-grupos">${sumG.slice(0, 7).map(({ g, v }) => `<div class="t-gr"><i style="background:${g.color}"></i><span title="${esc(g.label)}">${esc(g.label)}</span><b>${esc(m(v))}</b><small>${tot ? Math.round(v / tot * 100) : 0} %</small></div>`).join('')}${sumG.length > 7 ? `<div class="t-gr t-mas">y ${sumG.length - 7} más</div>` : ''}</div>
         <div class="t-aviso">Suma solo las iniciativas con caso de negocio. Las que no tienen caso todavía no aportan a esta cifra. La captura real se mide abajo.${S.nota ? ' ' + esc(S.nota) : ''}</div>
@@ -210,7 +210,7 @@
         h += `<rect x="${x0}" y="${y1}" width="${bw}" height="${hh}" rx="${j === segs.length - 1 ? 4 : 0}" style="fill:${g.color}${pasado ? ';opacity:.45' : ''}"/>`; acc += v; });
       if (f.y === d.hoyY) h += `<rect x="${x0 - 8}" y="${T - 4}" width="${bw + 16}" height="${H - T - B + 8}" rx="8" class="t-hoyb"/>`;
       if (f.t) h += `<text x="${cx}" y="${y(f.t) - 8}" text-anchor="middle" class="t-val" style="font-size:${step < 80 ? 10 : 13}px">${esc(m(f.t))}</text>`;
-      h += `<text x="${cx}" y="${H - 10}" text-anchor="middle" class="t-ax ${f.y === d.hoyY ? 'on' : ''}">${f.y}${step < 90 ? '' : f.y === d.hoyY ? ' · hoy' : pasado ? ' · cerrado' : ''}</text>`;
+      h += `<text x="${cx}" y="${H - 10}" text-anchor="middle" class="t-ax ${f.y === d.hoyY ? 'on' : ''}">${f.y}${step < 90 ? '' : f.y === d.hoyY ? ', hoy' : pasado ? ', cerrado' : ''}</text>`;
       h += `<rect class="hit" data-anio2="${i}" x="${step * i}" y="0" width="${step}" height="${H}"/>`;
     });
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.innerHTML = h;
@@ -226,7 +226,7 @@
     const pct = v => `${Math.max(0, Math.min(100, v / max * 100))}%`;
     return `<section class="t-card t-pad" aria-labelledby="t2">
       ${n ? `<div class="t-lgd"><span><i style="background:var(--good)"></i>Verificado</span><span><i style="background:var(--ink)"></i>Capturado sin verificar</span><span><i class="t-sw-claro"></i>Proyectado ${d.Y}</span><span><i class="t-sw-marca"></i>Esperado a hoy</span></div>
-      <div class="t-cpi t-cpi-h"><span>Iniciativa · tipo de valor</span><span>0 — ${esc(m(max))}</span><span class="n">Capturado</span><span class="n">vs. esperado</span></div>
+      <div class="t-cpi t-cpi-h"><span>Iniciativa, tipo de valor</span><span>0 — ${esc(m(max))}</span><span class="n">Capturado</span><span class="n">vs. esperado</span></div>
       ${rows.map(({ x, ver: v }) => { const st = estadoDe(x.pc);
         return `<a class="t-cpi" href="#/proyectos/${x.p.id}/caso"><span class="t-nm"><b>${esc(App.projectName(x.p))}</b><small>${x.catPrincipal ? `<i style="background:var(--cat-${x.catPrincipal})"></i>${esc(App.catLabel(x.catPrincipal))}` : 'sin tipo de valor'}</small></span>
           <span class="t-bar"><i class="p" style="width:${pct(x.proy)}"></i><i class="c" style="width:${pct(x.cap)}"></i><i class="v" style="width:${pct(Math.min(v, x.cap))}"></i>${x.esp > 0 ? `<u style="left:${pct(x.esp)}"></u>` : ''}</span>
@@ -268,7 +268,7 @@
     const filas = sg.filter(z => z.out.some(o => o.sev >= 2)).map(z => { const o = z.out.slice().sort((a, b) => b.sev - a.sev); return { z, o: o[0], mas: o.filter(q => q.sev >= 2).length - 1 }; })
       .sort((a, b) => b.o.sev - a.o.sev || b.mas - a.mas);
     return `<section class="t-card" aria-labelledby="t4">${filas.length ? filas.slice(0, 5).map(({ z, o, mas }) => { const [c, , l] = SEV[o.sev];
-      return `<a class="t-row" href="${o.href}"><span class="t-sev ${c}">${c === 'crit' ? '●' : '▲'} ${l}</span><span class="t-tx"><b>${esc(App.projectName(z.x.p))}</b><small>${esc(o.txt)}${mas > 0 ? ` · +${mas} más` : ''}</small></span><span class="t-ch">›</span></a>`; }).join('')
+      return `<a class="t-row" href="${o.href}"><span class="t-sev ${c}">${c === 'crit' ? '●' : '▲'} ${l}</span><span class="t-tx"><b>${esc(App.projectName(z.x.p))}</b><small>${esc(o.txt)}${mas > 0 ? `, +${mas} más` : ''}</small></span><span class="t-ch">›</span></a>`; }).join('')
       : '<div class="t-vacio">Todo al día: ninguna iniciativa tiene alertas.</div>'}
       <div class="t-pie t-pie-row"><span class="t-tag">${filas.length} iniciativa${filas.length === 1 ? '' : 's'} con alertas</span><a class="t-lnk" href="#/proyectos">Ver el portafolio →</a></div></section>`;
   }
@@ -278,7 +278,7 @@
     const ses = App.S.sessions.filter(s => s.fecha >= hoy && s.fecha <= lim && s.estado !== 'Cancelada')
       .map(s => ({ f: s.fecha, t: App.Agenda ? App.Agenda.tituloOf(s) : 'Comité', s: (s.proyectos || []).length ? `${s.proyectos.length} iniciativa${s.proyectos.length === 1 ? '' : 's'} en agenda` : 'Sin iniciativas en agenda todavía', href: '#/agenda' }));
     const hitos = App.S.activities.filter(a => a.hito && !App.esEjemplo(a.project_id) && (a.fin || a.inicio) >= hoy && (a.fin || a.inicio) <= lim)
-      .map(a => { const p = App.byId('projects', a.project_id); return p ? { f: a.fin || a.inicio, t: 'Hito · ' + (a.name || 'sin nombre'), s: App.projectName(p), href: `#/cronograma/${p.id}` } : null; }).filter(Boolean);
+      .map(a => { const p = App.byId('projects', a.project_id); return p ? { f: a.fin || a.inicio, t: 'Hito, ' + (a.name || 'sin nombre'), s: App.projectName(p), href: `#/cronograma/${p.id}` } : null; }).filter(Boolean);
     const ev = ses.concat(hitos).sort((a, b) => a.f.localeCompare(b.f)).slice(0, 5);
     const venc = App.S.sessions.flatMap(s => s.compromisos || []).filter(k => !k.hecho && k.fecha && k.fecha < hoy && (k.texto || '').trim()).length;
     return `<section class="t-card" aria-labelledby="t5">${ev.length ? ev.map(e => `<a class="t-row t-ev" href="${e.href}"><span class="t-f"><b>${+e.f.slice(8)}</b><small>${App.d.MES3[+e.f.slice(5, 7) - 1]}</small></span><span class="t-tx"><b>${esc(e.t)}</b><small>${esc(e.s)}</small></span><span class="t-ch">›</span></a>`).join('')
@@ -300,9 +300,9 @@
       ${t('#/casos', `Captado ${d.Y}`, esc(m(d.captadoY)), pc == null ? `de ${esc(m(d.proyectadoY))} proyectados para el año` : `<em>${Math.round(pc * 100)} %</em> de lo esperado a hoy (${esc(m(d.esperadoY))})`, tono(pc))}
       ${t('#/casos', 'Verificado', pv == null ? '—' : Math.round(pv * 100) + ' %', pv == null ? 'aún no hay captura registrada' : `${esc(m(d.verifY))} de ${esc(m(d.captadoY))} captados; el resto es preliminar`, pv == null ? '' : pv >= 0.8 ? 'ok' : pv >= 0.4 ? 'warn' : 'crit')}
       ${t('#/agenda', 'Casos por aprobar', String(rev), prox ? `próximo comité: ${esc(App.d.fmtShort(prox.fecha))}` : 'no hay comité programado', '')}
-      ${t('#/proyectos', 'Con alertas', String(conAl.length), `${crit} crítica${crit === 1 ? '' : 's'} · ${sinDatos} sin datos para medir`, conAl.length ? (crit ? 'crit' : 'warn') : 'ok')}</div>`;
+      ${t('#/proyectos', 'Con alertas', String(conAl.length), `${crit} crítica${crit === 1 ? '' : 's'}, ${sinDatos} sin datos para medir`, conAl.length ? (crit ? 'crit' : 'warn') : 'ok')}</div>`;
   }
-  // A5 · lo desactualizado, a la vista de todos
+  // A5, lo desactualizado, a la vista de todos
   function desactualizado() {
     const it = App.Mejoras && App.Mejoras.desactualizadosItems ? App.Mejoras.desactualizadosItems() : [];
     return `<div class="t-sub">Qué está desactualizado <small>se calcula solo</small></div><section class="t-card">${it.length ? it.slice(0, 5).map(x => `<a class="t-row" href="${x.href}"><span class="t-sev des">↻ Actualizar</span><span class="t-tx"><b>${esc(x.t)}</b><small>${esc(x.s)}</small></span><span class="t-ch">›</span></a>`).join('') : '<div class="t-vacio">Nada pendiente de actualizar.</div>'}
@@ -317,16 +317,16 @@
     const alcance = App.dgvHay() ? `<button class="pf-tg ${App.soloDgv() ? 'on' : ''}" data-dgv aria-pressed="${App.soloDgv()}" title="${App.soloDgv() ? `Solo cuenta las iniciativas del foco DGV. Hay ${fuera} históricas que no se cuentan. Clic para incluirlas.` : 'Cuenta también las históricas. Clic para ver solo el foco DGV.'}">${App.soloDgv() ? 'Foco DGV' : 'Con históricas'}</button>` : '';
     const paso = (n, t, s, extra) => `<div class="t-paso" id="t${n}"><i>${n}</i><b>${t}</b><small>${s}</small><span class="sp"></span>${extra || ''}</div>`;
     const seg = (k, val, ops) => `<div class="seg t-seg" role="group">${ops.map(([v, l]) => `<button data-${k}="${v}" class="${val === v ? 'on' : ''}" aria-pressed="${val === v}">${l}</button>`).join('')}</div>`;
-    main.innerHTML = `<div class="pg-top"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Tablero</h1><span class="pg-meta">Datos al ${esc(App.d.fmt(d.hoy))} · ${d.filas.length} iniciativa${d.filas.length === 1 ? '' : 's'} · ${d.filas.filter(x => x.caso).length} con caso de negocio · pesos colombianos</span><span class="sp"></span>
+    main.innerHTML = `<div class="pg-top"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Tablero</h1><span class="pg-meta">Datos al ${esc(App.d.fmt(d.hoy))}, ${d.filas.length} iniciativa${d.filas.length === 1 ? '' : 's'}, ${d.filas.filter(x => x.caso).length} con caso de negocio, pesos colombianos</span><span class="sp"></span>
         ${alcance}<label class="pg-sel">Año de captura <select data-f="anio">${d.anios.map(y => `<option ${y === d.Y ? 'selected' : ''}>${y}</option>`).join('')}</select></label>
         ${App.canEdit() ? '<button class="btn ghost sm" data-f-aj title="Ajustes del tablero" aria-label="Ajustes del tablero"><svg aria-hidden="true"><use href="#i-ajustes"/></svg></button>' : ''}</div>
       ${titulares(d, sg)}
       ${paso(1, 'Valor a crear', 'lo que proyectan los casos de negocio, año por año', seg('agrupar', F.agrupar || 'tipo', [['tipo', 'Por tipo de valor'], ['okr', 'Por OKR'], ['etapa', 'Por fase']]))}
       ${valorACrear(d)}
       ${App.Portafolio && App.Portafolio.lentesTablero ? App.Portafolio.lentesTablero() : ''}
-      ${paso(2, `Captura por iniciativa · ${d.Y}`, 'lo capturado frente a lo que debía llevar a la fecha', seg('cpi', F.cpi === 'brecha' ? 'brecha' : 'valor', [['valor', 'Mayor valor'], ['brecha', 'Mayor brecha']]))}
+      ${paso(2, `Captura por iniciativa, ${d.Y}`, 'lo capturado frente a lo que debía llevar a la fecha', seg('cpi', F.cpi === 'brecha' ? 'brecha' : 'valor', [['valor', 'Mayor valor'], ['brecha', 'Mayor brecha']]))}
       ${capturaIniciativas(d)}
-      ${paso(3, `Proyectado vs. capturado · ${d.Y}`, 'acumulado mes a mes')}
+      ${paso(3, `Proyectado vs. capturado, ${d.Y}`, 'acumulado mes a mes')}
       <section class="t-card t-pad"><div class="t-lgd"><span><i class="t-sw-l proy"></i>Proyectado</span><span><i class="t-sw-l cap"></i>Capturado</span><span><i class="t-sw-l ver"></i>Verificado</span></div><svg class="t-viz" id="tCurva" height="210" role="img" aria-label="Proyectado contra capturado, acumulado"></svg></section>
       <div class="t-dos"><div>${paso(4, 'Qué requiere atención', 'lo más grave primero')}${atencion2(sg)}${desactualizado()}</div><div>${paso(5, 'Calendario', 'comités e hitos de los próximos 30 días')}${calendario(d)}</div></div>`;
     const draw = () => { const a = $('#tAnios', main), c = $('#tCurva', main); if (a) dibujarAnios(a, d); if (c) dibujarCurva(c, d); };
@@ -350,7 +350,7 @@
       if (!h) return hideTip();
       if (h.dataset.anio2 != null) {
         const { filas, grupos } = valorACrear.ultimo, f = filas[+h.dataset.anio2];
-        showTip(e, `<div class="t">${f.y}${f.y === d.hoyY ? ' · año en curso' : f.y < d.hoyY ? ' · cerrado' : ''}</div>${grupos.filter(g => f.v[g.key] > 0).map(g => row(g.color, g.label, m(f.v[g.key]))).join('')}<div class="sep">${row('', 'Total proyectado', m(f.t), true)}</div>`);
+        showTip(e, `<div class="t">${f.y}${f.y === d.hoyY ? ', año en curso' : f.y < d.hoyY ? ', cerrado' : ''}</div>${grupos.filter(g => f.v[g.key] > 0).map(g => row(g.color, g.label, m(f.v[g.key]))).join('')}<div class="sep">${row('', 'Total proyectado', m(f.t), true)}</div>`);
       } else {
         const i = +h.dataset.mes2, c = curvaDatos(d)[i], vis = i < d.mesHasta;
         showTip(e, `<div class="t">${App.d.MESES[i].replace(/^./, s => s.toUpperCase())} ${d.Y}</div>${row('var(--viz-muted)', 'Proyectado acumulado', m(c.esperado))}${row('var(--ink)', 'Capturado acumulado', vis ? m(c.captado) : '—', true)}${row('var(--good)', 'Verificado acumulado', vis ? m(c.ver) : '—')}`);

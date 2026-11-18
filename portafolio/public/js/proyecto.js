@@ -1,12 +1,12 @@
 /* ============================================================
-   PÁGINA DEL PROYECTO · todo lo del proyecto en un solo lugar
-   Pestañas: Información · Cronograma · Caso de negocio · Comités
+   PÁGINA DEL PROYECTO, todo lo del proyecto en un solo lugar
+   Pestañas: Información, Cronograma, Caso de negocio, Comités
    ============================================================ */
 'use strict';
 (function () {
   const { $, esc } = App;
   // Orden pedido por la Oficina: lo primero al abrir un proyecto es su cronograma; la información general va al final
-  const TABS = [['cronograma', 'Cronograma'], ['caso', 'Caso de negocio'], ['riesgos', 'Riesgos'], ['comites', 'Comités'], ['info', 'Información general']];
+  const TABS = [['cronograma', 'Cronograma'], ['caso', 'Caso de negocio'], ['captura', 'Captura de valor'], ['okr', 'OKR'], ['riesgos', 'Riesgos'], ['comites', 'Comités'], ['info', 'Información general']];
 
   document.addEventListener('keydown', ev => { if (App.Proyecto && App.Proyecto._teclas) App.Proyecto._teclas(ev); });
   function render(main, params) {
@@ -28,14 +28,19 @@
     const de = enL ? L : { de: 'Portafolio', href: '#/proyectos' };
     const ir = x => `#/proyectos/${x}${tab === 'cronograma' ? '' : '/' + tab}`;
     const nomb = x => App.projectName(App.byId('projects', x));
-    const nav = `<nav class="p-nav" aria-label="Recorrer iniciativas">${ant ? `<a class="p-nv" href="${ir(ant)}" title="Anterior: ${esc(nomb(ant))} (Alt + ←)">‹ Anterior</a>` : '<span class="p-nv off">‹ Anterior</span>'}
-        <button class="p-nsel" data-nav="elegir" title="Ir a otra iniciativa sin cambiar de pestaña"><b>${esc(App.projectName(p))}</b> ▾</button><span class="p-npos">${pos + 1} de ${ids.length} · ${esc(de.de)}</span>
-        ${sig ? `<a class="p-nv" href="${ir(sig)}" title="Siguiente: ${esc(nomb(sig))} (Alt + →)">Siguiente ›</a>` : '<span class="p-nv off">Siguiente ›</span>'}</nav>`;
-    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><a class="back" href="${de.href}">← ${esc(de.de)}</a>${nav}<span class="sp"></span>${ro ? '' : '<button class="btn" data-p="menu">··· Opciones</button>'}</div>
+    const faseCorta = estado && window.Fases && Fases.de(estado) ? Fases.de(estado).corto.replace(/^F(\d)$/, 'Fase $1') : '';
+    const pendCap = caso && App.Valor ? App.Valor.pendientes(caso).length : 0, nOkr = App.okrsDe ? App.okrsDe(p).length : 0;
+    const cuenta = k => { if (k === 'cronograma' && pl.acts.length) return `<span class="n">${pl.acts.length}</span>`; if (k === 'comites' && ses.length) return `<span class="n">${ses.length}</span>`;
+      if (k === 'okr' && nOkr) return `<span class="n">${nOkr}</span>`; if (k === 'captura' && pendCap) return `<span class="n a" title="Capturas recurrentes por confirmar">${pendCap} por confirmar</span>`;
+      if (k === 'riesgos' && App.Riesgos) { const q = App.Riesgos.resumen(p); return q.criticos ? `<span class="n r">${q.criticos} crítico${q.criticos === 1 ? '' : 's'}</span>` : q.n ? `<span class="n">${q.n}</span>` : ''; } return ''; };
+    main.innerHTML = `<div class="ph-nav"><button class="burger" data-act="burger">☰</button><a class="ph-bc" href="${de.href}">${esc(de.de)}</a>${faseCorta ? `<span class="ph-bc2">› ${esc(faseCorta)}</span>` : ''}<span class="sp"></span>
+        ${ant ? `<a class="ph-ar" href="${ir(ant)}" title="Anterior: ${esc(nomb(ant))} (Alt + ←)" aria-label="Iniciativa anterior">‹</a>` : '<span class="ph-ar off">‹</span>'}<span class="ph-pos">${pos + 1} de ${ids.length}</span>${sig ? `<a class="ph-ar" href="${ir(sig)}" title="Siguiente: ${esc(nomb(sig))} (Alt + →)" aria-label="Iniciativa siguiente">›</a>` : '<span class="ph-ar off">›</span>'}
+        <button class="ph-ir" data-nav="elegir" title="Ir a otra iniciativa sin cambiar de pestaña"><i class="ico ico-flecha"></i>Ir a otra iniciativa ▾</button>${ro ? '' : '<button class="ph-mas" data-p="menu" title="Opciones de la iniciativa" aria-label="Opciones de la iniciativa">⋯</button>'}</div>
       <div class="p-head">
-        <div class="p-title" data-p="titulo">${esc(App.projectName(p))}${App.esEjemplo(p) ? '<span class="ej-txt" title="Proyecto de ejemplo: muestra cómo se ve una iniciativa completa. No suma en los totales ni en el tablero.">ejemplo, no suma en los totales</span>' : ''}</div>
-        <div class="facts">
+        <div class="ph-tit"><h1 class="p-title" data-p="titulo">${esc(App.projectName(p))}</h1>
           ${ec ? `<button class="f-fase" data-p="estado" ${ro ? 'disabled' : ''} title="${ro ? '' : 'Cambiar la fase'}"><span class="pill cl-${App.optColor(ec, estado) || 'gris'}">${esc(estado || 'Sin ' + ec.name.toLowerCase())}</span></button>` : ''}
+          ${App.esEjemplo(p) ? '<span class="ej-txt" title="Iniciativa de ejemplo: muestra cómo se ve una iniciativa completa. No suma en los totales ni en el tablero.">ejemplo, no suma en los totales</span>' : ''}</div>
+        <div class="facts">
           <span>${pl.acts.length ? `<b>${pl.avance} %</b> de avance${pl.atrasadas ? `, <b class="r">${pl.atrasadas} atrasada${pl.atrasadas > 1 ? 's' : ''}</b>` : ''}${pl.fin ? `, termina el <b>${esc(App.d.fmt(pl.fin))}</b>` : ''}` : esc(App.sinPlan(p).corto)}</span>
           <span>${caso ? `Caso <b>${esc((caso.estado || 'Borrador').toLowerCase())}</b>${f.vpn != null && f.totalInversion > 0 ? `, VPN <b>${esc(App.moneyShort(f.vpn, caso.moneda))}</b>` : caso.origen === 'ice' ? ', preliminar' : ''}` : 'Sin caso de negocio'}</span>
           <span title="${esc((App.ICE.detalle(p).notas || []).join('\n'))}">ICE <b>${App.iceOf(p) == null ? '—' : esc(App.num(App.iceOf(p), 1))}</b>${ro ? '' : ' <button class="t-lnk" data-p="ice">editar</button>'}</span>
@@ -43,12 +48,12 @@
         </div>
         ${App.Avance ? App.Avance.html(p, ro) : ''}
       </div>
-      <nav class="ptabs">${TABS.map(([k, l]) => `<a href="#/proyectos/${id}/${k}" class="${k === tab ? 'on' : ''}">${l}${k === 'cronograma' && pl.acts.length ? `<span class="n">${pl.acts.length}</span>` : ''}${k === 'comites' && ses.length ? `<span class="n">${ses.length}</span>` : ''}${k === 'riesgos' && App.Riesgos ? (q => (q.criticos ? `<span class="n r">${q.criticos} crítico${q.criticos === 1 ? '' : 's'}</span>` : q.n ? `<span class="n">${q.n}</span>` : ''))(App.Riesgos.resumen(p)) : ''}</a>`).join('')}</nav>
+      <nav class="ptabs">${TABS.map(([k, l]) => `<a href="#/proyectos/${id}/${k}" class="${k === tab ? 'on' : ''}">${l}${cuenta(k)}</a>`).join('')}</nav>
       <div id="pTab"></div>`;
     const box = $('#pTab', main);
 
     if (tab === 'info') {
-      // B5 · Los campos del método anterior (Impacto, Confianza y Facilidad de 1 a 10, e Income antiguo) no se muestran
+      // B5, Los campos del método anterior (Impacto, Confianza y Facilidad de 1 a 10, e Income antiguo) no se muestran
       // junto a los del ICE de la Oficina: quedan guardados y se ven al abrir «campos anteriores».
       const hayIce = App.S.columns.some(c => c.id === 'ice_income');
       const VIEJOS = ['impacto', 'confianza', 'facilidad', 'income'];
@@ -71,18 +76,24 @@
         </div><div class="fi-b">
           <div><b>${dos ? esc(App.moneyShort(dos, caso.moneda)) : '—'}</b><span>${caso ? 'valor en los dos primeros años del caso' : 'sin caso de negocio todavía'}</span></div>
           <div><b>${esc(App.moneyShort(capY))}</b><span>capturados en ${Y}</span></div>
-          <div><b>${App.iceOf(p) == null ? '—' : esc(App.num(App.iceOf(p), 1))}</b><span>prioridad (ICE)${ro ? '' : ' · <button class="t-lnk" data-p="ice">ver y editar sus datos</button>'}</span></div>
+          <div><b>${App.iceOf(p) == null ? '—' : esc(App.num(App.iceOf(p), 1))}</b><span>prioridad (ICE)${ro ? '' : ', <button class="t-lnk" data-p="ice">ver y editar sus datos</button>'}</span></div>
         </div></div>`;
-      box.innerHTML = fi + `<details class="fi-campos"><summary>Todos los campos de la iniciativa</summary><div class="props ${ro ? '' : 'editable'}">${cols.map(fila).join('')}</div>${viejas.length ? `<details class="props-viejas"><summary>${viejas.length} campo${viejas.length === 1 ? '' : 's'} del método anterior (guardado${viejas.length === 1 ? '' : 's'}, ya no se usa${viejas.length === 1 ? '' : 'n'} para el ICE)</summary><div class="props">${viejas.map(fila).join('')}</div></details>` : ''}${vacias.length && !ro ? `<details class="props-viejas"><summary>${vacias.length} campo${vacias.length === 1 ? '' : 's'} que ninguna iniciativa tiene diligenciado${vacias.length === 1 ? '' : 's'}</summary><div class="props">${vacias.map(fila).join('')}</div></details>` : ''}
-        <div class="meta-line">Creado ${esc(App.d.ago(p.created_at))}${p.updated_by_name ? ` · Última edición: ${esc(p.updated_by_name)}, ${esc(App.d.ago(p.updated_at))}` : ''}${ro ? '' : ' · Las columnas se administran en Portafolio → Tabla completa'}</div></details>`;
+      const barra = `<div class="vl-bar"><div class="vl-res"><span>Creada <b>${esc(App.d.ago(p.created_at))}</b></span>${p.updated_by_name ? `<span>última edición <b>${esc(p.updated_by_name)}</b>, ${esc(App.d.ago(p.updated_at))}</span>` : ''}</div><span class="sp"></span>${ro ? '' : '<button class="btn primary sm" data-p="editar">Editar datos</button><button class="btn sm" data-p="menu">⋯ Más</button>'}</div>`;
+      box.innerHTML = barra + fi + `<details class="fi-campos"><summary>Todos los campos de la iniciativa</summary><div class="props ${ro ? '' : 'editable'}">${cols.map(fila).join('')}</div>${viejas.length ? `<details class="props-viejas"><summary>${viejas.length} campo${viejas.length === 1 ? '' : 's'} del método anterior (guardado${viejas.length === 1 ? '' : 's'}, ya no se usa${viejas.length === 1 ? '' : 'n'} para el ICE)</summary><div class="props">${viejas.map(fila).join('')}</div></details>` : ''}${vacias.length && !ro ? `<details class="props-viejas"><summary>${vacias.length} campo${vacias.length === 1 ? '' : 's'} que ninguna iniciativa tiene diligenciado${vacias.length === 1 ? '' : 's'}</summary><div class="props">${vacias.map(fila).join('')}</div></details>` : ''}
+        <div class="meta-line">Creado ${esc(App.d.ago(p.created_at))}${p.updated_by_name ? `, Última edición: ${esc(p.updated_by_name)}, ${esc(App.d.ago(p.updated_at))}` : ''}${ro ? '' : ', Las columnas se administran en Portafolio → Tabla completa'}</div></details>`;
     } else if (tab === 'cronograma') {
       App.PlanHost.render(box, id);
     } else if (tab === 'caso') {
       App.Caso.editor(box, id);
+    } else if (tab === 'captura') {
+      App.Valor.captura(box, id);
+    } else if (tab === 'okr') {
+      App.Valor.okrProyecto(box, id);
     } else if (tab === 'riesgos') {
       App.Riesgos.render(box, id);
     } else {
-      box.innerHTML = `<div class="card-box">${ro ? '' : '<div style="margin-bottom:10px"><button class="btn primary" data-p="agendar">+ Agendar en un comité</button></div>'}
+      const abiertos = ses.flatMap(s => (s.compromisos || []).filter(k => !k.hecho && (k.texto || '').trim())).length;
+      box.innerHTML = `<div class="vl-bar"><div class="vl-res"><span><b>${ses.length}</b>${ses.length === 1 ? 'sesión' : 'sesiones'}</span><span>${prox ? `próximo <b>${esc(App.d.fmtShort(prox.fecha))}</b>` : 'sin comité programado'}</span><span><b>${abiertos}</b>${abiertos === 1 ? 'compromiso abierto' : 'compromisos abiertos'}</span></div><span class="sp"></span>${ro ? '' : '<button class="btn primary sm" data-p="agendar">Agendar en comité</button>'}<a class="btn sm" href="#/agenda">Ver el comité</a></div><div class="card-box">
         ${ses.length ? `<table class="lst"><thead><tr><th>Fecha</th><th>Comité</th><th>Estado</th><th>Temas</th><th>Decisiones</th></tr></thead><tbody>${ses.map(s => `<tr class="clic" data-ses="${s.id}"><td style="white-space:nowrap"><b>${esc(App.d.fmt(s.fecha))}</b><div class="faint" style="font-size:11px">${esc(s.hora_ini || '')}</div></td><td><span class="pill cl-${App.Agenda.colorOf(s)}">${esc(App.Agenda.tituloOf(s))}</span></td><td>${esc(s.estado || 'Programada')}</td><td class="muted" style="max-width:260px">${esc((s.temas || '').slice(0, 140))}</td><td style="max-width:300px">${esc((s.decisiones || '').slice(0, 180))}</td></tr>`).join('')}</tbody></table>`
           : '<div class="empty-box"><b>Esta iniciativa aún no ha pasado por comité</b>Agenda una sesión para presentarlo.</div>'}</div>`;
     }
@@ -103,8 +114,9 @@
       if (a === 'ice') return iceEditor(b, p);
       if (a === 'avanzar' && ec) { const nueva = b.dataset.fase; if (!confirm(`¿Pasar «${App.projectName(p)}» a ${nueva}?\n\nQueda en la trazabilidad. Si lo decidió el comité, regístralo también en la sesión.`)) return;
         return App.guard(async () => { await App.patch('projects', id, { props: { [ec.id]: nueva } }); App.toast('Cambió de fase'); App.render(); }); }
+      if (a === 'editar') { const d = $('.fi-campos', main); if (d) { d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'start' }); } return; }
       if (a === 'agendar') App.Agenda.openNewSession(App.d.add(App.d.today(), 7), { proyectos: [id] });
-      if (a === 'menu') App.menu(b, [{ id: 'tabla', label: '▤ Ver en la tabla' }, { id: 'agenda', label: '▦ Agendar en comité' }, '-', { id: 'del', label: 'Eliminar iniciativa', danger: true }], m => {
+      if (a === 'menu') App.menu(b, [{ id: 'tabla', label: 'Ver en la tabla completa' }, { id: 'agenda', label: 'Agendar en comité' }, '-', { id: 'del', label: 'Eliminar iniciativa', danger: true }], m => {
         if (m === 'tabla') App.go('#/proyectos');
         if (m === 'agenda') App.Agenda.openNewSession(App.d.add(App.d.today(), 7), { proyectos: [id] });
         if (m === 'del') confirmDelete(id);
@@ -122,21 +134,21 @@
   function iceEditor(anchor, p) {
     const I = App.ICE, v = p.props || {};
     const auto = I.detalle({ ...p, props: { ...v, ice_income: null, ice_confianza: null, ice_esfuerzo: null, ice_os: null } });
-    const RANGO = ['≤ $50 M', '$51–200 M', '$201–600 M · umbral Oficina', '$601 M–1.200 M', '$1.201–2.200 M', '$2.201–4.200 M', '$4.201–8.200 M', '$8.201–16.200 M', '> $16.201 M'];
-    const sel = (k, actual, autoV, ops) => `<select class="fld" data-ice="${k}" style="margin:2px 0 8px"><option value="">Automático${autoV != null ? ' · ' + autoV : ' · sin datos'}</option>${ops.map(([val, l]) => `<option value="${val}" ${actual != null && String(actual) === String(val) ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+    const RANGO = ['≤ $50 M', '$51–200 M', '$201–600 M, umbral Oficina', '$601 M–1.200 M', '$1.201–2.200 M', '$2.201–4.200 M', '$4.201–8.200 M', '$8.201–16.200 M', '> $16.201 M'];
+    const sel = (k, actual, autoV, ops) => `<select class="fld" data-ice="${k}" style="margin:2px 0 8px"><option value="">Automático${autoV != null ? ', ' + autoV : ', sin datos'}</option>${ops.map(([val, l]) => `<option value="${val}" ${actual != null && String(actual) === String(val) ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
     const osAct = I.leeOS(v.ice_os);
     const pop = App.openPop(anchor, `<div class="lbl">ICE = Income × Confidence ÷ Effort × OS</div>
-      <div style="padding:0 10px"><label class="hint" style="margin:0">Income · dinero captado o ahorrado a dos años</label>${sel('ice_income', I.fib(v.ice_income), auto.income, I.FIB.map((n, i) => [n, `${n} · ${RANGO[i]}`]))}
-      <label class="hint" style="margin:0">Confidence · confianza en que el impacto se materialice</label>${sel('ice_confianza', I.redondeaPct(v.ice_confianza), auto.conf != null ? auto.conf + ' %' : null, [[100, '100 % · total'], [75, '75 % · alta'], [50, '50 % · media'], [25, '25 % · baja']])}
-      <label class="hint" style="margin:0">Effort · tiempo y esfuerzo de implementación</label>${sel('ice_esfuerzo', I.redondeaPct(v.ice_esfuerzo), auto.esf != null ? auto.esf + ' %' : null, [[100, '100 % · 6 meses o más'], [75, '75 % · 4 a 6 meses'], [50, '50 % · 2 a 4 meses'], [25, '25 % · menos de 2 meses']])}
-      <label class="hint" style="margin:0">OS · alineación con los objetivos del semestre</label>${sel('ice_os', osAct, 1, [[0.75, '0,75 · no alineado'], [1, '1 · alineado'], [1.25, '1,25 · prioridad del semestre']])}
+      <div style="padding:0 10px"><label class="hint" style="margin:0">Income, dinero captado o ahorrado a dos años</label>${sel('ice_income', I.fib(v.ice_income), auto.income, I.FIB.map((n, i) => [n, `${n}, ${RANGO[i]}`]))}
+      <label class="hint" style="margin:0">Confidence, confianza en que el impacto se materialice</label>${sel('ice_confianza', I.redondeaPct(v.ice_confianza), auto.conf != null ? auto.conf + ' %' : null, [[100, '100 %, total'], [75, '75 %, alta'], [50, '50 %, media'], [25, '25 %, baja']])}
+      <label class="hint" style="margin:0">Effort, tiempo y esfuerzo de implementación</label>${sel('ice_esfuerzo', I.redondeaPct(v.ice_esfuerzo), auto.esf != null ? auto.esf + ' %' : null, [[100, '100 %, 6 meses o más'], [75, '75 %, 4 a 6 meses'], [50, '50 %, 2 a 4 meses'], [25, '25 %, menos de 2 meses']])}
+      <label class="hint" style="margin:0">OS, alineación con los objetivos del semestre</label>${sel('ice_os', osAct, 1, [[0.75, '0,75, no alineado'], [1, '1, alineado'], [1.25, '1,25, prioridad del semestre']])}
       <div data-ice-res style="font-size:13px;margin:4px 0 8px"></div></div>
       <div class="row" style="justify-content:flex-end;padding:0 10px 8px"><button class="btn primary sm" data-ice-ok>Guardar</button></div>`, { width: 360, nofocus: true });
     const leer = () => { const o = {}; pop.querySelectorAll('[data-ice]').forEach(x => { o[x.dataset.ice] = x.value === '' ? null : Number(x.value); }); return o; };
-    const OSN = { 0.75: '0,75 · No alineado', 1: '1 · Alineado', 1.25: '1,25 · Prioridad del semestre' };
+    const OSN = { 0.75: '0,75, No alineado', 1: '1, Alineado', 1.25: '1,25, Prioridad del semestre' };
     const props = o => ({ ice_income: o.ice_income, ice_confianza: o.ice_confianza, ice_esfuerzo: o.ice_esfuerzo, ice_os: o.ice_os == null ? null : OSN[o.ice_os] });
     const pintar = () => { const d = I.detalle({ ...p, props: { ...v, ...props(leer()) } });
-      pop.querySelector('[data-ice-res]').innerHTML = d.ice == null ? `<span class="faint">${App.esc(d.notas[0])}</span>` : `ICE = <b>${App.esc(App.num(d.ice, 1))}</b> <span class="faint">(${d.income} × ${d.conf} % ÷ ${d.esf} % × ${String(d.os).replace('.', ',')})${d.oficina === false ? ' · bajo el umbral de la Oficina (Income < 3)' : ''}</span>`; };
+      pop.querySelector('[data-ice-res]').innerHTML = d.ice == null ? `<span class="faint">${App.esc(d.notas[0])}</span>` : `ICE = <b>${App.esc(App.num(d.ice, 1))}</b> <span class="faint">(${d.income} × ${d.conf} % ÷ ${d.esf} % × ${String(d.os).replace('.', ',')})${d.oficina === false ? ', bajo el umbral de la Oficina (Income < 3)' : ''}</span>`; };
     pintar();
     pop.onchange = pintar;
     pop.onclick = e => { if (!e.target.closest('[data-ice-ok]')) return; const ps = props(leer()); App.closePop(true);

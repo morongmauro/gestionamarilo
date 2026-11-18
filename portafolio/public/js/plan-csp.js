@@ -1,5 +1,5 @@
 /* ============================================================
-   PLAN · puente con la política de seguridad (CSP)
+   PLAN, puente con la política de seguridad (CSP)
    La hoja del plan (public/plan/plan.js, la misma de la app de gestión)
    pinta botones con onclick="planSetOpt('zoom','mes')" y similares.
    Este portafolio no deja correr JavaScript escrito dentro del HTML

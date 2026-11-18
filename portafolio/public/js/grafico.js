@@ -56,7 +56,7 @@
     box.onmousemove = e => {
       const h = e.target.closest('.cf-hit'); if (!h) { tip.hidden = true; return; }
       const t = +h.dataset.t, m = v => esc(App.money(v, mon));
-      tip.innerHTML = `<b>${esc(caso.anio_inicio ? `Año ${t} · ${caso.anio_inicio + t}` : `Año ${t}`)}</b>
+      tip.innerHTML = `<b>${esc(caso.anio_inicio ? `Año ${t}, ${caso.anio_inicio + t}` : `Año ${t}`)}</b>
         <div><span>Inversión</span>${m(f.inversion[t])}</div><div><span>Costos</span>${m(f.costos[t])}</div><div><span>Beneficios</span>${m(f.beneficios[t])}</div>
         <div class="sep"><span>Flujo neto</span><b>${m(f.netos[t])}</b></div><div><span>Acumulado</span><b>${m(f.acumulado[t])}</b></div>`;
       tip.hidden = false;

@@ -1,7 +1,7 @@
 /* ============================================================
-   CRONOGRAMA · el mismo plan de trabajo de la app de gestión
+   CRONOGRAMA, el mismo plan de trabajo de la app de gestión
    La hoja (public/plan/plan.js + plan.css) es copia exacta de la de la
-   app de gestión: se ve y se comporta igual (capítulos y subcapítulos,
+   app de gestión: se ve y se comporta igual (etapas y subetapas,
    ID 1.1.1, días hábiles de Colombia, precedencias FC/CC/FF/CF con
    desfase, fechas en cascada, ruta crítica, línea base, fechas reales,
    arrastrar barras y flechas, edición tipo Excel, comentarios…).
@@ -24,7 +24,7 @@
 
   let cur = null;          // { el, pid (null = todo el portafolio), M (modelo), ro }
   let guardando = 0, cola = Promise.resolve();
-  const pila = [];         // deshacer: fotos de actividades y capítulos
+  const pila = [];         // deshacer: fotos de actividades y etapas
   let undoSuspendido = 0;
   let mesa = false;
   const clonar = x => JSON.parse(JSON.stringify(x));
@@ -59,8 +59,8 @@
       entregable: m.entregable || '', area: m.area || '', notas: m.notes || '',
     };
   }
-  const aModeloSec = s => ({ id: s.id, name: s.name || 'Capítulo', position: s.position ?? 0, parentId: s.parent_id || null, enabled: s.enabled !== false });
-  const aNativoSec = m => ({ name: String(m.name || '').trim() || 'Capítulo', position: m.position ?? 0, parent_id: m.parentId || null, enabled: m.enabled !== false });
+  const aModeloSec = s => ({ id: s.id, name: s.name || 'Etapa', position: s.position ?? 0, parentId: s.parent_id || null, enabled: s.enabled !== false });
+  const aNativoSec = m => ({ name: String(m.name || '').trim() || 'Etapa', position: m.position ?? 0, parent_id: m.parentId || null, enabled: m.enabled !== false });
 
   function modelo(pid) {
     const p = App.byId('projects', pid) || {};
@@ -250,7 +250,7 @@
     ev.preventDefault(); deshacer();
   });
 
-  /* ---------- Orden de filas y capítulos ---------- */
+  /* ---------- Orden de filas y etapas ---------- */
   function ordenadas(M) {
     const secs = P.ordenSecciones(M.sections), out = [], pos = (x, y) => (x.position || 0) - (y.position || 0);
     secs.forEach(s => M.activities.filter(a => a.sectionId === s.id).sort(pos).forEach(a => out.push(a)));
@@ -285,7 +285,7 @@
     if (cambios.name !== undefined && !String(cambios.name).trim()) { toast('El nombre no puede quedar vacío', false); pintar(); return; }
     let movidas = 0;
     hacer(`cambio en «${a.name}»`, M => { movidas = P.aplicarLocal(M.activities, id, normalizar(cambios), M.today); });
-    if (movidas) toast(`✓ Guardado · ${movidas} fecha${movidas === 1 ? '' : 's'} corrida${movidas === 1 ? '' : 's'} por dependencias`);
+    if (movidas) toast(`✓ Guardado, ${movidas} fecha${movidas === 1 ? '' : 's'} corrida${movidas === 1 ? '' : 's'} por dependencias`);
   };
   // Copiar un valor a varias filas (agarradera, Ctrl+V, Ctrl+D): un solo «deshacer» para todo
   window.planOnRelleno = (items, campo, mensaje) => {
@@ -301,7 +301,7 @@
     if (acc === 'subir' || acc === 'bajar') {
       const l = ordenadas(M), her = l.filter(y => (y.sectionId || '') === (a.sectionId || ''));
       const i = her.indexOf(a), j = i + (acc === 'subir' ? -1 : 1);
-      if (j < 0 || j >= her.length) { toast(acc === 'subir' ? 'Ya es la primera de su capítulo' : 'Ya es la última de su capítulo', false); return; }
+      if (j < 0 || j >= her.length) { toast(acc === 'subir' ? 'Ya es la primera de su etapa' : 'Ya es la última de su etapa', false); return; }
       [her[i], her[j]] = [her[j], her[i]];
       let k = 0;
       return hacer('mover filas', () => numerar(l.map(y => ((y.sectionId || '') === (a.sectionId || '') ? her[k++] : y))));
@@ -334,15 +334,15 @@
         l.splice(debajo ? t + 1 : t, 0, n); M2.activities.push(n); numerar(l);
       });
       enfocarLuego(`${n.id}:name`);
-      toast(dup ? '✓ Fila duplicada' : '✓ Fila insertada · escribe el nombre');
+      toast(dup ? '✓ Fila duplicada' : '✓ Fila insertada, escribe el nombre');
     }
   };
-  // Pegar varias filas de Excel en «＋ Actividad»: Nombre · Responsable · Días hábiles
+  // Pegar varias filas de Excel en «＋ Actividad»: Nombre, Responsable, Días hábiles
   window.planOnPegarFilas = (sectionId, filas) => {
     if (!editable()) return;
     const validas = filas.filter(f => f[0]);
     if (!validas.length) return;
-    if (validas.length > 1 && !confirm(`¿Crear ${validas.length} actividades con lo que pegaste?\n(columnas: nombre · responsable · días hábiles)`)) return;
+    if (validas.length > 1 && !confirm(`¿Crear ${validas.length} actividades con lo que pegaste?\n(columnas: nombre, responsable, días hábiles)`)) return;
     hacer(`pegar ${validas.length} fila${validas.length === 1 ? '' : 's'}`, M => {
       let pos = M.activities.reduce((m, a) => Math.max(m, a.position || 0), -1);
       validas.forEach(f => {
@@ -358,11 +358,11 @@
     const name = String(inp.value || '').trim(); if (!name) return;
     if (sectionId === '__area__') {
       const id = App.uid();
-      hacer(`crear capítulo «${name}»`, M => {
+      hacer(`crear etapa «${name}»`, M => {
         const pos = M.sections.filter(s => !s.parentId).reduce((m, s) => Math.max(m, s.position || 0), -1) + 1;
         M.sections.push({ id, name: name.slice(0, 200), position: pos, parentId: null, enabled: true });
       });
-      toast('✓ Capítulo agregado');
+      toast('✓ Etapa agregado');
       setTimeout(() => { const i = document.querySelector(`[data-sec-add="${id}"]`); if (i) i.focus(); }, 30);
       return;
     }
@@ -376,19 +376,19 @@
     if (!editable()) return;
     const M = cur.M, sc = M.sections.find(x => x.id === id); if (!sc) return;
     if (acc === 'rename') {
-      const n = prompt(sc.parentId ? 'Nombre del subcapítulo:' : 'Nombre del capítulo:', sc.name);
+      const n = prompt(sc.parentId ? 'Nombre de la subetapa:' : 'Nombre de la etapa:', sc.name);
       if (n === null || !n.trim() || n.trim() === sc.name) return;
       return hacer(`renombrar «${sc.name}»`, () => { sc.name = n.trim().slice(0, 200); });
     }
     if (acc === 'remove') {
       const hijos = M.sections.filter(x => x.parentId === id).map(x => x.id), todas = [id, ...hijos];
       const ids = M.activities.filter(a => todas.includes(a.sectionId)).map(a => a.id);
-      if (!confirm(`¿Eliminar ${sc.parentId ? 'el subcapítulo' : 'el capítulo'} «${sc.name}»${ids.length ? ` y sus ${ids.length} actividad${ids.length === 1 ? '' : 'es'}` : ''}${hijos.length ? ` (con ${hijos.length} subcapítulo${hijos.length === 1 ? '' : 's'})` : ''}?\n\nPuedes deshacerlo con «↶ Deshacer».`)) return;
-      hacer(`eliminar capítulo «${sc.name}»`, M2 => { M2.sections = M2.sections.filter(x => !todas.includes(x.id)); M2.activities = M2.activities.filter(a => !ids.includes(a.id)); quitarDeps(M2, ids); });
-      return toast(`Capítulo eliminado${ids.length ? ` con ${ids.length} actividad${ids.length === 1 ? '' : 'es'}` : ''}`);
+      if (!confirm(`¿Eliminar ${sc.parentId ? 'la subetapa' : 'la etapa'} «${sc.name}»${ids.length ? ` y sus ${ids.length} actividad${ids.length === 1 ? '' : 'es'}` : ''}${hijos.length ? ` (con ${hijos.length} subetapa${hijos.length === 1 ? '' : 's'})` : ''}?\n\nPuedes deshacerlo con «↶ Deshacer».`)) return;
+      hacer(`eliminar etapa «${sc.name}»`, M2 => { M2.sections = M2.sections.filter(x => !todas.includes(x.id)); M2.activities = M2.activities.filter(a => !ids.includes(a.id)); quitarDeps(M2, ids); });
+      return toast(`Etapa eliminada${ids.length ? ` con ${ids.length} actividad${ids.length === 1 ? '' : 'es'}` : ''}`);
     }
     if (acc === 'sacar') {
-      return hacer('sacar subcapítulo', M2 => {
+      return hacer('sacar subetapa', M2 => {
         const padre = M2.sections.find(x => x.id === sc.parentId);
         const tops = M2.sections.filter(x => !x.parentId).sort((a, b) => a.position - b.position);
         const i = padre ? tops.indexOf(padre) : tops.length - 1;
@@ -397,11 +397,11 @@
     }
     if (acc === 'anidar') {
       const pa = M.sections.find(x => x.id === extra); if (!pa || pa.parentId || pa.id === id) return;
-      if (M.sections.some(x => x.parentId === id)) { toast('Ese capítulo tiene subcapítulos: no puede quedar dentro de otro', false); return; }
+      if (M.sections.some(x => x.parentId === id)) { toast('Ese etapa tiene subetapas: no puede quedar dentro de otro', false); return; }
       const sueltas = M.activities.filter(a => a.sectionId === pa.id);
-      if (!confirm(`¿Meter «${sc.name}» como subcapítulo de «${pa.name}»?${sueltas.length ? `\n\nLas ${sueltas.length} actividades que ya tiene «${pa.name}» quedan juntas en un subcapítulo nuevo (le pones nombre ahora).` : ''}`)) return;
+      if (!confirm(`¿Meter «${sc.name}» como subetapa de «${pa.name}»?${sueltas.length ? `\n\nLas ${sueltas.length} actividades que ya tiene «${pa.name}» quedan juntas en una subetapa nueva (le pones nombre ahora).` : ''}`)) return;
       let nombre = null;
-      if (sueltas.length) { nombre = prompt(`Nombre del subcapítulo con las actividades que ya tenía «${pa.name}»:`, pa.name); if (nombre === null) return; }
+      if (sueltas.length) { nombre = prompt(`Nombre de la subetapa con las actividades que ya tenía «${pa.name}»:`, pa.name); if (nombre === null) return; }
       hacer(`meter «${sc.name}» en «${pa.name}»`, M2 => {
         const her = M2.sections.filter(x => x.parentId === pa.id).sort((a, b) => a.position - b.position);
         if (sueltas.length) {
@@ -412,13 +412,13 @@
         sc.parentId = pa.id; her.push(sc); her.forEach((x, k) => { x.position = k; });
         M2.sections.filter(x => !x.parentId).sort((a, b) => a.position - b.position).forEach((x, k) => { x.position = k; });
       });
-      return toast(`✓ «${sc.name}» ahora es subcapítulo de «${pa.name}»`);
+      return toast(`✓ «${sc.name}» ahora es subetapa de «${pa.name}»`);
     }
     if (acc === 'mover') {
       const destino = extra && extra.destino, despues = !!(extra && extra.despues), dst = M.sections.find(x => x.id === destino);
       if (!dst || destino === id) return;
       const padre = dst.parentId || null;
-      if (padre === id || (padre && M.sections.some(x => x.parentId === id))) { toast('Ese capítulo tiene subcapítulos: solo se puede mover entre capítulos principales', false); return; }
+      if (padre === id || (padre && M.sections.some(x => x.parentId === id))) { toast('Ese etapa tiene subetapas: solo se puede mover entre etapas principales', false); return; }
       hacer(`mover «${sc.name}»`, M2 => {
         const her = M2.sections.filter(x => (x.parentId || null) === padre && x.id !== id).sort((a, b) => a.position - b.position);
         const i = her.indexOf(dst); her.splice(despues ? i + 1 : i, 0, sc);
@@ -461,10 +461,10 @@
     const deps = (a.dependsOnIds || []).filter(d => cods[d] != null).map(d => { const t = P.tipoDep(a, d); return `<span class="dep-chip" title="${esc(P.textoDep(t.t, t.d, t.u, cods[d]))}">${esc(P.etiquetaDep(a, d, cods[d]))}</span> <span class="muted">${esc((M.activities.find(x => x.id === d) || {}).name || '')}</span>`; });
     const cs = (M.notas || []).filter(n => n.activityId === id).sort((x, y) => String(x.createdAt).localeCompare(String(y.createdAt)));
     const f = v => (v ? esc(App.d.fmt(v)) : '—');
-    const html = `<div class="d-top"><span class="faint" style="font-size:11.5px;font-weight:700">${esc(a._cod || '')} · ${esc(a._etapa || 'Sin capítulo')}</span><button class="x" data-x="1" title="Cerrar (Esc)">✕</button></div><h2>${esc(a.name)}</h2>
+    const html = `<div class="d-top"><span class="faint" style="font-size:11.5px;font-weight:700">${esc(a._cod || '')}, ${esc(a._etapa || 'Sin etapa')}</span><button class="x" data-x="1" title="Cerrar (Esc)">✕</button></div><h2>${esc(a.name)}</h2>
       <div class="pd-meta"><span class="pl-est ${est.replace(' ', '-')}">${est}</span><span>${a.pctComplete || 0}% de avance</span>${a.critical ? '<span class="cp-chip">Ruta crítica</span>' : ''}</div>
       <div class="props pd-props">
-        <div class="k">Plan</div><div class="v">${f(a.startDate)} → ${f(a.deadline)}${P.duracionDe(a) ? ` · ${P.duracionDe(a)} días háb.` : ''}</div>
+        <div class="k">Plan</div><div class="v">${f(a.startDate)} → ${f(a.deadline)}${P.duracionDe(a) ? `, ${P.duracionDe(a)} días háb.` : ''}</div>
         <div class="k">Real</div><div class="v">${a.realStart || a.realEnd ? `${f(a.realStart)} → ${f(a.realEnd)}` : '—'}</div>
         ${a.baselineStart || a.baselineEnd ? `<div class="k">Línea base</div><div class="v">${f(a.baselineStart)} → ${f(a.baselineEnd)}</div>` : ''}
         <div class="k">Responsable</div><div class="v">${esc(P.respDe(a).join(', ') || '—')}</div>
@@ -474,8 +474,8 @@
       </div>
       <h4>Notas</h4>
       <textarea class="fld" id="pdNotas" rows="4" ${ro ? 'readonly' : ''} placeholder="${ro ? '' : 'Contexto, acuerdos, enlaces…'}">${esc(a.notes || '')}</textarea>
-      <h4>Comentarios · ${cs.length}</h4>
-      <div class="pd-cmts">${cs.map(n => `<div class="pd-c"><div class="faint">${esc(n.autor || '')} · ${esc(App.d.fmt(String(n.createdAt).slice(0, 10)))}${!ro ? ` <button class="lnk" data-borrar="${n.id}">borrar</button>` : ''}</div><div>${esc(n.texto).replace(/\n/g, '<br>')}</div></div>`).join('') || '<div class="faint">Sin comentarios todavía.</div>'}</div>
+      <h4>Comentarios, ${cs.length}</h4>
+      <div class="pd-cmts">${cs.map(n => `<div class="pd-c"><div class="faint">${esc(n.autor || '')}, ${esc(App.d.fmt(String(n.createdAt).slice(0, 10)))}${!ro ? ` <button class="lnk" data-borrar="${n.id}">borrar</button>` : ''}</div><div>${esc(n.texto).replace(/\n/g, '<br>')}</div></div>`).join('') || '<div class="faint">Sin comentarios todavía.</div>'}</div>
       ${ro ? '' : '<textarea class="fld" id="pdCmt" rows="2" placeholder="Escribe un comentario… (Ctrl+Enter guarda)"></textarea><div style="margin-top:6px"><button class="btn primary sm" data-cmt="1">Comentar</button></div>'}`;
     const d = App.openDrawer(html, { onClose: () => { detalleId = null; } });
     d.addEventListener('click', ev => {
@@ -537,7 +537,7 @@
     hacer('quitar línea base', M => { M.activities.forEach(a => { a.baselineStart = null; a.baselineEnd = null; }); M.lineaBase = null; });
     App.patch('projects', pid, { linea_base_at: null }).then(() => { toast('Línea base quitada'); pintar(); }).catch(() => {});
   }
-  // Cronograma desde la app de gestión: misma estructura (capítulos, subcapítulos, actividades,
+  // Cronograma desde la app de gestión: misma estructura (etapas, subetapas, actividades,
   // precedencias, responsables, línea base, fecha meta e involucrados). Se trae con un enlace compartido;
   // de ahí en adelante se gestiona aquí. Las propuestas sin aprobar del enlace no se traen.
   function traerDeGestion(btn) {
@@ -573,12 +573,84 @@
           if (d.project.lineaBaseAt) patch.linea_base_at = d.project.lineaBaseAt;
           await App.patch('projects', pid, patch);
           App.closePop(true);
-          toast(`✓ Cronograma traído: ${d.sections.length} capítulos y ${acts.length} actividades${props ? ` (${props} propuestas sin aprobar no se trajeron)` : ''}`);
+          toast(`✓ Cronograma traído: ${d.sections.length} etapas y ${acts.length} actividades${props ? ` (${props} propuestas sin aprobar no se trajeron)` : ''}`);
           App.render(); // la ficha, el avance de fase y el cronograma se actualizan juntos
         } catch (ex) { msg.innerHTML = `<span style="color:var(--crit)">${esc(ex.message)}</span>`; ok.disabled = false; }
       });
     };
   }
+  /* ---------- Subir un cronograma desde Excel (o CSV) ----------
+     Columnas que reconoce (en cualquier orden, con estos nombres o parecidos): Etapa, Actividad, Responsable,
+     Inicio, Fin, Duración (días), Avance (%), Hito, Entregable. Si no hay columna Etapa, una fila con nombre
+     y sin fechas se toma como etapa (así exportan muchos Gantt). */
+  const PLANTILLA_CRONO = 'Etapa;Actividad;Responsable;Inicio;Fin;Avance;Hito;Entregable\n0. Arranque;Kick off;Ana Pérez;2026-12-01;2026-12-01;0;sí;Equipo y alcance acordados\n0. Arranque;Plan de trabajo;Ana Pérez;2026-12-02;2026-12-15;0;;Cronograma validado\n1. Diseño;Levantamiento de requisitos;Juan Gómez;2026-12-16;2027-01-20;0;;Documento de requisitos\n';
+  function fechaDe(v) {
+    if (v == null || v === '') return null;
+    if (typeof v === 'number') { if (v < 20000 || v > 80000) return null; const d = new Date(Date.UTC(1899, 11, 30) + v * 864e5); return d.toISOString().slice(0, 10); }
+    const t = String(v).trim();
+    let m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(t); if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+    m = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})$/.exec(t); if (m) { const y = m[3].length === 2 ? '20' + m[3] : m[3]; return `${y}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`; }
+    return null;
+  }
+  function leerCrono(filas) {
+    const N = x => P.norm(String(x == null ? '' : x));
+    const RX = { etapa: /etapa|capitulo|fase|grupo|seccion|entregable principal/, act: /actividad|tarea|nombre|descripcion/, resp: /responsable|dueno|encargad|asignad/, ini: /inicio|comienzo|desde|start/, fin: /^fin|fin$|termino|hasta|vence|finaliza|end/, dur: /duracion|dias/, av: /avance|progreso|complet|%/, hito: /hito/, ent: /entregable|resultado esperado/ };
+    let h = -1, col = {};
+    for (let i = 0; i < Math.min(20, filas.length) && h < 0; i++) {
+      const f = (filas[i] || []).map(N); const c = {};
+      f.forEach((t, j) => { if (!t) return; for (const k of Object.keys(RX)) if (c[k] == null && RX[k].test(t) && !(k === 'etapa' && RX.act.test(t)) && !(k === 'ent' && c.etapa === j)) { c[k] = j; break; } });
+      if (c.act != null) { h = i; col = c; }
+    }
+    if (h < 0) return null;
+    const val = (f, k) => (col[k] == null ? null : f[col[k]]);
+    const secs = [], acts = []; let sec = null, pos = 0;
+    const secDe = nombre => { let x = secs.find(z => P.norm(z.name) === P.norm(nombre)); if (!x) { x = { id: App.uid(), name: String(nombre).trim().slice(0, 200), position: secs.length, parent_id: null, enabled: true }; secs.push(x); pos = 0; } return x; };
+    filas.slice(h + 1).forEach(f => {
+      const nombre = val(f, 'act'); if (nombre == null || String(nombre).trim() === '') { if (col.etapa != null && val(f, 'etapa')) sec = secDe(val(f, 'etapa')); return; }
+      const ini = fechaDe(val(f, 'ini')), fin = fechaDe(val(f, 'fin'));
+      if (col.etapa != null && val(f, 'etapa')) sec = secDe(val(f, 'etapa'));
+      else if (col.etapa == null && !ini && !fin && val(f, 'resp') == null) { sec = secDe(nombre); return; }
+      let av = val(f, 'av'); av = av == null || av === '' ? 0 : typeof av === 'number' ? (av <= 1 ? av * 100 : av) : Number(String(av).replace('%', '').replace(',', '.')) || 0;
+      const hv = N(val(f, 'hito')), hito = /^(si|x|1|true|hito)$/.test(hv) || (!!ini && ini === fin && col.hito == null);
+      const dur = Number(val(f, 'dur')) || null;
+      acts.push({ id: App.uid(), section_id: sec ? sec.id : null, name: String(nombre).trim().slice(0, 300), responsable: String(val(f, 'resp') || '').trim().slice(0, 200), inicio: ini || fin, fin: fin || ini, avance: Math.max(0, Math.min(100, Math.round(av))), hito, position: pos++, duracion: dur, deps: [], dep_tipos: {}, entregable: String(val(f, 'ent') || '').trim().slice(0, 300), area: '', notas: '' });
+    });
+    const NOMC = { etapa: 'Etapa', act: 'Actividad', resp: 'Responsable', ini: 'Inicio', fin: 'Fin', dur: 'Duración', av: 'Avance', hito: 'Hito', ent: 'Entregable' };
+    return acts.length ? { secs, acts, cols: Object.keys(col).map(k => NOMC[k] || k) } : null;
+  }
+  function subirExcel(btn) {
+    if (!editable()) return;
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.xlsx,.csv';
+    inp.onchange = () => App.guard(async () => {
+      const file = inp.files[0]; if (!file) return;
+      if (file.size > 3 * 1024 * 1024) return toast('El archivo pasa de 3 MB', false);
+      let hojas;
+      if (/\.csv$/i.test(file.name)) { const t = await file.text(), sep = (t.split('\n')[0].match(/;/g) || []).length >= (t.split('\n')[0].match(/,/g) || []).length ? ';' : ','; hojas = [{ nombre: file.name, filas: t.split(/\r?\n/).map(l => l.split(sep).map(x => x.replace(/^"|"$/g, '').trim() || null)) }]; }
+      else if (/\.xlsx$/i.test(file.name)) {
+        const b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(file); });
+        toast('Leyendo el Excel…'); hojas = (await App.api('POST', '/api/excel/leer', { archivo: b64 })).hojas;
+      } else return toast('Suba un archivo .xlsx o .csv', false);
+      const cand = hojas.map(hj => ({ hj, r: leerCrono(hj.filas) })).filter(x => x.r).sort((a, b) => b.r.acts.length - a.r.acts.length);
+      if (!cand.length) return toast('No encontré una fila de títulos con «Actividad». Use la plantilla («⋯ Más › Plantilla de cronograma»).', false);
+      const { hj, r } = cand[0], pid = cur.pid, M = cur.M, hay = M.activities.length + M.sections.length;
+      const pop = App.openPop(btn, `<div class="lbl">Subir cronograma desde Excel</div>
+        <div style="padding:0 12px 6px;font-size:13px;line-height:1.5">En la hoja <b>${esc(hj.nombre)}</b> encontré <b>${r.secs.length}</b> etapa${r.secs.length === 1 ? '' : 's'} y <b>${r.acts.length}</b> actividad${r.acts.length === 1 ? '' : 'es'} (${r.acts.filter(a => a.hito).length} hitos).<br><span class="faint">Columnas leídas: ${esc(r.cols.join(', '))}. Las dependencias se agregan después arrastrando las flechas.</span></div>
+        ${hay ? `<label class="mi" style="cursor:pointer;font-size:12.5px"><input type="checkbox" data-x="reemplazar" checked style="width:auto"> Reemplazar lo que ya tiene (${M.activities.length} actividades)</label>` : ''}
+        <div class="row" style="justify-content:flex-end;padding:4px 10px 8px"><button class="btn primary sm" data-x="ok">Cargar cronograma</button></div>`, { width: 400 });
+      pop.onclick = e => { const ok = e.target.closest('[data-x=ok]'); if (!ok || ok.disabled) return; ok.disabled = true;
+        const reemplazar = !!(pop.querySelector('[data-x=reemplazar]') || {}).checked;
+        App.guard(async () => {
+          const c = { sections: { upsert: r.secs, remove: reemplazar ? M.sections.map(x => x.id) : [] }, activities: { upsert: r.acts, remove: reemplazar ? M.activities.map(x => x.id) : [] } };
+          const res = await App.api('POST', '/api/plan/' + pid, Object.assign({ registrar: true }, c));
+          App.S.activities = App.S.activities.filter(a => a.project_id !== pid).concat(res.activities);
+          App.S.sections = (App.S.sections || []).filter(x => x.project_id !== pid).concat(res.sections);
+          App.closePop(true); toast(`✓ Cronograma cargado: ${r.secs.length} etapas y ${r.acts.length} actividades`); App.render();
+        });
+      };
+    });
+    inp.click();
+  }
+  function plantillaCrono() { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + PLANTILLA_CRONO], { type: 'text/csv;charset=utf-8' })); a.download = 'plantilla-cronograma.csv'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
   function fechaMeta(btn) {
     if (!editable()) return;
     const pid = cur.pid, p = App.byId('projects', pid);
@@ -604,8 +676,8 @@
     const dif = M.fechaMeta && s.fechaFinal ? P.cal.difHabiles(M.fechaMeta, s.fechaFinal) : null;
     const delta = s.avanceEsperado != null ? s.avance - s.avanceEsperado : null;
     return `<span class="mesa-kpis">
-      <span title="Promedio del avance de las actividades vs. lo que deberían llevar hoy según sus fechas"><b>${s.avance}%</b> avance${s.avanceEsperado != null ? ` · plan ${s.avanceEsperado}%${delta < -10 ? ' <em style="color:var(--crit-ink)">▼</em>' : ''}` : ''}</span>
-      <span>Fin <b>${esc(fmt(s.fechaFinal))}</b>${M.fechaMeta ? ` · meta ${esc(fmt(M.fechaMeta))}${dif != null ? ` <em style="color:${dif > 0 ? 'var(--crit)' : 'var(--good)'}">${dif > 0 ? `+${dif} háb.` : dif < 0 ? `${dif} háb.` : 'justo'}</em>` : ''}` : ''}</span>
+      <span title="Promedio del avance de las actividades vs. lo que deberían llevar hoy según sus fechas"><b>${s.avance}%</b> avance${s.avanceEsperado != null ? `, plan ${s.avanceEsperado}%${delta < -10 ? ' <em style="color:var(--crit-ink)">▼</em>' : ''}` : ''}</span>
+      <span>Fin <b>${esc(fmt(s.fechaFinal))}</b>${M.fechaMeta ? `, meta ${esc(fmt(M.fechaMeta))}${dif != null ? ` <em style="color:${dif > 0 ? 'var(--crit)' : 'var(--good)'}">${dif > 0 ? `+${dif} háb.` : dif < 0 ? `${dif} háb.` : 'justo'}</em>` : ''}` : ''}</span>
       <span><b>${s.completadas}/${s.total}</b> listas</span>
       ${s.retrasos ? `<span style="color:var(--crit-ink)"><b>${s.retrasos}</b> atrasada${s.retrasos === 1 ? '' : 's'}</span>` : ''}
       ${s.rutaCritica ? `<span title="Actividades sin holgura: si una se atrasa, se atrasa toda la iniciativa" style="color:${s.rutaCriticaEnRiesgo ? 'var(--cp-late-ink)' : 'var(--cp-ink)'}"><b>${s.rutaCritica}</b> en ruta crítica${s.rutaCriticaEnRiesgo ? ` (${s.rutaCriticaEnRiesgo} en riesgo)` : ''}</span>` : ''}
@@ -632,7 +704,7 @@
     const head = $('.plan-head', cur.el), body = $('#plan-body', cur.el);
     head.innerHTML = cabecera();
     const wrap = $('#pl-wrap', body), keep = wrap ? [wrap.scrollLeft, wrap.scrollTop] : null;
-    o.vacioHtml = cur.pid ? (editable() ? 'Aún no hay actividades. Tráelo de la app de gestión («Traer de la app de gestión», arriba), crea el primer capítulo abajo («＋ Nueva etapa») o pega filas desde Excel.' : 'Aún no hay actividades en este plan.') : 'Aún no hay actividades en ninguna iniciativa.';
+    o.vacioHtml = cur.pid ? (editable() ? 'Aún no hay actividades. Tráelo de la app de gestión («Traer de la app de gestión», arriba), crea el primera etapa abajo («＋ Nueva etapa») o pega filas desde Excel.' : 'Aún no hay actividades en este plan.') : 'Aún no hay actividades en ninguna iniciativa.';
     const ancho = (body.clientWidth || cur.el.clientWidth || 1100) - (o.panel ? 236 : 0);
     o.anchoTL = P.anchoAjuste(ancho, (o.vista === 'tabla' ? 1300 : 700) + P.extraNombre());
     body.innerHTML = P.render(cur.M, o);
@@ -660,12 +732,12 @@
       }
       if (a === 'mas') {
         const M = cur.M, p = cur.pid ? App.byId('projects', cur.pid) : null, ed = editable(), it = [];
-        if (p && ed) it.push({ id: 'gestion', label: 'Traer de la app de gestión' });
+        if (p && ed) { it.push({ id: 'excel', label: 'Subir Excel' }); it.push({ id: 'gestion', label: 'Traer de la app de gestión' }); it.push({ id: 'plantilla', label: 'Plantilla de cronograma (Excel)' }); }
         if (p && ed) { if (M.lineaBase) { it.push({ id: 'lb-otra', label: 'Volver a fijar la línea base' }); it.push({ id: 'lb-quitar', label: 'Quitar la línea base' }); } else it.push({ id: 'lb', label: 'Fijar línea base' }); }
-        if (p) { it.push({ id: 'meta', label: (p.fecha_meta ? 'Fecha meta: ' + App.d.fmtShort(p.fecha_meta) : 'Fecha meta') }); it.push({ id: 'inv', label: 'Involucrados' + ((p.miembros || []).length ? ' · ' + p.miembros.length : '') }); }
+        if (p) { it.push({ id: 'meta', label: (p.fecha_meta ? 'Fecha meta: ' + App.d.fmtShort(p.fecha_meta) : 'Fecha meta') }); it.push({ id: 'inv', label: 'Involucrados' + ((p.miembros || []).length ? ', ' + p.miembros.length : '') }); }
         it.push('-'); it.push({ id: 'mesa', label: 'Mesa de trabajo (pantalla completa)' }); if (p) it.push({ id: 'ayuda', label: 'ⓘ Cómo se usa el cronograma' });
         return App.menu(b, it, m => {
-          if (m === 'gestion') traerDeGestion(b); if (m === 'lb') fijarLineaBase(false); if (m === 'lb-otra') fijarLineaBase(true); if (m === 'lb-quitar') quitarLineaBase();
+          if (m === 'excel') subirExcel(b); if (m === 'plantilla') plantillaCrono(); if (m === 'gestion') traerDeGestion(b); if (m === 'lb') fijarLineaBase(false); if (m === 'lb-otra') fijarLineaBase(true); if (m === 'lb-quitar') quitarLineaBase();
           if (m === 'meta') fechaMeta(b); if (m === 'inv') involucrados(); if (m === 'mesa') toggleMesa();
           if (m === 'ayuda') App.openPop(b, '<div class="lbl">Cómo se usa</div><div style="padding:0 12px 12px;font-size:13px;line-height:1.55">Todo se edita aquí mismo y se guarda solo. Si mueves el fin de una actividad, lo que depende de ella se corre en cascada (días hábiles, sin fines de semana ni festivos de Colombia). Flechas: arrastra el punto del final de una barra hasta otra actividad para conectarlas; haz clic en una flecha para cambiarla o quitarla. Ctrl+Z deshace.</div>', { width: 360 });
         }, 270);
@@ -676,7 +748,7 @@
   // Un proyecto: el plan completo, editable
   function render(el, pid) { montar(el, pid, modelo(pid)); }
 
-  // Todo el portafolio: cada proyecto es un capítulo y sus capítulos, subcapítulos (solo lectura)
+  // Todo el portafolio: cada proyecto es una etapa y sus etapas, subetapas (solo lectura)
   function modeloPortafolio(pids) {
     const sections = [], activities = [], notas = [], miembros = [];
     let base = null;
@@ -727,7 +799,7 @@
         <button class="btn sm" data-cr="elegir">${actual ? 'Cambiar de iniciativa' : 'Abrir el cronograma de una iniciativa'} ▾</button>
         ${!pid && ec ? `<select class="pf-sel" id="gEstado" aria-label="Fase"><option value="">Fase: todas</option>${(ec.options || []).map(o => `<option ${filtro === o.name ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}</select>` : ''}
         ${!pid && conPlan.length ? '<span class="sp"></span><span class="t-lgd cr-lgd"><span><i style="background:#5B9BEA"></i>Fase 1</span><span><i style="background:#F08A5D"></i>Fase 2</span><span><i style="background:#3FC293"></i>Fase 3</span><span><i style="background:#B9B5C6"></i>Otra</span></span>' : ''}</div>
-      ${pid ? '' : conPlan.length ? '<div class="cron-nota">Cada iniciativa con cronograma es un capítulo, con el color de su fase. Para editar, abre el cronograma de esa iniciativa.</div>'
+      ${pid ? '' : conPlan.length ? '<div class="cron-nota">Cada iniciativa con cronograma es una etapa, con el color de su fase. Para editar, abre el cronograma de esa iniciativa.</div>'
         : `<section class="t-card"><div class="t-vacio"><b>Aún no hay cronogramas${filtro ? ' en esta fase' : ''}.</b><br>Abre una iniciativa para armar el suyo, pegarlo desde Excel o traerlo de la app de gestión.<br><button class="btn primary sm" data-cr="elegir" style="margin-top:10px">Elegir iniciativa</button></div></section>`}
       <div id="gBox"></div>
       ${!pid && sinPlan.length ? `<details class="cr-sin"><summary>${sinPlan.length} iniciativa${sinPlan.length === 1 ? '' : 's'} sin cronograma</summary><div>${sinPlan.map(p => `<a href="#/cronograma/${p.id}">${esc(App.projectName(p))}</a>`).join('')}</div></details>` : ''}`;
@@ -735,7 +807,7 @@
       const b = e.target.closest('[data-cr=elegir]'); if (!b) return;
       const orden = conPlan.concat(sinPlan, ps.filter(p => !visibles.includes(p)));
       App.pickList(b, { multi: false, placeholder: 'Buscar iniciativa…', empty: 'No hay iniciativas', selected: pid ? [pid] : [],
-        items: orden.map(p => { const pl = App.planOf(p.id); return { id: p.id, label: App.projectName(p) + (pl.acts.length ? ` · ${pl.avance} %` : ' · sin cronograma'), color: pl.acts.length ? 'azul' : 'gris' }; }),
+        items: orden.map(p => { const pl = App.planOf(p.id); return { id: p.id, label: App.projectName(p) + (pl.acts.length ? `, ${pl.avance} %` : ', sin cronograma'), color: pl.acts.length ? 'azul' : 'gris' }; }),
         onSave: id => { if (id) App.go('#/cronograma/' + id); } });
     };
     const sel = $('#gEstado', main); if (sel) sel.onchange = () => { App.store.set('cron.estado', sel.value); App.render(); };

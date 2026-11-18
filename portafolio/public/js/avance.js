@@ -1,5 +1,5 @@
 /* ============================================================
-   AVANCE DE FASE · qué cumple cada iniciativa y qué le falta
+   AVANCE DE FASE, qué cumple cada iniciativa y qué le falta
    Criterios de la lámina de la Oficina:
      Fase 1 → 2: caso de negocio (beneficios e inversión), ICE sobre el
                  umbral (Income 3 o más) y cronograma cargado.

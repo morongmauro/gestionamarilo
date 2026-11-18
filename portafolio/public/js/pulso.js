@@ -1,12 +1,12 @@
 /* ============================================================
-   TABLERO · «Plano de valor»
+   TABLERO, «Plano de valor»
    La primera página del sitio. Responde, en este orden:
    cuánto llevamos en el año, qué cambió en la semana, qué tiene
    que decidir la gerencia, dónde está el portafolio y cuáles
    iniciativas traen más valor. Todo sale de los datos: nadie
    tiene que reportarlo.
-   Rutas: #/tablero (pulso) · #/tablero/okr · #/tablero/analisis
-   (el tablero anterior, con los gráficos) · #/tablero/pantalla
+   Rutas: #/tablero (pulso), #/tablero/okr, #/tablero/analisis
+   (el tablero anterior, con los gráficos), #/tablero/pantalla
    El lenguaje visual sale de los planos de obra: cotas para medir
    y el cuadrado de Amarilo como marca de estado.
    ============================================================ */
@@ -60,7 +60,7 @@
     const hoy = D.d.hoy, desde = App.d.add(hoy, -7), en = x => (x.created_at || '').slice(0, 10) > desde;
     const H = hist.filter(en);
     const ec = App.estadoCol();
-    const nom = x => String(x.nombre || '').replace(/^Caso de negocio · /, '').replace(/ \(desde .*\)$/, '');
+    const nom = x => String(x.nombre || '').replace(/^Caso de negocio, /, '').replace(/ \(desde .*\)$/, '');
     const casosNuevos = H.filter(x => x.coll === 'cases' && /^cre/.test(x.accion || '') && !App.esEjemplo(x.record_id && (App.S.cases.find(c => c.id === x.record_id) || {}).project_id)).map(nom);
     const fase = H.filter(x => x.coll === 'projects' && (x.campos || []).includes(ec ? ec.id : 'estado') && !App.esEjemplo(x.record_id)).map(nom);
     const ultimaFase = hist.filter(x => x.coll === 'projects' && (x.campos || []).includes(ec ? ec.id : 'estado')).map(x => x.created_at.slice(0, 10)).sort().pop() || null;
@@ -171,7 +171,7 @@
       <p class="lema-s">Cada fila compara lo capturado con lo que se esperaba a esta altura del año. La línea roja es lo esperado a hoy.</p>
       ${sub('okr')}
       <div class="pv-okr">${L.map(z => { const [c, t] = est(z), e = z.pr * d.corrido / 12, mx = Math.max(z.pr, 1), best = z.l.slice().sort((a, b) => D.pr(b) - D.pr(a))[0];
-        return `<div class="pv-o"><i class="ico ${c === 'g' ? 'ico-ok g' : c === 'o' ? 'ico-reloj o' : c === 'r' ? 'ico-alerta r' : 'ico-pendiente n'}" aria-hidden="true"></i><div class="o"><b>${esc(z.o)}</b><span>${t} · ${plural(z.l.length, 'iniciativa', 'iniciativas')}</span></div>
+        return `<div class="pv-o"><i class="ico ${c === 'g' ? 'ico-ok g' : c === 'o' ? 'ico-reloj o' : c === 'r' ? 'ico-alerta r' : 'ico-pendiente n'}" aria-hidden="true"></i><div class="o"><b>${esc(z.o)}</b><span>${t}, ${plural(z.l.length, 'iniciativa', 'iniciativas')}</span></div>
           <div class="pv-t"><div class="c"><span class="e"></span><span class="l" style="width:${Math.min(100, z.ca / mx * 100)}%"></span>${z.pr ? `<span class="x" style="left:${Math.min(100, e / mx * 100)}%"></span>` : ''}</div><div class="s">${z.pr ? `${esc(m(z.ca))} de ${esc(m(e))} esperados a hoy` : 'Sus iniciativas aún no tienen beneficios para este año'}</div></div>
           <div class="v"><b>${z.pr ? esc(m(z.pr)) : '—'}</b><span>proyectado ${d.Y}</span></div>
           <a class="mejor" href="#/proyectos/${best.p.id}">${esc(App.projectName(best.p))}<span>la que más aporta</span></a></div>`; }).join('')}</div>`;

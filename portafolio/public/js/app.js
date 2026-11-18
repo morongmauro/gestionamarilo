@@ -1,5 +1,5 @@
 /* ============================================================
-   ARRANQUE · ingreso, navegación, barra lateral y sincronización
+   ARRANQUE, ingreso, navegación, barra lateral y sincronización
    Cada 20 segundos la app trae los cambios de los demás usuarios.
    ============================================================ */
 'use strict';
@@ -108,7 +108,7 @@
     App.S.demo = !!d.demo;
     App.S.almacenamiento = d.almacenamiento;
     App.S.direccion = d.direccion || null;
-    Object.assign(App.S, { me: d.me, org: d.org, columns: d.columns, projects: d.projects, activities: d.activities, sections: d.sections || [], cases: d.cases, sessions: d.sessions, committees: d.committees, people: d.people, tablero: d.tablero || { income_unidad: 1e6 }, vistaPf: d.vistaPf || null, dgvCorte: d.dgvCorte || null });
+    Object.assign(App.S, { me: d.me, org: d.org, columns: d.columns, projects: d.projects, activities: d.activities, sections: d.sections || [], cases: d.cases, sessions: d.sessions, committees: d.committees, people: d.people, tablero: d.tablero || { income_unidad: 1e6 }, vistaPf: d.vistaPf || null, dgvCorte: d.dgvCorte || null, okrs: d.okrs || [] });
   }
   App.reload = async () => { try { await loadState(); App.render(); } catch (e) { console.error(e); } };
 
@@ -117,7 +117,7 @@
     if (App.S.me.must_change) return showLogin('cambiar');
     $('#login').hidden = true; $('#app').hidden = false;
     $('#orgName').textContent = App.S.org;
-    document.title = `${App.S.org} · Portafolio de Generación de Valor`;
+    document.title = `${App.S.org}, Portafolio de Generación de Valor`;
     $('#meAv').textContent = App.initials(App.S.me.name);
     $('#meName').textContent = App.S.me.name;
     $('#meRole').textContent = { admin: 'Administrador', editor: 'Editor', lector: 'Solo lectura' }[App.S.me.role];
@@ -157,7 +157,7 @@
       const ids = []; main.querySelectorAll('[data-pid],[data-rk-ir]').forEach(el => { const id = el.dataset.pid || el.dataset.rkIr; if (el.offsetParent !== null && App.byId('projects', id) && !ids.includes(id) && (sec !== 'casos' || App.caseOf(id))) ids.push(id); });
       if (ids.length) App.store.set('nav.lista', { de: LISTAS[sec][0], href: '#/' + sec, tab: LISTAS[sec][1], ids });
     }
-    $$('.tab[data-sec]').forEach(t => t.classList.toggle('active', t.dataset.sec === sec));
+    $$('.tab[data-sec]').forEach(t => t.classList.toggle('active', t.dataset.sec === (sec === 'valor' ? 'casos' : sec)));
     sideProjects(sec === 'proyectos' ? params[0] : sec === 'casos' ? params[0] : null);
     $('#app').classList.remove('open');
   };

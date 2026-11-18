@@ -1,16 +1,16 @@
 /* ============================================================
-   ICE · prioridad de cada iniciativa, con el método de la Oficina de
+   ICE, prioridad de cada iniciativa, con el método de la Oficina de
    Generación de Valor (tabla ICE de Notion):
 
      ICE = Income × Confidence ÷ Effort × OS
 
    - Income (de 1 a 55): dinero captado o ahorrado a dos años.
-       ≤ $50 M = 1 · $51–200 M = 2 · $201–600 M = 3 (umbral: desde aquí van a la Of. Valor)
-       $601 M–1.200 M = 5 · $1.201–2.200 M = 8 · $2.201–4.200 M = 13
-       $4.201–8.200 M = 21 · $8.201–16.200 M = 34 · > $16.201 M = 55
-   - Confidence: 100 % total · 75 % alta · 50 % media · 25 % baja.
-   - Effort: 100 % = 6 meses o más · 75 % = 4 a 6 · 50 % = 2 a 4 · 25 % = menos de 2.
-   - OS (objetivos del semestre): 0,75 no alineado · 1 alineado · 1,25 prioridad.
+       ≤ $50 M = 1, $51–200 M = 2, $201–600 M = 3 (umbral: desde aquí van a la Of. Valor)
+       $601 M–1.200 M = 5, $1.201–2.200 M = 8, $2.201–4.200 M = 13
+       $4.201–8.200 M = 21, $8.201–16.200 M = 34, > $16.201 M = 55
+   - Confidence: 100 % total, 75 % alta, 50 % media, 25 % baja.
+   - Effort: 100 % = 6 meses o más, 75 % = 4 a 6, 50 % = 2 a 4, 25 % = menos de 2.
+   - OS (objetivos del semestre): 0,75 no alineado, 1 alineado, 1,25 prioridad.
      Multiplica: la alineación sube el puntaje.
 
    De dónde sale cada factor (uno por uno):
@@ -80,7 +80,7 @@
       else if (calc.out[k] != null) { f[k] = calc.out[k]; fuentes.add('caso'); notas.push(`${NOM[k]} ${fmt(k, f[k])}: calculado (${calc.notas[k]})`); }
     }
     f.os = reg.os ?? 1;
-    notas.push(reg.os != null ? `OS ${fmt('os', f.os)}: registrado por la Oficina` : 'OS 1: alineado (nadie lo ha marcado; 0,75 no alineado · 1,25 prioridad)');
+    notas.push(reg.os != null ? `OS ${fmt('os', f.os)}: registrado por la Oficina` : 'OS 1: alineado (nadie lo ha marcado; 0,75 no alineado, 1,25 prioridad)');
     // Respaldo: columnas antiguas Impacto / Confianza / Facilidad (1 a 10)
     if (f.income == null || f.conf == null || f.esf == null) {
       const lim = x => Math.min(10, Number(x)), i = lim(v.impacto), c = lim(v.confianza), fa = lim(v.facilidad);
@@ -92,7 +92,7 @@
     return { ...f, origen, ice: formula(f.income, f.conf, f.esf, f.os), oficina: f.income >= UMBRAL_OFICINA, notas };
   }
 
-  // B6 · Income registrado por la Oficina frente al que dan las cifras del caso (null si coinciden o falta alguno)
+  // B6, Income registrado por la Oficina frente al que dan las cifras del caso (null si coinciden o falta alguno)
   function diferenciaIncome(p) {
     const reg = fib((p.props || {}).ice_income), calc = calculados(p).out.income;
     return reg != null && calc != null && reg !== calc ? { reg, calc } : null;
@@ -103,6 +103,6 @@
     App.guard(async () => { await App.patch('projects', b.dataset.pid, { props: { ice_income: Number(b.dataset.usarIncome) } }); App.toast('Income actualizado con el del caso'); App.render(); }); });
 
   App.ICE = { diferenciaIncome, avisoIncome, detalle, formula, FIB, BANDAS_INCOME, fib, redondeaPct, leeOS, effortDeMeses, UMBRAL_OFICINA,
-    explicacion: 'ICE = Income × Confidence ÷ Effort × OS (método de la Oficina de Generación de Valor). Income: dinero a dos años en una escala de 1 a 55 (≤ $50 M = 1 … > $16.201 M = 55; desde 3, $201–600 M, va a la Oficina). Confidence: 25 % a 100 %. Effort: 25 % menos de 2 meses · 50 % 2 a 4 · 75 % 4 a 6 · 100 % 6 o más. OS: 0,75 no alineado · 1 alineado · 1,25 prioridad del semestre. Se usa lo que la Oficina registró en la tabla; lo que falte se calcula del caso de negocio y del cronograma.' };
+    explicacion: 'ICE = Income × Confidence ÷ Effort × OS (método de la Oficina de Generación de Valor). Income: dinero a dos años en una escala de 1 a 55 (≤ $50 M = 1 … > $16.201 M = 55; desde 3, $201–600 M, va a la Oficina). Confidence: 25 % a 100 %. Effort: 25 % menos de 2 meses, 50 % 2 a 4, 75 % 4 a 6, 100 % 6 o más. OS: 0,75 no alineado, 1 alineado, 1,25 prioridad del semestre. Se usa lo que la Oficina registró en la tabla; lo que falte se calcula del caso de negocio y del cronograma.' };
   App.iceOf = p => detalle(p).ice;
 })();

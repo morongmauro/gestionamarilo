@@ -1,5 +1,5 @@
 /* ============================================================
-   TABLERO VISUAL · la página principal
+   TABLERO VISUAL, la página principal
    Cada tablero responde una pregunta. Al hacer clic en una barra,
    un punto, una celda o una cifra se abre el detalle con las
    iniciativas que hay detrás y el enlace para ir a cada una.
@@ -15,7 +15,7 @@
   const guardar = () => App.store.set('tv', F);
   const plural = (n, s, p) => `${n} ${n === 1 ? s : p}`;
   const fase = p => { const ec = App.estadoCol(); return window.Fases && ec ? Fases.clasificar((p.props || {})[ec.id]) : null; };
-  const faseNombre = k => (typeof k === 'number' ? `Fase ${k} · ${FN[k]}` : FN[k] || 'Sin fase');
+  const faseNombre = k => (typeof k === 'number' ? `Fase ${k}, ${FN[k]}` : FN[k] || 'Sin fase');
 
   function datos() {
     const d = App.Dash.datos({ anio: F.anio, estado: '', tipo: '', alcance: 'todos', dgv: true });
@@ -111,7 +111,7 @@
     D.X.forEach(x => App.okrsDe(x.p).forEach(o => { const z = mp.get(o) || { o, n: 0, pr: 0, ca: 0 }; z.n++; z.pr += D.anual(x, D.Y); z.ca += D.capY(x); mp.set(o, z); }));
     const L = [...mp.values()].sort((a, b) => b.pr - a.pr || b.n - a.n).slice(0, 7);
     if (!L.length) return '<p class="tv-vacio">Las iniciativas aún no tienen OKR asignados.</p>';
-    return `<div class="tv-ok">${L.map(z => `<button class="tv-o" data-dv="okr:${esc(z.o)}" title="Clic para ver sus iniciativas"><span class="nm">${esc(z.o)}<small>${plural(z.n, 'iniciativa', 'iniciativas')}</small></span><span class="tr"><i style="width:${Math.min(100, z.ca / Math.max(z.pr, 1) * 100)}%"></i>${z.pr ? `<u style="left:${Math.min(100, D.d.corrido / 12 * 100)}%"></u>` : ''}</span><span class="v">${z.pr ? esc(m(z.pr)) : '—'}</span></button>`).join('')}</div>`;
+    return `<div class="tv-ok">${L.map(z => `<button class="tv-o" data-dv="okr:${esc(z.o)}" title="Clic para ver sus iniciativas"><span class="nm">${esc(z.o)}<small>${plural(z.n, 'iniciativa', 'iniciativas')}${(o => { const a = o && App.Valor.avanceObj(o); return a != null ? `, <b>${a} % de cumplimiento</b>` : ''; })(App.Valor ? App.Valor.objetivos().find(o => o.nombre === z.o) : null)}</small></span><span class="tr"><i style="width:${Math.min(100, z.ca / Math.max(z.pr, 1) * 100)}%"></i>${z.pr ? `<u style="left:${Math.min(100, D.d.corrido / 12 * 100)}%"></u>` : ''}</span><span class="v">${z.pr ? esc(m(z.pr)) : '—'}</span></button>`).join('')}</div>`;
   }
   function agenda(D) {
     const hoy = D.d.hoy, lim = App.d.add(hoy, 30);
@@ -144,17 +144,17 @@
         <button class="tv-p tv-k" data-dv="kpi:rev"><span class="l">Por decidir en comité</span><span class="n">${D.rev.length}</span><span class="c">${D.rev.length ? plural(D.rev.length, 'caso en revisión', 'casos en revisión') : 'nada pendiente'}</span></button>
         <button class="tv-p tv-k" data-dv="kpi:rojo"><span class="l">Iniciativas en rojo</span><span class="n">${D.crit.length}</span><span class="c">con atrasos o captura muy baja</span>${D.crit.length ? '<span class="st r"><i class="ico ico-flecha"></i>Ver cuáles</span>' : ''}</button>
       </div>
-      <div class="tv-g"><section class="tv-p"><div class="tv-t"><h2>¿Cuánto valor vamos a crear?</h2><small>lo que proyectan los casos de negocio, año por año · clic en un año para ver las iniciativas</small></div>
+      <div class="tv-g"><section class="tv-p"><div class="tv-t"><h2>¿Cuánto valor vamos a crear?</h2><small>lo que proyectan los casos de negocio, año por año, clic en un año para ver las iniciativas</small></div>
         <div class="tv-big"><div><div class="n">${esc(m(D.tot))}</div><div class="s">en ${d.anios.length} años; ${Y} aporta ${esc(m(D.meta))}.</div><div class="tv-rows">${D.cats.map(k => { const v = D.porAnio.reduce((a, z) => a + z.v[k], 0); return `<div><i style="background:${CAT[k]}"></i><span>${esc(App.catLabel(k))}</span><b>${esc(m(v))}</b><em>${D.tot ? Math.round(v / D.tot * 100) : 0} %</em></div>`; }).join('')}</div></div>${D.tot ? barras(D) : '<p class="tv-vacio">Aún no hay casos de negocio con beneficios.</p>'}</div></section></div>
       <div class="tv-g g2">
-        <section class="tv-p"><div class="tv-t"><h2>¿Vamos al ritmo?</h2><small>capturado frente a lo esperado, acumulado en ${Y} · clic en un mes</small></div>
+        <section class="tv-p"><div class="tv-t"><h2>¿Vamos al ritmo?</h2><small>capturado frente a lo esperado, acumulado en ${Y}, clic en un mes</small></div>
           <div class="tv-lg"><span><i class="ink"></i>Capturado</span><span><i class="dash"></i>Esperado según los casos</span></div>${curva(D)}<div class="tv-nota">Meta del año: ${esc(m(D.meta))}. Se actualiza cada vez que alguien registra una captura.</div></section>
-        <section class="tv-p"><div class="tv-t"><h2>¿Dónde está el portafolio?</h2><small>iniciativas y valor a 2 años · clic para ver cuáles</small></div>${embudo(D)}</section>
+        <section class="tv-p"><div class="tv-t"><h2>¿Dónde está el portafolio?</h2><small>iniciativas y valor a 2 años, clic para ver cuáles</small></div>${embudo(D)}</section>
       </div>
       <div class="tv-g g3">
         <section class="tv-p"><div class="tv-t"><h2>¿Qué priorizar?</h2><small>valor frente a esfuerzo</small></div><div class="tv-lg">${[1, 2, 3].map(k => `<span><i style="background:${FC[k]};border-radius:50%"></i>Fase ${k}</span>`).join('')}</div>${mapa(D)}</section>
         <section class="tv-p"><div class="tv-t"><h2>¿Qué riesgos pesan?</h2><small>probabilidad × impacto</small><span class="sp"></span><a href="#/riesgos">Ver riesgos</a></div>${riesgos(D)}</section>
-        <section class="tv-p"><div class="tv-t"><h2>¿Cumplen los cronogramas?</h2><small>avance real · │ lo que debería llevar hoy</small></div>${cronos(D)}</section>
+        <section class="tv-p"><div class="tv-t"><h2>¿Cumplen los cronogramas?</h2><small>avance real, │ lo que debería llevar hoy</small></div>${cronos(D)}</section>
       </div>
       <div class="tv-g g2b">
         <section class="tv-p"><div class="tv-t"><h2>¿Cómo vamos en cada OKR?</h2><small>capturado frente a lo proyectado ${Y}</small></div>${okrs(D)}</section>

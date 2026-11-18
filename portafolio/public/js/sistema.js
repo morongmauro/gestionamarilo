@@ -1,5 +1,5 @@
 /* ============================================================
-   SISTEMA DE DISEÑO · referencia viva (sección «Sistema de diseño»)
+   SISTEMA DE DISEÑO, referencia viva (sección «Sistema de diseño»)
    Muestra los tokens y componentes reales de css/marca.css: lo que se
    ve aquí es exactamente lo que usa la aplicación. Los contrastes se
    calculan en el navegador con los colores ya resueltos (claro u oscuro).
@@ -26,13 +26,13 @@
   function sw(v, nombre, uso, sobre = '--card', texto = true) {
     const c = rgb(v), r = ratio(c, rgbSolid(sobre));
     const ok = texto ? (r >= 4.5 ? ['good', 'AA texto'] : r >= 3 ? ['warn', 'solo gráfico / texto grande'] : ['crit', 'no para texto']) : (r >= 3 ? ['good', 'AA gráfico'] : ['neutral', 'decorativo']);
-    return `<div class="ds-sw"><div class="c" style="background:var(${v})"></div><div class="t"><b>${esc(nombre)}</b><code>${v} · ${hex(c)}</code><div style="margin:4px 0 2px">${esc(uso)}</div><span class="badge ${ok[0]}">${r.toFixed(1)}:1 · ${ok[1]}</span></div></div>`;
+    return `<div class="ds-sw"><div class="c" style="background:var(${v})"></div><div class="t"><b>${esc(nombre)}</b><code>${v}, ${hex(c)}</code><div style="margin:4px 0 2px">${esc(uso)}</div><span class="badge ${ok[0]}">${r.toFixed(1)}:1, ${ok[1]}</span></div></div>`;
   }
   const sec = (t, p, html) => `<section class="ds-sec card-box"><h2>${t}</h2>${p ? `<p>${p}</p>` : ''}${html}</section>`;
   const ICONOS = ['tablero', 'proyectos', 'cronograma', 'casos', 'agenda', 'historial', 'usuarios', 'sistema', 'alerta', 'check', 'x', 'info', 'flecha', 'filtro', 'ajustes'];
 
   function render(main) {
-    main.innerHTML = `<div class="dash-head"><button class="burger" data-act="burger" aria-label="Menú">☰</button><div><div class="eyebrow">Amarilo · Portafolio de Generación de Valor</div><h1>Sistema de diseño</h1><div class="sub">Dirección «Cimiento Amarilo» · referencia viva de colores, tipografía y componentes</div></div></div>
+    main.innerHTML = `<div class="dash-head"><button class="burger" data-act="burger" aria-label="Menú">☰</button><div><div class="eyebrow">Amarilo, Portafolio de Generación de Valor</div><h1>Sistema de diseño</h1><div class="sub">Dirección «Cimiento Amarilo», referencia viva de colores, tipografía y componentes</div></div></div>
 
       ${sec('Marca', 'Qué está respaldado y qué es propuesta. El logo, los colores y la tipografía se tomaron de la web pública amarilo.com.co (sus variables de color --am-color-*). No es el manual de marca: hay que validarlo con Mercadeo.', `
         <div class="ds-row" style="gap:18px;align-items:flex-start">
@@ -43,7 +43,7 @@
             <table class="lst"><thead><tr><th>Elemento</th><th>Origen</th><th>Estado</th></tr></thead><tbody>
               <tr><td>Nombre «Amarilo»</td><td>Contexto del proyecto</td><td><span class="badge good"><svg><use href="#i-check"/></svg>Confirmado</span></td></tr>
               <tr><td>Logo (símbolo + AMARILO)</td><td>Web pública (archivos SVG del sitio)</td><td><span class="badge warn"><svg><use href="#i-alerta"/></svg>Validar con Mercadeo</span></td></tr>
-              <tr><td>Amarillo #FFC900 · morado #160B29</td><td>Web pública (--am-color-primary, --am-color-dark)</td><td><span class="badge warn"><svg><use href="#i-alerta"/></svg>Validar con el manual</span></td></tr>
+              <tr><td>Amarillo #FFC900, morado #160B29</td><td>Web pública (--am-color-primary, --am-color-dark)</td><td><span class="badge warn"><svg><use href="#i-alerta"/></svg>Validar con el manual</span></td></tr>
               <tr><td>Montserrat</td><td>Web pública (fuente de todo el sitio)</td><td><span class="badge good"><svg><use href="#i-check"/></svg>Coincide</span></td></tr>
               <tr><td>Grises, éxito #0E7D49, error #D21A3A</td><td>Web pública (--am-color-*)</td><td><span class="badge warn"><svg><use href="#i-alerta"/></svg>Validar con el manual</span></td></tr>
               <tr><td>Naranja de advertencia, azul de información</td><td>Propuesta (la web no los define)</td><td><span class="badge info"><svg><use href="#i-info"/></svg>Propuesta</span></td></tr>
@@ -73,17 +73,17 @@
         <p class="muted" style="font-size:12px;margin-bottom:8px">Categórica en orden fijo para el tipo de valor; secuencia de azules para etapas (orden); estados con su ícono. No se usan dos ejes ni más de 6 categorías.</p>
         <div class="ds-grid">${App.CATS.map(c => sw('--cat-' + c.id, c.label, 'Tipo de valor', '--card', false)).join('')}</div>
         <div class="ds-row" style="margin-top:10px;gap:4px">${[1, 2, 3, 4, 5].map(i => `<div style="flex:1;height:28px;border-radius:6px;background:var(--ord-${i})" title="--ord-${i}"></div>`).join('')}<div style="flex:1;height:28px;border-radius:6px;background:var(--ord-paus)" title="--ord-paus"></div></div>
-        <div class="muted" style="font-size:11px;margin-top:4px">Etapas: planeación → escalamiento · gris: pausado</div>`)}
+        <div class="muted" style="font-size:11px;margin-top:4px">Etapas: planeación → escalamiento, gris: pausado</div>`)}
 
       ${sec('Tipografía', 'Montserrat en todo, como la web de Amarilo: negrita para títulos y cifras, regular para el texto. Cifras con ancho fijo para comparar columnas.', `<div class="ds-type">
-        <div><code>Display · 48 / 800</code><span class="display" style="font-size:48px;font-weight:800;letter-spacing:-.035em;line-height:1">$664 M</span></div>
-        <div><code>Título 1 · 32 / 800</code><span class="display" style="font-size:32px;font-weight:800;letter-spacing:-.03em">Tablero ejecutivo</span></div>
-        <div><code>Título 2 · 24 / 800</code><span class="display" style="font-size:24px;font-weight:800;letter-spacing:-.025em">Casos de negocio</span></div>
-        <div><code>Título 3 · 15 / 700</code><span class="display" style="font-size:15px;font-weight:700">Requiere atención</span></div>
-        <div><code>Cuerpo grande · 16 / 400</code><span style="font-size:16px">En 2026 el portafolio ha capturado $664 M.</span></div>
-        <div><code>Cuerpo · 13–14 / 400</code><span style="font-size:13.5px">Texto de interfaz, tablas y formularios.</span></div>
-        <div><code>Pequeño · 12 / 500</code><span style="font-size:12px;color:var(--muted)">Descripciones y ayudas.</span></div>
-        <div><code>Sobretítulo · 11 / 700</code><span class="eyebrow">Portafolio de Generación de Valor</span></div>
+        <div><code>Display, 48 / 800</code><span class="display" style="font-size:48px;font-weight:800;letter-spacing:-.035em;line-height:1">$664 M</span></div>
+        <div><code>Título 1, 32 / 800</code><span class="display" style="font-size:32px;font-weight:800;letter-spacing:-.03em">Tablero ejecutivo</span></div>
+        <div><code>Título 2, 24 / 800</code><span class="display" style="font-size:24px;font-weight:800;letter-spacing:-.025em">Casos de negocio</span></div>
+        <div><code>Título 3, 15 / 700</code><span class="display" style="font-size:15px;font-weight:700">Requiere atención</span></div>
+        <div><code>Cuerpo grande, 16 / 400</code><span style="font-size:16px">En 2026 el portafolio ha capturado $664 M.</span></div>
+        <div><code>Cuerpo, 13–14 / 400</code><span style="font-size:13.5px">Texto de interfaz, tablas y formularios.</span></div>
+        <div><code>Pequeño, 12 / 500</code><span style="font-size:12px;color:var(--muted)">Descripciones y ayudas.</span></div>
+        <div><code>Sobretítulo, 11 / 700</code><span class="eyebrow">Portafolio de Generación de Valor</span></div>
       </div>`)}
 
       ${sec('Espacio, radios y sombras', 'Base de 4 px. Radios moderados (corporativo, no juguetón). Sombras suaves con un borde nítido.', `
@@ -123,7 +123,7 @@
 
       ${sec('Tooltips, paneles y estados', 'Ayuda al pasar el mouse para el detalle; panel lateral para editar sin perder el contexto; estados vacíos que dicen qué hacer; carga con esqueletos, no con pantallas en blanco.', `
         <div class="ds-row" style="align-items:flex-start;gap:16px">
-          <div><div class="tt-demo">Captado: $245 M · Esperado: $297 M</div><div class="muted" style="font-size:11px;margin-top:4px">Tooltip</div></div>
+          <div><div class="tt-demo">Captado: $245 M, Esperado: $297 M</div><div class="muted" style="font-size:11px;margin-top:4px">Tooltip</div></div>
           <div><button class="btn" data-ds="drawer">Abrir panel lateral</button><div class="muted" style="font-size:11px;margin-top:4px">Panel (Esc cierra)</div></div>
           <div class="card-box" style="width:260px;text-align:center;padding:22px"><div style="font-weight:700;margin-bottom:4px">Aún no hay casos de negocio</div><div class="muted" style="font-size:12px;margin-bottom:10px">Crea el primero o impórtalo desde Excel.</div><button class="btn primary sm">+ Nuevo caso</button></div>
           <div class="card-box" style="width:260px;display:flex;flex-direction:column;gap:8px"><div class="skel" style="height:14px;width:60%"></div><div class="skel" style="height:34px;width:80%"></div><div class="skel" style="height:10px;width:90%"></div><div class="skel" style="height:10px;width:70%"></div><div class="muted" style="font-size:11px">Esqueleto de carga</div></div>

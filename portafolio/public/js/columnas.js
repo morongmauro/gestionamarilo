@@ -1,5 +1,5 @@
 /* ============================================================
-   COLUMNAS DEL PORTAFOLIO · revisar y quitar las que no se usan
+   COLUMNAS DEL PORTAFOLIO, revisar y quitar las que no se usan
    Tarjeta de Administración: para cada columna muestra cuántas
    iniciativas la tienen llena y si la app la usa en algún cálculo.
    Propone quitar las vacías que nada usa. Quitar una columna no borra
@@ -13,8 +13,8 @@
     revision_dgv: ['Filtro del Portafolio y del Tablero: iniciativas activas', true],
     proyecto: ['Nombre de la iniciativa', true], estado: ['Fase de la iniciativa', true], trazabilidad: ['Bitácora de cambios', true],
     habilitadores: ['Responsables', true], realizadores: ['Responsables', true], okrs: ['Zoom por OKR', true], tipo_valor: ['Zoom por tipo de valor', true],
-    ice_income: ['ICE · Income', true], ice_confianza: ['ICE · Confidence', true], ice_esfuerzo: ['ICE · Effort', true], ice_os: ['ICE · OS', true],
-    income: ['Valor anual sin caso (antiguo)', false], valor_crear: ['Valor a crear sin caso', false], objetivos_semestre: ['ICE · OS (respaldo)', false],
+    ice_income: ['ICE, Income', true], ice_confianza: ['ICE, Confidence', true], ice_esfuerzo: ['ICE, Effort', true], ice_os: ['ICE, OS', true],
+    income: ['Valor anual sin caso (antiguo)', false], valor_crear: ['Valor a crear sin caso', false], objetivos_semestre: ['ICE, OS (respaldo)', false],
     impacto: ['ICE antiguo 1-10', false], confianza: ['ICE antiguo 1-10', false], facilidad: ['ICE antiguo 1-10', false],
   };
   const lleno = v => !(v == null || v === '' || (Array.isArray(v) && !v.length));

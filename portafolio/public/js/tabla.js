@@ -1,5 +1,5 @@
 /* ============================================================
-   PROYECTOS · tabla tipo Notion (y tablero por estado)
+   PROYECTOS, tabla tipo Notion (y tablero por estado)
    Columnas con tipo, definidas por el equipo. Cada celda se edita
    con un clic. Columnas calculadas al final: cronograma, avance y
    caso de negocio (salen de las otras secciones).
@@ -123,7 +123,7 @@
     if (P.view === 'resumen' && App.Portafolio) { root = null; return App.Portafolio.render(main); }
     root = main;
     const ro = !App.canEdit();
-    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><div><h1>Portafolio</h1><div class="sub">${App.S.projects.length} ${App.S.projects.length === 1 ? 'iniciativa' : 'iniciativas'} · aquí se editan las columnas, como en Notion</div></div><span class="sp"></span>
+    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><div><h1>Portafolio</h1><div class="sub">${App.S.projects.length} ${App.S.projects.length === 1 ? 'iniciativa' : 'iniciativas'}, aquí se editan las columnas, como en Notion</div></div><span class="sp"></span>
         <div class="seg"><button data-view="resumen">Resumen</button><button data-view="tabla" class="${P.view === 'tabla' ? 'on' : ''}">Tabla completa</button><button data-view="tablero" class="${P.view === 'tablero' ? 'on' : ''}" title="Tarjetas agrupadas por fase">Por fase</button></div></div>
       <div class="toolbar">
         <label class="search"><span>⌕</span><input id="tq" placeholder="Buscar en todas las columnas…" value="${esc(q)}"></label>
@@ -182,7 +182,7 @@
     const groups = P.group && col(P.group) ? groupRows(rows, P.group) : [{ key: null, rows }];
     const total = cols.reduce((a, c) => a + (c.width || 180), 0) + calc.reduce((a, c) => a + c.width, 0) + 46 + 40;
     const colgroup = `<colgroup>${cols.map(c => `<col style="width:${c.width || 180}px">`).join('')}${calc.map(c => `<col style="width:${c.width}px">`).join('')}<col style="width:46px"><col style="width:40px"></colgroup>`;
-    const thead = `<thead><tr>${cols.map(c => `<th data-col="${c.id}"><div class="th-in" data-act="colmenu" data-col="${c.id}"${App.canEdit() ? ` draggable="true" title="Clic: opciones de la columna · arrastre para cambiarla de lugar (para todos)"` : ""}><span class="ic">${TYPES[c.type].icon}</span><span class="nm">${esc(c.name)}</span>${P.sort && P.sort.col === c.id ? `<span class="srt">${P.sort.dir === 'desc' ? '▼' : '▲'}</span>` : ''}<span class="rz" data-act="resize" data-col="${c.id}"></span></div></th>`).join('')}${calc.map(c => `<th title="Columna calculada: sale del ${c.id === '_caso' ? 'caso de negocio' : 'cronograma'}"><div class="th-in" style="cursor:default"><span class="ic">${c.icon}</span><span class="nm">${esc(c.name)}</span></div></th>`).join('')}<th class="addc">${App.canEdit() ? '<div class="th-in" data-act="addcol" title="Agregar columna">+</div>' : ''}</th><th></th></tr></thead>`;
+    const thead = `<thead><tr>${cols.map(c => `<th data-col="${c.id}"><div class="th-in" data-act="colmenu" data-col="${c.id}"${App.canEdit() ? ` draggable="true" title="Clic: opciones de la columna, arrastre para cambiarla de lugar (para todos)"` : ""}><span class="ic">${TYPES[c.type].icon}</span><span class="nm">${esc(c.name)}</span>${P.sort && P.sort.col === c.id ? `<span class="srt">${P.sort.dir === 'desc' ? '▼' : '▲'}</span>` : ''}<span class="rz" data-act="resize" data-col="${c.id}"></span></div></th>`).join('')}${calc.map(c => `<th title="Columna calculada: sale del ${c.id === '_caso' ? 'caso de negocio' : 'cronograma'}"><div class="th-in" style="cursor:default"><span class="ic">${c.icon}</span><span class="nm">${esc(c.name)}</span></div></th>`).join('')}<th class="addc">${App.canEdit() ? '<div class="th-in" data-act="addcol" title="Agregar columna">+</div>' : ''}</th><th></th></tr></thead>`;
     const trRow = r => `<tr data-id="${r.id}">${cols.map(c => `<td class="cell ${c.id === tc.id ? 'ttl-col' : ''}" data-act="edit" data-id="${r.id}" data-col="${c.id}">${cellHTML(c, r)}</td>`).join('')}${calc.map(c => `<td class="cell" data-act="calc" data-id="${r.id}" data-k="${c.id}">${calcHTML(c.id, r)}</td>`).join('')}<td></td><td class="menu-col">${App.canEdit() ? `<button data-act="rowmenu" data-id="${r.id}" title="Opciones">···</button>` : ''}</td></tr>`;
     const span = cols.length + calc.length + 2;
     const newBtn = (g) => App.canEdit() ? `<tr class="newrow"><td colspan="${span}"><button data-act="new" data-gkey="${g.key === null ? '' : esc(g.key)}" data-gcol="${P.group || ''}">+ Nuevo</button></td></tr>` : '';
@@ -191,7 +191,7 @@
       const head = g.key === null ? '' : `<tr class="grp"><td colspan="${span}" data-act="toggle" data-key="${esc(g.key)}"><div class="g-in"><span class="ar">${closed ? '▶' : '▼'}</span>${g.key === '' ? `<span class="pill cl-gris">Sin ${esc(gc.name.toLowerCase())}</span>` : (gc.type === 'select' || gc.type === 'multi') ? `<span class="pill cl-${App.optColor(gc, g.key)}">${esc(g.key)}</span>` : gc.type === 'people' ? `<span class="pill ppl cl-${App.optColor(gc, g.key)}"><span class="av">${esc(App.initials(g.key))}</span>${esc(g.key)}</span>` : `<span>${esc(g.key)}</span>`}<span class="n">${g.rows.length}</span></div></td></tr>`;
       return `<tbody>${head}${closed ? '' : g.rows.map(trRow).join('') + newBtn(g)}</tbody>`;
     }).join('');
-    const empty = !App.S.projects.length ? `<tbody><tr><td colspan="${span}"><div class="empty-state"><b>Aún no hay iniciativas</b>${App.canEdit() ? 'Haz clic en «+ Nueva iniciativa». Cada celda se edita con un clic, como en Notion.' : 'Cuando el equipo cree proyectos, aparecerán aquí.'}</div></td></tr>${newBtn({ key: null })}</tbody>` : '';
+    const empty = !App.S.projects.length ? `<tbody><tr><td colspan="${span}"><div class="empty-state"><b>Aún no hay iniciativas</b>${App.canEdit() ? 'Haz clic en «+ Nueva iniciativa». Cada celda se edita con un clic, como en Notion.' : 'Cuando el equipo cree iniciativas, aparecerán aquí.'}</div></td></tr>${newBtn({ key: null })}</tbody>` : '';
     const tfoot = `<tfoot><tr><td colspan="${span}">${rows.length} ${rows.length === 1 ? 'iniciativa' : 'iniciativas'}${rows.length !== App.S.projects.length ? ` de ${App.S.projects.length}` : ''}</td></tr></tfoot>`;
     $('#tview', root).innerHTML = `<div class="tbl-wrap"><table class="tbl" style="width:${total}px">${colgroup}${thead}${empty || bodies}${tfoot}</table></div>`;
   }
@@ -211,7 +211,7 @@
             if (c.type === 'select') return `<div class="pills"><span class="pill cl-${App.optColor(c, v)}">${esc(v)}</span></div>`;
             if (c.type === 'number') return `<div class="cn">${esc(c.name)}: <b>${esc(fmtNum(v))}</b></div>`;
             if (c.type === 'date') return `<div class="cn">${esc(c.name)}: ${esc(App.d.fmt(v))}</div>`;
-            return renderPills(c, v); }).join('')}${pl.acts.length ? `<div class="cn"><span class="bar-mini"><i style="width:${pl.avance}%"></i></span>${pl.avance}% · ${esc(App.d.fmtShort(pl.ini))} – ${esc(App.d.fmtShort(pl.fin))}</div>` : ''}</div>`; }).join('') +
+            return renderPills(c, v); }).join('')}${pl.acts.length ? `<div class="cn"><span class="bar-mini"><i style="width:${pl.avance}%"></i></span>${pl.avance}%, ${esc(App.d.fmtShort(pl.ini))} – ${esc(App.d.fmtShort(pl.fin))}</div>` : ''}</div>`; }).join('') +
         (App.canEdit() ? `<div class="newrow"><button data-act="new" data-gcol="${bc.id}" data-gkey="${esc(o.name)}">+ Nuevo</button></div>` : '') + '</div>';
     }).join('') + '</div>';
   }
@@ -296,7 +296,7 @@
       const b = e.target.closest('[data-p]'); if (!b) return;
       if (b.dataset.p === 'ok') save();
       if (b.dataset.p === 'back') back();
-      if (b.dataset.p === 'del') { if (!confirm(`¿Eliminar la opción «${o.name}»? Se quita de todos los proyectos.`)) return; c.options = c.options.filter(x => x !== o); rename(o.name, null); App.saveColumns(); back(); App.render(); }
+      if (b.dataset.p === 'del') { if (!confirm(`¿Eliminar la opción «${o.name}»? Se quita de todas las iniciativas.`)) return; c.options = c.options.filter(x => x !== o); rename(o.name, null); App.saveColumns(); back(); App.render(); }
     };
     inp.onkeydown = e => { if (e.key === 'Enter') save(); };
   }
@@ -421,7 +421,7 @@
     if (a === 'burger') App.toggleSide();
     else if (a === 'open') { e.stopPropagation(); App.go('#/proyectos/' + t.dataset.id); }
     else if (a === 'leer') { const r = App.byId('projects', t.dataset.id), c = col(t.dataset.col), td = t.closest('td');
-      const p = App.openPop(td || t, `<div class="lbl">${esc(c.name)} · ${esc(App.projectName(r))}</div><div class="leer-todo">${esc((r.props || {})[c.id] || '')}</div>${App.canEdit() ? '<div style="padding:0 10px 10px"><button class="btn sm" data-leer-ed>✎ Editar</button></div>' : ''}`, { width: 520, nofocus: true });
+      const p = App.openPop(td || t, `<div class="lbl">${esc(c.name)}, ${esc(App.projectName(r))}</div><div class="leer-todo">${esc((r.props || {})[c.id] || '')}</div>${App.canEdit() ? '<div style="padding:0 10px 10px"><button class="btn sm" data-leer-ed>✎ Editar</button></div>' : ''}`, { width: 520, nofocus: true });
       p.onclick = ev => { if (ev.target.closest('[data-leer-ed]')) { App.closePop(true); openEditor(td, r.id, c.id); } }; }
     else if (a === 'edit') openEditor(t, t.dataset.id, t.dataset.col);
     else if (a === 'calc') App.go(`#/proyectos/${t.dataset.id}/${t.dataset.k === '_caso' ? 'caso' : t.dataset.k === '_ice' ? 'info' : 'cronograma'}`);

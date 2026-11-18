@@ -1,5 +1,5 @@
 /* ============================================================
-   NÚCLEO · estado compartido, API, fechas, formatos, popover,
+   NÚCLEO, estado compartido, API, fechas, formatos, popover,
    panel lateral y editores genéricos. Lo usan todas las secciones.
    ============================================================ */
 'use strict';
@@ -65,7 +65,7 @@ App.dgvSi = p => { const v = App.dgvValor(p); if (v === true || /^\s*s[ií]\s*$/
 App.dgvHay = () => App.S.projects.some(p => { const v = App.dgvValor(p); return v != null && v !== '' && v !== false; });
 App.soloDgv = () => App.dgvHay() && App.store.get('alcance.dgv', 'si') === 'si';
 App.enAlcance = p => !App.soloDgv() || App.dgvSi(p);
-// Proyecto de ejemplo: se ve completo al abrirlo, pero no suma en ningún total ni indicador del portafolio
+// Iniciativa de ejemplo: se ve completo al abrirlo, pero no suma en ningún total ni indicador del portafolio
 // Tamaño de la vista del Portafolio (como el zoom del navegador, pero solo ahí). Por defecto 90 %: cabe más.
 App.ZOOMS = [0.75, 0.8, 0.85, 0.9, 1, 1.1];
 App.zoomPf = () => { const z = Number(App.store.get('pf.zoom', 0.9)); return App.ZOOMS.includes(z) ? z : 0.9; };
@@ -77,7 +77,7 @@ document.addEventListener('click', e => {
   document.querySelectorAll('[data-zoom-v]').forEach(x => { x.textContent = Math.round(App.ZOOMS[j] * 100) + ' %'; });
 });
 App.esEjemplo = p => { const x = typeof p === 'string' ? App.byId('projects', p) : p; return !!(x && x.ejemplo); };
-App.tagEjemplo = p => (App.esEjemplo(p) ? '<span class="tag-ej" title="Proyecto de ejemplo: muestra cómo se ve una iniciativa completa. No suma en los totales ni en el tablero.">Ejemplo</span>' : '');
+App.tagEjemplo = p => (App.esEjemplo(p) ? '<span class="tag-ej" title="Iniciativa de ejemplo: muestra cómo se ve una iniciativa completa. No suma en los totales ni en el tablero.">Ejemplo</span>' : '');
 // Una columna que ninguna iniciativa tiene diligenciada es una columna olvidada: no se muestra (sigue existiendo y se puede
 // volver a mostrar desde «Columnas»). No aplica al nombre, la fase ni «¿Revisión DGV?».
 App.colVacia = c => !App.S.projects.some(p => { const v = (p.props || {})[c.id]; return v != null && v !== '' && v !== false && !(Array.isArray(v) && !v.length); });
@@ -230,7 +230,7 @@ App.drawerOpen = () => !!App.$('.drawer-bg');
 /* ---------- editores genéricos ---------- */
 const autoGrow = ta => { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight + 2, window.innerHeight * 0.5) + 'px'; };
 App.editText = (anchor, value, { multi, log, placeholder, onSave, width } = {}) => {
-  const hint = log ? `<div class="row"><button class="btn sm" data-p="hoy">+ Entrada de hoy</button><span class="hint" style="margin:0">Ctrl+Enter guarda · Esc cancela</span></div>` : multi ? `<div class="hint">Ctrl+Enter guarda · Esc cancela</div>` : '';
+  const hint = log ? `<div class="row"><button class="btn sm" data-p="hoy">+ Entrada de hoy</button><span class="hint" style="margin:0">Ctrl+Enter guarda, Esc cancela</span></div>` : multi ? `<div class="hint">Ctrl+Enter guarda, Esc cancela</div>` : '';
   const p = App.openPop(anchor, `<textarea rows="${multi ? 5 : 1}" placeholder="${App.esc(placeholder || '')}">${App.esc(value || '')}</textarea>${hint}`,
     { cover: true, width: width || Math.max(anchor.getBoundingClientRect().width, multi ? 420 : 300), onClose: cancel => { if (!cancel) onSave(ta.value.trim()); } });
   const ta = App.$('textarea', p); autoGrow(ta);

@@ -1,12 +1,12 @@
 /* ============================================================
-   HOJA · cuadrícula tipo Excel para el flujo del caso de negocio
-   - Flechas, Enter, Tab, Esc, F2 · Shift amplía la selección
+   HOJA, cuadrícula tipo Excel para el flujo del caso de negocio
+   - Flechas, Enter, Tab, Esc, F2, Shift amplía la selección
    - Arrastrar con el mouse selecciona un rango
    - Ctrl+C / Ctrl+V con Excel (también tablas completas con encabezados)
-   - Supr borra el rango · Ctrl+D llena hacia abajo · Ctrl+R hacia la derecha
+   - Supr borra el rango, Ctrl+D llena hacia abajo, Ctrl+R hacia la derecha
    - Cuadrito azul: arrastrar para llenar (con 2+ celdas sigue la serie)
    - Ctrl+Z / Ctrl+Y deshacer y rehacer
-   - En una celda: 1.250.000 · 1,2M · 300k · =150*12 · +5% (sobre el año anterior)
+   - En una celda: 1.250.000, 1,2M, 300k, =150*12, +5% (sobre el año anterior)
    - Fórmulas entre filas: =[Unidades vendidas]*[Precio promedio]*(1-[Comisión])
      El nombre entre [ ] es otra fila y toma su valor del MISMO año. Se recalculan
      solas; al llenar hacia los lados o hacia abajo se copia la fórmula.
@@ -93,7 +93,7 @@
     // Lo que escribe la persona reemplaza la fórmula de esa celda
     const setVal = (idx, t, v) => { setRaw(idx, t, v); const F = rows[idx].formulas; if (F && t in F) { delete F[t]; if (!Object.keys(F).length) delete rows[idx].formulas; } };
     const setFx = (idx, t, txt) => { rows[idx].formulas = Object.assign({}, rows[idx].formulas, { [t]: txt }); };
-    // [Nombre] = esa fila, mismo año · [Nombre; año anterior] = el año de antes · [Total ingresos], [Total gastos], [Total inversión]
+    // [Nombre] = esa fila, mismo año, [Nombre; año anterior] = el año de antes, [Total ingresos], [Total gastos], [Total inversión]
     const TOTALES = { 'total ingresos': 'beneficio', 'total beneficios': 'beneficio', 'total gastos': 'costo', 'total costos': 'costo', 'total inversion': 'inversion' };
     const leeRef = n => { const m = /^(.*?)\s*(?:;\s*a[nñ]o\s+anterior|@\s*-\s*1)\s*$/i.exec(n); return m ? { n: nombre(m[1]), d: -1 } : { n: nombre(n), d: 0 }; };
     const filaDe = n => rows.findIndex(r => nombre(r.concepto) === n);
@@ -145,7 +145,7 @@
     // Pinta de nuevo los valores (sin redibujar la tabla): después de recalcular
     function pintarValores() {
       nav.forEach((idx, r) => { for (let t = 0; t < NC(); t++) { const td = tdAt(r, t + 1); if (!td) continue; const inp = $('input', td);
-        td.classList.toggle('fx', !!fx(idx, t)); td.classList.toggle('fx-err', !!(S.err && S.err[idx + ':' + t])); td.title = fx(idx, t) ? fx(idx, t) + (S.err && S.err[idx + ':' + t] ? (S.err[idx + ':' + t] === 'ciclo' ? ' · referencia circular' : ' · revisa los nombres entre [ ]') : '') : '';
+        td.classList.toggle('fx', !!fx(idx, t)); td.classList.toggle('fx-err', !!(S.err && S.err[idx + ':' + t])); td.title = fx(idx, t) ? fx(idx, t) + (S.err && S.err[idx + ':' + t] ? (S.err[idx + ':' + t] === 'ciclo' ? ', referencia circular' : ', revisa los nombres entre [ ]') : '') : '';
         if (inp) inp.placeholder = fantasma(idx, t);
         if (inp && inp !== document.activeElement) inp.value = ver(idx, t); } });
     }
@@ -312,7 +312,7 @@
         S.sel = { r0, c0, r1: r0 + grid.length - 1, c1: c0 + width - 1 };
       });
       const fuera = Math.max(0, needYears - (MAXY + 1));
-      App.toast(`Pegado: ${grid.length} ${grid.length === 1 ? 'fila' : 'filas'} × ${width} ${width === 1 ? 'columna' : 'columnas'}` + (fuera ? ` · ${fuera} ${fuera === 1 ? 'año quedó' : 'años quedaron'} por fuera (máximo ${MAXY + 1} años)` : ''), !!fuera);
+      App.toast(`Pegado: ${grid.length} ${grid.length === 1 ? 'fila' : 'filas'} × ${width} ${width === 1 ? 'columna' : 'columnas'}` + (fuera ? `, ${fuera} ${fuera === 1 ? 'año quedó' : 'años quedaron'} por fuera (máximo ${MAXY + 1} años)` : ''), !!fuera);
       if (needYears > NC()) o.onYears(Math.min(MAXY + 1, needYears));
     }
     function applyFill(target) {

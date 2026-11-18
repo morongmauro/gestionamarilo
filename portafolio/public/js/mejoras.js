@@ -1,7 +1,7 @@
 /* ============================================================
-   VISTA MEJORADA · las piezas nuevas
-   «Qué es la Dirección» · evidencia detrás de la cifra · decisiones del
-   comité · próximos hitos · preparar el comité · proponer una necesidad ·
+   VISTA MEJORADA, las piezas nuevas
+   «Qué es la Dirección», evidencia detrás de la cifra, decisiones del
+   comité, próximos hitos, preparar el comité, proponer una necesidad ·
    lista de desactualizados. Todo se usa solo cuando App.vista.nueva es true.
    ============================================================ */
 'use strict';
@@ -65,7 +65,7 @@
     return `<table class="lst ev-tbl"><thead><tr><th>Iniciativa</th><th class="n">Capturado</th><th class="n">Verificado</th><th class="n">Preliminar</th><th>Validación</th></tr></thead><tbody>
       ${gs.map(g => { const v = validacionDe(g.caso, Y);
         return `<tr><td><a href="#/proyectos/${g.p.id}/caso">${esc(App.projectName(g.p))}</a></td><td class="n"><b>${esc(App.moneyShort(g.ver + g.pre))}</b></td><td class="n good">${esc(App.moneyShort(g.ver))}</td><td class="n">${esc(App.moneyShort(g.pre))}</td>
-          <td>${v && v.hasta ? `hasta ${esc(mesLargo(v.hasta))}${v.por ? ' · ' + esc(v.por) : ''}${v.fecha ? ' · ' + esc(App.d.fmtShort(v.fecha)) : ''}${v.url && /^https?:\/\//i.test(v.url) ? ` · <a href="${esc(v.url)}" target="_blank" rel="noopener">soporte ↗</a>` : ''}` : '<span class="faint">sin validar · capturado hasta ' + esc(mesLargo(g.ult)) + '</span>'}</td></tr>`; }).join('')}
+          <td>${v && v.hasta ? `hasta ${esc(mesLargo(v.hasta))}${v.por ? ', ' + esc(v.por) : ''}${v.fecha ? ', ' + esc(App.d.fmtShort(v.fecha)) : ''}${v.url && /^https?:\/\//i.test(v.url) ? `, <a href="${esc(v.url)}" target="_blank" rel="noopener">soporte ↗</a>` : ''}` : '<span class="faint">sin validar, capturado hasta ' + esc(mesLargo(g.ult)) + '</span>'}</td></tr>`; }).join('')}
     </tbody></table><div class="faint" style="font-size:12px;margin-top:8px">Verificado = capturado hasta el mes que el área validó. Se marca en el caso de negocio con un clic: «validado hasta…, por…».</div>`;
   }
   // Validación dentro del caso de negocio (lo llama caso.js): una línea, no una tabla
@@ -75,13 +75,13 @@
     const v = validacionDe(caso, anio) || {};
     const dis = ro ? 'disabled' : '';
     const ver = caps.filter(c => verificado(c, caso)).reduce((a, c) => a + Number(c.valor), 0), tot = caps.reduce((a, c) => a + Number(c.valor), 0);
-    box.innerHTML = `<div class="val-box"><div class="val-t">Validación del valor captado · ${anio}</div>
+    box.innerHTML = `<div class="val-box"><div class="val-t">Validación del valor captado, ${anio}</div>
       ${meses.length ? `<div class="val-r">
         <label>Validado hasta<select class="fld" data-val="hasta" ${dis}><option value="">— sin validar —</option>${meses.map(m => `<option value="${m}" ${m === v.hasta ? 'selected' : ''}>${esc(mesLargo(m))}</option>`).join('')}</select></label>
         <label>Por<input class="fld" data-val="por" value="${esc(v.por || '')}" placeholder="Quién lo confirmó en el área" list="pplList" ${dis}></label>
         <label>Soporte (opcional)<input class="fld" data-val="url" value="${esc(v.url || '')}" placeholder="Enlace al informe o correo" ${dis}></label>
       </div>
-      <div class="val-s">${v.hasta ? `<span class="badge good">Verificado ${esc(App.moneyShort(ver))}</span> de ${esc(App.moneyShort(tot))} capturados${v.fecha ? ` · validado el ${esc(App.d.fmtShort(v.fecha))}` : ''}` : `<span class="badge warn">Preliminar ${esc(App.moneyShort(tot))}</span> · nada validado todavía`}</div>`
+      <div class="val-s">${v.hasta ? `<span class="badge good">Verificado ${esc(App.moneyShort(ver))}</span> de ${esc(App.moneyShort(tot))} capturados${v.fecha ? `, validado el ${esc(App.d.fmtShort(v.fecha))}` : ''}` : `<span class="badge warn">Preliminar ${esc(App.moneyShort(tot))}</span>, nada validado todavía`}</div>`
       : '<div class="faint" style="font-size:12.5px">Cuando registres valor captado en este año, aquí lo marcas como validado en un clic.</div>'}</div>`;
     box.onchange = e => {
       const t = e.target; if (!t.dataset.val) return;
@@ -99,7 +99,7 @@
   const decisionesDe = pid => decisiones().filter(d => d.project_id === pid).sort((a, b) => (b.fecha || b.s.fecha).localeCompare(a.fecha || a.s.fecha));
   function decisionHTML(d, conProyecto) {
     const p = d.project_id ? App.byId('projects', d.project_id) : null;
-    return `<div class="dec ${d.estado === 'Cumplida' ? 'ok' : ''}"><span class="dec-t">${esc(d.tipo || 'Decisión')}</span><span class="dec-b"><b>${esc(d.texto || '')}</b>${conProyecto && p ? ` · <a href="#/proyectos/${p.id}">${esc(App.projectName(p))}</a>` : ''}<span class="dec-m">${esc(App.d.fmtShort(d.fecha || d.s.fecha))} · ${esc(App.Agenda.tituloOf(d.s))}${d.responsable ? ' · ' + esc(d.responsable) : ''} · ${d.estado === 'Cumplida' ? 'cumplida' : 'pendiente'}</span></span></div>`;
+    return `<div class="dec ${d.estado === 'Cumplida' ? 'ok' : ''}"><span class="dec-t">${esc(d.tipo || 'Decisión')}</span><span class="dec-b"><b>${esc(d.texto || '')}</b>${conProyecto && p ? `, <a href="#/proyectos/${p.id}">${esc(App.projectName(p))}</a>` : ''}<span class="dec-m">${esc(App.d.fmtShort(d.fecha || d.s.fecha))}, ${esc(App.Agenda.tituloOf(d.s))}${d.responsable ? ', ' + esc(d.responsable) : ''}, ${d.estado === 'Cumplida' ? 'cumplida' : 'pendiente'}</span></span></div>`;
   }
   function decisionesRecientes() {
     const desde = App.d.add(hoy(), -60);
@@ -108,7 +108,7 @@
     return `<div class="dash-card span-4 card-dec"><h3>Decisiones del comité</h3><div class="sub">Lo decidido en los últimos 60 días y lo que sigue pendiente.</div>
       ${lista.length ? `<div class="decs">${lista.map(d => decisionHTML(d, true)).join('')}</div>` : '<div class="faint" style="padding:6px 0 10px">Aún no hay decisiones registradas. Se anotan en cada sesión de la agenda.</div>'}
       <h3 style="margin-top:14px">Próximos comités</h3>
-      ${prox.length ? `<div class="prox">${prox.map(s => `<a href="#/agenda/preparar/${s.id}"><span class="dt"><b>${s.fecha.slice(8)}</b>${esc(App.d.MES3[Number(s.fecha.slice(5, 7)) - 1])}</span><span><b>${esc(App.Agenda.tituloOf(s))}</b><span class="dec-m">${(s.proyectos || []).length} iniciativa${(s.proyectos || []).length === 1 ? '' : 's'} · preparar →</span></span></a>`).join('')}</div>` : '<div class="faint">No hay sesiones programadas.</div>'}</div>`;
+      ${prox.length ? `<div class="prox">${prox.map(s => `<a href="#/agenda/preparar/${s.id}"><span class="dt"><b>${s.fecha.slice(8)}</b>${esc(App.d.MES3[Number(s.fecha.slice(5, 7)) - 1])}</span><span><b>${esc(App.Agenda.tituloOf(s))}</b><span class="dec-m">${(s.proyectos || []).length} iniciativa${(s.proyectos || []).length === 1 ? '' : 's'}, preparar →</span></span></a>`).join('')}</div>` : '<div class="faint">No hay sesiones programadas.</div>'}</div>`;
   }
   // Editor dentro del cajón de la sesión (lo llama agenda.js)
   function decisionesEditor(box, s, ro) {
@@ -149,7 +149,7 @@
     return `<div class="dash-card span-8 card-real"><h3>Iniciativas en realización</h3><div class="sub">Estado, avance y lo que viene en cada una.</div>
       <div class="reales">${filas.map(x => { const pl = App.planOf(x.p.id), ultima = decisionesDe(x.p.id)[0];
         return `<a class="real" href="#/proyectos/${x.p.id}"><span class="nm"><b>${esc(App.projectName(x.p))}</b>${ec ? `<span class="pill cl-${App.optColor(ec, x.estado)}">${esc(x.estado || '')}</span>` : ''}${x.p.frase ? `<span class="fr">${esc(x.p.frase)}</span>` : ''}</span>
-          <span class="av">${pl.acts.length ? `<span class="bar-mini"><i style="width:${pl.avance}%"></i></span><b>${pl.avance}%</b>${pl.atrasadas ? `<span class="crit"> · ${pl.atrasadas} atrasada${pl.atrasadas > 1 ? 's' : ''}</span>` : ''}` : `<span class="faint" title="${esc(App.sinPlan(x.p).largo)}">${esc(App.sinPlan(x.p).corto)}</span>`}</span>
+          <span class="av">${pl.acts.length ? `<span class="bar-mini"><i style="width:${pl.avance}%"></i></span><b>${pl.avance}%</b>${pl.atrasadas ? `<span class="crit">, ${pl.atrasadas} atrasada${pl.atrasadas > 1 ? 's' : ''}</span>` : ''}` : `<span class="faint" title="${esc(App.sinPlan(x.p).largo)}">${esc(App.sinPlan(x.p).corto)}</span>`}</span>
           <span class="hi">${hitosHTML(x.p.id)}</span>
           <span class="dm">${ultima ? `<span class="dec-t">${esc(ultima.tipo)}</span> ${esc(ultima.texto)}` : '<span class="faint">sin decisiones registradas</span>'}</span></a>`; }).join('')}</div></div>`;
   }
@@ -165,18 +165,18 @@
     const porque = caso && (caso.problema || caso.objetivo || resumenCons.length);
     return `<div class="card-box historia">
       <div class="hs"><div class="hs-k">En una frase</div><div class="hs-v frase ${p.frase ? '' : 'empty'}" data-h="frase">${p.frase ? esc(p.frase) : (ro ? '—' : 'Escribe en una frase qué cambia con esta iniciativa')}</div></div>
-      <div class="hs"><div class="hs-k">Por qué existe</div><div class="hs-v">${porque ? `${caso.problema ? `<p><b>Problema u oportunidad.</b> ${esc(caso.problema)}</p>` : ''}${caso.objetivo ? `<p><b>Objetivo.</b> ${esc(caso.objetivo)}</p>` : ''}${resumenCons.map(l => `<p>${esc(l)}</p>`).join('')}` : `<span class="faint">Sin caso de negocio todavía${ro ? '' : ' · <a href="#/proyectos/' + p.id + '/caso">crearlo</a>'}</span>`}</div></div>
+      <div class="hs"><div class="hs-k">Por qué existe</div><div class="hs-v">${porque ? `${caso.problema ? `<p><b>Problema u oportunidad.</b> ${esc(caso.problema)}</p>` : ''}${caso.objetivo ? `<p><b>Objetivo.</b> ${esc(caso.objetivo)}</p>` : ''}${resumenCons.map(l => `<p>${esc(l)}</p>`).join('')}` : `<span class="faint">Sin caso de negocio todavía${ro ? '' : ', <a href="#/proyectos/' + p.id + '/caso">crearlo</a>'}</span>`}</div></div>
       <div class="hs"><div class="hs-k">Dónde va</div><div class="hs-v hs-grid">
         <div><span class="l">Avance</span>${pl.acts.length ? `<span class="bar-mini"><i style="width:${pl.avance}%"></i></span> <b>${pl.avance}%</b>${pl.atrasadas ? ` <span class="crit">· ${pl.atrasadas} atrasada${pl.atrasadas > 1 ? 's' : ''}</span>` : ''}` : `<span class="faint">${esc(App.sinPlan(p).largo)}</span>`}</div>
         <div><span class="l">Próximos hitos</span><span class="hitos">${hitosHTML(p.id)}</span></div>
-        <div><span class="l">Próximo comité</span>${prox ? `<a href="#/agenda/preparar/${prox.id}"><b>${esc(App.d.fmtShort(prox.fecha))}</b> · ${esc(App.Agenda.tituloOf(prox))}</a>` : '<span class="faint">ninguno programado</span>'}</div>
+        <div><span class="l">Próximo comité</span>${prox ? `<a href="#/agenda/preparar/${prox.id}"><b>${esc(App.d.fmtShort(prox.fecha))}</b>, ${esc(App.Agenda.tituloOf(prox))}</a>` : '<span class="faint">ninguno programado</span>'}</div>
         <div><span class="l">Última decisión</span>${ultima ? `<span class="dec-t">${esc(ultima.tipo)}</span> ${esc(ultima.texto)} <span class="faint">· ${esc(App.d.fmtShort(ultima.fecha || ultima.s.fecha))}</span>` : '<span class="faint">ninguna registrada</span>'}</div>
       </div></div>
       <div class="hs"><div class="hs-k">Qué vale</div><div class="hs-v hs-grid">
-        <div><span class="l">Valor a dos años <span class="hs-of">cifra oficial</span></span>${(() => { const dos = f && App.Avance ? App.Avance.dosAnios(f) : 0; return dos ? `<b class="hs-big">${esc(App.moneyShort(dos, caso.moneda))}</b> <span class="faint">· beneficios de los dos primeros años del caso${d && d.proy ? ` · ${esc(App.moneyShort(d.proy))} en ${Y}` : ''}</span>` : `<span class="faint">sin cifras: ${caso ? 'el caso aún no tiene beneficios' : 'falta el caso de negocio'}</span>`; })()}</div>
-        <div><span class="l">${sigla('VPN')}${f && f.vpn != null && f.totalInversion > 0 ? ` a ${Math.round(caso.anios || 0)} años · tasa ${App.num(caso.tasa, 1) || 0} %` : ''}</span>${f && f.vpn != null && f.totalInversion > 0 ? `<b class="${f.vpn < 0 ? 'crit' : ''}">${esc(App.moneyShort(f.vpn, caso.moneda))}</b> <span class="faint">· ${sigla('TIR')} ${f.tir != null ? esc(App.pct(f.tir)) : '—'}</span>` : `<span class="faint">${caso ? 'aparece al poner la inversión en el caso' : 'sin caso'}</span>`}</div>
-        <div><span class="l">Captado ${Y}</span>${ver + pre ? `<b>${esc(App.moneyShort(ver + pre))}</b> <span class="faint">· verificado ${esc(App.moneyShort(ver))} · preliminar ${esc(App.moneyShort(pre))}</span>` : '<span class="faint">sin captura registrada este año</span>'}</div>
-        <div><span class="l">Prioridad (${sigla('ICE')})</span>${(() => { const d = App.ICE.detalle(p); return d.ice == null ? '<span class="faint">sin datos para calcularla</span>' : `<b>${d.ice}</b> <span class="faint">· Income ${d.income} · confianza ${d.conf} % · esfuerzo ${d.esf} % · OS ${String(d.os ?? 1).replace('.', ',')} · ${d.origen === 'caso' ? 'calculado del caso' : d.origen === 'manual' ? 'registrado por la Oficina' : d.origen === 'mixto' ? 'parte registrado, parte calculado' : 'convertido de 1 a 10'}</span>${App.ICE.avisoIncome(p, ro)}`; })()}</div>
+        <div><span class="l">Valor a dos años <span class="hs-of">cifra oficial</span></span>${(() => { const dos = f && App.Avance ? App.Avance.dosAnios(f) : 0; return dos ? `<b class="hs-big">${esc(App.moneyShort(dos, caso.moneda))}</b> <span class="faint">· beneficios de los dos primeros años del caso${d && d.proy ? `, ${esc(App.moneyShort(d.proy))} en ${Y}` : ''}</span>` : `<span class="faint">sin cifras: ${caso ? 'el caso aún no tiene beneficios' : 'falta el caso de negocio'}</span>`; })()}</div>
+        <div><span class="l">${sigla('VPN')}${f && f.vpn != null && f.totalInversion > 0 ? ` a ${Math.round(caso.anios || 0)} años, tasa ${App.num(caso.tasa, 1) || 0} %` : ''}</span>${f && f.vpn != null && f.totalInversion > 0 ? `<b class="${f.vpn < 0 ? 'crit' : ''}">${esc(App.moneyShort(f.vpn, caso.moneda))}</b> <span class="faint">· ${sigla('TIR')} ${f.tir != null ? esc(App.pct(f.tir)) : '—'}</span>` : `<span class="faint">${caso ? 'aparece al poner la inversión en el caso' : 'sin caso'}</span>`}</div>
+        <div><span class="l">Captado ${Y}</span>${ver + pre ? `<b>${esc(App.moneyShort(ver + pre))}</b> <span class="faint">· verificado ${esc(App.moneyShort(ver))}, preliminar ${esc(App.moneyShort(pre))}</span>` : '<span class="faint">sin captura registrada este año</span>'}</div>
+        <div><span class="l">Prioridad (${sigla('ICE')})</span>${(() => { const d = App.ICE.detalle(p); return d.ice == null ? '<span class="faint">sin datos para calcularla</span>' : `<b>${d.ice}</b> <span class="faint">· Income ${d.income}, confianza ${d.conf} %, esfuerzo ${d.esf} %, OS ${String(d.os ?? 1).replace('.', ',')}, ${d.origen === 'caso' ? 'calculado del caso' : d.origen === 'manual' ? 'registrado por la Oficina' : d.origen === 'mixto' ? 'parte registrado, parte calculado' : 'convertido de 1 a 10'}</span>${App.ICE.avisoIncome(p, ro)}`; })()}</div>
         <div><span class="l">Evidencia</span>${caps.length ? `<a href="#/proyectos/${p.id}/caso">${validacionDe(caso, Y) && validacionDe(caso, Y).hasta ? 'validado hasta ' + esc(mesLargo(validacionDe(caso, Y).hasta)) + ' por ' + esc(validacionDe(caso, Y).por || '') : 'sin validar'} →</a>` : '<span class="faint">sin capturas este año</span>'}</div>
       </div></div>
       <div class="hs-acc">${prox ? `<a class="btn amarillo" href="#/agenda/preparar/${prox.id}">Preparar el comité</a>` : ''}${ro ? '' : caso ? `<a class="btn" href="#/proyectos/${p.id}/caso">Registrar captura</a>` : `<a class="btn" href="#/proyectos/${p.id}/caso">Crear el caso de negocio</a>`}${hab && hab.email ? `<a class="btn ghost" href="mailto:${esc(hab.email)}?subject=${encodeURIComponent(App.projectName(p))}">Escribir a ${esc(hab.name.split(' ')[0])}</a>` : ''}</div>
@@ -200,9 +200,9 @@
     main.innerHTML = `<div class="page-h no-print"><button class="burger" data-act="burger">☰</button><a class="back" href="#/agenda">← Comités y decisiones</a><span class="sp"></span><button class="btn primary" data-print="1">Imprimir / PDF</button></div>
       <div class="card-box prep">
         <div class="eyebrow">Preparación del comité</div><h1>${esc(App.Agenda.tituloOf(s))}</h1>
-        <div class="sub">${esc(App.d.fmtLong(s.fecha))}${s.hora_ini ? ' · ' + esc(s.hora_ini) + (s.hora_fin ? ' a ' + esc(s.hora_fin) : '') : ''}${s.lugar ? ' · ' + esc(s.lugar) : ''} · ${ps.length} iniciativa${ps.length === 1 ? '' : 's'}</div>
+        <div class="sub">${esc(App.d.fmtLong(s.fecha))}${s.hora_ini ? ', ' + esc(s.hora_ini) + (s.hora_fin ? ' a ' + esc(s.hora_fin) : '') : ''}${s.lugar ? ', ' + esc(s.lugar) : ''}, ${ps.length} iniciativa${ps.length === 1 ? '' : 's'}</div>
         ${s.temas ? `<h3>Orden del día</h3><div class="pre">${esc(s.temas)}</div>` : ''}
-        ${compPrev.length ? `<h3>Compromisos abiertos de sesiones anteriores</h3><ul class="prep-lista">${compPrev.map(k => `<li><b>${esc(k.texto)}</b> · ${esc(k.responsable || 'sin responsable')}${k.fecha ? ` · vence ${esc(App.d.fmtShort(k.fecha))}${k.fecha < hoy() ? ' <span class="crit">(vencido)</span>' : ''}` : ''} <span class="faint">· ${esc(App.Agenda.tituloOf(k.s))} ${esc(App.d.fmtShort(k.s.fecha))}</span></li>`).join('')}</ul>` : ''}
+        ${compPrev.length ? `<h3>Compromisos abiertos de sesiones anteriores</h3><ul class="prep-lista">${compPrev.map(k => `<li><b>${esc(k.texto)}</b>, ${esc(k.responsable || 'sin responsable')}${k.fecha ? `, vence ${esc(App.d.fmtShort(k.fecha))}${k.fecha < hoy() ? ' <span class="crit">(vencido)</span>' : ''}` : ''} <span class="faint">· ${esc(App.Agenda.tituloOf(k.s))} ${esc(App.d.fmtShort(k.s.fecha))}</span></li>`).join('')}</ul>` : ''}
         ${ps.map(p => { const pl = App.planOf(p.id), caso = App.caseOf(p.id), f = caso ? Finanzas.calc(caso) : null, ult = decisionesDe(p.id)[0];
           const caps = (caso ? caso.captado || [] : []).filter(c => c.mes && c.mes.startsWith(Y + '-')), cap = caps.reduce((a, c) => a + (Number(c.valor) || 0), 0);
           const alertas = [];
@@ -213,17 +213,17 @@
           return `<div class="prep-p"><div class="prep-h"><h2>${esc(App.projectName(p))}</h2>${ec ? `<span class="pill cl-${App.optColor(ec, (p.props || {})[ec.id])}">${esc((p.props || {})[ec.id] || '')}</span>` : ''}</div>
             ${p.frase ? `<p class="fr">${esc(p.frase)}</p>` : ''}
             <div class="prep-g">
-              <div><span class="l">Avance</span>${pl.acts.length ? `<b>${pl.avance}%</b> · ${esc(App.d.fmt(pl.ini))} – ${esc(App.d.fmt(pl.fin))}` : `<span class="faint">${esc(App.sinPlan(p).corto)}</span>`}</div>
-              <div><span class="l">Caso</span>${caso ? `${esc(caso.estado || 'Borrador')}${f.vpn != null ? ` · VPN ${esc(App.moneyShort(f.vpn, caso.moneda))} · TIR ${f.tir != null ? esc(App.pct(f.tir)) : '—'}` : ''}` : '<span class="faint">sin caso</span>'}</div>
+              <div><span class="l">Avance</span>${pl.acts.length ? `<b>${pl.avance}%</b>, ${esc(App.d.fmt(pl.ini))} – ${esc(App.d.fmt(pl.fin))}` : `<span class="faint">${esc(App.sinPlan(p).corto)}</span>`}</div>
+              <div><span class="l">Caso</span>${caso ? `${esc(caso.estado || 'Borrador')}${f.vpn != null ? `, VPN ${esc(App.moneyShort(f.vpn, caso.moneda))}, TIR ${f.tir != null ? esc(App.pct(f.tir)) : '—'}` : ''}` : '<span class="faint">sin caso</span>'}</div>
               <div><span class="l">Captado ${Y}</span><b>${esc(App.moneyShort(cap))}</b> <span class="faint">· ${validacionDe(caso, Y) && validacionDe(caso, Y).hasta ? 'validado hasta ' + esc(mesLargo(validacionDe(caso, Y).hasta)) : 'sin validar'}</span></div>
-              <div><span class="l">Alertas</span>${alertas.length ? `<span class="crit">${esc(alertas.join(' · '))}</span>` : '<span class="good">sin alertas</span>'}</div>
+              <div><span class="l">Alertas</span>${alertas.length ? `<span class="crit">${esc(alertas.join(', '))}</span>` : '<span class="good">sin alertas</span>'}</div>
               <div><span class="l">Próximos hitos</span>${hitosHTML(p.id)}</div>
               <div><span class="l">Última decisión</span>${ult ? `${esc(ult.tipo)}: ${esc(ult.texto)} <span class="faint">(${esc(App.d.fmtShort(ult.fecha || ult.s.fecha))})</span>` : '<span class="faint">ninguna</span>'}</div>
             </div>
             ${caso && caso.recomendacion ? `<div class="prep-dec"><b>Decisión que se pide:</b> ${esc(caso.recomendacion)}</div>` : ''}
             <div class="prep-dec faint">Decisión de esta sesión: ______________________________________________</div></div>`; }).join('')}
         ${pend.length ? `<h3>Decisiones pendientes de cumplir</h3><div class="decs">${pend.map(d => decisionHTML(d, true)).join('')}</div>` : ''}
-        ${comp.length ? `<h3>Compromisos de esta sesión</h3><ul class="prep-lista">${comp.map(k => `<li><b>${esc(k.texto)}</b> · ${esc(k.responsable || '')}${k.fecha ? ' · ' + esc(App.d.fmtShort(k.fecha)) : ''}</li>`).join('')}</ul>` : ''}
+        ${comp.length ? `<h3>Compromisos de esta sesión</h3><ul class="prep-lista">${comp.map(k => `<li><b>${esc(k.texto)}</b>, ${esc(k.responsable || '')}${k.fecha ? ', ' + esc(App.d.fmtShort(k.fecha)) : ''}</li>`).join('')}</ul>` : ''}
         <div class="meta-line">Generado desde el portafolio el ${esc(App.d.fmt(hoy()))}. Las decisiones se registran en la sesión («Decisiones registradas») y quedan en la ficha de cada iniciativa.</div>
       </div>`;
     main.onclick = e => { if (e.target.closest('.burger')) return App.toggleSide(); if (e.target.closest('[data-print]')) window.print(); };
@@ -266,14 +266,14 @@
     App.S.projects.filter(p => activa(p) && !App.esEjemplo(p)).forEach(p => { const u = ultimo(p); if (u && u < lim) out.push({ href: '#/proyectos/' + p.id, t: App.projectName(p), s: `sin cambios hace ${dias(u)} días (avance, caso o captura)` }); });
     App.S.cases.forEach(c => { const xs = (c.captado || []).filter(x => x.mes && x.mes.startsWith(Y + '-') && x.mes < mesPasado && Number(x.valor) && !verificado(x, c)); const p = App.byId('projects', c.project_id);
       if (xs.length && p) out.push({ href: `#/proyectos/${p.id}/caso`, t: App.projectName(p), s: `captado sin verificar desde ${App.d.MES3[Number(xs.map(x => x.mes).sort()[0].slice(5)) - 1]} (${App.moneyShort(xs.reduce((a, x) => a + Number(x.valor), 0))})` }); });
-    App.S.sessions.forEach(se => (se.compromisos || []).filter(k => !k.hecho && k.fecha && k.fecha < hoy() && (k.texto || '').trim()).forEach(k => out.push({ href: '#/agenda', t: k.texto, s: `compromiso vencido el ${App.d.fmtShort(k.fecha)} · ${k.responsable || 'sin responsable'}` })));
+    App.S.sessions.forEach(se => (se.compromisos || []).filter(k => !k.hecho && k.fecha && k.fecha < hoy() && (k.texto || '').trim()).forEach(k => out.push({ href: '#/agenda', t: k.texto, s: `compromiso vencido el ${App.d.fmtShort(k.fecha)}, ${k.responsable || 'sin responsable'}` })));
     return out;
   }
   function adminExtras(main) {
     const d = direccion();
     const box = document.createElement('div');
     box.innerHTML = `<div class="card-box" style="margin-bottom:16px"><h3 style="font-size:14px;font-weight:800;margin-bottom:4px">Qué es la Dirección</h3><div class="muted" style="font-size:12.5px;margin-bottom:8px">El texto que abre el inicio en la vista mejorada, y a quién llegan las propuestas.</div>
-        <div class="pre" style="font-size:13px">${esc(d.que_es || QUE_ES_DEF)}</div><div class="faint" style="font-size:12px;margin:6px 0 10px">Propuestas: ${esc(d.correo_propuestas || 'sin correo')}${d.responsable_propuestas ? ' · responde ' + esc(d.responsable_propuestas) : ''}</div><button class="btn" data-qe="editar">Editar</button></div>
+        <div class="pre" style="font-size:13px">${esc(d.que_es || QUE_ES_DEF)}</div><div class="faint" style="font-size:12px;margin:6px 0 10px">Propuestas: ${esc(d.correo_propuestas || 'sin correo')}${d.responsable_propuestas ? ', responde ' + esc(d.responsable_propuestas) : ''}</div><button class="btn" data-qe="editar">Editar</button></div>
       <div class="card-box" style="margin-bottom:16px"><h3 style="font-size:14px;font-weight:800;margin-bottom:6px">Más herramientas</h3><div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="#/historial">Historial de cambios</a><a class="btn" href="#/cronograma">Cronogramas de todo el portafolio</a><a class="btn" href="#/casos">Casos de negocio</a><a class="btn ghost" href="#/sistema">Sistema de diseño</a></div></div>`;
     if (App.ImportarNotion) box.appendChild(App.ImportarNotion.tarjeta());
     if (App.Columnas) box.appendChild(App.Columnas.tarjeta());

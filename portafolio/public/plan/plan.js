@@ -1,8 +1,8 @@
 // ============================================================
-// HOJA DE PLAN DE TRABAJO · compartida entre la app y el enlace
+// HOJA DE PLAN DE TRABAJO, compartida entre la app y el enlace
 // Una sola forma de pintar el plan: áreas (fases) con color, ID tipo
 // Excel, responsable, entregable, fechas plan y reales, días hábiles,
-// % avance, estado y cronograma con zoom (día · semana · mes).
+// % avance, estado y cronograma con zoom (día, semana, mes).
 //
 // La página que la usa define estas funciones globales (las que no
 // defina simplemente no aparecen):
@@ -10,8 +10,8 @@
 //   planOnOpen(id)                 abrir el detalle de una actividad
 //   planOnAdd(sectionId, input)    agregar actividad en un área
 //   planOnProposal(id, aceptar)    aceptar / descartar una propuesta
-//   planOnTask(accion, id, extra)  tareas: open · done · reopen · link · unlink
-//   planOnSection(accion, id)      áreas: rename · off · on · remove
+//   planOnTask(accion, id, extra)  tareas: open, done, reopen, link, unlink
+//   planOnSection(accion, id)      áreas: rename, off, on, remove
 //   planSetOpt(clave, valor)       cambiar filtros / zoom / columnas
 // ============================================================
 (function () {
@@ -56,8 +56,8 @@
   const terminada = a => !!a.realEnd || (a.pctComplete || 0) >= 100;
   // Todo lo que depende de `id` se corre `delta` días hábiles (adelante o atrás)
   // ---------- Tipos de precedencia (igual que el servidor) ----------
-  //   FC fin → comienzo (en serie) · CC empiezan al tiempo · FF terminan al tiempo · CF termina cuando empiece la otra
-  //   d = desfase (+ después, − antes) · u = 'h' días hábiles o 'c' días corridos (calendario)
+  //   FC fin → comienzo (en serie), CC empiezan al tiempo, FF terminan al tiempo, CF termina cuando empiece la otra
+  //   d = desfase (+ después, − antes), u = 'h' días hábiles o 'c' días corridos (calendario)
   const TIPOS_DEP = ['FC', 'CC', 'FF', 'CF'];
   const NOMBRE_TIPO = { FC: 'Empieza cuando termine (en serie)', CC: 'Empiezan al tiempo (en paralelo)', FF: 'Terminan al tiempo', CF: 'Termina cuando empiece la otra' };
   function tipoDep(a, pid) {
@@ -266,7 +266,7 @@
       const hoyL = lunesDe(today);
       let n = 1;
       for (let w = E.ini; w <= E.fin; w = addDays(w, 7), n++) {
-        bot += `<span class="pl-sc-b${w === hoyL ? ' now' : ''}" style="left:${E.x(w)}px;width:${Math.min(7 * E.ppd, E.W - E.x(w))}px" title="Semana ${n} · lunes ${fCorta(w)}">${Number(w.slice(8, 10))}</span>`;
+        bot += `<span class="pl-sc-b${w === hoyL ? ' now' : ''}" style="left:${E.x(w)}px;width:${Math.min(7 * E.ppd, E.W - E.x(w))}px" title="Semana ${n}, lunes ${fCorta(w)}">${Number(w.slice(8, 10))}</span>`;
       }
     } else {
       for (let d = E.ini; d <= E.fin; d = addDays(d, 1)) {
@@ -295,7 +295,7 @@
     return AREA_COLORS[h % AREA_COLORS.length];
   }
   // Los códigos (1, 1.1…) salen siempre de las etapas, agrupe como agrupe
-  // Capítulos en orden: cada capítulo seguido de sus subcapítulos
+  // Etapas en orden: cada etapa seguido de sus subetapas
   function ordenSecciones(sections) {
     const todas = [...(sections || [])].sort((a, b) => a.position - b.position);
     const ids = new Set(todas.map(x => x.id));
@@ -311,14 +311,14 @@
     const orden = (a, b) => (a.position || 0) - (b.position || 0);
     const esSub = x => !!(x.parentId && secs.some(p => p.id === x.parentId && !p.parentId));
     const gs = secs.map(x => ({ key: x.id, id: x.id, name: x.name, sec: x, padre: esSub(x) ? x.parentId : null, acts: acts.filter(a => a.sectionId === x.id).sort(orden) }));
-    // Color: cada capítulo principal el suyo; los subcapítulos heredan el de su capítulo
+    // Color: cada etapa principal el suyo; los subetapas heredan el de su etapa
     let ci = 0;
     gs.forEach(g => { if (!g.padre) g.color = (g.sec && g.sec.color) || AREA_COLORS[ci++ % AREA_COLORS.length]; });
     gs.forEach(g => { if (g.padre) g.color = (gs.find(p => p.id === g.padre) || {}).color || '#9A9384'; });
     const huerf = acts.filter(a => !a.sectionId || !secs.some(x => x.id === a.sectionId)).sort(orden);
     if (huerf.length) gs.push({ key: '_otras', id: null, name: 'Otras', sec: null, padre: null, color: '#9A9384', acts: huerf });
     // Una etapa cuyo nombre empieza con «0 ·» se numera 0 (arranque); las demás siguen 1, 2, 3…
-    // Subcapítulos: 1.1, 1.2… y sus actividades 1.1.1, 1.1.2…
+    // Subetapas: 1.1, 1.2… y sus actividades 1.1.1, 1.1.2…
     let n = 0, primera = true;
     gs.forEach(g => {
       if (g.sec && g.sec.enabled === false) return;
@@ -335,7 +335,7 @@
       });
       g.hijos = hijos.map(h => h.id);
       g.acts.forEach((a, i) => { a._cod = `${num}.${hijos.length + i + 1}`; a._etapa = g.name; });
-      // Para los totales del capítulo: sus actividades y las de sus subcapítulos
+      // Para los totales de la etapa: sus actividades y las de sus subetapas
       g.todas = [...g.acts, ...hijos.reduce((l, h) => l.concat(h.acts), [])];
     });
     gs.forEach(g => { if (!g.todas) g.todas = g.acts; });
@@ -398,12 +398,12 @@
       while (cola.length) (hijos.get(cola.shift()) || []).forEach(h => { if (!prohibidas.has(h)) { prohibidas.add(h); cola.push(h); } });
       etapas(m).forEach(g => g.acts.forEach(x => {
         if (prohibidas.has(x.id)) return;
-        out.push({ valor: x.id, etiqueta: `${x._cod || ''} · ${x.name}`, sub: x.deadline ? `termina ${fCorta(x.deadline)}` : 'sin fechas', grupo: `${g.cod != null ? g.cod + ' · ' : ''}${g.name}` });
+        out.push({ valor: x.id, etiqueta: `${x._cod || ''}, ${x.name}`, sub: x.deadline ? `termina ${fCorta(x.deadline)}` : 'sin fechas', grupo: `${g.cod != null ? g.cod + ', ' : ''}${g.name}` });
       }));
       return out;
     }
     if (tipo === 'resp') {
-      mi.forEach(x => add(x.nombre, [x.area, x.rol].filter(Boolean).join(' · '), 'Involucrados'));
+      mi.forEach(x => add(x.nombre, [x.area, x.rol].filter(Boolean).join(', '), 'Involucrados'));
       // Áreas como responsable (p. ej. «Jurídica») y nombres ya usados en el plan
       [...new Set(mi.map(x => x.area).filter(Boolean))].forEach(ar => add(ar, 'Área', 'Áreas'));
       (m.activities || []).forEach(y => respDe(y).forEach(r => add(r, 'ya usado en el plan', 'Otros')));
@@ -433,17 +433,17 @@
     const rel = sel.querySelector('.pl-sel-rel');
     if (rel) {
       rel.innerHTML = elegidos.length ? `<div class="pl-rel-t">Cómo se relaciona con cada una</div>` + elegidos.map(v => {
-        const x = tipoDep({ depTipos: selCtx.tipos }, v), cod = etq(v).split(' · ')[0];
+        const x = tipoDep({ depTipos: selCtx.tipos }, v), cod = etq(v).split(', ')[0];
         return `<div class="pl-rel" data-id="${esc(v)}" data-cod="${esc(cod)}"><b title="${esc(etq(v))}">${esc(cod)}</b>
-          <select class="pl-rlt" title="Tipo de precedencia">${TIPOS_DEP.map(t => `<option value="${t}"${x.t === t ? ' selected' : ''}>${t} · ${NOMBRE_TIPO[t]}</option>`).join('')}</select>
+          <select class="pl-rlt" title="Tipo de precedencia">${TIPOS_DEP.map(t => `<option value="${t}"${x.t === t ? ' selected' : ''}>${t}, ${NOMBRE_TIPO[t]}</option>`).join('')}</select>
           <span class="pl-rel-d"><select class="pl-rls" title="¿Después o antes?"><option value="1"${x.d >= 0 ? ' selected' : ''}>+ después</option><option value="-1"${x.d < 0 ? ' selected' : ''}>− antes</option></select>
           <input type="number" min="0" max="730" value="${Math.abs(x.d) || ''}" placeholder="0" title="Cuántos días de desfase">
           <select class="pl-rlu" title="Días hábiles (sin fines de semana ni festivos) o corridos (calendario)"><option value="h"${x.u !== 'c' ? ' selected' : ''}>días hábiles</option><option value="c"${x.u === 'c' ? ' selected' : ''}>días corridos</option></select></span>
           <em class="pl-rel-x">${esc(textoDep(x.t, x.d, x.u, cod))}</em></div>`;
-      }).join('') + '<div class="pl-rel-n">Ej.: «FC + 5 días corridos» = empieza 5 días de calendario después de que termine · «FF − 2 hábiles» = termina 2 días hábiles antes. Si corres la barra en el Gantt, el desfase se ajusta solo.</div>' : '';
+      }).join('') + '<div class="pl-rel-n">Ej.: «FC + 5 días corridos» = empieza 5 días de calendario después de que termine, «FF − 2 hábiles» = termina 2 días hábiles antes. Si corres la barra en el Gantt, el desfase se ajusta solo.</div>' : '';
     }
     sel.querySelector('.pl-sel-chips').innerHTML = elegidos.length
-      ? elegidos.map(v => `<span class="pl-sel-chip">${esc(tipo === 'deps' ? etq(v).split(' · ')[0] : v)}<button data-quitar="${esc(v)}" title="Quitar">×</button></span>`).join('')
+      ? elegidos.map(v => `<span class="pl-sel-chip">${esc(tipo === 'deps' ? etq(v).split(', ')[0] : v)}<button data-quitar="${esc(v)}" title="Quitar">×</button></span>`).join('')
       : `<span class="pl-mut">${tipo === 'area' ? 'Automática (según los responsables)' : tipo === 'deps' ? 'No depende de ninguna: puede arrancar cuando quiera' : 'Sin responsable'}</span>`;
   }
   function abrirSel(celda) {
@@ -455,7 +455,7 @@
     const tipos = tipo === 'deps' ? JSON.parse(JSON.stringify(a.depTipos || {})) : null;
     selCtx = { tipo, a, elegidos: [...actuales], tipos, inicial: JSON.stringify(tipo === 'deps' ? [actuales, tiposLimpios(tipos, actuales)] : actuales) };
     sel = document.createElement('div'); sel.className = 'pl-selpop' + (tipo === 'deps' ? ' ancho' : '');
-    sel.innerHTML = `<div class="pl-sel-h">${tipo === 'resp' ? 'Responsables' : tipo === 'deps' ? 'Precedencias' : 'Área responsable'} · <span>${esc(a._cod || '')} ${esc(a.name)}</span></div>
+    sel.innerHTML = `<div class="pl-sel-h">${tipo === 'resp' ? 'Responsables' : tipo === 'deps' ? 'Precedencias' : 'Área responsable'}, <span>${esc(a._cod || '')} ${esc(a.name)}</span></div>
       <div class="pl-sel-chips"></div>${tipo === 'deps' ? '<div class="pl-sel-rel"></div>' : ''}
       <input class="pl-sel-q" placeholder="${tipo === 'resp' ? 'Buscar o escribir un nombre…' : tipo === 'deps' ? 'Buscar por número o nombre…' : 'Buscar o escribir un área…'}">
       <div class="pl-sel-l"></div>
@@ -553,7 +553,7 @@
       ['dias', 'Duración', cols.dias], ['p', 'Avance', cols.p], ['e', 'Estado', cols.e], ['dp', 'Depende de', cols.deps]];
     if (base) lista.push(['lb', 'Línea base', cols.base], ['dv', 'Desvío', cols.desvio]);
     const hay = Object.keys(anchosCol).length;
-    return `<div class="pl-colsmenu"><span class="pl-ol">Columnas · ${full ? 'tabla completa' : 'vista Gantt'}</span>
+    return `<div class="pl-colsmenu"><span class="pl-ol">Columnas, ${full ? 'tabla completa' : 'vista Gantt'}</span>
       ${lista.map(([k, l, on]) => `<button class="pl-colchip${on ? ' on' : ''}" onclick="planSetOpt('colvis','${k}:${on ? 0 : 1}')" title="${on ? 'Ocultar' : 'Mostrar'} «${l}»"><i></i>${l}</button>`).join('')}
       ${hay ? `<button class="pl-optbtn" onclick="planSetOpt('anchosReset',1)" title="Volver al ancho normal de todas las columnas">↺ Anchos originales</button>` : ''}
       <span class="pl-mut">Para ensanchar o angostar una columna, arrastra el borde derecho de su título.</span></div>`;
@@ -567,7 +567,7 @@
       const avg = ac.length ? Math.round(ac.reduce((s, a) => s + (a.pctComplete || 0), 0) / ac.length) : 0;
       const tarde = ac.filter(a => estado(a, today) === 'Atrasada').length;
       const on = opts.grupo === g.key;
-      return `<button class="pl-chip${on ? ' on' : ''}" style="--c:${g.color}" onclick="planSetOpt('grupo',${on ? 'null' : `'${esc(g.key)}'`})"><i></i>${esc(g.name)}<span class="n">${ac.length} · ${avg}%${tarde ? ` · <b>${tarde} atrasada${tarde > 1 ? 's' : ''}</b>` : ''}</span></button>`;
+      return `<button class="pl-chip${on ? ' on' : ''}" style="--c:${g.color}" onclick="planSetOpt('grupo',${on ? 'null' : `'${esc(g.key)}'`})"><i></i>${esc(g.name)}<span class="n">${ac.length}, ${avg}%${tarde ? `, <b>${tarde} atrasada${tarde > 1 ? 's' : ''}</b>` : ''}</span></button>`;
     };
     const personas = [];
     (model.activities || []).forEach(a => respDe(a).forEach(r => { if (!personas.some(p => norm(p) === norm(r))) personas.push(r); }));
@@ -607,7 +607,7 @@
     const solo = opts.plegadas === '*';
     const prom = g => { const ac = g.todas || g.acts; return ac.length ? Math.round(ac.reduce((q, a) => q + (a.pctComplete || 0), 0) / ac.length) : 0; };
     return `<div class="pl-bar-c pl-bar-fil">
-        <select class="pl-sel" onchange="planSetOpt('grupo',this.value||null)" title="Ver una sola ${agr === 'area' ? 'área' : 'etapa'}"><option value="">${agr === 'area' ? 'Área: todas' : 'Etapa: todas'}</option>${vivas.map(g => `<option value="${esc(g.key)}"${opts.grupo === g.key ? ' selected' : ''}>${esc(g.name)} · ${prom(g)} %</option>`).join('')}</select>
+        <select class="pl-sel" onchange="planSetOpt('grupo',this.value||null)" title="Ver una sola ${agr === 'area' ? 'área' : 'etapa'}"><option value="">${agr === 'area' ? 'Área: todas' : 'Etapa: todas'}</option>${vivas.map(g => `<option value="${esc(g.key)}"${opts.grupo === g.key ? ' selected' : ''}>${esc(g.name)}, ${prom(g)} %</option>`).join('')}</select>
         <select class="pl-sel" onchange="planSetOpt('resp',this.value)" title="Ver solo lo de un responsable"><option value="">Responsable: todos</option>${personas.map(p => `<option value="${esc(p)}"${norm(opts.resp) === norm(p) ? ' selected' : ''}>${esc(p)}</option>`).join('')}</select>
         <div class="pl-bar-r">
           <button class="pl-optbtn${solo ? ' on' : ''}" onclick="planSetOpt('soloEtapas',${!solo})" title="Ver solo el resumen de cada etapa (vista macro)">${solo ? '▸ Ver actividades' : '▾ Solo etapas'}</button>
@@ -645,7 +645,7 @@
     const n = { Completada: 0, 'En curso': 0, Atrasada: 0, 'Por iniciar': 0 };
     acts.forEach(a => { n[estado(a, today)]++; });
     const tot = acts.length || 1;
-    const tip = Object.entries(n).filter(([, v]) => v).map(([k, v]) => `${v} ${k.toLowerCase()}`).join(' · ');
+    const tip = Object.entries(n).filter(([, v]) => v).map(([k, v]) => `${v} ${k.toLowerCase()}`).join(', ');
     return `<span class="pl-bat" title="${tip}">${Object.entries(n).filter(([, v]) => v).map(([k, v]) => `<i class="${k.replace(' ', '-')}" style="width:${v / tot * 100}%"></i>`).join('')}</span>`;
   }
   // Desvío contra la línea base, en días hábiles (+ = va tarde)
@@ -681,7 +681,7 @@
       const p = stats.get(norm(nombre)) || { total: 0, hechas: 0, tarde: 0, pronto: 0 };
       return `<button class="pl-per${on(nombre) ? ' on' : ''}" onclick="planSetOpt('resp',${on(nombre) ? "''" : `'${esc(nombre).replace(/'/g, "\\'")}'`})" title="Ver solo lo de ${esc(nombre)}">
         <span class="pl-av" style="background:${colorDe(nombre)}">${esc(ini(nombre))}</span>
-        <span class="pl-per-t"><b>${esc(nombre)}</b><span>${sub ? esc(sub) + ' · ' : ''}${p.total ? `${p.hechas}/${p.total} listas` : 'sin actividades'}${p.tarde ? ` · <em class="late">${p.tarde} atrasada${p.tarde > 1 ? 's' : ''}</em>` : ''}${p.pronto ? ` · <em class="soon">${p.pronto} vence${p.pronto > 1 ? 'n' : ''} pronto</em>` : ''}</span></span>
+        <span class="pl-per-t"><b>${esc(nombre)}</b><span>${sub ? esc(sub) + ', ' : ''}${p.total ? `${p.hechas}/${p.total} listas` : 'sin actividades'}${p.tarde ? `, <em class="late">${p.tarde} atrasada${p.tarde > 1 ? 's' : ''}</em>` : ''}${p.pronto ? `, <em class="soon">${p.pronto} vence${p.pronto > 1 ? 'n' : ''} pronto</em>` : ''}</span></span>
       </button>`;
     };
     let html = '';
@@ -717,7 +717,7 @@
   // Dibujo de la nubecita: llena con el número de comentarios, o solo el contorno si no hay
   const NUBE = 'M7.5 17h12a5 5 0 0 0 .9-9.92A7 7 0 0 0 7.2 6.6 5.2 5.2 0 0 0 7.5 17z';
   const nube = n => `<svg viewBox="0 0 26 18" aria-hidden="true"><path d="${NUBE}"/></svg>${n ? `<b>${n > 99 ? '99+' : n}</b>` : ''}`;
-  // ＋ insertar fila debajo · eliminar (al pasar el mouse por la fila)
+  // ＋ insertar fila debajo, eliminar (al pasar el mouse por la fila)
   function accionesFila(a) {
     return has('planOnRow') ? `<span class="pl-ra"><button onclick="planOnRow('insertar-debajo','${a.id}')" title="Insertar una fila debajo (Ctrl+Enter)">＋</button><button onclick="planOnRow('eliminar','${a.id}')" title="Eliminar esta fila">×</button></span>` : '';
   }
@@ -836,9 +836,9 @@
 
   // ============================================================
   // EDICIÓN TIPO EXCEL (editor: vista Gantt y vista Tabla)
-  //   ↑ ↓ / Enter / Shift+Enter: moverse entre filas · Esc: deshacer la celda
-  //   Alt+↑ / Alt+↓: mover la fila · Ctrl+Enter: insertar fila debajo
-  //   Clic derecho: insertar, duplicar, mover, eliminar · ⠿: arrastrar la fila
+  //   ↑ ↓ / Enter / Shift+Enter: moverse entre filas, Esc: deshacer la celda
+  //   Alt+↑ / Alt+↓: mover la fila, Ctrl+Enter: insertar fila debajo
+  //   Clic derecho: insertar, duplicar, mover, eliminar, ⠿: arrastrar la fila
   //   Pegar varias líneas: llena hacia abajo (o crea filas en «＋ Actividad»)
   // Las páginas responden con window.planOnRow(accion, id, extra) y window.planOnPegarFilas(secId, filas).
   // ============================================================
@@ -915,7 +915,7 @@
     if (!el || el.tagName !== 'INPUT') return;
     const txt = (ev.clipboardData || window.clipboardData).getData('text') || '';
     const ls = lineas(txt);
-    // En «＋ Actividad…»: cada línea es una actividad nueva (Nombre · Responsable · Días)
+    // En «＋ Actividad…»: cada línea es una actividad nueva (Nombre, Responsable, Días)
     if (el.dataset.secAdd !== undefined && has('planOnPegarFilas') && (ls.length > 1 || txt.includes('\t'))) {
       ev.preventDefault();
       window.planOnPegarFilas(el.dataset.secAdd || null, ls.map(l => l.split('\t').map(x => x.trim())));
@@ -976,9 +976,9 @@
     document.addEventListener('mousemove', mover); document.addEventListener('mouseup', soltar);
   });
 
-  // Arrastrar un capítulo por su asa ⠿ sobre el título de otro capítulo:
-  //   borde de arriba → queda ANTES · borde de abajo → queda DESPUÉS (reordenar)
-  //   centro de un capítulo principal → queda DENTRO, como su subcapítulo
+  // Arrastrar una etapa por su asa ⠿ sobre el título de otra etapa:
+  //   borde de arriba → queda ANTES, borde de abajo → queda DESPUÉS (reordenar)
+  //   centro de una etapa principal → queda DENTRO, como su subetapa
   // Una etiqueta junto al cursor dice qué va a pasar al soltar.
   document.addEventListener('mousedown', ev => {
     const h = ev.target.closest && ev.target.closest('.pl-sdrag');
@@ -987,7 +987,7 @@
     if (!fila || !grid) return;
     ev.preventDefault();
     const id = fila.dataset.sec, conHijos = fila.dataset.hijos === '1', padreSrc = fila.dataset.padre || '';
-    const nombreDe = tr => { const n = tr.querySelector('.pl-an'); return n ? n.textContent.trim() : 'el capítulo'; };
+    const nombreDe = tr => { const n = tr.querySelector('.pl-an'); return n ? n.textContent.trim() : 'la etapa'; };
     let marca = null, destino = null;
     fila.classList.add('pl-moviendo'); document.body.classList.add('pl-arrastrando');
     const hint = document.createElement('div'); hint.className = 'pl-dhint'; document.body.appendChild(hint);
@@ -998,15 +998,15 @@
       const tr = bajo && bajo.closest && bajo.closest('tr[data-sec]');
       if (!tr || !grid.contains(tr) || tr === fila) return;
       const dst = tr.dataset.sec, nivel = tr.dataset.nivel;
-      if (tr.dataset.padre === id) return;                 // sus propios subcapítulos
-      if (nivel === '1' && conHijos) return;               // con subcapítulos no baja de nivel
+      if (tr.dataset.padre === id) return;                 // sus propios subetapas
+      if (nivel === '1' && conHijos) return;               // con subetapas no baja de nivel
       const r = tr.getBoundingClientRect(), fr = (e.clientY - r.top) / r.height;
       const puedeDentro = nivel === '0' && !conHijos && padreSrc !== dst;
       const zona = puedeDentro ? (fr < .3 ? 'antes' : fr > .7 ? 'despues' : 'dentro') : (fr < .5 ? 'antes' : 'despues');
       marca = tr; tr.classList.add('pl-drop-' + zona);
       destino = { zona, sec: dst };
       const nm = nombreDe(tr);
-      hint.textContent = zona === 'dentro' ? `Meter dentro de «${nm}» (subcapítulo)` : zona === 'antes' ? `Mover antes de «${nm}»` : `Mover después de «${nm}»${nivel === '0' ? ' y todo su contenido' : ''}`;
+      hint.textContent = zona === 'dentro' ? `Meter dentro de «${nm}» (subetapa)` : zona === 'antes' ? `Mover antes de «${nm}»` : `Mover después de «${nm}»${nivel === '0' ? ' y todo su contenido' : ''}`;
       hint.style.left = (e.clientX + 14) + 'px'; hint.style.top = (e.clientY + 12) + 'px';
       hint.classList.add('on');
     };
@@ -1049,7 +1049,7 @@
 
   // ============================================================
   // COMENTARIOS: nubecita en la fila y en el cronograma
-  //   Pasar el mouse: historial · Clic: lo deja abierto para comentar
+  //   Pasar el mouse: historial, Clic: lo deja abierto para comentar
   //   Cada comentario se puede convertir en tarea de la actividad.
   // La página responde con window.planOnComentario(accion, actividadId, datos) → Promise
   // ============================================================
@@ -1059,7 +1059,7 @@
     const d = new Date(iso); if (isNaN(d)) return 'recién';
     const f = d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', timeZone: 'America/Bogota' });
     const h = d.toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Bogota' });
-    return /^12:00/.test(h) ? f : `${f} · ${h}`; // los de fecha elegida no llevan hora
+    return /^12:00/.test(h) ? f : `${f}, ${h}`; // los de fecha elegida no llevan hora
   };
   function esTarea(n, tareas) {
     const t0 = norm(n.texto).slice(0, 60);
@@ -1077,13 +1077,13 @@
     const ts = (m.tasks || []).filter(t => t.activityId === popId);
     const borrador = pop.querySelector('textarea') ? pop.querySelector('textarea').value : '';
     pop.innerHTML = `<div class="pl-pop-h"><div><span class="pl-pop-cod">${a._cod || ''}</span>${esc(a.name)}</div><button data-acc="cerrar" title="Cerrar">×</button></div>
-      ${cs.length ? `<div class="pl-pop-n">💬 ${cs.length} comentario${cs.length === 1 ? '' : 's'} · del más antiguo al más reciente</div>` : ''}
+      ${cs.length ? `<div class="pl-pop-n">💬 ${cs.length} comentario${cs.length === 1 ? '' : 's'}, del más antiguo al más reciente</div>` : ''}
       <div class="pl-pop-l${cs.length ? ' linea' : ''}" data-n="${cs.length}">${cs.length ? cs.map((n, k) => `<div class="pl-pc${k === cs.length - 1 ? ' ult' : ''}">
           <div class="pl-pc-f"><span>${fechaCmt(n.createdAt)}</span><span class="pl-pc-a">${esTarea(n, ts) ? '<em>✓ ya es tarea</em>' : `<button data-acc="tarea" data-n="${n.id}" title="Crear una tarea de esta actividad con este texto">→ Tarea</button>`}<button data-acc="borrar" data-n="${n.id}" title="Borrar comentario">×</button></span></div>
           <div class="pl-pc-t">${esc(n.texto).replace(/\n/g, '<br>')}</div></div>`).join('')
         : '<div class="pl-pop-v">Sin comentarios todavía. Escribe el primero 👇</div>'}</div>
       <div class="pl-pop-add">
-        <textarea rows="2" placeholder="Escribe un comentario… (Enter guarda · Shift+Enter: otra línea)">${esc(borrador)}</textarea>
+        <textarea rows="2" placeholder="Escribe un comentario… (Enter guarda, Shift+Enter: otra línea)">${esc(borrador)}</textarea>
         <div class="pl-pop-r"><input type="date" value="${hoyBog()}" title="Fecha del comentario (por defecto hoy)"><button data-acc="agregar" class="ok">Comentar</button></div>
       </div>
       <div class="pl-pop-f"><span>${ts.length ? `☑ ${ts.filter(t => t.kanbanStatus === 'done').length}/${ts.length} tareas` : ''}</span>${has('planOnDetalle') ? '<button data-acc="detalle">Abrir bitácora y tareas →</button>' : ''}</div>`;
@@ -1191,7 +1191,7 @@
     const today = ultimoModelo.today;
     if (!reqCard) { reqCard = document.createElement('div'); reqCard.className = 'pl-reqcard'; document.body.appendChild(reqCard); }
     const listas = cadena.filter(x => estado(x.act, today) === 'Completada').length;
-    reqCard.innerHTML = `<div class="pl-rq-h"><b>${a._cod || ''}</b> ${esc(a.name)} · necesita antes:</div>
+    reqCard.innerHTML = `<div class="pl-rq-h"><b>${a._cod || ''}</b> ${esc(a.name)}, necesita antes:</div>
       <div class="pl-rq-l">${cadena.map(({ act, nivel }) => { const e = estado(act, today); return `<div class="pl-rq-r ${e.replace(' ', '-')}" style="padding-left:${10 + nivel * 12}px"><i></i><b>${act._cod || ''}</b><span>${esc(act.name)}</span><em>${act.deadline ? fCorta(act.deadline) : ''}</em></div>`; }).join('')}</div>
       <div class="pl-rq-f">${listas} de ${cadena.length} listas</div>`;
     const r = ancla.getBoundingClientRect();
@@ -1224,8 +1224,8 @@
   document.addEventListener('scroll', () => { if (reqId) ocultarCadena(); }, true);
 
   // ---------- Flechas editables en el plan de trabajo ----------
-  //   · Arrastrar el punto del final de una barra hasta otra actividad: crea la precedencia
-  //   · Clic en una flecha: ficha para cambiar el tipo y el desfase, o quitarla
+  //  , Arrastrar el punto del final de una barra hasta otra actividad: crea la precedencia
+  //  , Clic en una flecha: ficha para cambiar el tipo y el desfase, o quitarla
   document.addEventListener('mousedown', ev => {
     const h = ev.target.closest && ev.target.closest('.pl-lk[data-src]');
     if (!h || ev.button !== 0 || !has('planOnPatch')) return;
@@ -1284,9 +1284,9 @@
     flCtx = { a, b, x };
     document.querySelectorAll(`svg.pl-links path[data-de="${a.id}"][data-a="${b.id}"]:not(.hit)`).forEach(p => p.classList.add('sel'));
     flPop = document.createElement('div'); flPop.className = 'pl-selpop pl-flpop';
-    flPop.innerHTML = `<div class="pl-sel-h" title="${esc(`${a._cod || ''} ${a.name} → ${b._cod || ''} ${b.name}`)}">Flecha · <span><b>${esc(a._cod || '')}</b> ${esc(a.name)} <i>→</i> <b>${esc(b._cod || '')}</b> ${esc(b.name)}</span></div>
+    flPop.innerHTML = `<div class="pl-sel-h" title="${esc(`${a._cod || ''} ${a.name} → ${b._cod || ''} ${b.name}`)}">Flecha, <span><b>${esc(a._cod || '')}</b> ${esc(a.name)} <i>→</i> <b>${esc(b._cod || '')}</b> ${esc(b.name)}</span></div>
       <div class="pl-rel" data-id="${esc(a.id)}" data-cod="${esc(cod)}"><b title="${esc(a.name)}">${esc(a._cod || '')}</b>
-        <select class="pl-rlt" title="Tipo de precedencia">${TIPOS_DEP.map(t => `<option value="${t}"${x.t === t ? ' selected' : ''}>${t} · ${NOMBRE_TIPO[t]}</option>`).join('')}</select>
+        <select class="pl-rlt" title="Tipo de precedencia">${TIPOS_DEP.map(t => `<option value="${t}"${x.t === t ? ' selected' : ''}>${t}, ${NOMBRE_TIPO[t]}</option>`).join('')}</select>
         <span class="pl-rel-d"><select class="pl-rls" title="¿Después o antes?"><option value="1"${x.d >= 0 ? ' selected' : ''}>+ después</option><option value="-1"${x.d < 0 ? ' selected' : ''}>− antes</option></select>
         <input type="number" min="0" max="730" value="${Math.abs(x.d) || ''}" placeholder="0" title="Cuántos días de desfase">
         <select class="pl-rlu" title="Días hábiles (sin fines de semana ni festivos) o corridos (calendario)"><option value="h"${x.u !== 'c' ? ' selected' : ''}>días hábiles</option><option value="c"${x.u === 'c' ? ' selected' : ''}>días corridos</option></select></span>
@@ -1324,17 +1324,17 @@
 
   // ============================================================
   // COPIAR VALORES COMO EN EXCEL
-  //   · Agarradera ■ en la esquina de la celda: arrástrala hacia abajo o
+  //  , Agarradera ■ en la esquina de la celda: arrástrala hacia abajo o
   //     hacia arriba y el valor se copia en esas filas (misma columna).
-  //   · Ctrl+C / Ctrl+V de una celda a otra de la misma columna (también
+  //  , Ctrl+C / Ctrl+V de una celda a otra de la misma columna (también
   //     responsables, área, precedencias y fechas).
-  //   · Ctrl+D: copia el valor de la celda de arriba.
+  //  , Ctrl+D: copia el valor de la celda de arriba.
   // La página aplica los cambios con window.planOnRelleno(items) (o planOnPatch).
   // ============================================================
   const CAMPO_CELDA = { name: 'name', responsables: 'responsables', resp: 'responsables', entregable: 'entregable', ent: 'entregable',
     pct: 'pctComplete', dur: 'duracion', start: 'startDate', end: 'deadline', notes: 'notes', sec: 'sectionId' };
   const NOMBRE_CAMPO = { name: 'nombre', responsables: 'responsables', area: 'área', deps: 'precedencias', entregable: 'entregable', pctComplete: 'avance',
-    duracion: 'duración', startDate: 'inicio', deadline: 'fin', realStart: 'inicio real', realEnd: 'fin real', notes: 'nota', sectionId: 'capítulo' };
+    duracion: 'duración', startDate: 'inicio', deadline: 'fin', realStart: 'inicio real', realEnd: 'fin real', notes: 'nota', sectionId: 'etapa' };
   // Qué celda es: actividad y campo
   function celdaInfo(el) {
     const td = el && el.closest && el.closest('td');
@@ -1436,7 +1436,7 @@
       bloque = { tsv: txt, tipados: [[{ campo: info.campo, valor: portapapeles.valor }]] };
       try { navigator.clipboard.writeText(txt); } catch (e) {}
       if (!esTexto) ev.preventDefault();
-      if (has('toast')) window.toast(`Copiado: ${NOMBRE_CAMPO[info.campo] || info.campo} de «${a ? (a._cod || a.name) : ''}» · pégalo con Ctrl+V en otra fila`);
+      if (has('toast')) window.toast(`Copiado: ${NOMBRE_CAMPO[info.campo] || info.campo} de «${a ? (a._cod || a.name) : ''}», pégalo con Ctrl+V en otra fila`);
       return;
     }
     if (k === 'v') {
@@ -1457,8 +1457,8 @@
   // ============================================================
   // SELECCIONAR CELDAS (como en Excel)
   //   Clic y arrastrar, o clic y Shift+clic: marca un bloque de celdas.
-  //   Ctrl+C copia el bloque (se puede pegar en Excel) · Ctrl+V pega un bloque
-  //   (de aquí o de Excel) desde la primera celda marcada · Supr lo borra · Esc suelta.
+  //   Ctrl+C copia el bloque (se puede pegar en Excel), Ctrl+V pega un bloque
+  //   (de aquí o de Excel) desde la primera celda marcada, Supr lo borra, Esc suelta.
   // ============================================================
   let rango = null, bloque = null;
   const tdsDe = tabla => [...tabla.querySelectorAll('tr[data-row]')];
@@ -1622,7 +1622,7 @@
     if ((ev.ctrlKey || ev.metaKey) && k.toLowerCase() === 'c') {
       const tsv = copiarRango();
       try { navigator.clipboard.writeText(tsv); } catch (e) {}
-      if (has('toast')) window.toast(`Copiadas ${nCeldas()} celdas · pégalas con Ctrl+V aquí o en Excel`);
+      if (has('toast')) window.toast(`Copiadas ${nCeldas()} celdas, pégalas con Ctrl+V aquí o en Excel`);
       return;
     }
     if ((k === 'Delete' || k === 'Backspace') && has('planOnPatch')) {
@@ -1653,7 +1653,7 @@
     portapapeles = { campo: info.campo, valor: valorDe(info.id, info.campo), desde: info.id };
     cerrarSel(false); pintarRango();
     try { navigator.clipboard.writeText(tsv); } catch (e) {}
-    if (has('toast')) window.toast(`Copiado: ${NOMBRE_CAMPO[info.campo] || info.campo} · pégalo con Ctrl+V en otra celda`);
+    if (has('toast')) window.toast(`Copiado: ${NOMBRE_CAMPO[info.campo] || info.campo}, pégalo con Ctrl+V en otra celda`);
   });
   document.addEventListener('copy', ev => {
     if (!rango || nCeldas() < 2 || enCasilla()) return;
@@ -1720,7 +1720,7 @@
       else { bar.style.left = E.x(ni) + 'px'; bar.style.width = Math.max(E.ppd, E.x(addDays(nf, 1)) - E.x(ni)) + 'px'; }
       const { tipos, cambios } = nuevosDesfases(a, ni, nf);
       const deps = (a.dependsOnIds || []).map(pid => { const p = actDe(pid); return p ? etiquetaDep({ depTipos: tipos }, pid, p._cod || '') : ''; }).filter(Boolean);
-      tip.innerHTML = `<b>${esc(a._cod || '')}</b> ${fCorta(ni)} → ${fCorta(nf)} · ${diasHabiles(ni, nf)} día${diasHabiles(ni, nf) === 1 ? '' : 's'} hábil${diasHabiles(ni, nf) === 1 ? '' : 'es'}${deps.length ? `<br><span>Depende de: ${esc(deps.join(', '))}</span>` : ''}${cambios.length ? '<br><em>Se ajusta el desfase</em>' : ''}`;
+      tip.innerHTML = `<b>${esc(a._cod || '')}</b> ${fCorta(ni)} → ${fCorta(nf)}, ${diasHabiles(ni, nf)} día${diasHabiles(ni, nf) === 1 ? '' : 's'} hábil${diasHabiles(ni, nf) === 1 ? '' : 'es'}${deps.length ? `<br><span>Depende de: ${esc(deps.join(', '))}</span>` : ''}${cambios.length ? '<br><em>Se ajusta el desfase</em>' : ''}`;
     };
     const mover = e => {
       const dd = Math.round((e.clientX - x0) / E.ppd);
@@ -1749,7 +1749,7 @@
       const patch = { startDate: ni, deadline: nf };
       if ((a.dependsOnIds || []).length) patch.depTipos = tipos;
       window.planOnPatch(a.id, patch);
-      if (has('toast')) window.toast(`${a._cod || ''} ${fCorta(ni)} → ${fCorta(nf)}${cambios.length ? ' · precedencia: ' + cambios.join(', ') : ''}`);
+      if (has('toast')) window.toast(`${a._cod || ''} ${fCorta(ni)} → ${fCorta(nf)}${cambios.length ? ', precedencia: ' + cambios.join(', ') : ''}`);
     };
     document.addEventListener('mousemove', mover); document.addEventListener('mouseup', soltar);
   });
@@ -1789,7 +1789,7 @@
     // El nombre lleva también el entregable, si lo tiene
     const wrap = el.closest('.pl-nmw');
     const tw = wrap ? wrap.getAttribute('title') || '' : '';
-    const extra = tw.includes(' → ') ? tw.split(' → ').slice(1).join(' → ').split(' · ')[0] : '';
+    const extra = tw.includes(' → ') ? tw.split(' → ').slice(1).join(' → ').split(', ')[0] : '';
     tip.innerHTML = `${esc(texto)}${extra ? `<small>Entregable: ${esc(extra)}</small>` : ''}`;
     // Sin el globo nativo encima mientras se ve este
     [el, wrap].forEach(x => { if (x && x.hasAttribute('title')) { sinTitulo.push([x, x.getAttribute('title')]); x.removeAttribute('title'); } });
@@ -1846,7 +1846,7 @@
         paths += `<path data-de="${de}" data-a="${a}" d="${d}" />`;
         if (svg.classList.contains('editable')) {
           const cod = id => { const x = ((ultimoModelo && ultimoModelo.activities) || []).find(y => y.id === id); return x ? (x._cod || x.name) : ''; };
-          golpes += `<path class="hit" data-de="${de}" data-a="${a}" d="${d}"><title>${esc(cod(de))} → ${esc(cod(a))} · clic para cambiar el tipo o quitarla</title></path>`;
+          golpes += `<path class="hit" data-de="${de}" data-a="${a}" d="${d}"><title>${esc(cod(de))} → ${esc(cod(a))}, clic para cambiar el tipo o quitarla</title></path>`;
         }
       });
       svg.innerHTML = `<defs><marker id="pl-flecha" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="pl-flecha"/></marker></defs>${paths.replace(/<path /g, '<path marker-end="url(#pl-flecha)" ')}${golpes}`;
@@ -1907,7 +1907,7 @@
     const nCols = Math.max(3, nCols0 - (cols.rs ? 0 : 1) - (cols.fechas ? 0 : (full ? 2 : 1)) - (cols.p ? 0 : 1) - (cols.e ? 0 : 1));
     const lbI = base ? 'Inicio proy.' : 'Inicio', lbF = base ? 'Fin proy.' : 'Fin';
     const head = `<thead><tr>
-      <th class="pl-sk pl-c-id" data-col="id">ID</th><th class="pl-sk pl-c-nm" data-col="nm">Actividad<span class="pl-resz" title="Arrastra para ensanchar o angostar la columna · doble clic: ajustar a los nombres (otro doble clic: volver al ancho normal)"></span></th><th class="pl-c-rs" data-col="rs">Responsable</th>
+      <th class="pl-sk pl-c-id" data-col="id">ID</th><th class="pl-sk pl-c-nm" data-col="nm">Actividad<span class="pl-resz" title="Arrastra para ensanchar o angostar la columna, doble clic: ajustar a los nombres (otro doble clic: volver al ancho normal)"></span></th><th class="pl-c-rs" data-col="rs">Responsable</th>
       ${cols.area ? `<th class="pl-c-ar" data-col="ar" title="Elígela de la lista de áreas de «Involucrados». Si la dejas en automática, sale del área de cada responsable">${full ? 'Área responsable' : 'Área'}</th>` : ''}
       ${cols.entregable ? '<th class="pl-c-en" data-col="en">Entregable / resultado</th>' : ''}
       ${cols.base ? '<th class="pl-c-lb" data-col="lb" title="Fechas congeladas al fijar la línea base: no se mueven">Línea base</th>' : ''}
@@ -1923,7 +1923,7 @@
     </tr></thead>`;
     // Asa para cambiar el ancho de cada columna (menos ID y Actividad, que tiene la suya)
     const headF = head.replace(/(<th\b[^>]*data-col="(?!id"|nm")([a-z]+)"[^>]*>)([\s\S]*?)<\/th>/g,
-      (m0, abre, k, cont) => `${abre}${cont}<span class="pl-cw" data-col="${k}" title="Arrastra para ensanchar o angostar · doble clic: ancho normal"></span></th>`);
+      (m0, abre, k, cont) => `${abre}${cont}<span class="pl-cw" data-col="${k}" title="Arrastra para ensanchar o angostar, doble clic: ancho normal"></span></th>`);
     // Estilo de columnas: ocultas y anchos elegidos (por posición en la tabla)
     const ocultasK = new Set([...(cols.rs ? [] : ['rs']), ...(cols.fechas ? [] : ['ini', 'fin', 'tl']), ...(cols.p ? [] : ['p']), ...(cols.e ? [] : ['e'])]);
     let cssCols = '';
@@ -1935,13 +1935,13 @@
     const estaPlegada = k => opts.plegadas === '*' || (Array.isArray(opts.plegadas) && opts.plegadas.includes(k));
     const filas = gs.map(g => {
       if (opts.grupo && g.key !== opts.grupo && g.padre !== opts.grupo) return '';
-      if (g.padre && estaPlegada(g.padre)) return ''; // capítulo contraído: tampoco sus subcapítulos
+      if (g.padre && estaPlegada(g.padre)) return ''; // etapa contraído: tampoco sus subetapas
       const plegada = estaPlegada(g.key);
       if (g.sec && g.sec.enabled === false) {
-        return ''; // «no aplica» ya no existe: esos capítulos se borran
+        return ''; // «no aplica» ya no existe: esos etapas se borran
       }
       const filasActs = g.acts.filter(pasaResp);
-      // Los totales del capítulo incluyen sus subcapítulos
+      // Los totales de la etapa incluyen sus subetapas
       const acts = (g.todas || g.acts).filter(pasaResp);
       if (opts.resp && !acts.length) return '';
       const fs = []; acts.forEach(a => { if (a.startDate) fs.push(a.startDate); if (a.deadline) fs.push(a.deadline); }); fs.sort();
@@ -1949,14 +1949,14 @@
       const avg = acts.length ? Math.round(acts.reduce((s, a) => s + (a.pctComplete || 0), 0) / acts.length) : 0;
       const hechas = acts.filter(a => estado(a, today) === 'Completada').length;
       const estA = acts.length ? (avg >= 100 ? 'Completada' : fF && today > fF ? 'Atrasada' : fI && today >= fI ? 'En curso' : 'Por iniciar') : '';
-      const tools = opts.owner && g.id && agr === 'etapa' ? `<span class="pl-tools"><button onclick="planOnSection('rename','${g.id}')" title="Renombrar">✎</button>${g.padre ? `<button onclick="planOnSection('sacar','${g.id}')" title="Sacarlo del capítulo: queda como capítulo">⇱ sacar</button>` : ''}</span>${editable ? `<button class="pl-sdel" onclick="planOnSection('remove','${g.id}')" title="Eliminar ${g.padre ? 'el subcapítulo' : 'el capítulo'} y sus actividades">×</button>` : ''}` : '';
-      const sdrag = editable && opts.owner && agr === 'etapa' && g.id ? `<span class="pl-sdrag" title="Arrastra para cambiar el orden: suéltalo arriba o abajo de otro capítulo${g.hijos && g.hijos.length ? '' : ', o en su centro para volverlo subcapítulo'}">⠿</span>` : '';
+      const tools = opts.owner && g.id && agr === 'etapa' ? `<span class="pl-tools"><button onclick="planOnSection('rename','${g.id}')" title="Renombrar">✎</button>${g.padre ? `<button onclick="planOnSection('sacar','${g.id}')" title="Sacarla de la etapa: queda como etapa">⇱ sacar</button>` : ''}</span>${editable ? `<button class="pl-sdel" onclick="planOnSection('remove','${g.id}')" title="Eliminar ${g.padre ? 'la subetapa' : 'la etapa'} y sus actividades">×</button>` : ''}` : '';
+      const sdrag = editable && opts.owner && agr === 'etapa' && g.id ? `<span class="pl-sdrag" title="Arrastra para cambiar el orden: suéltalo arriba o abajo de otra etapa${g.hijos && g.hijos.length ? '' : ', o en su centro para volverlo subetapa'}">⠿</span>` : '';
       const sum = fI ? `<span class="pl-sum" style="left:${E.x(fI)}px;width:${Math.max(6, E.x(addDays(fF, 1)) - E.x(fI))}px;--c:${g.color}"><i style="width:${avg}%"></i></span>` : '';
       const dvs = acts.map(desvio).filter(d => d != null);
       const dvMax = dvs.length ? Math.max(...dvs) : null;
       const areaRow = `<tr class="pl-area${g.padre ? ' sub' : ''}" style="--c:${g.color}"${editable && opts.owner && agr === 'etapa' && g.id ? ` data-sec="${g.id}" data-nivel="${g.padre ? 1 : 0}"${g.padre ? ` data-padre="${g.padre}"` : ''}${gs.some(h => h.padre === g.id) ? ' data-hijos="1"' : ''}` : ''}>
         <td class="pl-sk pl-c-id">${sdrag}<span class="pl-acod">${g.area ? esc(g.name.slice(0, 1).toUpperCase()) : (g.cod || '')}</span></td>
-        <td class="pl-sk pl-c-nm"><div class="pl-anw"><button class="pl-fold" onclick="planSetOpt('plegar','${esc(g.key)}')" title="${plegada ? 'Ver sus actividades' : 'Contraer esta etapa'}">${plegada ? '▸' : '▾'}</button><span class="pl-an" title="${esc(g.name)}">${esc(g.name)}</span><span class="pl-mut">${hechas}/${acts.length} · ${avg}%</span>${tools}</div></td>
+        <td class="pl-sk pl-c-nm"><div class="pl-anw"><button class="pl-fold" onclick="planSetOpt('plegar','${esc(g.key)}')" title="${plegada ? 'Ver sus actividades' : 'Contraer esta etapa'}">${plegada ? '▸' : '▾'}</button><span class="pl-an" title="${esc(g.name)}">${esc(g.name)}</span><span class="pl-mut">${hechas}/${acts.length}, ${avg}%</span>${tools}</div></td>
         <td></td>${cols.area ? '<td></td>' : ''}${cols.entregable ? '<td></td>' : ''}${cols.base ? '<td></td>' : ''}
         ${full ? `<td class="pl-d b">${fCorta(fI)}</td><td class="pl-d b">${fCorta(fF)}</td>`
           : `<td class="pl-tlc">${fI ? pildoraRango(fI, fF, today, estA, g.color) : ''}${base && dvMax != null && dvMax > 0 ? ' ' + desvioHtml(dvMax) : ''}</td>`}${cols.real ? '<td></td><td></td>' : ''}
@@ -1968,7 +1968,7 @@
       </tr>`;
       const actRows = plegada ? '' : filasActs.map(a => filaActividad(a, g, today, E, carril, editable, opts, cols, codigo, base) +
         tareasDe(a.id).map(t => filaTarea(t, today, E, carril, nCols)).join('')).join('');
-      const add = !plegada && opts.owner && editable && agr === 'etapa' && !(g.hijos && g.hijos.length) ? `<tr class="pl-add"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><input placeholder="＋ Actividad en ${esc(g.name)} · o pega filas de Excel" data-sec-add="${g.id || ''}" onkeydown="if(event.key==='Enter')planOnAdd('${g.id || ''}',this)"></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>` : '';
+      const add = !plegada && opts.owner && editable && agr === 'etapa' && !(g.hijos && g.hijos.length) ? `<tr class="pl-add"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><input placeholder="＋ Actividad en ${esc(g.name)}, o pega filas de Excel" data-sec-add="${g.id || ''}" onkeydown="if(event.key==='Enter')planOnAdd('${g.id || ''}',this)"></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>` : '';
       return areaRow + actRows + add;
     }).join('');
     const addArea = opts.owner && editable && agr === 'etapa' && !opts.grupo && !opts.resp ? `<tr class="pl-add"><td class="pl-sk pl-c-id"></td><td class="pl-sk pl-c-nm"><input placeholder="＋ Nueva etapa" onkeydown="if(event.key==='Enter')planOnAdd('__area__',this)"></td><td colspan="${nCols - 2}"></td>${carril('')}</tr>` : '';
@@ -1977,7 +1977,7 @@
     const leyenda = `<div class="pl-ley">
       <span><i class="sw plan"></i>${base ? 'Proyectado' : 'Planeado'}</span><span><i class="sw av"></i>Avance</span><span><i class="sw ok"></i>Completado</span>
       <span><i class="sw late"></i>Atrasado</span>${base ? '<span><i class="sw lb"></i>Línea base</span>' : ''}<span><i class="sw real"></i>Ejecución real</span><span><i class="sw ms"></i>Hito (un solo día)</span>
-      <span><i class="sw hoy"></i>Hoy</span><span class="pl-mut">Días hábiles sin fines de semana ni festivos de Colombia${opts.owner ? ' · ID morado = ruta crítica' : ''}</span>
+      <span><i class="sw hoy"></i>Hoy</span><span class="pl-mut">Días hábiles sin fines de semana ni festivos de Colombia${opts.owner ? ', ID morado = ruta crítica' : ''}</span>
     </div>`;
     const deps = [];
     if (opts.lineas !== false || esDeps) (model.activities || []).forEach(a => (a.dependsOnIds || []).forEach(p => deps.push([p, a.id, tipoDep(a, p).t])));
@@ -1994,7 +1994,7 @@
     const pct = a.pctComplete || 0;
     const ini = a.startDate || a.deadline, fin = a.deadline || a.startDate;
     const dv = desvio(a);
-    const tip = esc(`${a._cod} · ${a.name}${ini ? ` · ${fCorta(ini)} → ${fCorta(fin)}` : ''} · ${pct}% · ${est}${resp ? ' · ' + resp : ''}${a.entregable ? ' · Entregable: ' + a.entregable : ''}${a.baselineEnd ? ` · Línea base: ${fCorta(a.baselineStart)} → ${fCorta(a.baselineEnd)}` : ''}`);
+    const tip = esc(`${a._cod}, ${a.name}${ini ? `, ${fCorta(ini)} → ${fCorta(fin)}` : ''}, ${pct}%, ${est}${resp ? ', ' + resp : ''}${a.entregable ? ', Entregable: ' + a.entregable : ''}${a.baselineEnd ? `, Línea base: ${fCorta(a.baselineStart)} → ${fCorta(a.baselineEnd)}` : ''}`);
     let barra = '';
     if (a.baselineStart || a.baselineEnd) {
       const bi = a.baselineStart || a.baselineEnd, bf = a.baselineEnd || a.baselineStart;
@@ -2006,7 +2006,7 @@
       const click = has('planOnOpen') && opts.owner ? ` onclick="planOnOpen('${a.id}')"` : '';
       // En el editor la barra se corre con el mouse (y sus bordes cambian inicio o fin)
       const mov = editable && opts.owner && has('planOnPatch') ? ' data-mov="1"' : '';
-      const tipMov = mov ? esc(' · Arrástrala para correrla; sus bordes cambian el inicio o el fin') : '';
+      const tipMov = mov ? esc(', Arrástrala para correrla; sus bordes cambian el inicio o el fin') : '';
       barra += ini === fin
         ? `<span class="pl-ms${cls}" data-id="${a.id}"${mov} style="left:${x0 + E.ppd / 2}px;--c:${g.color}" title="${tip}${tipMov}"${click}></span>`
         : `<span class="pl-b${cls}${w < 34 ? ' mini' : ''}" data-id="${a.id}"${mov} style="left:${x0}px;width:${w}px;--c:${g.color}" title="${tip}${tipMov}"${click}><i style="width:${pct}%"></i>${mov && w >= 30 ? '<b class="pl-bh l"></b><b class="pl-bh r"></b>' : ''}</span>`;
@@ -2023,7 +2023,7 @@
       ((ultimoModelo && ultimoModelo.notas) || []).filter(n => n.activityId === a.id).forEach(n => { const d = diaDe(n.createdAt); porDia[d] = (porDia[d] || 0) + 1; });
       Object.keys(porDia).forEach(d => {
         if (d < E.ini || d > E.fin) return;
-        barra += `<span class="pl-nube" data-cmt="${a.id}" style="left:${E.x(d) + E.ppd / 2}px" title="${porDia[d]} comentario${porDia[d] > 1 ? 's' : ''} · ${fCorta(d)}">${porDia[d] > 1 ? porDia[d] : ''}</span>`;
+        barra += `<span class="pl-nube" data-cmt="${a.id}" style="left:${E.x(d) + E.ppd / 2}px" title="${porDia[d]} comentario${porDia[d] > 1 ? 's' : ''}, ${fCorta(d)}">${porDia[d] > 1 ? porDia[d] : ''}</span>`;
       });
     }
     const cp = opts.owner && a.critical ? ` style="color:${a.criticaEnRiesgo ? 'var(--cp-late-ink)' : 'var(--cp-ink)'}"` : '';
@@ -2034,7 +2034,7 @@
       ? `<input class="pl-in ${cls || ''}" data-cell="${a.id}:${campo}" value="${esc(valor)}" placeholder="${ph}" title="${esc(valor)}"${campo === 'responsables' ? ' list="dl-personas"' : ''} onchange="planOnPatch('${a.id}',{${campo}:this.value.trim()})">`
       : `<span class="pl-tx ${cls || ''}" title="${esc(valor)}">${esc(valor) || '<span class="pl-mut">—</span>'}</span>`;
     const deps = (a.dependsOnIds || []).filter(id => codigo[id]).map(id => etiquetaDep(a, id, codigo[id])).join(', ');
-    const depsTxt = (a.dependsOnIds || []).filter(id => codigo[id]).map(id => { const x = tipoDep(a, id); return textoDep(x.t, x.d, x.u, codigo[id]); }).join(' · ');
+    const depsTxt = (a.dependsOnIds || []).filter(id => codigo[id]).map(id => { const x = tipoDep(a, id); return textoDep(x.t, x.d, x.u, codigo[id]); }).join(', ');
     const dias = duracionDe(a) || '';
     const pctCell = !cols.full
       ? (editable
@@ -2052,8 +2052,8 @@
     const dvChip = !cols.desvio && dv ? ` ${desvioHtml(dv)}` : '';
     const mueve = editable && opts.owner && opts.agrupar !== 'area';
     return `<tr class="pl-act${a.propuesta ? ' prop' : ''}" style="--c:${g.color}" data-a="${a.id}"${editable && opts.owner ? ` data-row="${a.id}"` : ''}>
-      <td class="pl-sk pl-c-id">${mueve ? '<span class="pl-drag" title="Arrastra para mover la fila · clic derecho: más opciones">⠿</span>' : ''}${idCell}</td>
-      <td class="pl-sk pl-c-nm"><div class="pl-nmw" title="${esc(a.name + (a.entregable ? ' → ' + a.entregable : '') + (opts.agrupar === 'area' && a._etapa ? ' · ' + a._etapa : ''))}">${inp('name', a.name, 'Actividad', 'nm')}${opts.owner && has('planOnDetalle') ? notasTareasBtn(a) : (opts.owner && editable && has('planOnRow') ? accionesFila(a) : '')}</div></td>
+      <td class="pl-sk pl-c-id">${mueve ? '<span class="pl-drag" title="Arrastra para mover la fila, clic derecho: más opciones">⠿</span>' : ''}${idCell}</td>
+      <td class="pl-sk pl-c-nm"><div class="pl-nmw" title="${esc(a.name + (a.entregable ? ' → ' + a.entregable : '') + (opts.agrupar === 'area' && a._etapa ? ', ' + a._etapa : ''))}">${inp('name', a.name, 'Actividad', 'nm')}${opts.owner && has('planOnDetalle') ? notasTareasBtn(a) : (opts.owner && editable && has('planOnRow') ? accionesFila(a) : '')}</div></td>
       ${editable && opts.owner
         ? `<td class="pl-rs pl-pick" tabindex="0" data-pick="resp" data-act="${a.id}" title="Elegir responsables de la lista de involucrados">${avatares(respDe(a))}<span class="pl-tx rs">${esc(resp) || '<span class="pl-mut">Elegir…</span>'}</span><i class="pl-caret">▾</i></td>`
         : `<td class="pl-rs">${avatares(respDe(a))}<span class="pl-tx rs" title="${esc(resp)}">${esc(resp) || '<span class="pl-mut">—</span>'}</span></td>`}
@@ -2061,7 +2061,7 @@
       ${cols.entregable ? `<td>${inp('entregable', a.entregable || '', '—', 'en')}</td>` : ''}
       ${cols.base ? `<td class="pl-lbc" title="Congelada: no se mueve">${lb}</td>` : ''}
       ${cols.full ? celdaFecha(a, 'startDate', editable) + celdaFecha(a, 'deadline', editable, est === 'Atrasada' ? ' late' : '')
-        : `<td class="pl-tlc">${!a.startDate && !a.deadline && a.duracion ? `<span class="pl-mut" title="Tiene duración pero aún no fechas: ponle inicio, o una precedencia con fecha, y se programa sola">⏱ ${a.duracion} d · sin fechas</span>` : pildoraRango(a.startDate, a.deadline, today, est, g.color, has('planOnOpen') && opts.owner ? ` onclick="planOnOpen('${a.id}')" role="button"` : '')}${dvChip}${ultimoModelo && ultimoModelo.fechaMeta && a.deadline && a.deadline > ultimoModelo.fechaMeta && est !== 'Completada' ? `<span class="pl-pasa" title="Termina después de la fecha meta (${fCorta(ultimoModelo.fechaMeta)})">⚑</span>` : ''}</td>`}
+        : `<td class="pl-tlc">${!a.startDate && !a.deadline && a.duracion ? `<span class="pl-mut" title="Tiene duración pero aún no fechas: ponle inicio, o una precedencia con fecha, y se programa sola">⏱ ${a.duracion} d, sin fechas</span>` : pildoraRango(a.startDate, a.deadline, today, est, g.color, has('planOnOpen') && opts.owner ? ` onclick="planOnOpen('${a.id}')" role="button"` : '')}${dvChip}${ultimoModelo && ultimoModelo.fechaMeta && a.deadline && a.deadline > ultimoModelo.fechaMeta && est !== 'Completada' ? `<span class="pl-pasa" title="Termina después de la fecha meta (${fCorta(ultimoModelo.fechaMeta)})">⚑</span>` : ''}</td>`}
       ${cols.real ? celdaFecha(a, 'realStart', editable, ' real') + celdaFecha(a, 'realEnd', editable, ' real') : ''}
       ${cols.dias ? (editable
         ? `<td class="pl-n"><input type="number" min="1" max="999" class="pl-in pct dur" data-cell="${a.id}:dur" value="${dias}" placeholder="—" title="Duración en días hábiles. Con inicio, el fin sale solo; sin fechas, queda la duración y se programa al terminar sus precedentes" onchange="Plan.cambiarDuracion('${a.id}',this.value)"></td>`
@@ -2079,11 +2079,11 @@
   function filaTarea(t, today, E, carril, nCols) {
     const hecha = t.kanbanStatus === 'done', vencida = !hecha && t.dueDate && t.dueDate < today;
     const est = hecha ? '<span class="pl-est Completada">Hecha</span>' : vencida ? '<span class="pl-est Atrasada">Vencida</span>' : t.kanbanStatus === 'doing' ? '<span class="pl-est En-curso">En curso</span>' : '<span class="pl-est Por-iniciar">Por hacer</span>';
-    const dot = t.dueDate ? `<span class="pl-tdot${hecha ? ' ok' : vencida ? ' late' : ''}" style="left:${E.x(t.dueDate) + E.ppd / 2}px" title="${esc(t.title)} · ${fCorta(t.dueDate)}"></span>` : '';
+    const dot = t.dueDate ? `<span class="pl-tdot${hecha ? ' ok' : vencida ? ' late' : ''}" style="left:${E.x(t.dueDate) + E.ppd / 2}px" title="${esc(t.title)}, ${fCorta(t.dueDate)}"></span>` : '';
     return `<tr class="pl-task${hecha ? ' hecha' : ''}">
       <td class="pl-sk pl-c-id"><button class="pl-chk${hecha ? ' on' : ''}" title="${hecha ? 'Reabrir' : 'Marcar hecha'}" onclick="planOnTask('${hecha ? 'reopen' : 'done'}','${t.id}')"></button></td>
       <td class="pl-sk pl-c-nm"><span class="pl-tt" onclick="planOnTask('open','${t.id}')" title="${esc(t.title)}">↳ ${esc(t.title)}</span><button class="pl-x" title="Desvincular de esta actividad" onclick="planOnTask('unlink','${t.id}')">×</button></td>
-      <td colspan="${nCols - 2}">${est}<span class="pl-mut">${t.dueDate ? 'vence ' + fCorta(t.dueDate) : 'sin fecha'}${t.tipoGestion && t.tipoGestion !== 'Propia' ? ' · ' + esc(t.tipoGestion) : ''}</span></td>
+      <td colspan="${nCols - 2}">${est}<span class="pl-mut">${t.dueDate ? 'vence ' + fCorta(t.dueDate) : 'sin fecha'}${t.tipoGestion && t.tipoGestion !== 'Propia' ? ', ' + esc(t.tipoGestion) : ''}</span></td>
       ${carril(dot)}
     </tr>`;
   }
@@ -2093,8 +2093,8 @@
     const sueltas = (model.tasks || []).filter(t => !t.activityId && t.kanbanStatus !== 'done');
     const acts = []; gs.forEach(g => g.acts.forEach(a => acts.push(a)));
     if (!sueltas.length || !acts.length) return '';
-    const opts = '<option value="">Vincular a…</option>' + acts.map(a => `<option value="${a.id}">${a._cod || ''} · ${esc(a.name)}</option>`).join('');
-    return `<details class="pl-sueltas"><summary>Tareas del proyecto sin vincular a una actividad <span class="pl-mut">· ${sueltas.length}</span></summary>
+    const opts = '<option value="">Vincular a…</option>' + acts.map(a => `<option value="${a.id}">${a._cod || ''}, ${esc(a.name)}</option>`).join('');
+    return `<details class="pl-sueltas"><summary>Tareas de la iniciativa sin vincular a una actividad <span class="pl-mut">· ${sueltas.length}</span></summary>
       ${sueltas.map(t => `<div class="row"><span class="tt" onclick="planOnTask('open','${t.id}')">${esc(t.title)}${t.dueDate ? ` <span class="pl-mut">· ${fCorta(t.dueDate)}</span>` : ''}</span><select class="pl-sel" onchange="if(this.value)planOnTask('link','${t.id}',this.value)">${opts}</select></div>`).join('')}
     </details>`;
   }

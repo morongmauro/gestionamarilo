@@ -325,12 +325,27 @@ route('GET', '/api/estado', 'usuario', async (req, ctx) => {
     tablero: (await store.getConfig('tablero')) || { income_unidad: 1e6 },
     vistaPf: (await store.getConfig('vista_portafolio')) || null,
     dgvCorte: (await store.getConfig('dgv_corte')) || null,
+    okrs: (await store.getConfig('okrs')) || [],
     direccion: (await store.getConfig('direccion')) || null,
     projects, activities, sections, cases, sessions, committees,
     people: users.filter(u => u.active !== false).map(u => ({ id: u.id, name: u.name, email: u.email })),
   };
 });
 route('GET', '/api/historial', 'usuario', async () => store.recent('historial', 200));
+// OKR: objetivos con sus resultados clave (línea base, meta, fecha) y los chequeos de cada mes
+route('PUT', '/api/config/okrs', 'editor', async (req, ctx) => {
+  const l = Array.isArray(ctx.body && ctx.body.okrs) ? ctx.body.okrs : null;
+  if (!l || l.length > 200 || JSON.stringify(l).length > 400000) throw new HttpError(400, 'OKR inválidos');
+  const txt = (v, n) => String(v == null ? '' : v).slice(0, n), num = v => (v === '' || v == null || !Number.isFinite(Number(v)) ? null : Number(v));
+  const okrs = l.map(o => ({ id: txt(o.id, 60), nombre: txt(o.nombre, 300), krs: (Array.isArray(o.krs) ? o.krs : []).slice(0, 20).map(k => ({
+    id: txt(k.id, 60), nombre: txt(k.nombre, 300), tipo: ['captura', 'hito', 'manual'].includes(k.tipo) ? k.tipo : 'manual', unidad: txt(k.unidad, 30),
+    base: num(k.base), meta: num(k.meta), fecha: /^\d{4}-\d{2}-\d{2}$/.test(k.fecha || '') ? k.fecha : null, hito: txt(k.hito, 60), responsable: txt(k.responsable, 120),
+    chequeos: (Array.isArray(k.chequeos) ? k.chequeos : []).slice(-60).map(c => ({ fecha: /^\d{4}-\d{2}-\d{2}$/.test(c.fecha || '') ? c.fecha : now().slice(0, 10), valor: num(c.valor), estado: ['verde', 'amarillo', 'rojo'].includes(c.estado) ? c.estado : 'verde', nota: txt(c.nota, 1000), por: txt(c.por, 120) })),
+  })) })).filter(o => o.id && o.nombre);
+  await store.setConfig('okrs', okrs);
+  await log(ctx.user, 'editó', 'config', 'okrs', 'OKR', []);
+  return okrs;
+});
 // Portafolio · Resumen: qué columnas se ven y en qué orden (igual para todos)
 route('PUT', '/api/config/vista-portafolio', 'editor', async (req, ctx) => {
   const cols = Array.isArray(ctx.body && ctx.body.cols) ? ctx.body.cols.filter(x => typeof x === 'string' && x.length < 80).slice(0, 60) : null;
@@ -475,7 +490,7 @@ const ID_RX = /^[A-Za-z0-9_-]{8,64}$/;
 route('POST', '/api/plan/:pid', 'editor', async (req, ctx) => {
   const pid = ctx.params.pid, b = ctx.body || {};
   const proyecto = await store.get('projects', pid);
-  if (!proyecto) throw new HttpError(404, 'El proyecto no existe');
+  if (!proyecto) throw new HttpError(404, 'La iniciativa no existe');
   const lista = (v, n) => { const l = Array.isArray(v) ? v : []; if (l.length > n) throw new HttpError(413, 'Demasiados cambios de una vez'); return l; };
   const cambios = { sections: b.sections || {}, activities: b.activities || {} };
   // 1) Se revisa todo antes de escribir: si un registro no sirve, no se guarda nada a medias
@@ -584,7 +599,7 @@ const COLL_RX = `:coll(${COLLS.join('|')})`;
 route('POST', `/api/${COLL_RX}`, 'editor', async (req, ctx) => {
   const coll = ctx.params.coll;
   const data = cleanDoc(coll, ctx.body, false);
-  if (data.project_id && !(await store.get('projects', data.project_id))) throw new HttpError(400, 'El proyecto no existe');
+  if (data.project_id && !(await store.get('projects', data.project_id))) throw new HttpError(400, 'La iniciativa no existe');
   if (coll === 'cases') { // un caso por proyecto
     const ya = (await store.list('cases')).find(c => c.project_id === data.project_id);
     if (ya) return ya;
