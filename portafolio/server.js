@@ -329,6 +329,20 @@ route('GET', '/api/estado', 'usuario', async (req, ctx) => {
   };
 });
 route('GET', '/api/historial', 'usuario', async () => store.recent('historial', 200));
+// Tablero: una foto de las cifras por semana (lunes) para comparar «frente a la semana anterior». Se guardan las últimas 26.
+route('GET', '/api/pulso/fotos', 'usuario', async () => (await store.getConfig('pulso_fotos')) || {});
+route('POST', '/api/pulso/fotos', 'usuario', async (req, ctx) => {
+  const b = ctx.body || {}, semana = String(b.semana || '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(semana)) throw new HttpError(400, 'Semana inválida');
+  const num = v => (Number.isFinite(Number(v)) ? Number(v) : 0);
+  const fotos = (await store.getConfig('pulso_fotos')) || {};
+  if (!fotos[semana]) {
+    fotos[semana] = { captado: num(b.captado), esperado: num(b.esperado), anio: num(b.anio), riesgos: num(b.riesgos), criticos: num(b.criticos), en: now() };
+    const llaves = Object.keys(fotos).sort(); while (llaves.length > 26) delete fotos[llaves.shift()];
+    await store.setConfig('pulso_fotos', fotos);
+  }
+  return fotos;
+});
 
 // ---------- Configuración de columnas de la tabla de proyectos ----------
 route('PUT', '/api/config/columnas', 'editor', async (req, ctx) => {
