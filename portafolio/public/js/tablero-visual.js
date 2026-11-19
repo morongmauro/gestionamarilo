@@ -186,6 +186,18 @@
         if (v === 'rojo') return detalle(t, 'Iniciativas en rojo', D.crit.map(z => ({ nombre: nom(z.x.p), sub: (z.out.filter(o => o.sev >= 3)[0] || {}).t || '', href: ir(z.x.p) })));
       }
     };
+    // Al pasar el mouse por una barra, un mes o un punto: se resalta, lo demás se atenúa y aparece el dato
+    let tip = document.querySelector('.tv-tip'); if (!tip) { tip = document.createElement('div'); tip.className = 'tv-tip'; tip.hidden = true; document.body.appendChild(tip); }
+    const quitar = () => { tip.hidden = true; main.querySelectorAll('svg.tv-hov').forEach(x => x.classList.remove('tv-hov')); main.querySelectorAll('.tv-hit.on').forEach(x => x.classList.remove('on')); };
+    main.onmousemove = e => {
+      const h = e.target.closest && e.target.closest('.tv-hit'); if (!h) return quitar();
+      const t = h.querySelector('title'); if (t) { h.dataset.tip = t.textContent; t.remove(); }
+      if (!h.classList.contains('on')) { quitar(); h.classList.add('on'); const sv = h.closest('svg'); if (sv) sv.classList.add('tv-hov'); }
+      const [a, ...r] = String(h.dataset.tip || '').split('. '); tip.innerHTML = `<b>${esc(a)}</b>${esc(r.join('. '))}`; tip.hidden = false;
+      const w = tip.offsetWidth; tip.style.left = Math.min(innerWidth - w - 12, e.clientX + 16) + 'px'; tip.style.top = (e.clientY + 14) + 'px';
+    };
+    main.onmouseleave = quitar;
+    window.addEventListener('hashchange', quitar, { once: true });
     // «Ver en el Portafolio» desde el detalle de una fase
     const pop = document.getElementById('pop');
     if (pop && !pop._tvFase) { pop._tvFase = true; pop.addEventListener('click', e => { const a = e.target.closest('[data-fase-ir]'); if (!a || !App.Portafolio || !App.Portafolio.filtrarFase) return; e.preventDefault(); App.closePop(true); App.Portafolio.filtrarFase(a.dataset.faseIr); }); }
