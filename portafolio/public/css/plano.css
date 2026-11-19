@@ -814,3 +814,21 @@ select:focus-visible,.tv-mini select:focus-visible{outline:2px solid var(--info-
 .pf-tbl tr.pf-add input{width:100%;border:0;background:transparent;font:inherit;font-size:13px;color:var(--ink);padding:6px 0;outline:none}
 .pf-tbl tr.pf-add input::placeholder{color:var(--muted)}
 .pf-tbl tr.pf-add:hover td{background:color-mix(in srgb,var(--ink) 3%,transparent)}
+
+/* Ningún texto encima de otro ni cortado a mitad de palabra */
+/* Resumen, OKR: el texto se ajusta en dos líneas y el «+1» queda dentro de la celda */
+.pf-okrs{min-width:0;max-width:100%}
+.pf-okrs .t{min-width:0;flex:0 1 auto;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
+.pf-okrs em{flex:none}
+/* Tabla completa: el botón «Abrir» tiene su propio espacio a la derecha del nombre, no encima */
+.tbl td.ttl-col{padding-right:64px!important}
+.tbl td.ttl-col .open{right:8px;top:50%;transform:translateY(-50%)}
+/* Etiquetas dentro de celdas angostas: se recortan con puntos suspensivos */
+.tbl td .pill:not(.ppl),.pf-tbl td .pill:not(.ppl){display:inline-block!important;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+.pf-okrs .t{white-space:normal!important;display:-webkit-box!important;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+/* Tipo de valor: la etiqueta y el «+1» en la misma línea, dentro de la celda */
+.pf-tbl td:has(> .pf-tvs){min-width:150px}
+.pf-tvs{display:flex;align-items:center;gap:4px;min-width:0;max-width:100%}
+.pf-tvs .pf-tv{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block!important}
+.pf-tvs .pf-mas2,.pf-tvs+.pf-mas2{flex:none}
+.pf-tbl .pf-al{white-space:normal;display:inline-block;max-width:100%;line-height:1.3}.pf-tbl .pf-al em{white-space:nowrap}
