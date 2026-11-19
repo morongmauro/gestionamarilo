@@ -612,3 +612,35 @@ button.tab#btnBuscar{font:inherit;border:0;background:none;width:100%;text-align
 .tv-fr{position:relative}.tv-fr.sel{background:color-mix(in srgb,var(--accent) 16%,transparent)}.tv-fr.dim{opacity:.45}
 .tv-fr{grid-template-columns:150px minmax(0,1fr) 104px 34px!important}
 .tv-ver{font:inherit;font-size:11.5px;font-weight:700;border:0;border-radius:999px;padding:3px 8px;background:transparent;color:var(--info-ink);cursor:pointer}.tv-ver:hover{background:var(--hover)}
+
+/* ============================================================
+   Ajuste de tamaños y etiquetas (19 nov)
+   Óvalos solo donde el color dice algo: fase y tipo de valor.
+   Personas, OKR y cifras van en texto simple.
+   ============================================================ */
+/* Personas: solo el nombre, más pequeño que el resto; sin punto ni iniciales */
+.pf-tbl td.pf-per-c{font-size:11.5px}
+.pf-tbl .pf-per-c .pill.ppl{background:none!important;border:0!important;padding:0!important;font-size:11.5px!important;font-weight:500!important;color:color-mix(in srgb,var(--ink) 80%,transparent)!important;gap:0!important;line-height:1.3}
+.pf-tbl .pf-per-c .pill.ppl::before,.pf-tbl .pf-per-c .pill.ppl .av{display:none!important}
+.pf-tbl .pf-per-c .c-in{gap:1px!important}
+/* Tipo de valor: óvalo suave con el color de su categoría (el mismo de las gráficas), sin punto */
+.pf-tv{background:color-mix(in srgb,var(--c) 20%,transparent)!important;padding:2px 9px!important;border-radius:999px!important;font-size:11.5px!important;font-weight:600!important;color:var(--ink)!important;line-height:1.3}
+.pf-tv::before{content:none!important;display:none!important}
+/* Títulos y cifras más contenidos */
+.pf-head h1,.pg-top h1,.page-h h1,.tv-h h1{font-size:22px!important;line-height:1.2!important}
+.ph-tit h1.p-title{font-size:22px;line-height:1.2}
+.facts,.av-line{font-size:13px}
+.tv-k .n{font-size:23px;line-height:1.1}
+.tv-big .n{font-size:32px}
+.tv-a .d b{font-size:16px}
+.tv-t h2,.vl-p h3{font-size:14.5px!important}
+.ok-av b,.fi-b b{font-size:22px}.ice-f b{font-size:22px}.pv-sem b{font-size:23px}
+/* Menos aire entre líneas */
+.tv-k .l,.tv-k .c,.tv-big .s,.tv-fr .n span,.tv-o .nm,.tv-di .t{line-height:1.3}
+.tv-fr .n b{line-height:1.2}
+.tv-fr{grid-template-columns:170px minmax(0,1fr) 104px 34px!important;padding:3px 6px}
+.tv-big .s{margin:4px 0 10px}
+.tv-t{margin:0 0 4px}
+.tv-h{margin:0 0 6px}
+.tv-fr .n{line-height:1.25}.tv-fr .n span{display:block;line-height:1.25}
+.tv-k .c,.tv-k .l{line-height:1.3}
