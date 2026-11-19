@@ -866,3 +866,13 @@ select:focus-visible,.tv-mini select:focus-visible{outline:2px solid var(--info-
 .pf-rank i{width:9px;height:9px;border-radius:50%}.pf-rank b{text-align:right;font-variant-numeric:tabular-nums}
 @media (max-width:1100px){.pf-mg{grid-template-columns:1fr}.pf-rank{max-height:260px}}
 #main.tv svg .tv-ptl{fill:color-mix(in srgb,var(--ink) 82%,transparent)}
+
+/* Portafolio: solo el nombre abre la iniciativa; las celdas de datos se editan ahí mismo */
+.pf-tbl tbody tr[data-pid]{cursor:default}
+.pf-tbl tbody tr[data-pid]:hover td{background:transparent}
+.pf-tbl td.pf-ed{cursor:pointer;border-radius:6px}
+.pf-tbl td.pf-ed:hover{background:color-mix(in srgb,var(--accent) 12%,transparent)!important;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 45%,transparent)}
+.pf-tbl td.pf-prop.ed:hover{background:color-mix(in srgb,var(--accent) 12%,transparent)!important}
+.pf-tbl td.pf-nm a{color:var(--ink);text-decoration:none}.pf-tbl td.pf-nm a:hover b{text-decoration:underline;text-decoration-color:var(--accent);text-decoration-thickness:2px;text-underline-offset:3px}
+.pf-tbl td.pf-calc{cursor:default}
+.pf-tbl td.pf-ed .faint::after{content:' +';opacity:0}.pf-tbl td.pf-ed:hover .faint::after{opacity:1}

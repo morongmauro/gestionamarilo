@@ -177,5 +177,5 @@
     App.guard(async () => { await App.remove('projects', id); App.toast('Enviada a la papelera. Se puede restaurar durante 30 días.'); App.go('#/proyectos'); });
   }
 
-  App.Proyecto = { render, confirmDelete };
+  App.Proyecto = { render, confirmDelete, iceEditor };
 })();
