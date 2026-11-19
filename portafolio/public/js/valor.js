@@ -45,8 +45,36 @@
   // Lo esperado de enero hasta el mes «hasta» (inclusive) según el plan; null si no hay plan
   function esperadoHasta(c, y, hasta) { if (!planDe(c)) return null; let s = 0; for (let i = 1; i <= hasta; i++) s += programado(c, `${y}-${String(i).padStart(2, '0')}`); return s; }
   const capDe = (c, filtro) => (c.captado || []).filter(filtro).reduce((a, x) => a + (Number(x.valor) || 0), 0);
-  const capMes = (c, ym, cat) => capDe(c, x => x.mes === ym && (!cat || x.categoria === cat));
-  const capAnio = (c, y) => capDe(c, x => String(x.mes).startsWith(y + '-'));
+  // Desde qué mes cuenta la captura automática: el mes en que la iniciativa pasó a escalamiento (Fase 3).
+  // Si no quedó anotado, se busca en la trazabilidad; si tampoco, desde el inicio del caso.
+  const MES_ABR = { ENE: 1, FEB: 2, MAR: 3, ABR: 4, MAY: 5, JUN: 6, JUL: 7, AGO: 8, SEP: 9, OCT: 10, NOV: 11, DIC: 12 };
+  function escalaDesde(p, c) {
+    if (!p) return null;
+    const ec = App.estadoCol(), fa = window.Fases && ec ? Fases.clasificar((p.props || {})[ec.id]) : null;
+    if (fa !== 3 && fa !== 'cerrada') return null;
+    const pl = c && c.plan_captura; if (pl && pl.desde) return pl.desde;
+    if (p.escala_desde) return p.escala_desde;
+    const tz = App.S.columns.find(x => x.log) || App.S.columns.find(x => x.id === 'trazabilidad');
+    const log = tz ? String((p.props || {})[tz.id] || '') : '';
+    const lin = log.split('\n').find(l => /→\s*Fase 3/i.test(l));
+    const mm = lin && lin.match(/^(\d{1,2})\s+(ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC)/i);
+    if (mm) { const hy = +hoy().slice(0, 4), hm = +hoy().slice(5, 7), mo = MES_ABR[mm[2].toUpperCase()]; return `${mo > hm ? hy - 1 : hy}-${String(mo).padStart(2, '0')}`; }
+    return `${(c && c.anio_inicio) || hoy().slice(0, 4)}-01`;
+  }
+  // Lo capturado en un mes: lo registrado a mano si existe; si no, lo que proyecta el caso (aproximado) desde el escalamiento
+  const manualMes = (c, ym, cat) => (c.captado || []).filter(x => x.mes === ym && (!cat || x.categoria === cat));
+  function autoMes(c, ym, cat) {
+    const d = escalaDesde(App.byId('projects', c.project_id), c); if (!d || ym < d || ym >= mesHoy()) return 0;
+    return planDe(c) ? programado(c, ym, cat) : proyAnio(c, +ym.slice(0, 4), cat) / 12;
+  }
+  function capMes(c, ym, cat) {
+    if (cat) { const r = manualMes(c, ym, cat); return r.length ? r.reduce((a, x) => a + (Number(x.valor) || 0), 0) : autoMes(c, ym, cat); }
+    const cs = [...new Set((catsDe(c).length ? catsDe(c) : ['ahorro']).concat((c.captado || []).filter(x => x.mes === ym).map(x => x.categoria)))];
+    return cs.reduce((a, k) => a + capMes(c, ym, k), 0);
+  }
+  const esAuto = (c, ym, cat) => !manualMes(c, ym, cat).length && autoMes(c, ym, cat) > 0;
+  const capAnio = (c, y) => { let s = 0; for (let i = 1; i <= 12; i++) s += capMes(c, `${y}-${String(i).padStart(2, '0')}`); return s; };
+  const capUlt12 = c => { let s = 0; for (let i = 1; i <= 12; i++) s += capMes(c, mesAnt(mesHoy(), i)); return s; };
   const verHasta = (c, y) => ((c.validacion || {})[String(y)] || {}).hasta || null;
   const esVer = (c, ym) => { const h = verHasta(c, ym.slice(0, 4)); return !!(h && ym <= h); };
   const verAnio = (c, y) => capDe(c, x => String(x.mes).startsWith(y + '-') && esVer(c, x.mes));
@@ -60,6 +88,7 @@
   }
   // Capturas recurrentes que falta confirmar (meses cerrados, hasta 24 atrás)
   function pendientes(c) {
+    return []; // la captura de lo programado es automática: no hay nada que confirmar
     const out = [], lim = mesAnt(mesHoy(), 24);
     (c.recurrentes || []).filter(r => r.activo !== false && r.desde).forEach(r => {
       for (let ym = r.desde < lim ? lim : r.desde; ym < mesHoy(); ym = mesAnt(ym, -1)) if (!(c.captado || []).some(x => x.mes === ym && x.categoria === r.categoria)) out.push({ r, mes: ym });
@@ -88,20 +117,20 @@
     if (!c) { box.innerHTML = `<div class="vl-vacio"><b>Esta iniciativa aún no tiene caso de negocio.</b> La captura de valor se mide contra lo que proyecta el caso.${ro ? '' : ` <a class="t-lnk" href="${ir(p, 'caso')}">Crear el caso de negocio</a>`}</div>`; return; }
     const cats = catsDe(c).length ? catsDe(c) : ['ahorro'];
     const pend = pendientes(c), hip = hipotesis(p), proy = proyAnio(c, Y), cap = capAnio(c, Y), ver = verAnio(c, Y), vh = verHasta(c, Y);
-    const ult12 = capDe(c, x => x.mes >= mesAnt(mesHoy(), 12) && x.mes < mesHoy());
+    const ult12 = capUlt12(c);
     const meses = Array.from({ length: 12 }, (_, i) => `${Y}-${String(i + 1).padStart(2, '0')}`);
-    const celda = (ym, k) => { const v = capMes(c, ym, k), fut = ym >= mesHoy(), pz = pend.find(z => z.mes === ym && z.r.categoria === k), pe = !!pz, pg = !v && fut ? programado(c, ym, k) : 0;
-      return `<td class="${esVer(c, ym) && v ? 'ver' : ''} ${fut ? 'fut' : ''} ${pe ? 'pend' : ''} ${ro || fut ? '' : 'ed'}" data-cel="${ym}|${k}" title="${pe ? 'Programado, por confirmar' : pg ? 'Programado en el plan de captura' : esVer(c, ym) && v ? 'Verificado' : ''}">${v ? esc(App.num(v / 1e6, 1)) : pe ? `<span class="pg">${esc(App.num(pz.r.valor / 1e6, 1))}?</span>` : pg ? `<span class="pg">${esc(App.num(pg / 1e6, 1))}</span>` : fut ? '' : '·'}</td>`; };
+    const celda = (ym, k) => { const v = capMes(c, ym, k), fut = ym >= mesHoy(), au = v && esAuto(c, ym, k), pg = !v && fut && escalaDesde(p, c) ? (planDe(c) ? programado(c, ym, k) : proyAnio(c, +ym.slice(0, 4), k) / 12) : 0;
+      return `<td class="${esVer(c, ym) && v && !au ? 'ver' : ''} ${fut ? 'fut' : ''} ${au ? 'au' : ''} ${ro || fut ? '' : 'ed'}" data-cel="${ym}|${k}" title="${au ? 'Aproximado: lo que proyecta el caso. Clic para registrar la cifra real' : pg ? 'Lo que proyecta el caso para este mes' : esVer(c, ym) && v ? 'Verificado' : ''}">${v ? (au ? `<span class="pg">${esc(App.num(v / 1e6, 1))}</span>` : `<b>${esc(App.num(v / 1e6, 1))}</b>`) : pg ? `<span class="pg">${esc(App.num(pg / 1e6, 1))}</span>` : fut ? '' : '·'}</td>`; };
     box.innerHTML = `<div class="vl-bar"><div class="vl-res">
         <span><b>${hip ? esc(m(hip.anual)) : '—'}</b>hipótesis al año${hip ? ` (Income ${hip.income})` : ''}</span><span><b>${esc(m(proy))}</b>proyectado ${Y}</span>
-        <span><b>${esc(m(cap))}</b>capturado</span><span class="ok"><b>${esc(m(ver))}</b>verificado</span></div><span class="sp"></span>
+        <span><b>${esc(m(cap))}</b>capturado, aprox.</span><span class="ok"><b>${esc(m(ver))}</b>verificado</span></div><span class="sp"></span>
         ${ro ? '' : '<button class="btn primary sm" data-v="registrar">Registrar captura</button><button class="btn sm" data-v="mas">⋯ Más</button>'}</div>
       ${pend.length ? `<section class="vl-sec"><h3>Por confirmar <small>lo programado de meses ya cerrados: confirme o ajuste la cifra real</small>${ro ? '' : `<button class="t-lnk" data-v="conf-todo">Confirmar todas (${pend.length})</button>`}</h3>
         <div class="vl-pend">${pend.slice(-6).map((z, i) => `<div class="vl-pi"><i class="ico ico-reloj"></i><span><b>${esc(App.catLabel(z.r.categoria))}, ${esc(mesTxt(z.mes))}</b><small>${z.r.plan ? 'programado en el plan de captura' : `recurrente desde ${esc(mesTxt(z.r.desde))}`}</small></span><b class="v">${esc(m(z.r.valor))}</b>${ro ? '' : `<span><button class="btn primary sm" data-conf="${pend.indexOf(z)}">Confirmar</button><button class="btn sm" data-aj="${pend.indexOf(z)}">Ajustar</button></span>`}</div>`).join('')}
         ${pend.length > 6 ? `<div class="faint">y ${pend.length - 6} más anteriores</div>` : ''}</div></section>` : ''}
-      <section class="vl-sec"><h3>Mes a mes <small>en millones, verde: verificado${vh ? ` hasta ${esc(mesTxt(vh))}` : ''}, gris: programado en el plan, ? por confirmar</small><span class="sp"></span><span class="vl-anio"><button data-anio="-1" aria-label="Año anterior">‹</button><b>${Y}</b><button data-anio="1" aria-label="Año siguiente">›</button></span></h3>
+      <section class="vl-sec"><h3>Mes a mes <small>en millones, aproximado (en cursiva, lo que proyecta el caso desde que la iniciativa escaló); en negrita lo registrado a mano; verde: verificado${vh ? ` hasta ${esc(mesTxt(vh))}` : ''}</small><span class="sp"></span><span class="vl-anio"><button data-anio="-1" aria-label="Año anterior">‹</button><b>${Y}</b><button data-anio="1" aria-label="Año siguiente">›</button></span></h3>
         <div class="vl-tw"><table class="vl-t"><thead><tr><th>Tipo de valor</th>${meses.map(ym => `<th>${App.d.MES3[+ym.slice(5) - 1]}</th>`).join('')}<th>Total</th><th>Proyectado</th></tr></thead><tbody>
-        ${cats.map(k => `<tr><td><span class="cat-dot cat-${k}"></span>${esc(App.catLabel(k))}</td>${meses.map(ym => celda(ym, k)).join('')}<td class="tot">${esc(App.num(capDe(c, x => String(x.mes).startsWith(Y + '-') && x.categoria === k) / 1e6, 1))}</td><td class="tot mu">${esc(App.num(proyAnio(c, Y, k) / 1e6, 1))}</td></tr>`).join('')}
+        ${cats.map(k => `<tr><td><span class="cat-dot cat-${k}"></span>${esc(App.catLabel(k))}</td>${meses.map(ym => celda(ym, k)).join('')}<td class="tot">${esc(App.num(meses.reduce((a, ym) => a + capMes(c, ym, k), 0) / 1e6, 1))}</td><td class="tot mu">${esc(App.num(proyAnio(c, Y, k) / 1e6, 1))}</td></tr>`).join('')}
         </tbody></table></div>${ro ? '' : '<div class="faint vl-nota">Clic en un mes para registrar o corregir lo capturado.</div>'}</section>
       <section class="vl-sec vl-plan"><h3>Plan de captura</h3>${planTxt(c)}${ro ? '' : `<button class="btn sm" data-v="plan">${planDe(c) ? 'Cambiar el plan' : 'Definir el plan'}</button>`}</section>
       <div class="vl-dos"><section class="vl-sec"><h3>Capturas recurrentes <small>montos fijos</small></h3>
@@ -133,7 +162,7 @@
     };
   }
   function editarMes(anchor, c, ym, k, done) {
-    const actual = capMes(c, ym, k);
+    const actual = manualMes(c, ym, k).reduce((a, x) => a + (Number(x.valor) || 0), 0);
     App.editText(anchor, actual ? String(Math.round(actual)) : '', { placeholder: `Capturado en ${mesTxt(ym)} (p. ej. 32,5M)`, width: 260, onSave: t => {
       const v = String(t).trim() === '' ? 0 : leerCifra(t); if (v == null) return App.toast('Escriba una cifra, p. ej. 32,5M', true);
       App.guard(async () => { const cap = (c.captado || []).filter(x => !(x.mes === ym && x.categoria === k)); if (v) cap.push({ mes: ym, categoria: k, valor: v }); await guardarCaso(c, { captado: cap }); done(); });
@@ -159,7 +188,7 @@
   const MESES_L = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
   function planTxt(c) {
     const pl = planDe(c), ini = c.anio_inicio || +hoy().slice(0, 4), n = c.anios || 10;
-    if (!pl) return `<p class="faint">Sin plan, los meses no se llenan solos. Con un plan, lo que el caso dice que se captura aparece programado cada mes y solo hay que confirmarlo (o ajustar la cifra real).</p>`;
+    if (!pl) return `<p class="faint">Sin plan, el beneficio de cada año del caso se reparte en 12 meses. Con un plan se precisa cada cuánto llega (mes, trimestre, año) y hasta qué año del caso.</p>`;
     const cuanto = Number(pl.monto) > 0 ? `${esc(m(pl.monto))} de ${esc(App.catLabel(pl.categoria || 'ahorro'))}` : 'Lo que dice el caso';
     const cada = pl.frecuencia === 'anual' ? `una vez al año, en ${MESES_L[(Number(pl.mes) || 12) - 1]}` : FREC_T[pl.frecuencia];
     const hasta = pl.hasta && pl.hasta < n ? `hasta el año ${pl.hasta} del caso (${ini + pl.hasta - 1})` : `durante todo el caso (${n} años, hasta ${ini + n - 1})`;
@@ -229,16 +258,16 @@
       <div class="vl-dos a"><section class="vl-p"><h3>¿Cuánto valor es real? <small>${Y}, iniciativas del foco</small></h3><div class="vl-emb">
           ${fila('Hipótesis', 'Income declarado en el ICE', hip, 'gr')}
           ${fila('Proyectado', 'lo que dicen los casos', proy, 'az', hip ? `${Math.round(proy / hip * 100)} % de la hipótesis` : '')}
-          ${fila('Capturado', 'reportado por cada iniciativa', cap, 'in', proy ? `${Math.round(cap / proy * 100)} % de lo proyectado` : '')}
+          ${fila('Capturado (aprox.)', 'lo proyectado desde el escalamiento, o lo registrado', cap, 'in', proy ? `${Math.round(cap / proy * 100)} % de lo proyectado` : '')}
           ${fila('Verificado', 'Finanzas lo encontró en el P&G', ver, 've', cap ? `${Math.round(ver / cap * 100)} % de lo capturado` : '')}</div></section>
         <section class="vl-p"><h3>Por confirmar <small>lo programado de meses ya cerrados</small></h3>
           ${pend.length ? `<div class="vl-pend">${pend.slice(0, 6).map((z, i) => `<div class="vl-pi"><i class="ico ico-reloj"></i><span><a href="${ir(z.p, 'captura')}"><b>${esc(nom(z.p))}</b></a><small>${esc(App.catLabel(z.r.categoria))}, ${esc(mesTxt(z.mes))}</small></span><b class="v">${esc(m(z.r.valor))}</b>${App.canEdit() ? `<span><button class="btn primary sm" data-pconf="${i}">Confirmar</button></span>` : ''}</div>`).join('')}</div>${pend.length > 6 ? `<p class="faint">y ${pend.length - 6} más</p>` : ''}` : '<p class="faint">Nada por confirmar. Las capturas recurrentes se marcan en la pestaña «Captura de valor» de cada iniciativa.</p>'}</section></div>
-      <section class="vl-p"><h3>Mes a mes por iniciativa <small>en millones, verde: verificado, gris: programado en el plan, ? por confirmar</small></h3>
+      <section class="vl-p"><h3>Mes a mes por iniciativa <small>en millones, aproximado: en cursiva lo que proyecta el caso desde el escalamiento, en negrita lo registrado</small></h3>
         ${tabla.length ? `<div class="vl-tw"><table class="vl-t"><thead><tr><th>Iniciativa</th>${meses.map(ym => `<th>${App.d.MES3[+ym.slice(5) - 1]}</th>`).join('')}<th>Total</th><th>Proyectado</th></tr></thead><tbody>
-          ${tabla.map(z => { const pe = pendientes(z.c); return `<tr><td><a href="${ir(z.p, 'captura')}">${esc(nom(z.p))}</a></td>${meses.map(ym => { const v = capMes(z.c, ym), pv = pe.filter(x => x.mes === ym).reduce((a, x) => a + x.r.valor, 0), pg = !v && ym >= mesHoy() ? programado(z.c, ym) : 0; return `<td class="${v && esVer(z.c, ym) ? 'ver' : ''} ${ym >= mesHoy() ? 'fut' : ''} ${pv ? 'pend' : ''}">${v ? esc(App.num(v / 1e6, 1)) : pv ? `<span class="pg">${esc(App.num(pv / 1e6, 1))}?</span>` : pg ? `<span class="pg">${esc(App.num(pg / 1e6, 1))}</span>` : ym >= mesHoy() ? '' : '·'}</td>`; }).join('')}<td class="tot">${esc(App.num(capAnio(z.c, Y) / 1e6, 1))}</td><td class="tot mu">${esc(App.num(proyAnio(z.c, Y) / 1e6, 1))}</td></tr>`; }).join('')}
+          ${tabla.map(z => { const pe = pendientes(z.c); return `<tr><td><a href="${ir(z.p, 'captura')}">${esc(nom(z.p))}</a></td>${meses.map(ym => { const v = capMes(z.c, ym), au = v && !manualMes(z.c, ym).length; return `<td class="${v && !au && esVer(z.c, ym) ? 'ver' : ''} ${ym >= mesHoy() ? 'fut' : ''}">${v ? (au ? `<span class="pg">${esc(App.num(v / 1e6, 1))}</span>` : `<b>${esc(App.num(v / 1e6, 1))}</b>`) : ym >= mesHoy() ? '' : '·'}</td>`; }).join('')}<td class="tot">${esc(App.num(capAnio(z.c, Y) / 1e6, 1))}</td><td class="tot mu">${esc(App.num(proyAnio(z.c, Y) / 1e6, 1))}</td></tr>`; }).join('')}
           </tbody></table></div>` : '<p class="faint">Ninguna iniciativa proyecta ni captura valor en este año.</p>'}</section>
       <section class="vl-p"><h3>¿Se cumplió la hipótesis? <small>capturado en los últimos 12 meses frente al Income declarado</small></h3><div class="vl-hips">
-        ${filas.filter(z => z.h && z.c).map(z => ({ z, u: capDe(z.c, x => x.mes >= mesAnt(mesHoy(), 12) && x.mes < mesHoy()) })).sort((a, b) => b.u / b.z.h.anual - a.u / a.z.h.anual).slice(0, 10).map(({ z, u }) => { const pc = Math.round(u / z.h.anual * 100);
+        ${filas.filter(z => z.h && z.c).map(z => ({ z, u: capUlt12(z.c) })).sort((a, b) => b.u / b.z.h.anual - a.u / a.z.h.anual).slice(0, 10).map(({ z, u }) => { const pc = Math.round(u / z.h.anual * 100);
           return `<a class="vl-hr" href="${ir(z.p, 'captura')}"><span class="nm">${esc(nom(z.p))}<small>Income ${z.h.income}, ${esc(m(z.h.anual))} al año</small></span><span class="tr"><i class="${pc >= 90 ? 'g' : pc >= 50 ? 'o' : 'r'}" style="width:${Math.min(100, pc)}%"></i></span><b>${pc} %</b></a>`; }).join('') || '<p class="faint">Aún no hay iniciativas con Income y caso de negocio.</p>'}</div></section>`;
     main.onclick = e => {
       if (e.target.closest('.burger')) return App.toggleSide();
@@ -358,5 +387,5 @@
   // Casos de negocio pasa a ser la primera pestaña de Valor
   const casos = App.views.casos;
   if (casos) App.views.casos = { render: (main, params) => { casos.render(main, params); if ((params || [])[0]) return; const t = main.querySelector('.pg-top'); if (t) { t.querySelector('h1').textContent = 'Valor'; const kl = t.querySelector('.kl'); const hd = document.createElement('div'); hd.className = 'pf-head vl-head'; t.before(hd); hd.appendChild(t); hd.insertAdjacentHTML('beforeend', subnav('casos')); if (kl) { kl.classList.add('pf-kl'); hd.after(kl); } } } };
-  App.Valor = { captura, okrProyecto, avanceObj, objetivos, iniciativasDe, pendientes, planDe, programado, esperadoHasta };
+  App.Valor = { captura, okrProyecto, avanceObj, objetivos, iniciativasDe, pendientes, planDe, programado, esperadoHasta, escalaDesde, capMes, capAnio };
 })();

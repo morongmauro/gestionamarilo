@@ -8,7 +8,7 @@
 (function () {
   const { $, esc } = App;
   const m = v => App.moneyShort(v);
-  const CAT = { ingresos: '#F08A5D', ahorro: '#5B9BEA', eficiencia: '#3FC293', tiempo: '#DDA02E', riesgo: '#EE8FB6', otro: '#8E7CE0' };
+  const CAT = { nuevo: '#F08A5D', efi: '#5B9BEA', ingresos: '#F08A5D', ahorro: '#5B9BEA', eficiencia: '#3FC293', tiempo: '#DDA02E', riesgo: '#EE8FB6', otro: '#8E7CE0' };
   const FC = { 1: '#3367CD', 2: '#E07A12', 3: '#16935A', pausa: '#9A96A6', cerrada: '#7E64C8', cancelada: '#C8102E' };
   const FN = { 1: 'Planeación', 2: 'Ejecución, piloto y seguimiento', 3: 'Escalamiento y captura de valor', pausa: 'En pausa', cerrada: 'Cerrada', cancelada: 'Cancelada' };
   const F = Object.assign({ anio: null, fase: '' }, App.store.get('tv', {}));
@@ -24,9 +24,11 @@
     const X = d.proyectos.filter(x => pasa(x.p)), Xf = d.proyectos.filter(x => foco(x.p));
     const todos = App.projectsSorted().filter(p => pasa(p)), todosF = App.projectsSorted().filter(p => foco(p));
     const ps = todos.filter(p => { const f = fase(p); return f !== 'pausa' && f !== 'cerrada' && f !== 'cancelada'; });
-    const Y = d.Y, cats = d.cats.filter(k => X.some(x => d.anios.some(y => x.anual(k, y) > 0)));
+    // Los tipos de beneficio se leen en dos grupos: nuevo negocio y eficiencia (y «sin clasificar» si hay)
+    const gA = (x, g, y) => d.cats.filter(k => App.grupoDe(k) === g).reduce((a, k) => a + x.anual(k, y), 0);
+    const Y = d.Y, cats = App.GRUPOS.map(g => g[0]).filter(g => X.some(x => d.anios.some(y => gA(x, g, y) > 0)));
     const anual = (x, y) => d.cats.reduce((a, k) => a + x.anual(k, y), 0), capY = x => d.cats.reduce((a, k) => a + x.captado(k, Y), 0);
-    const porAnio = d.anios.map(y => ({ y, v: Object.fromEntries(cats.map(k => [k, X.reduce((a, x) => a + x.anual(k, y), 0)])) }));
+    const porAnio = d.anios.map(y => ({ y, v: Object.fromEntries(cats.map(g => [g, X.reduce((a, x) => a + gA(x, g, y), 0)])) }));
     const tot = porAnio.reduce((a, z) => a + cats.reduce((q, k) => q + z.v[k], 0), 0);
     // El ritmo se mide solo con las iniciativas que registran su captura; las que no han registrado se cuentan aparte
     const reg = x => App.Dash.registra(x.caso, Y);
@@ -46,11 +48,12 @@
     const totY = porAnio.map(z => ({ y: z.y, v: cats.reduce((q, k) => q + z.v[k], 0) })), nz = totY.map(z => z.v).filter(v => v > 0).sort((a, b) => a - b);
     const med = nz.length >= 3 ? nz[Math.floor(nz.length / 2)] : 0;
     const atip = med > 0 ? totY.filter(z => z.v > 4 * med).map(z => { const top = X.map(x => ({ x, v: anual(x, z.y) })).sort((a, b) => b.v - a.v)[0]; return { ...z, med, top }; }) : [];
-    const cap = Array(12).fill(0), capPor = Array.from({ length: 12 }, () => []);
-    X.forEach(x => (x.caso && x.caso.captado || []).forEach(c => { if (String(c.mes).startsWith(Y + '-')) { const i = +c.mes.slice(5) - 1, v = Number(c.valor) || 0; cap[i] += v; capPor[i].push({ x, v }); } }));
+    const cap = Array(12).fill(0), capPor = Array.from({ length: 12 }, () => []), capG = { nuevo: Array(12).fill(0), efi: Array(12).fill(0), otro: Array(12).fill(0) };
+    X.forEach(x => { for (let i = 0; i < 12; i++) { const ym = `${Y}-${String(i + 1).padStart(2, '0')}`; let t = 0; d.cats.forEach(k => { const v = x.capMes(k, ym); if (v) { t += v; capG[App.grupoDe(k)][i] += v; } }); if (t) { cap[i] += t; capPor[i].push({ x, v: t }); } } });
+    const capGT = Object.fromEntries(Object.entries(capG).map(([g, a]) => [g, a.reduce((q, v) => q + v, 0)]));
     const casos = App.S.cases.filter(c => { const p = App.byId('projects', c.project_id); return p && pasa(p); });
     const sg = App.Dash.senales(d).filter(z => pasa(z.x.p));
-    return { d, X, Xf, ps, todos, todosF, Y, cats, anual, capY, porAnio, tot, meta, metaTot, captado, esperado, sinReg, esperadoSin, atip, porConf, espX, verif: X.reduce((a, x) => a + (x.caso ? (x.caso.captado || []).filter(c => String(c.mes).startsWith(Y + '-') && App.Mejoras && App.Mejoras.verificado(c, x.caso)).reduce((q, c) => q + (Number(c.valor) || 0), 0) : 0), 0), totAprob: X.filter(x => x.caso && x.caso.estado === 'Aprobado').reduce((a, x) => a + d.anios.reduce((q, y) => q + anual(x, y), 0), 0), cap, capPor, casos, sg, crit: sg.filter(z => z.max >= 3), rev: casos.filter(c => c.estado === 'En revisión'), aprob: casos.filter(c => c.estado === 'Aprobado') };
+    return { d, X, Xf, ps, todos, todosF, Y, cats, anual, capY, porAnio, tot, meta, metaTot, captado, esperado, sinReg, esperadoSin, atip, porConf, espX, capG, capGT, verif: X.reduce((a, x) => a + (x.caso ? (x.caso.captado || []).filter(c => String(c.mes).startsWith(Y + '-') && App.Mejoras && App.Mejoras.verificado(c, x.caso)).reduce((q, c) => q + (Number(c.valor) || 0), 0) : 0), 0), totAprob: X.filter(x => x.caso && x.caso.estado === 'Aprobado').reduce((a, x) => a + d.anios.reduce((q, y) => q + anual(x, y), 0), 0), cap, capPor, casos, sg, crit: sg.filter(z => z.max >= 3), rev: casos.filter(c => c.estado === 'En revisión'), aprob: casos.filter(c => c.estado === 'Aprobado') };
   }
 
   /* ---------- el detalle: una lista de iniciativas con su enlace ---------- */
@@ -70,20 +73,21 @@
       return `<g class="tv-hit" tabindex="0" role="button" data-dv="anio:${z.y}"><title>${z.y}: ${esc(m(t))}. Clic para ver las iniciativas</title><rect x="${paso * i}" y="0" width="${paso}" height="${H}" fill="transparent"/>${seg}<text x="${x + bw / 2}" y="${y - 6}" text-anchor="middle" font-size="13" font-weight="800" fill="currentColor">${t ? esc(m(t)) : ''}</text><text x="${x + bw / 2}" y="${H - 8}" text-anchor="middle" font-size="11.5" font-weight="${z.y === Y ? 800 : 500}" class="${z.y === Y ? '' : 'mu'}">${z.y}</text></g>`; }).join('')}<line x1="0" x2="${W}" y1="${H - B}" y2="${H - B}" class="ax"/></svg>`;
   }
   function curva(D) {
-    const { cap, meta, Y, d } = D, W = 620, H = 220, L = 64, R = 12, T = 14, B = 24;
-    let ac = 0; const acC = cap.map(v => (ac += v)); const hoyM = d.Y === +d.hoy.slice(0, 4) ? +d.hoy.slice(5, 7) - 1 : (d.Y < +d.hoy.slice(0, 4) ? 12 : 0);
-    const mx = Math.max(meta, ...acC, 1), x = i => L + (W - L - R) / 11 * i, y = v => T + (1 - v / mx) * (H - T - B);
-    const espM = meta / 12, esp = Array.from({ length: 12 }, (_, i) => espM * (i + 1)), hasta = acC.slice(0, Math.max(0, Math.min(12, hoyM)));
-    const linE = esp.map((v, i) => `${i ? 'L' : 'M'}${x(i)} ${y(v)}`).join(''), linC = hasta.map((v, i) => `${i ? 'L' : 'M'}${x(i)} ${y(v)}`).join('');
-    const area = hasta.length ? linC + `L${x(hasta.length - 1)} ${y(0)}L${x(0)} ${y(0)}Z` : '';
-    // Si las dos cifras quedan muy cerca, una va arriba de su línea y la otra abajo, para que no se monten
-    const ult = hasta.length ? hasta[hasta.length - 1] : 0, iE = Math.min(11, hoyM), cy = y(ult), ey = y(esp[iE] || 0), cerca = hasta.length && Math.abs(cy - ey) < 24, capArriba = !cerca || ult >= (esp[iE] || 0);
-    const yCap = capArriba ? cy - 10 : cy + 20, yEsp = cerca ? (capArriba ? ey + 20 : ey - 10) : ey - 10;
-    return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Capturado frente a esperado, acumulado">${[0, .5, 1].map(f => `<line x1="${L}" x2="${W - R}" y1="${y(f * mx)}" y2="${y(f * mx)}" class="gr"/><text x="${L - 6}" y="${y(f * mx) + 4}" text-anchor="end" font-size="10.5" class="mu">${esc(m(f * mx))}</text>`).join('')}
-      <path d="${area}" fill="#FFC900" opacity=".3"/><path d="${linE}" fill="none" class="esp" stroke-width="2" stroke-dasharray="5 4"/><path d="${linC}" fill="none" stroke="currentColor" stroke-width="2.5"/>
-      ${hasta.length ? `<circle cx="${x(hasta.length - 1)}" cy="${y(hasta[hasta.length - 1])}" r="5" fill="currentColor"/><text x="${x(hasta.length - 1) - 8}" y="${yCap}" text-anchor="end" font-size="12" font-weight="800" fill="currentColor">${esc(m(hasta[hasta.length - 1]))}</text>` : ''}
-      ${hoyM > 0 && hoyM <= 12 ? `<text x="${x(Math.min(11, hoyM)) - 6}" y="${yEsp}" text-anchor="end" font-size="11.5" font-weight="700" class="mu">esperado ${esc(m(espM * hoyM))}</text>` : ''}
-      ${App.d.MES3.map((mm, i) => `<g class="tv-hit" tabindex="0" role="button" data-dv="mes:${i}"><title>${mm} ${Y}: ${esc(m(cap[i]))} capturados. Clic para ver quién</title><rect x="${x(i) - (W - L - R) / 22}" y="${T}" width="${(W - L - R) / 11}" height="${H - T}" fill="transparent"/><text x="${x(i)}" y="${H - 6}" text-anchor="middle" font-size="10.5" class="${i === hoyM ? '' : 'mu'}" font-weight="${i === hoyM ? 800 : 500}">${mm}</text></g>`).join('')}</svg>`;
+    const { capG, metaTot, Y, d } = D, W = 620, H = 220, L = 64, R = 12, T = 14, B = 24;
+    const hoyM = d.Y === +d.hoy.slice(0, 4) ? +d.hoy.slice(5, 7) - 1 : (d.Y < +d.hoy.slice(0, 4) ? 12 : 0), n = Math.max(0, Math.min(12, hoyM));
+    const acu = a => { let s = 0; return a.map(v => (s += v)); }, aE = acu(capG.efi), aN = acu(capG.nuevo), aO = acu(capG.otro);
+    const tot = aE.map((v, i) => v + aN[i] + aO[i]);
+    const mx = Math.max(metaTot, ...tot, 1), x = i => L + (W - L - R) / 11 * i, y = v => T + (1 - v / mx) * (H - T - B);
+    const espM = metaTot / 12, linE = Array.from({ length: 12 }, (_, i) => `${i ? 'L' : 'M'}${x(i)} ${y(espM * (i + 1))}`).join('');
+    const area = (top, base, col) => n ? `<path d="${top.slice(0, n).map((v, i) => `${i ? 'L' : 'M'}${x(i)} ${y(v)}`).join('')}${base.slice(0, n).map((v, i) => [i, v]).reverse().map(([i, v]) => `L${x(i)} ${y(v)}`).join('')}Z" fill="${col}" opacity=".85"/>` : '';
+    const base0 = Array(12).fill(0), topE = aE, topN = aE.map((v, i) => v + aN[i]), topO = tot;
+    const ult = n ? tot[n - 1] : 0;
+    return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Captura acumulada por nuevo negocio y eficiencia">${[0, .5, 1].map(f => `<line x1="${L}" x2="${W - R}" y1="${y(f * mx)}" y2="${y(f * mx)}" class="gr"/><text x="${L - 6}" y="${y(f * mx) + 4}" text-anchor="end" font-size="10.5" class="mu">${esc(m(f * mx))}</text>`).join('')}
+      ${area(topE, base0, CAT.efi)}${area(topN, topE, CAT.nuevo)}${area(topO, topN, '#B9B3C7')}
+      <path d="${linE}" fill="none" class="esp" stroke-width="2" stroke-dasharray="5 4"/>
+      ${n ? `<text x="${x(n - 1) - 6}" y="${y(ult) - 10}" text-anchor="end" font-size="12" font-weight="800" fill="currentColor">${esc(m(ult))}</text>` : ''}
+      <text x="${x(11)}" y="${y(metaTot) - 8}" text-anchor="end" font-size="11.5" font-weight="700" class="mu">proyectado del año ${esc(m(metaTot))}</text>
+      ${App.d.MES3.map((mm, i) => `<g class="tv-hit" tabindex="0" role="button" data-dv="mes:${i}"><title>${mm} ${Y}: ${esc(m(D.cap[i]))} (nuevo negocio ${esc(m(capG.nuevo[i]))}, eficiencia ${esc(m(capG.efi[i]))}). Clic para ver de quién</title><rect x="${x(i) - (W - L - R) / 22}" y="${T}" width="${(W - L - R) / 11}" height="${H - T}" fill="transparent"/><text x="${x(i)}" y="${H - 6}" text-anchor="middle" font-size="10.5" class="${i === hoyM ? '' : 'mu'}" font-weight="${i === hoyM ? 800 : 500}">${mm}</text></g>`).join('')}</svg>`;
   }
   function embudo(D) {
     const { todosF: todos, Xf: X, capY } = D, lista = k => todos.filter(p => fase(p) === k);
@@ -92,7 +96,7 @@
     const capt = X.filter(x => capY(x) > 0);
     const fila = (k, n, v, nombre, sub, cl) => `<div class="tv-fr ${cl || ''} ${F.fase ? (F.fase === String(k) ? 'sel' : 'dim') : ''}" ${k === 'capt' ? `data-dv="fase:${k}" title="Clic para ver cuáles"` : `data-fx="${k}" title="Clic para filtrar el tablero por esta fase"`} role="button" tabindex="0"><span class="n"><b>${esc(nombre)}</b><span>${esc(sub)}</span></span><span><span class="bar" style="width:${Math.max(12, n / mx * 100)}%;background:${FC[k] || '#160B29'}">${n}</span></span><span class="v">${v ? esc(m(v)) : '—'}</span>${k === 'capt' ? '' : `<button class="tv-ver" data-dv="fase:${k}" title="Ver las iniciativas">Ver</button>`}</div>`;
     return `<div class="tv-fun">${act.map(z => fila(z.k, z.l.length, z.l.reduce((a, p) => a + dos(p), 0), `Fase ${z.k}`, FN[z.k])).join('')}
-      ${fila('capt', capt.length, D.captado, 'Capturando', 'ya registran valor')}
+      ${fila('capt', capt.length, D.captado, 'Capturando', 'ya capturan valor')}
       ${inact.length ? `<div class="tv-sep">Fuera del flujo</div>${inact.map(z => fila(z.k, z.l.length, 0, FN[z.k], plural(z.l.length, 'iniciativa', 'iniciativas'), 'off')).join('')}` : ''}</div>`;
   }
   function mapa(D) {
@@ -159,17 +163,17 @@
       ${sub}
       ${App.aud() ? `<p class="tv-dir">${esc(((App.Mejoras && App.Mejoras.queEsTexto()) || '').split('\n')[0])}${App.esAdmin && App.esAdmin() ? ' <button class="t-lnk" data-qe-ed>editar</button>' : ''}</p>` : ''}
       <div class="tv-kpi">
-        <button class="tv-p tv-k k1" data-dv="kpi:cap"><span><span class="l">Capturado en ${Y}</span><span class="n">${esc(m(D.captado))}</span>${App.aud() ? `<span class="c"><b>${esc(m(D.verif))}</b> verificado${D.captado ? ` (${Math.round(D.verif / D.captado * 100)} %)` : ''}</span>` : ''}<span class="c">${pc == null ? (nSin ? `ninguna ha registrado; esperaban ${esc(m(D.esperadoSin))} a hoy` : 'sin captura esperada todavía') : `<b>${Math.round(pc * 100)} %</b> de lo esperado a hoy (${esc(m(D.esperado))})`}</span>${ritmo ? `<span class="st ${ritmo[0]}"><i class="ico ${ritmo[1]}"></i>${ritmo[2]}</span>` : ''}${pc != null && (nSin || D.porConf) ? `<span class="c sr" title="Sin registrar: no han registrado captura este año y no entran en el ritmo. Por confirmar: meses programados en el plan que nadie ha confirmado.">${[nSin ? `${nSin} sin registrar` : '', D.porConf ? `${D.porConf} por confirmar` : ''].filter(Boolean).join(', ')}</span>` : ''}</span><span class="mini">${mini(D)}<span class="c">captura por mes</span></span></button>
+        <button class="tv-p tv-k k1" data-dv="kpi:cap"><span><span class="l">Capturado en ${Y}, aprox.</span><span class="n">${esc(m(D.captado))}</span>${App.aud() ? `<span class="c"><b>${esc(m(D.verif))}</b> verificado${D.captado ? ` (${Math.round(D.verif / D.captado * 100)} %)` : ''}</span>` : ''}<span class="c">de ${esc(m(D.metaTot))} proyectados en ${Y}</span><span class="c tv-gr"><span><i style="background:${CAT.nuevo}"></i><b>${esc(m(D.capGT.nuevo))}</b> nuevo negocio</span><span><i style="background:${CAT.efi}"></i><b>${esc(m(D.capGT.efi))}</b> eficiencia</span></span></span><span class="mini">${mini(D)}<span class="c">captura por mes</span></span></button>
         <button class="tv-p tv-k" data-dv="kpi:proy"><span class="l">Valor que proyecta el portafolio</span><span class="n">${esc(m(D.tot))}</span><span class="c">${App.aud() ? `<b>${esc(m(D.totAprob))}</b> en casos aprobados, ${esc(m(D.tot - D.totAprob))} en borrador o revisión` : `en ${d.anios.length} años, ${plural(D.X.filter(x => x.caso).length, 'caso de negocio', 'casos de negocio')}`}</span></button>
         <button class="tv-p tv-k" data-dv="kpi:aprob"><span class="l">Casos aprobados</span><span class="n">${D.aprob.length}</span><span class="c">${esc(m(D.aprob.reduce((a, c) => a + (App.Avance ? App.Avance.dosAnios(Finanzas.calc(c)) : 0), 0)))} a dos años</span></button>
         <button class="tv-p tv-k" data-dv="kpi:rev"><span class="l">Por decidir en comité</span><span class="n">${D.rev.length}</span><span class="c">${D.rev.length ? plural(D.rev.length, 'caso en revisión', 'casos en revisión') : 'nada pendiente'}</span></button>
-        <button class="tv-p tv-k" data-dv="kpi:rojo"><span class="l">Iniciativas en rojo</span><span class="n">${D.crit.length}</span><span class="c">con atrasos o captura muy baja</span>${D.crit.length ? '<span class="st r"><i class="ico ico-flecha"></i>Ver cuáles</span>' : ''}</button>
+        <button class="tv-p tv-k" data-dv="kpi:rojo"><span class="l">Iniciativas en rojo</span><span class="n">${D.crit.length}</span><span class="c">con atrasos o riesgos críticos</span>${D.crit.length ? '<span class="st r"><i class="ico ico-flecha"></i>Ver cuáles</span>' : ''}</button>
       </div>
       <div class="tv-g"><section class="tv-p"><div class="tv-t"><h2>¿Cuánto valor vamos a crear?</h2><small>lo que proyectan los casos de negocio, año por año, clic en un año para ver las iniciativas</small></div>
-        <div class="tv-big"><div><div class="n">${esc(m(D.tot))}</div><div class="s">en ${d.anios.length} años; ${Y} aporta ${esc(m(D.metaTot))}.</div><div class="tv-rows">${D.cats.map(k => { const v = D.porAnio.reduce((a, z) => a + z.v[k], 0); return `<div><i style="background:${CAT[k]}"></i><span>${esc(App.catLabel(k))}</span><b>${esc(m(v))}</b><em>${D.tot ? Math.round(v / D.tot * 100) : 0} %</em></div>`; }).join('')}</div></div>${D.tot ? barras(D) : '<p class="tv-vacio">Aún no hay casos de negocio con beneficios.</p>'}</div>${D.atip.length ? `<div class="tv-atip"><i class="ico ico-alerta"></i><span><b>Revisar ${D.atip.map(z => z.y).join(' y ')}:</b> ${D.atip.length === 1 ? 'ese año suma' : 'esos años suman'} más de 4 veces lo normal (${esc(m(D.atip[0].med))} por año). Casi todo viene de <a href="#/proyectos/${D.atip[0].top.x.p.id}/caso">${esc(nom(D.atip[0].top.x.p))}</a> (${esc(m(D.atip[0].top.v))} en ${D.atip[0].y}). Puede ser un error de unidades: pesos frente a millones.</span></div>` : ''}</section></div>
+        <div class="tv-big"><div><div class="n">${esc(m(D.tot))}</div><div class="s">en ${d.anios.length} años; ${Y} aporta ${esc(m(D.metaTot))}.</div><div class="tv-rows">${D.cats.map(k => { const v = D.porAnio.reduce((a, z) => a + z.v[k], 0); return `<div><i style="background:${CAT[k]}"></i><span>${esc(App.grupoLabel(k))}</span><b>${esc(m(v))}</b><em>${D.tot ? Math.round(v / D.tot * 100) : 0} %</em></div>`; }).join('')}</div></div>${D.tot ? barras(D) : '<p class="tv-vacio">Aún no hay casos de negocio con beneficios.</p>'}</div>${D.atip.length ? `<div class="tv-atip"><i class="ico ico-alerta"></i><span><b>Revisar ${D.atip.map(z => z.y).join(' y ')}:</b> ${D.atip.length === 1 ? 'ese año suma' : 'esos años suman'} más de 4 veces lo normal (${esc(m(D.atip[0].med))} por año). Casi todo viene de <a href="#/proyectos/${D.atip[0].top.x.p.id}/caso">${esc(nom(D.atip[0].top.x.p))}</a> (${esc(m(D.atip[0].top.v))} en ${D.atip[0].y}). Puede ser un error de unidades: pesos frente a millones.</span></div>` : ''}</section></div>
       <div class="tv-g g2">
-        <section class="tv-p"><div class="tv-t"><h2>¿Vamos al ritmo?</h2><small>capturado frente a lo esperado, acumulado, clic en un mes</small><span class="sp"></span><label class="tv-mini">Año <select data-tvf="anio">${d.anios.map(y => `<option ${y === Y ? 'selected' : ''}>${y}</option>`).join('')}</select></label></div>
-          <div class="tv-lg"><span><i class="ink"></i>Capturado</span><span><i class="dash"></i>Esperado según los casos</span></div>${curva(D)}<div class="tv-nota">Esperado del año en las que registran: ${esc(m(D.meta))}.${D.sinReg.length ? ` ${plural(D.sinReg.length, 'iniciativa', 'iniciativas')} sin registrar no entra${D.sinReg.length === 1 ? '' : 'n'} en la comparación.` : ''} Se actualiza cada vez que alguien registra una captura.</div></section>
+        <section class="tv-p"><div class="tv-t"><h2>¿Cuánto se va capturando?</h2><small>aproximado, acumulado en el año, clic en un mes</small><span class="sp"></span><label class="tv-mini">Año <select data-tvf="anio">${d.anios.map(y => `<option ${y === Y ? 'selected' : ''}>${y}</option>`).join('')}</select></label></div>
+          <div class="tv-lg"><span><i style="background:${CAT.nuevo}"></i>Nuevo negocio</span><span><i style="background:${CAT.efi}"></i>Eficiencia</span><span><i class="dash"></i>Lo que proyectan para el año</span></div>${curva(D)}<div class="tv-nota">Valores aproximados: en las iniciativas en escalamiento se toma lo que proyecta su caso (o su Income) desde el mes en que escalaron. Si alguien registra la cifra real de un mes, esa reemplaza la aproximada.</div></section>
         <section class="tv-p"><div class="tv-t"><h2>¿Dónde está el portafolio?</h2><small>clic en una fase para ver solo esa en todo el tablero</small></div>${embudo(D)}</section>
       </div>
       <div class="tv-g g3">
@@ -191,7 +195,7 @@
       const t = e.target.closest('[data-dv]'); if (!t) return;
       if (App.aud() && t.dataset.dv === 'kpi:rev') return App.go('#/agenda');
       const [k, ...rest] = t.dataset.dv.split(':'), v = rest.join(':');
-      if (k === 'anio') { const y = +v; return detalle(t, `Valor que proyectan para ${y}`, D.X.map(x => ({ x, val: D.anual(x, y) })).filter(z => z.val > 0).sort((a, b) => b.val - a.val).map(z => ({ nombre: nom(z.x.p), sub: App.catLabel(z.x.catPrincipal || 'otro'), v: m(z.val), href: ir(z.x.p, 'caso') }))); }
+      if (k === 'anio') { const y = +v; return detalle(t, `Valor que proyectan para ${y}`, D.X.map(x => ({ x, val: D.anual(x, y) })).filter(z => z.val > 0).sort((a, b) => b.val - a.val).map(z => ({ nombre: nom(z.x.p), sub: App.grupoLabel(App.grupoDe(z.x.catPrincipal || 'otro')), v: m(z.val), href: ir(z.x.p, 'caso') }))); }
       if (k === 'mes') { const i = +v, l = D.capPor[i].sort((a, b) => b.v - a.v); return detalle(t, `Capturado en ${App.d.MESES ? App.d.MESES[i] : App.d.MES3[i]} de ${Y}`, l.map(z => ({ nombre: nom(z.x.p), v: m(z.v), href: ir(z.x.p, 'caso') }))); }
       if (k === 'fase') {
         const l = v === 'capt' ? D.Xf.filter(x => D.capY(x) > 0).map(x => x.p) : D.todosF.filter(p => String(fase(p)) === v);
@@ -203,9 +207,8 @@
         return detalle(t, `Riesgos con probabilidad ${pp} e impacto ${ii}`, l.map(z => ({ nombre: z.r.titulo || 'Riesgo', sub: nom(z.p), href: ir(z.p, 'riesgos') }))); }
       if (k === 'okr') { const l = D.X.filter(x => App.okrsDe(x.p).includes(v)); return detalle(t, v, l.map(x => ({ nombre: nom(x.p), sub: `${m(D.capY(x))} capturados en ${Y}`, v: D.anual(x, Y) ? m(D.anual(x, Y)) : null, href: ir(x.p) }))); }
       if (k === 'kpi') {
-        if (v === 'cap') return detalle(t, `Capturado en ${Y}`, D.X.filter(x => D.capY(x) > 0).sort((a, b) => D.capY(b) - D.capY(a)).map(x => ({ nombre: nom(x.p), sub: `esperado a hoy ${m(D.espX(x))}`, v: m(D.capY(x)), href: ir(x.p, 'caso') }))
-          .concat(D.sinReg.map(x => ({ nombre: nom(x.p), sub: `falta registrar; esperaba ${m(D.anual(x, Y) * d.corrido / 12)} a hoy`, v: 'sin registrar', href: `#/proyectos/${x.p.id}/valor/captura` }))));
-        if (v === 'proy') return detalle(t, 'Lo que más valor proyecta', D.X.filter(x => x.caso).map(x => ({ x, t: d.anios.reduce((a, y) => a + D.anual(x, y), 0) })).filter(z => z.t > 0).sort((a, b) => b.t - a.t).map(z => ({ nombre: nom(z.x.p), sub: App.catLabel(z.x.catPrincipal || 'otro'), v: m(z.t), href: ir(z.x.p, 'caso') })));
+        if (v === 'cap') return detalle(t, `Capturado en ${Y}, aprox.`, D.X.filter(x => D.capY(x) > 0).sort((a, b) => D.capY(b) - D.capY(a)).map(x => ({ nombre: nom(x.p), sub: `${App.grupoLabel(App.grupoDe(x.catPrincipal || 'otro'))}${x.desde ? `, escaló en ${App.d.MES3[+x.desde.slice(5) - 1]} ${x.desde.slice(0, 4)}` : ', registrado a mano'}`, v: m(D.capY(x)), href: ir(x.p, 'valor/captura') })));
+        if (v === 'proy') return detalle(t, 'Lo que más valor proyecta', D.X.filter(x => x.caso).map(x => ({ x, t: d.anios.reduce((a, y) => a + D.anual(x, y), 0) })).filter(z => z.t > 0).sort((a, b) => b.t - a.t).map(z => ({ nombre: nom(z.x.p), sub: App.grupoLabel(App.grupoDe(z.x.catPrincipal || 'otro')), v: m(z.t), href: ir(z.x.p, 'caso') })));
         if (v === 'aprob') return detalle(t, 'Casos aprobados', D.aprob.map(c => { const p = App.byId('projects', c.project_id), f = Finanzas.calc(c); return { nombre: nom(p), sub: 'valor a dos años', v: m(App.Avance ? App.Avance.dosAnios(f) : 0), href: ir(p, 'caso') }; }));
         if (v === 'rev') return detalle(t, 'Por decidir en comité', D.rev.map(c => { const p = App.byId('projects', c.project_id), f = Finanzas.calc(c); return { nombre: nom(p), sub: 'valor a dos años', v: m(App.Avance ? App.Avance.dosAnios(f) : 0), href: ir(p, 'caso') }; }), '<a href="#/agenda">Ver la agenda del comité</a>');
         if (v === 'rojo') return detalle(t, 'Iniciativas en rojo', D.crit.map(z => ({ nombre: nom(z.x.p), sub: (z.out.filter(o => o.sev >= 3)[0] || {}).t || '', href: ir(z.x.p) })));

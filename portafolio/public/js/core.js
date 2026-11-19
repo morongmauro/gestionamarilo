@@ -313,6 +313,10 @@ App.menu = (anchor, items, onPick, width = 220) => {
 App.CATS = [
   { id: 'ahorro', label: 'Ahorro' }, { id: 'ingresos', label: 'Nuevos ingresos' }, { id: 'eficiencia', label: 'Eficiencia' },
   { id: 'tiempo', label: 'Tiempo' }, { id: 'riesgo', label: 'Riesgo evitado' }, { id: 'otro', label: 'Otro' }];
+// Dos grupos para leer la captura: nuevo negocio (ingresos) y eficiencia (ahorro, eficiencia, tiempo y riesgo evitado)
+App.GRUPOS = [['nuevo', 'Nuevo negocio', ['ingresos']], ['efi', 'Eficiencia', ['ahorro', 'eficiencia', 'tiempo', 'riesgo']], ['otro', 'Sin clasificar', ['otro']]];
+App.grupoDe = cat => (App.GRUPOS.find(g => g[2].includes(cat)) || App.GRUPOS[2])[0];
+App.grupoLabel = g => (App.GRUPOS.find(x => x[0] === g) || App.GRUPOS[2])[1];
 App.catLabel = id => (App.CATS.find(c => c.id === id) || App.CATS.at(-1)).label;
 App.inferCat = txt => {
   const n = String(txt || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();

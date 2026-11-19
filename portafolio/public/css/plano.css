@@ -753,3 +753,11 @@ select:focus-visible,.tv-mini select:focus-visible{outline:2px solid var(--info-
 /* «Más indicadores» en la barra del caso */
 .ind-mas{font-size:12px;margin-left:4px;white-space:nowrap}
 .ind-oculto{display:none!important}
+
+/* Captura aproximada: cursiva tenue lo calculado, negrita lo registrado */
+.vl-t td.au .pg,.vl-t td .pg{font-style:italic}
+.vl-t td b{font-weight:800}
+.tv-k .tv-gr{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:4px}.tv-k .tv-gr i{width:8px;height:8px;border-radius:2px;display:inline-block}
+.tv-k .tv-gr i:nth-of-type(2){margin-left:6px}
+.tv-k .tv-gr{flex-direction:column;align-items:flex-start;gap:1px}.tv-k .tv-gr>span{display:inline-flex;align-items:center;gap:6px}.tv-k .tv-gr i:nth-of-type(2){margin-left:0}
+.tv-k .tv-gr>span{white-space:nowrap;font-size:11.5px}.tv-k.k1 .mini svg{max-width:110px}

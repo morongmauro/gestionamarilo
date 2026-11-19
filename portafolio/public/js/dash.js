@@ -38,11 +38,16 @@
         if (fuente === 'valor') return cat === catInc && y >= hoyY && y < hoyY + 5 ? vc / 5 : 0; // «Valor a crear/capturar» total, repartido en 5 años
         return 0;
       };
-      const captado = (cat, y, mes) => (caso && !esUSD ? (caso.captado || []) : []).filter(x => x.categoria === cat && x.mes.startsWith(y + '-') && (!mes || +x.mes.slice(5) <= mes)).reduce((a, x) => a + (Number(x.valor) || 0), 0);
+      // Captura (aproximada): lo registrado a mano en el mes, o lo que proyecta el caso (o el Income) desde que la iniciativa escaló
+      const desde = App.Valor ? App.Valor.escalaDesde(p, caso) : null, mesHoy = hoy.slice(0, 7);
+      const manual = (cat, ym) => (caso && !esUSD ? (caso.captado || []) : []).filter(x => x.categoria === cat && x.mes === ym);
+      const capMes = (cat, ym) => { const r = manual(cat, ym); if (r.length) return r.reduce((a, x) => a + (Number(x.valor) || 0), 0); if (!desde || ym < desde || ym >= mesHoy) return 0;
+        return fuente === 'caso' && App.Valor.planDe(caso) ? App.Valor.programado(caso, ym, cat) : anual(cat, +ym.slice(0, 4)) / 12; };
+      const captado = (cat, y, mes) => { let s = 0; for (let i = 1; i <= (mes || 12); i++) s += capMes(cat, `${y}-${String(i).padStart(2, '0')}`); return s; };
       const capVer = (cat, y) => (caso && !esUSD ? (caso.captado || []) : []).filter(x => x.categoria === cat && x.mes.startsWith(y + '-') && App.Mejoras.verificado(x, caso)).reduce((a, x) => a + (Number(x.valor) || 0), 0);
       const vpn = caso && !esUSD ? Finanzas.calc(caso).vpn : null;
       const catsP = App.CATS.map(c => c.id).filter(id => [hoyY, hoyY + 1, hoyY + 2].some(y => anual(id, y) > 0));
-      return { p, caso, real, fuente, anual, captado, capVer, vpn, ice: App.iceOf(p), estado: ec ? (p.props || {})[ec.id] || '' : '', catPrincipal: catsP[0] || (fuente === 'income' ? catInc : null), y0, nAnios };
+      return { p, caso, real, fuente, anual, captado, capMes, desde, capVer, vpn, ice: App.iceOf(p), estado: ec ? (p.props || {})[ec.id] || '' : '', catPrincipal: catsP[0] || (fuente === 'income' ? catInc : null), y0, nAnios };
     }).filter(x => F.alcance !== 'real' || x.real);
     // años con datos
     let yMin = hoyY, yMax = hoyY + 4;
@@ -106,8 +111,8 @@
       const p = x.p, pl = App.planOf(p.id), out = [];
       const st = estadoDe(x.pc);
       // Si no ha registrado nada no se sabe si capturó: se pide registrar (atención), no se acusa rezago (rojo)
-      if (x.esp > 0 && !registra(x.caso, d.Y)) out.push({ sev: 2, txt: `Falta registrar la captura de ${d.Y}`, href: `#/proyectos/${p.id}/valor/captura` });
-      else if (st && st[0] !== 'good') out.push({ sev: st[0] === 'critical' ? 3 : 2, txt: `Captura ${st[0] === 'critical' ? 'rezagada' : 'por debajo'}: ${Math.round(x.pc * 100)}% de lo esperado a la fecha`, href: `#/casos/${p.id}` });
+      // La captura se calcula sola desde el escalamiento: ya no hay alertas de ritmo ni de «falta registrar»
+      if (false && st) out.push({ sev: st[0] === 'critical' ? 3 : 2, txt: `Captura ${st[0] === 'critical' ? 'rezagada' : 'por debajo'}: ${Math.round(x.pc * 100)}% de lo esperado a la fecha`, href: `#/casos/${p.id}` });
       const masVieja = pl.atrasadas ? Math.max(...pl.acts.filter(a => a.fin && a.fin < hoy && (a.avance || 0) < 100).map(a => App.d.diff(a.fin, hoy))) : 0;
       // Crítico: 5 o más actividades atrasadas, o alguna con más de 30 días de atraso. Lo demás es «Atención».
       if (pl.atrasadas) out.push({ sev: pl.atrasadas >= 5 || masVieja > 30 ? 3 : 2, txt: `${pl.atrasadas} actividad${pl.atrasadas > 1 ? 'es' : ''} atrasada${pl.atrasadas > 1 ? 's' : ''} en el cronograma`, href: `#/cronograma/${p.id}` });

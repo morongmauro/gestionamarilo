@@ -684,6 +684,8 @@ route('PATCH', `/api/${COLL_RX}/:id`, 'editor', async (req, ctx) => {
   const doc = await store.update(coll, id, cur => {
     const next = { ...cur, ...patch, updated_at: now(), updated_by: ctx.user.id, updated_by_name: ctx.user.name };
     if (patch.props) next.props = { ...(cur.props || {}), ...patch.props }; // se mezclan columna por columna
+    // Al pasar a escalamiento (Fase 3) queda el mes: desde ahí la captura se calcula sola con lo que proyecta el caso
+    if (ec && patch.props && ec.id in patch.props && Fases.clasificar(patch.props[ec.id]) === 3 && Fases.clasificar((cur.props || {})[ec.id]) !== 3) next.escala_desde = now().slice(0, 7);
     // Trazabilidad automática: cada cambio de estado deja su entrada en la bitácora
     if (ec && traz && ec.id in patch.props && (cur.props || {})[ec.id] !== patch.props[ec.id] && !(traz.id in patch.props)) {
       const linea = `${fechaCorta()}: Estado ${(cur.props || {})[ec.id] || 'sin estado'} → ${patch.props[ec.id] || 'sin estado'} (${ctx.user.name})`;
