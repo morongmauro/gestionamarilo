@@ -53,7 +53,7 @@
     const capGT = Object.fromEntries(Object.entries(capG).map(([g, a]) => [g, a.reduce((q, v) => q + v, 0)]));
     const casos = App.S.cases.filter(c => { const p = App.byId('projects', c.project_id); return p && pasa(p); });
     const sg = App.Dash.senales(d).filter(z => pasa(z.x.p));
-    return { d, X, Xf, ps, todos, todosF, Y, cats, anual, capY, porAnio, tot, meta, metaTot, captado, esperado, sinReg, esperadoSin, atip, porConf, espX, capG, capGT, ...valorOficial(X, d, Y), vc: X.reduce((a, x) => a + (Number((x.p.props || {}).valor_crear) || 0), 0), vcN: X.filter(x => Number((x.p.props || {}).valor_crear) > 0).length, verif: X.reduce((a, x) => a + (x.caso ? (x.caso.captado || []).filter(c => String(c.mes).startsWith(Y + '-') && App.Mejoras && App.Mejoras.verificado(c, x.caso)).reduce((q, c) => q + (Number(c.valor) || 0), 0) : 0), 0), totAprob: X.filter(x => x.caso && x.caso.estado === 'Aprobado').reduce((a, x) => a + d.anios.reduce((q, y) => q + anual(x, y), 0), 0), cap, capPor, casos, sg, crit: sg.filter(z => z.max >= 3), rev: casos.filter(c => c.estado === 'En revisión'), aprob: casos.filter(c => c.estado === 'Aprobado') };
+    return { d, X, Xf, ps, todos, todosF, Y, cats, anual, capY, porAnio, tot, meta, metaTot, captado, esperado, sinReg, esperadoSin, atip, porConf, espX, capG, capGT, ...valorOficial(X, d, Y), esc: X.filter(x => x.desde), escMes: X.filter(x => x.desde).reduce((a, x) => a + d.cats.reduce((q, k) => q + x.oficial(k, Y), 0) / 12, 0), vc: X.reduce((a, x) => a + (Number((x.p.props || {}).valor_crear) || 0), 0), vcN: X.filter(x => Number((x.p.props || {}).valor_crear) > 0).length, verif: X.reduce((a, x) => a + (x.caso ? (x.caso.captado || []).filter(c => String(c.mes).startsWith(Y + '-') && App.Mejoras && App.Mejoras.verificado(c, x.caso)).reduce((q, c) => q + (Number(c.valor) || 0), 0) : 0), 0), totAprob: X.filter(x => x.caso && x.caso.estado === 'Aprobado').reduce((a, x) => a + d.anios.reduce((q, y) => q + anual(x, y), 0), 0), cap, capPor, casos, sg, crit: sg.filter(z => z.max >= 3), rev: casos.filter(c => c.estado === 'En revisión'), aprob: casos.filter(c => c.estado === 'Aprobado') };
   }
 
   // La cifra única de valor: «Valor a crear/capturar» por año del periodo, con lo capturado (aprox.) y lo que falta
@@ -120,17 +120,28 @@
       ${inact.length ? `<div class="tv-sep">Fuera del flujo</div>${inact.map(z => fila(z.k, z.l.length, 0, FN[z.k], plural(z.l.length, 'iniciativa', 'iniciativas'), 'off')).join('')}` : ''}</div>`;
   }
   function mapa(D) {
-    const W = 440, H = 240, L = 40, B = 28, T = 14, R = 12;
+    const W = 440, H = 250, L = 40, B = 28, T = 14, R = 12;
     const pts = D.ps.map(p => { const v = p.props || {}; return { p, e: Number(v.ice_esfuerzo), i: Number(v.ice_income), f: fase(p) }; }).filter(z => z.e > 0 && z.i > 0);
     if (!pts.length) return '<p class="tv-vacio">Aún no hay iniciativas con Income y Esfuerzo.</p>';
     const mxI = Math.max(...pts.map(z => z.i), 1), x = v => L + Math.min(100, v) / 100 * (W - L - R), y = v => T + (1 - Math.sqrt(v / mxI)) * (H - T - B);
-    // Nombres solo de las que más valor dan con poco esfuerzo, sin que se monten unos sobre otros
-    const top = []; pts.filter(z => z.e <= 60).sort((a, b) => b.i - a.i).forEach(z => { if (top.length < 3 && top.every(t => Math.abs(y(t.i) - y(z.i)) > 14 || Math.abs(x(t.e) - x(z.e)) > 150)) top.push(z); });
+    // las que caen en el mismo punto van juntas, con su número
+    const gm = new Map(); pts.forEach(z => { const k = z.e + '|' + z.i; if (!gm.has(k)) gm.set(k, []); gm.get(k).push(z); });
+    const gs = [...gm.values()].map(l => ({ l, cx: x(l[0].e), cy: y(l[0].i), r: Math.min(13, 6 + (l.length - 1) * 2), i: l[0].i, e: l[0].e }));
+    const col = l => { const c = l.map(z => FC[z.f] || '#9A96A6'); return c.every(v => v === c[0]) ? c[0] : '#8E83A8'; };
+    // nombres: primero las de más valor y menos esfuerzo; solo donde caben sin tapar puntos, otros nombres ni rótulos
+    const cajas = gs.map(g => [g.cx - g.r, g.cy - g.r, g.cx + g.r, g.cy + g.r]).concat([[L + 4, T + 2, L + 92, T + 20], [W - R - 150, H - B - 22, W - R, H - B - 2]]);
+    const cruza = b => cajas.some(c => b[0] < c[2] && b[2] > c[0] && b[1] < c[3] && b[3] > c[1]);
+    const lbl = []; gs.slice().sort((a, b) => (b.i - b.e / 20) - (a.i - a.e / 20)).forEach(g => { if (lbl.length >= 7) return;
+      const t0 = g.l.length > 1 ? `${g.l.length} iniciativas` : nom(g.l[0].p), t = t0.length > 24 ? t0.slice(0, 23) + '…' : t0, w = t.length * 5.7;
+      for (const [tx, ty, an] of [[g.cx + g.r + 4, g.cy + 4, 'start'], [g.cx - g.r - 4, g.cy + 4, 'end'], [g.cx, g.cy - g.r - 4, 'middle'], [g.cx, g.cy + g.r + 12, 'middle']]) {
+        const x0 = an === 'start' ? tx : an === 'end' ? tx - w : tx - w / 2, b = [x0, ty - 10, x0 + w, ty + 3];
+        if (b[0] < L + 2 || b[2] > W - 2 || b[1] < 2 || b[3] > H - B) continue;
+        if (!cruza(b)) { cajas.push(b); lbl.push(`<text x="${tx}" y="${ty}" text-anchor="${an}" font-size="10.5" font-weight="500" class="tv-ptl" pointer-events="none">${esc(t)}</text>`); break; } } });
     return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Valor frente a esfuerzo"><rect x="${L}" y="${T}" width="${(W - L - R) / 2}" height="${(H - T - B) / 2}" class="zona" rx="6"/>
-      <text x="${L + 8}" y="${T + 16}" font-size="11" font-weight="800" class="ok">Hacer primero</text><text x="${W - R - 6}" y="${H - B - 8}" text-anchor="end" font-size="11" font-weight="700" class="mu">Revisar si vale la pena</text>
+      <text x="${L + 8}" y="${T + 15}" font-size="10.5" font-weight="700" class="ok">Hacer primero</text><text x="${W - R - 6}" y="${H - B - 8}" text-anchor="end" font-size="10.5" font-weight="600" class="mu">Revisar si vale la pena</text>
       <line x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}" class="ax"/><line x1="${L}" x2="${L}" y1="${T}" y2="${H - B}" class="ax"/>
-      ${pts.map(z => `<g class="tv-hit" tabindex="0" role="button" data-dv="pt:${z.p.id}"><title>${esc(nom(z.p))}: Income ${z.i}, esfuerzo ${z.e} %. Clic para abrir</title><circle cx="${x(z.e)}" cy="${y(z.i)}" r="12" fill="transparent"/><circle cx="${x(z.e)}" cy="${y(z.i)}" r="7" fill="${FC[z.f] || '#9A96A6'}" class="pt"/></g>`).join('')}
-      ${top.map(z => `<text x="${Math.min(x(z.e) + 11, W - 150)}" y="${y(z.i) + 4}" font-size="11" font-weight="700" fill="currentColor" pointer-events="none">${esc(nom(z.p).slice(0, 26))}</text>`).join('')}
+      ${gs.map(g => `<g class="tv-hit" tabindex="0" role="button" data-dv="${g.l.length > 1 ? 'pts:' + g.l.map(z => z.p.id).join(',') : 'pt:' + g.l[0].p.id}"><title>${esc(g.l.map(z => nom(z.p)).join('\n'))}\nIncome ${g.i}, esfuerzo ${g.e} %. Clic para ${g.l.length > 1 ? 'ver cuáles' : 'abrir'}</title><circle cx="${g.cx}" cy="${g.cy}" r="${g.r + 5}" fill="transparent"/><circle cx="${g.cx}" cy="${g.cy}" r="${g.r}" fill="${col(g.l)}" class="pt"/>${g.l.length > 1 ? `<text x="${g.cx}" y="${g.cy + 3.5}" text-anchor="middle" font-size="10" font-weight="700" fill="#fff" pointer-events="none">${g.l.length}</text>` : ''}</g>`).join('')}
+      ${lbl.join('')}
       <text x="${(L + W) / 2}" y="${H - 8}" text-anchor="middle" font-size="10.5" class="mu">esfuerzo →</text><text x="13" y="${(T + H - B) / 2}" font-size="10.5" class="mu" transform="rotate(-90 13 ${(T + H - B) / 2})" text-anchor="middle">valor (Income) →</text></svg>`;
   }
   function riesgos(D) {
@@ -177,13 +188,13 @@
     const ritmo = pc == null ? (nSin ? ['nr', 'ico-reloj', `Falta registrar en ${plural(nSin, 'iniciativa', 'iniciativas')}`] : null) : pc >= .9 ? ['ok', 'ico-ok', 'Al ritmo'] : pc >= .6 ? ['o', 'ico-reloj', 'Algo por debajo'] : ['r', 'ico-alerta', 'Por debajo del ritmo'];
     const ec = App.estadoCol(), dgv = App.dgvHay();
     main.className = 'tv';
-    main.innerHTML = `<div class="tv-h"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Tablero de valor</h1><span class="s">Gerencia de Generación de Valor, datos al ${esc(App.d.fmt(d.hoy))}</span><span class="sp"></span>
+    main.innerHTML = `<div class="tv-h"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Tablero de valor</h1><span class="s">Oficina de Generación de Valor, datos al ${esc(App.d.fmt(d.hoy))}</span><span class="sp"></span>
         ${F.fase ? `<button class="tv-chip" data-fx="${esc(F.fase)}" title="Quitar el filtro">Mostrando ${esc(faseNombre(isNaN(+F.fase) ? F.fase : +F.fase))} <b>✕</b></button>` : ''}</div>
       ${sub}
       
       <div class="tv-kpi">
         <button class="tv-p tv-k k1" data-dv="kpi:cap"><span><span class="l">Capturado en ${Y}, aprox.</span><span class="n">${esc(m(D.captado))}</span>${App.aud() ? `<span class="c"><b>${esc(m(D.verif))}</b> verificado${D.captado ? ` (${Math.round(D.verif / D.captado * 100)} %)` : ''}</span>` : ''}<span class="c">de ${esc(m(D.ofY))} por capturar en ${Y}</span><span class="c tv-gr"><span><i style="background:${CAT.nuevo}"></i><b>${esc(m(D.capGT.nuevo))}</b> nuevo negocio</span><span><i style="background:${CAT.efi}"></i><b>${esc(m(D.capGT.efi))}</b> eficiencia</span></span></span></button>
-        <button class="tv-p tv-k" data-dv="kpi:vc"><span class="l">Capturado ${D.PV.d}–${D.PV.h}, aprox.</span><span class="n">${esc(m(D.capPer))}</span><span class="c">de ${esc(m(D.ofTot))} a crear/capturar${D.ofTot ? ` (${Math.round(D.capPer / D.ofTot * 100)} %)` : ''}</span></button>
+        <button class="tv-p tv-k" data-dv="kpi:esc"><span class="l">En escalamiento</span><span class="n">${D.esc.length}</span><span class="c">${D.esc.length ? `${plural(D.esc.length, 'iniciativa capturando', 'iniciativas capturando')} valor, unos ${esc(m(D.escMes))} al mes` : 'ninguna iniciativa en Fase 3 todavía'}</span></button>
         <button class="tv-p tv-k" data-dv="kpi:aprob"><span class="l">Casos aprobados</span><span class="n">${D.aprob.length}</span><span class="c">${esc(m(D.aprob.reduce((a, c) => a + (App.Avance ? App.Avance.dosAnios(Finanzas.calc(c)) : 0), 0)))} a dos años</span></button>
         <button class="tv-p tv-k" data-dv="kpi:rev"><span class="l">Por decidir en comité</span><span class="n">${D.rev.length}</span><span class="c">${D.rev.length ? plural(D.rev.length, 'caso en revisión', 'casos en revisión') : 'nada pendiente'}</span></button>
         <button class="tv-p tv-k" data-dv="kpi:rojo"><span class="l">Iniciativas en rojo</span><span class="n">${D.crit.length}</span><span class="c">con atrasos o riesgos críticos</span>${D.crit.length ? '<span class="st r"><i class="ico ico-flecha"></i>Ver cuáles</span>' : ''}</button>
@@ -221,6 +232,7 @@
       const t = e.target.closest('[data-dv]'); if (!t) return;
       if (App.aud() && t.dataset.dv === 'kpi:rev') return App.go('#/agenda');
       const [k, ...rest] = t.dataset.dv.split(':'), v = rest.join(':');
+      if (k === 'pts') return detalle(t, 'Iniciativas en el mismo punto', v.split(',').map(id => App.byId('projects', id)).filter(Boolean).map(p => ({ nombre: nom(p), sub: 'Income ' + ((p.props || {}).ice_income || '—') + ', esfuerzo ' + ((p.props || {}).ice_esfuerzo || '—') + ' %', href: ir(p, 'valor/ice') })));
       if (k === 'anio') { const y = +v, G = ['nuevo', 'efi', 'otro']; return detalle(t, `Valor a crear/capturar en ${y}`, D.X.map(x => ({ x, val: G.reduce((a, g) => a + D.ofGx(x, g, y), 0), cap: G.reduce((a, g) => a + D.capGx(x, g, y), 0) })).filter(z => z.val > 0 || z.cap > 0).sort((a, b) => b.val - a.val).map(z => ({ nombre: nom(z.x.p), sub: `${z.x.base === 'caso' ? 'según su caso' : 'cifra de Notion'}${z.cap ? `, capturado ${m(z.cap)}` : ''}`, v: m(z.val), href: ir(z.x.p, 'valor/captura') }))); }
       if (k === 'mes') { const i = +v, l = D.capPor[i].sort((a, b) => b.v - a.v); return detalle(t, `Capturado en ${App.d.MESES ? App.d.MESES[i] : App.d.MES3[i]} de ${Y}`, l.map(z => ({ nombre: nom(z.x.p), v: m(z.v), href: ir(z.x.p, 'caso') }))); }
       if (k === 'fase') {
@@ -234,6 +246,7 @@
       if (k === 'okr') { const l = D.X.filter(x => App.okrsDe(x.p).includes(v)); return detalle(t, v, l.map(x => ({ nombre: nom(x.p), sub: `${m(D.capY(x))} capturados en ${Y}`, v: D.anual(x, Y) ? m(D.anual(x, Y)) : null, href: ir(x.p) }))); }
       if (k === 'kpi') {
         if (v === 'cap') return detalle(t, `Capturado en ${Y}, aprox.`, D.X.filter(x => D.capY(x) > 0).sort((a, b) => D.capY(b) - D.capY(a)).map(x => ({ nombre: nom(x.p), sub: `${App.grupoLabel(App.grupoDe(x.catPrincipal || 'otro'))}${x.desde ? `, escaló en ${App.d.MES3[+x.desde.slice(5) - 1]} ${x.desde.slice(0, 4)}` : ', registrado a mano'}`, v: m(D.capY(x)), href: ir(x.p, 'valor/captura') })));
+        if (v === 'esc') return detalle(t, 'En escalamiento, capturando', D.esc.map(x => ({ x, mes: d.cats.reduce((q, k) => q + x.oficial(k, Y), 0) / 12 })).sort((a, b) => b.mes - a.mes).map(z => ({ nombre: nom(z.x.p), sub: `desde ${App.d.MES3[+z.x.desde.slice(5) - 1]} ${z.x.desde.slice(0, 4)}`, v: z.mes ? `${m(z.mes)} al mes` : 'sin cifra', href: ir(z.x.p, 'valor/captura') })), 'Valores aproximados: su valor a crear/capturar repartido por mes.');
         if (v === 'vc') return detalle(t, `Capturado ${D.PV.d}–${D.PV.h}, aprox.`, D.X.map(x => ({ x, c: D.porY.reduce((a, z) => a + ['nuevo', 'efi', 'otro'].reduce((q, g) => q + D.capGx(x, g, z.y), 0), 0), o: D.ofX(x) })).filter(z => z.c > 0 || z.o > 0).sort((a, b) => b.c - a.c || b.o - a.o).map(z => ({ nombre: nom(z.x.p), sub: `de ${m(z.o)} a crear/capturar${z.x.desde ? `, escaló en ${App.d.MES3[+z.x.desde.slice(5) - 1]} ${z.x.desde.slice(0, 4)}` : ''}`, v: m(z.c), href: ir(z.x.p, 'valor/captura') })));
         if (v === 'vc-viejo') return detalle(t, 'Valor a crear/capturar', D.X.filter(x => Number((x.p.props || {}).valor_crear) > 0).sort((a, b) => b.p.props.valor_crear - a.p.props.valor_crear).map(x => ({ nombre: nom(x.p), sub: faseNombre(fase(x.p)), v: m(Number(x.p.props.valor_crear)), href: ir(x.p, 'info') })), `${D.X.filter(x => !(Number((x.p.props || {}).valor_crear) > 0)).length} iniciativas del foco aún no tienen esta cifra`);
         if (v === 'proy') return detalle(t, 'Lo que más valor proyecta', D.X.filter(x => x.caso).map(x => ({ x, t: d.anios.reduce((a, y) => a + D.anual(x, y), 0) })).filter(z => z.t > 0).sort((a, b) => b.t - a.t).map(z => ({ nombre: nom(z.x.p), sub: App.grupoLabel(App.grupoDe(z.x.catPrincipal || 'otro')), v: m(z.t), href: ir(z.x.p, 'caso') })));

@@ -865,3 +865,4 @@ select:focus-visible,.tv-mini select:focus-visible{outline:2px solid var(--info-
 .pf-rank em{font-style:normal;color:var(--muted);font-size:11px;text-align:right}.pf-rank .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pf-rank i{width:9px;height:9px;border-radius:50%}.pf-rank b{text-align:right;font-variant-numeric:tabular-nums}
 @media (max-width:1100px){.pf-mg{grid-template-columns:1fr}.pf-rank{max-height:260px}}
+#main.tv svg .tv-ptl{fill:color-mix(in srgb,var(--ink) 82%,transparent)}
