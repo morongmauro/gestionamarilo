@@ -5,6 +5,7 @@
    ============================================================ */
 'use strict';
 (function () {
+  const pbTxt = f => f.payback == null ? '—' : f.payback === 0 ? (f.totalInversion > 0 ? 'menos de 1 año' : 'sin inversión') : App.num(f.payback, 1) + ' años';
   const { $, $$, esc } = App;
   const ESTADOS = [
     { name: 'Borrador', color: 'gris' }, { name: 'En revisión', color: 'amarillo' }, { name: 'Aprobado', color: 'verde' },
@@ -92,7 +93,7 @@
         (sinInv ? k('—', 'VPN y TIR: aparecen al poner la inversión', '', 'Sin inversión el VPN y la TIR saldrían inflados') :
         k(esc(App.moneyShort(f.vpn, mon)), 'VPN', f.vpn == null ? '' : f.vpn >= 0 ? 'good' : 'bad', `Tasa de descuento ${App.num(c.tasa, 2) || 0} %`) +
         k(esc(App.pct(f.tir)), 'TIR', f.tir == null ? '' : f.tir * 100 >= (c.tasa || 0) ? 'good' : 'bad', f.tirMultiple ? 'El flujo cambia de signo varias veces: puede haber otra TIR' : '') +
-        k(f.payback == null ? '—' : esc(App.num(f.payback, 1)) + ' años', 'payback', '', 'Años para recuperar la inversión') +
+        k(esc(pbTxt(f)), 'payback', '', 'Años para recuperar la inversión') +
         k(esc(App.pct(f.roi)), 'ROI', f.roi == null ? '' : f.roi >= 0 ? 'good' : 'bad')) +
         (pr && App.ICE.avisoIncome ? App.ICE.avisoIncome(pr, ro) : '');
     };
@@ -111,7 +112,7 @@
         <tr><td>Inversión</td><td>${inp('pes', 'i')}</td><td class="faint">tal cual</td><td>${inp('opt', 'i')}</td></tr>
         <tr class="res"><td>VPN</td>${['pes', 'base', 'opt'].map(k => `<td class="${vcls(r[k].vpn)}">${esc(App.moneyShort(r[k].vpn, mon))}</td>`).join('')}</tr>
         <tr class="res"><td>TIR</td>${['pes', 'base', 'opt'].map(k => `<td>${esc(App.pct(r[k].tir))}</td>`).join('')}</tr>
-        <tr class="res"><td>Payback</td>${['pes', 'base', 'opt'].map(k => `<td>${r[k].payback == null ? '—' : esc(App.num(r[k].payback, 1)) + ' años'}</td>`).join('')}</tr>
+        <tr class="res"><td>Payback</td>${['pes', 'base', 'opt'].map(k => `<td>${esc(pbTxt(r[k]))}</td>`).join('')}</tr>
       </tbody></table>
       <div class="sens-notes"><div>${margenTxt}</div>${r.base.vpn != null ? `<div>Si los beneficios llegan un año tarde, el VPN pasa de ${esc(App.moneyShort(r.base.vpn, mon))} a <b class="${vcls(tarde.vpn)}">${esc(App.moneyShort(tarde.vpn, mon))}</b>.</div>` : ''}</div>`;
     };
@@ -426,7 +427,7 @@
         <td class="n">${f.totalInversion ? esc(App.moneyShort(f.totalInversion, mo)) : '<span class="faint">—</span>'}</td>
         <td class="n cn-vpn">${f.vpn == null || !f.totalInversion ? '<span class="faint">—</span>' : `<b class="${f.vpn >= 0 ? '' : 'neg'}">${esc(App.moneyShort(f.vpn, mo))}</b>`}</td>
         <td class="n">${f.tir == null ? '<span class="faint">—</span>' : esc(App.pct(f.tir))}</td>
-        <td class="n">${f.payback == null ? '<span class="faint">—</span>' : esc(App.num(f.payback, 1)) + ' años'}</td>
+        <td class="n">${f.payback == null ? '<span class="faint">—</span>' : esc(pbTxt(f))}</td>
         <td>${cap ? bullet(r) : `<span class="cn-proy"><b>${r.proy ? esc(m(r.proy)) : '—'}</b> <small>${esc(App.moneyShort(f.totalBeneficio, mo))} en ${Math.round(c.anios || 0)} años</small></span>`}</td>
         <td class="cn-sup" title="${esc(sc)}">${sc ? esc(sc) : '<span class="faint">—</span>'}</td>
         <td class="cn-act">${c.updated_at ? esc(App.d.ago(c.updated_at)) : ''}</td><td class="go" aria-hidden="true">›</td></tr>`;

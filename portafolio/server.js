@@ -350,11 +350,12 @@ route('PUT', '/api/config/okrs', 'editor', async (req, ctx) => {
 route('PUT', '/api/config/vista-portafolio', 'editor', async (req, ctx) => {
   const cols = Array.isArray(ctx.body && ctx.body.cols) ? ctx.body.cols.filter(x => typeof x === 'string' && x.length < 80).slice(0, 60) : null;
   if (!cols) throw new HttpError(400, 'Columnas inválidas');
-  const v = { cols }; await store.setConfig('vista_portafolio', v); return v;
+  const conocidas = Array.isArray(ctx.body.conocidas) ? ctx.body.conocidas.filter(x => typeof x === 'string' && x.length < 80).slice(0, 60) : undefined;
+  const v = conocidas ? { cols, conocidas } : { cols }; await store.setConfig('vista_portafolio', v); return v;
 });
 // Tablero: una foto de las cifras por semana (lunes) para comparar «frente a la semana anterior». Se guardan las últimas 26.
 route('GET', '/api/pulso/fotos', 'usuario', async () => (await store.getConfig('pulso_fotos')) || {});
-route('POST', '/api/pulso/fotos', 'usuario', async (req, ctx) => {
+route('POST', '/api/pulso/fotos', 'editor', async (req, ctx) => {
   const b = ctx.body || {}, semana = String(b.semana || '');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(semana)) throw new HttpError(400, 'Semana inválida');
   const num = v => (Number.isFinite(Number(v)) ? Number(v) : 0);

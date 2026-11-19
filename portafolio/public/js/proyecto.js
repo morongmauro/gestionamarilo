@@ -50,10 +50,11 @@
           <span>${caso ? `Caso <b>${esc((caso.estado || 'Borrador').toLowerCase())}</b>${f.vpn != null && f.totalInversion > 0 ? `, VPN <b>${esc(App.moneyShort(f.vpn, caso.moneda))}</b>` : caso.origen === 'ice' ? ', preliminar' : ''}` : 'Sin caso de negocio'}</span>
           <span title="${esc((App.ICE.detalle(p).notas || []).join('\n'))}">ICE <b>${App.iceOf(p) == null ? '—' : esc(App.num(App.iceOf(p), 1))}</b>${ro ? '' : ' <button class="t-lnk" data-p="ice">editar</button>'}</span>
           <span>${prox ? `Comité el <b>${esc(App.d.fmtShort(prox.fecha))}</b>` : 'Sin comité programado'}</span>
+          ${App.aud() ? (() => { const u = [p.updated_at || p.created_at || '', caso ? caso.updated_at || '' : '', ...pl.acts.map(x => x.updated_at || '')].sort().pop(), dd = u ? Math.round((Date.now() - new Date(u)) / 864e5) : null; return dd == null ? '' : `<span class="${dd > 30 ? 'viejo' : ''}">${dd < 1 ? 'Actualizada hoy' : `Actualizada hace <b>${dd}</b> ${dd === 1 ? 'día' : 'días'}`}</span>`; })() : ''}
         </div>
         ${App.Avance ? App.Avance.html(p, ro) : ''}
       </div>
-      <nav class="ptabs">${TABS.map(([k, l]) => `<a href="#/proyectos/${id}/${k}" class="${k === tab ? 'on' : ''}">${l}${cuenta(k)}</a>`).join('')}</nav>
+      <nav class="ptabs">${TABS.map(([k, l]) => `<a href="#/proyectos/${id}/${k}" class="${k === tab ? 'on' : ''}">${k === 'valor' && App.aud() ? 'Captura y OKR' : l}${cuenta(k)}</a>`).join('')}</nav>
       <div id="pTab"></div>`;
     const box = $('#pTab', main);
 

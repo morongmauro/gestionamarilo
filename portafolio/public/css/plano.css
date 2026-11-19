@@ -715,3 +715,37 @@ button.tab#btnBuscar{font:inherit;border:0;background:none;width:100%;text-align
 .tv-atip .ico{color:var(--warn-ink,#9A5B00);width:15px;height:15px;flex:none;margin-top:1px}
 .tv-atip a{color:var(--info-ink);font-weight:700}
 #pTab>.tv-atip{margin:0 0 12px}
+
+/* Plan de captura: lo programado se ve tenue hasta confirmarlo */
+.vl-t td .pg{color:var(--faint,#9C96AD);font-weight:600}
+.vl-t td.pend .pg{color:var(--warn-ink,#9A5B00)}
+.vl-plan .vl-plan-t{margin:4px 0 10px;font-size:13px;line-height:1.45}
+.vl-f label[hidden]{display:none}
+.pf-v10{font-weight:700;font-variant-numeric:tabular-nums}
+
+/* ============================================================
+   Versión auditada (prueba). Todo lo de aquí solo aplica con html.aud
+   ============================================================ */
+html.aud .tab[data-sec="riesgos"],html.aud .tab[data-sec="historial"]{display:none!important}
+html.aud .pf-vistas [data-pfv="tablero"]{display:none}
+html.aud .pf-vistas button{order:2}html.aud .pf-vistas [data-pfv="resumen"]{order:0}html.aud .pf-vistas [data-pfv="cargar"]{order:1}
+.pf-masf{display:none!important}
+html.aud .pf-masf{display:inline-flex!important}
+html.aud .pf-bar:not(.abierta) [data-pf-okr],html.aud .pf-bar:not(.abierta) [data-pf-cat],html.aud .pf-bar:not(.abierta) [data-pf="dgv"],html.aud .pf-bar:not(.abierta) [data-pf="alertas"],html.aud .pf-bar:not(.abierta) [data-pf="inact"]{display:none!important}
+.pf-viejo{display:none}
+html.aud .pf-viejo{display:block;font-size:11px;font-weight:600;color:var(--warn-ink,#9A5B00);margin-top:1px}
+.p-head .facts .viejo{color:var(--warn-ink,#9A5B00)}
+.tv-dir{margin:-4px 0 12px;font-size:13px;color:var(--muted);max-width:900px}
+.tv-aud{font:inherit;font-size:12px;font-weight:700;border:0;border-radius:999px;padding:5px 12px;background:var(--hover,#F0EEF5);color:var(--ink);cursor:pointer}
+html.aud .tv-aud{background:var(--accent);color:#160B29}
+.ad-hist{margin-left:12px;font-size:13px}
+.pf-viejas{background:color-mix(in srgb,var(--accent) 12%,transparent);border-radius:14px;padding:12px 16px;margin:0 0 14px}
+.pf-viejas h3{margin:0 0 8px;font-size:14px;font-weight:800}.pf-viejas h3 small{font-weight:600;color:var(--muted);margin-left:6px;font-size:12px}
+.pf-vl{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:4px 16px}
+.pf-vl a{display:flex;flex-direction:column;padding:5px 8px;border-radius:8px;color:var(--ink);text-decoration:none;font-size:12.5px;line-height:1.3}
+.pf-vl a:hover{background:color-mix(in srgb,var(--ink) 5%,transparent)}.pf-vl a span{color:var(--muted);font-size:11.5px}
+/* Para todos: foco visible en selectores y en las barras de las gráficas */
+select:focus-visible,.tv-mini select:focus-visible{outline:2px solid var(--info-ink,#2A5BD7);outline-offset:2px}
+#main.tv .tv-hit:focus-visible{outline:2px solid var(--info-ink,#2A5BD7);outline-offset:2px}
+.vl-t td .pg{color:var(--muted)!important;opacity:.55;font-weight:500;font-style:italic}
+.vl-t td.pend .pg{opacity:1;color:var(--warn-ink,#9A5B00)!important;font-style:normal;font-weight:700}

@@ -31,7 +31,16 @@
     // El ritmo se mide solo con las iniciativas que registran su captura; las que no han registrado se cuentan aparte
     const reg = x => App.Dash.registra(x.caso, Y);
     const metaTot = X.reduce((a, x) => a + anual(x, Y), 0), meta = X.filter(reg).reduce((a, x) => a + anual(x, Y), 0), captado = X.reduce((a, x) => a + capY(x), 0);
-    const esperado = meta * d.corrido / 12;
+    // Con plan de captura, lo esperado a hoy es lo programado hasta el último mes cerrado; sin plan, el año repartido en 12
+    // Con plan: lo programado de los meses cerrados que ya se confirmaron (lo que falta confirmar se cuenta aparte, no baja el ritmo).
+    // Sin plan: el beneficio del año repartido en 12 meses.
+    const espX = x => {
+      if (!(App.Valor && x.caso && App.Valor.planDe(x.caso))) return anual(x, Y) * d.corrido / 12;
+      let s = 0; for (let i = 1; i <= d.corrido; i++) { const ym = `${Y}-${String(i).padStart(2, '0')}`; if ((x.caso.captado || []).some(c => c.mes === ym)) s += App.Valor.programado(x.caso, ym); }
+      return s;
+    };
+    const esperado = X.filter(reg).reduce((a, x) => a + espX(x), 0);
+    const porConf = App.Valor ? X.reduce((a, x) => a + (x.caso ? App.Valor.pendientes(x.caso).filter(z => z.mes.startsWith(Y + '-')).length : 0), 0) : 0;
     const sinReg = X.filter(x => anual(x, Y) > 0 && !reg(x)), esperadoSin = sinReg.reduce((a, x) => a + anual(x, Y), 0) * d.corrido / 12;
     // Años fuera de rango: un año que suma más de 4 veces la mediana de los años con valor suele ser un error de unidades
     const totY = porAnio.map(z => ({ y: z.y, v: cats.reduce((q, k) => q + z.v[k], 0) })), nz = totY.map(z => z.v).filter(v => v > 0).sort((a, b) => a - b);
@@ -41,7 +50,7 @@
     X.forEach(x => (x.caso && x.caso.captado || []).forEach(c => { if (String(c.mes).startsWith(Y + '-')) { const i = +c.mes.slice(5) - 1, v = Number(c.valor) || 0; cap[i] += v; capPor[i].push({ x, v }); } }));
     const casos = App.S.cases.filter(c => { const p = App.byId('projects', c.project_id); return p && pasa(p); });
     const sg = App.Dash.senales(d).filter(z => pasa(z.x.p));
-    return { d, X, Xf, ps, todos, todosF, Y, cats, anual, capY, porAnio, tot, meta, metaTot, captado, esperado, sinReg, esperadoSin, atip, cap, capPor, casos, sg, crit: sg.filter(z => z.max >= 3), rev: casos.filter(c => c.estado === 'En revisión'), aprob: casos.filter(c => c.estado === 'Aprobado') };
+    return { d, X, Xf, ps, todos, todosF, Y, cats, anual, capY, porAnio, tot, meta, metaTot, captado, esperado, sinReg, esperadoSin, atip, porConf, espX, verif: X.reduce((a, x) => a + (x.caso ? (x.caso.captado || []).filter(c => String(c.mes).startsWith(Y + '-') && App.Mejoras && App.Mejoras.verificado(c, x.caso)).reduce((q, c) => q + (Number(c.valor) || 0), 0) : 0), 0), totAprob: X.filter(x => x.caso && x.caso.estado === 'Aprobado').reduce((a, x) => a + d.anios.reduce((q, y) => q + anual(x, y), 0), 0), cap, capPor, casos, sg, crit: sg.filter(z => z.max >= 3), rev: casos.filter(c => c.estado === 'En revisión'), aprob: casos.filter(c => c.estado === 'Aprobado') };
   }
 
   /* ---------- el detalle: una lista de iniciativas con su enlace ---------- */
@@ -58,7 +67,7 @@
     const mx = Math.max(...porAnio.map(z => cats.reduce((a, k) => a + z.v[k], 0)), 1);
     return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Valor a crear por año y tipo de valor">${porAnio.map((z, i) => { const x = paso * i + (paso - bw) / 2; let y = H - B; const t = cats.reduce((a, k) => a + z.v[k], 0);
       const seg = cats.map(k => { const h = z.v[k] / mx * (H - B - T); if (h < .5) return ''; y -= h; return `<rect x="${x}" y="${y + 1}" width="${bw}" height="${Math.max(0, h - 2)}" rx="2" fill="${CAT[k]}"/>`; }).join('');
-      return `<g class="tv-hit" data-dv="anio:${z.y}"><title>${z.y}: ${esc(m(t))}. Clic para ver las iniciativas</title><rect x="${paso * i}" y="0" width="${paso}" height="${H}" fill="transparent"/>${seg}<text x="${x + bw / 2}" y="${y - 6}" text-anchor="middle" font-size="13" font-weight="800" fill="currentColor">${t ? esc(m(t)) : ''}</text><text x="${x + bw / 2}" y="${H - 8}" text-anchor="middle" font-size="11.5" font-weight="${z.y === Y ? 800 : 500}" class="${z.y === Y ? '' : 'mu'}">${z.y}</text></g>`; }).join('')}<line x1="0" x2="${W}" y1="${H - B}" y2="${H - B}" class="ax"/></svg>`;
+      return `<g class="tv-hit" tabindex="0" role="button" data-dv="anio:${z.y}"><title>${z.y}: ${esc(m(t))}. Clic para ver las iniciativas</title><rect x="${paso * i}" y="0" width="${paso}" height="${H}" fill="transparent"/>${seg}<text x="${x + bw / 2}" y="${y - 6}" text-anchor="middle" font-size="13" font-weight="800" fill="currentColor">${t ? esc(m(t)) : ''}</text><text x="${x + bw / 2}" y="${H - 8}" text-anchor="middle" font-size="11.5" font-weight="${z.y === Y ? 800 : 500}" class="${z.y === Y ? '' : 'mu'}">${z.y}</text></g>`; }).join('')}<line x1="0" x2="${W}" y1="${H - B}" y2="${H - B}" class="ax"/></svg>`;
   }
   function curva(D) {
     const { cap, meta, Y, d } = D, W = 620, H = 220, L = 64, R = 12, T = 14, B = 24;
@@ -74,7 +83,7 @@
       <path d="${area}" fill="#FFC900" opacity=".3"/><path d="${linE}" fill="none" class="esp" stroke-width="2" stroke-dasharray="5 4"/><path d="${linC}" fill="none" stroke="currentColor" stroke-width="2.5"/>
       ${hasta.length ? `<circle cx="${x(hasta.length - 1)}" cy="${y(hasta[hasta.length - 1])}" r="5" fill="currentColor"/><text x="${x(hasta.length - 1) - 8}" y="${yCap}" text-anchor="end" font-size="12" font-weight="800" fill="currentColor">${esc(m(hasta[hasta.length - 1]))}</text>` : ''}
       ${hoyM > 0 && hoyM <= 12 ? `<text x="${x(Math.min(11, hoyM)) - 6}" y="${yEsp}" text-anchor="end" font-size="11.5" font-weight="700" class="mu">esperado ${esc(m(espM * hoyM))}</text>` : ''}
-      ${App.d.MES3.map((mm, i) => `<g class="tv-hit" data-dv="mes:${i}"><title>${mm} ${Y}: ${esc(m(cap[i]))} capturados. Clic para ver quién</title><rect x="${x(i) - (W - L - R) / 22}" y="${T}" width="${(W - L - R) / 11}" height="${H - T}" fill="transparent"/><text x="${x(i)}" y="${H - 6}" text-anchor="middle" font-size="10.5" class="${i === hoyM ? '' : 'mu'}" font-weight="${i === hoyM ? 800 : 500}">${mm}</text></g>`).join('')}</svg>`;
+      ${App.d.MES3.map((mm, i) => `<g class="tv-hit" tabindex="0" role="button" data-dv="mes:${i}"><title>${mm} ${Y}: ${esc(m(cap[i]))} capturados. Clic para ver quién</title><rect x="${x(i) - (W - L - R) / 22}" y="${T}" width="${(W - L - R) / 11}" height="${H - T}" fill="transparent"/><text x="${x(i)}" y="${H - 6}" text-anchor="middle" font-size="10.5" class="${i === hoyM ? '' : 'mu'}" font-weight="${i === hoyM ? 800 : 500}">${mm}</text></g>`).join('')}</svg>`;
   }
   function embudo(D) {
     const { todosF: todos, Xf: X, capY } = D, lista = k => todos.filter(p => fase(p) === k);
@@ -96,7 +105,7 @@
     return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Valor frente a esfuerzo"><rect x="${L}" y="${T}" width="${(W - L - R) / 2}" height="${(H - T - B) / 2}" class="zona" rx="6"/>
       <text x="${L + 8}" y="${T + 16}" font-size="11" font-weight="800" class="ok">Hacer primero</text><text x="${W - R - 6}" y="${H - B - 8}" text-anchor="end" font-size="11" font-weight="700" class="mu">Revisar si vale la pena</text>
       <line x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}" class="ax"/><line x1="${L}" x2="${L}" y1="${T}" y2="${H - B}" class="ax"/>
-      ${pts.map(z => `<g class="tv-hit" data-dv="pt:${z.p.id}"><title>${esc(nom(z.p))}: Income ${z.i}, esfuerzo ${z.e} %. Clic para abrir</title><circle cx="${x(z.e)}" cy="${y(z.i)}" r="12" fill="transparent"/><circle cx="${x(z.e)}" cy="${y(z.i)}" r="7" fill="${FC[z.f] || '#9A96A6'}" class="pt"/></g>`).join('')}
+      ${pts.map(z => `<g class="tv-hit" tabindex="0" role="button" data-dv="pt:${z.p.id}"><title>${esc(nom(z.p))}: Income ${z.i}, esfuerzo ${z.e} %. Clic para abrir</title><circle cx="${x(z.e)}" cy="${y(z.i)}" r="12" fill="transparent"/><circle cx="${x(z.e)}" cy="${y(z.i)}" r="7" fill="${FC[z.f] || '#9A96A6'}" class="pt"/></g>`).join('')}
       ${top.map(z => `<text x="${Math.min(x(z.e) + 11, W - 150)}" y="${y(z.i) + 4}" font-size="11" font-weight="700" fill="currentColor" pointer-events="none">${esc(nom(z.p).slice(0, 26))}</text>`).join('')}
       <text x="${(L + W) / 2}" y="${H - 8}" text-anchor="middle" font-size="10.5" class="mu">esfuerzo →</text><text x="13" y="${(T + H - B) / 2}" font-size="10.5" class="mu" transform="rotate(-90 13 ${(T + H - B) / 2})" text-anchor="middle">valor (Income) →</text></svg>`;
   }
@@ -145,11 +154,13 @@
     const ec = App.estadoCol(), dgv = App.dgvHay();
     main.className = 'tv';
     main.innerHTML = `<div class="tv-h"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Tablero</h1><span class="s">Datos al ${esc(App.d.fmt(d.hoy))}</span><span class="sp"></span>
+        ${App.esAdmin && App.esAdmin() ? `<button class="tv-aud" data-aud="${App.aud() ? 'off' : 'on'}">${App.aud() ? 'Volver a la versión actual' : 'Probar la versión auditada'}</button>` : ''}
         ${F.fase ? `<button class="tv-chip" data-fx="${esc(F.fase)}" title="Quitar el filtro">Mostrando ${esc(faseNombre(isNaN(+F.fase) ? F.fase : +F.fase))} <b>✕</b></button>` : ''}</div>
       ${sub}
+      ${App.aud() ? `<p class="tv-dir">${esc(((App.Mejoras && App.Mejoras.queEsTexto()) || '').split('\n')[0])}${App.esAdmin && App.esAdmin() ? ' <button class="t-lnk" data-qe-ed>editar</button>' : ''}</p>` : ''}
       <div class="tv-kpi">
-        <button class="tv-p tv-k k1" data-dv="kpi:cap"><span><span class="l">Capturado en ${Y}</span><span class="n">${esc(m(D.captado))}</span><span class="c">${pc == null ? (nSin ? `ninguna ha registrado; esperaban ${esc(m(D.esperadoSin))} a hoy` : 'sin captura esperada todavía') : `<b>${Math.round(pc * 100)} %</b> de lo esperado a hoy (${esc(m(D.esperado))})`}</span>${ritmo ? `<span class="st ${ritmo[0]}"><i class="ico ${ritmo[1]}"></i>${ritmo[2]}</span>` : ''}${pc != null && nSin ? `<span class="c sr" title="No han registrado captura este año: no entran en el cálculo del ritmo">${nSin} sin registrar</span>` : ''}</span><span class="mini">${mini(D)}<span class="c">captura por mes</span></span></button>
-        <button class="tv-p tv-k" data-dv="kpi:proy"><span class="l">Valor que proyecta el portafolio</span><span class="n">${esc(m(D.tot))}</span><span class="c">en ${d.anios.length} años, ${plural(D.X.filter(x => x.caso).length, 'caso de negocio', 'casos de negocio')}</span></button>
+        <button class="tv-p tv-k k1" data-dv="kpi:cap"><span><span class="l">Capturado en ${Y}</span><span class="n">${esc(m(D.captado))}</span>${App.aud() ? `<span class="c"><b>${esc(m(D.verif))}</b> verificado${D.captado ? ` (${Math.round(D.verif / D.captado * 100)} %)` : ''}</span>` : ''}<span class="c">${pc == null ? (nSin ? `ninguna ha registrado; esperaban ${esc(m(D.esperadoSin))} a hoy` : 'sin captura esperada todavía') : `<b>${Math.round(pc * 100)} %</b> de lo esperado a hoy (${esc(m(D.esperado))})`}</span>${ritmo ? `<span class="st ${ritmo[0]}"><i class="ico ${ritmo[1]}"></i>${ritmo[2]}</span>` : ''}${pc != null && (nSin || D.porConf) ? `<span class="c sr" title="Sin registrar: no han registrado captura este año y no entran en el ritmo. Por confirmar: meses programados en el plan que nadie ha confirmado.">${[nSin ? `${nSin} sin registrar` : '', D.porConf ? `${D.porConf} por confirmar` : ''].filter(Boolean).join(', ')}</span>` : ''}</span><span class="mini">${mini(D)}<span class="c">captura por mes</span></span></button>
+        <button class="tv-p tv-k" data-dv="kpi:proy"><span class="l">Valor que proyecta el portafolio</span><span class="n">${esc(m(D.tot))}</span><span class="c">${App.aud() ? `<b>${esc(m(D.totAprob))}</b> en casos aprobados, ${esc(m(D.tot - D.totAprob))} en borrador o revisión` : `en ${d.anios.length} años, ${plural(D.X.filter(x => x.caso).length, 'caso de negocio', 'casos de negocio')}`}</span></button>
         <button class="tv-p tv-k" data-dv="kpi:aprob"><span class="l">VPN aprobado</span><span class="n">${esc(m(D.aprob.reduce((a, c) => a + (Finanzas.calc(c).vpn || 0), 0)))}</span><span class="c">${plural(D.aprob.length, 'caso aprobado', 'casos aprobados')}</span></button>
         <button class="tv-p tv-k" data-dv="kpi:rev"><span class="l">Por decidir en comité</span><span class="n">${D.rev.length}</span><span class="c">${D.rev.length ? plural(D.rev.length, 'caso en revisión', 'casos en revisión') : 'nada pendiente'}</span></button>
         <button class="tv-p tv-k" data-dv="kpi:rojo"><span class="l">Iniciativas en rojo</span><span class="n">${D.crit.length}</span><span class="c">con atrasos o captura muy baja</span>${D.crit.length ? '<span class="st r"><i class="ico ico-flecha"></i>Ver cuáles</span>' : ''}</button>
@@ -176,7 +187,9 @@
       if (e.target.closest('.burger')) return App.toggleSide();
       if (e.target.closest('[data-dgv]')) { App.store.set('alcance.dgv', App.soloDgv() ? 'todas' : 'si'); return App.render(); }
       const fx = e.target.closest('[data-fx]'); if (fx && !e.target.closest('[data-dv]')) { F.fase = F.fase === fx.dataset.fx ? '' : fx.dataset.fx; guardar(); return App.render(); }
+      if (e.target.closest('[data-qe-ed]')) return App.Mejoras.editarQueEs(e.target.closest('[data-qe-ed]'));
       const t = e.target.closest('[data-dv]'); if (!t) return;
+      if (App.aud() && t.dataset.dv === 'kpi:rev') return App.go('#/agenda');
       const [k, ...rest] = t.dataset.dv.split(':'), v = rest.join(':');
       if (k === 'anio') { const y = +v; return detalle(t, `Valor que proyectan para ${y}`, D.X.map(x => ({ x, val: D.anual(x, y) })).filter(z => z.val > 0).sort((a, b) => b.val - a.val).map(z => ({ nombre: nom(z.x.p), sub: App.catLabel(z.x.catPrincipal || 'otro'), v: m(z.val), href: ir(z.x.p, 'caso') }))); }
       if (k === 'mes') { const i = +v, l = D.capPor[i].sort((a, b) => b.v - a.v); return detalle(t, `Capturado en ${App.d.MESES ? App.d.MESES[i] : App.d.MES3[i]} de ${Y}`, l.map(z => ({ nombre: nom(z.x.p), v: m(z.v), href: ir(z.x.p, 'caso') }))); }
@@ -190,7 +203,7 @@
         return detalle(t, `Riesgos con probabilidad ${pp} e impacto ${ii}`, l.map(z => ({ nombre: z.r.titulo || 'Riesgo', sub: nom(z.p), href: ir(z.p, 'riesgos') }))); }
       if (k === 'okr') { const l = D.X.filter(x => App.okrsDe(x.p).includes(v)); return detalle(t, v, l.map(x => ({ nombre: nom(x.p), sub: `${m(D.capY(x))} capturados en ${Y}`, v: D.anual(x, Y) ? m(D.anual(x, Y)) : null, href: ir(x.p) }))); }
       if (k === 'kpi') {
-        if (v === 'cap') return detalle(t, `Capturado en ${Y}`, D.X.filter(x => D.capY(x) > 0).sort((a, b) => D.capY(b) - D.capY(a)).map(x => ({ nombre: nom(x.p), sub: `esperado a hoy ${m(D.anual(x, Y) * d.corrido / 12)}`, v: m(D.capY(x)), href: ir(x.p, 'caso') }))
+        if (v === 'cap') return detalle(t, `Capturado en ${Y}`, D.X.filter(x => D.capY(x) > 0).sort((a, b) => D.capY(b) - D.capY(a)).map(x => ({ nombre: nom(x.p), sub: `esperado a hoy ${m(D.espX(x))}`, v: m(D.capY(x)), href: ir(x.p, 'caso') }))
           .concat(D.sinReg.map(x => ({ nombre: nom(x.p), sub: `falta registrar; esperaba ${m(D.anual(x, Y) * d.corrido / 12)} a hoy`, v: 'sin registrar', href: `#/proyectos/${x.p.id}/valor/captura` }))));
         if (v === 'proy') return detalle(t, 'Lo que más valor proyecta', D.X.filter(x => x.caso).map(x => ({ x, t: d.anios.reduce((a, y) => a + D.anual(x, y), 0) })).filter(z => z.t > 0).sort((a, b) => b.t - a.t).map(z => ({ nombre: nom(z.x.p), sub: App.catLabel(z.x.catPrincipal || 'otro'), v: m(z.t), href: ir(z.x.p, 'caso') })));
         if (v === 'aprob') return detalle(t, 'Casos aprobados', D.aprob.map(c => { const p = App.byId('projects', c.project_id), f = Finanzas.calc(c); return { nombre: nom(p), sub: f.tir != null ? `TIR ${App.pct(f.tir)}` : '', v: f.vpn != null ? m(f.vpn) : null, href: ir(p, 'caso') }; }));
@@ -214,5 +227,6 @@
     const pop = document.getElementById('pop');
     if (pop && !pop._tvFase) { pop._tvFase = true; pop.addEventListener('click', e => { const a = e.target.closest('[data-fase-ir]'); if (!a || !App.Portafolio || !App.Portafolio.filtrarFase) return; e.preventDefault(); App.closePop(true); App.Portafolio.filtrarFase(a.dataset.faseIr); }); }
   }
+  document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('tv-hit')) { e.preventDefault(); e.target.dispatchEvent(new MouseEvent('click', { bubbles: true })); } });
   App.TableroVisual = { atipicoDe: pid => { try { return datos().atip.filter(z => z.top && z.top.x.p.id === pid); } catch (e) { return []; } }, render };
 })();

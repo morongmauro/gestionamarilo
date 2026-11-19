@@ -27,6 +27,23 @@
   /* ---------- captura: cálculos ---------- */
   const catsDe = c => [...new Set((c.flujos || []).filter(f => f.tipo === 'beneficio').map(App.catOf))];
   const proyAnio = (c, y, cat) => { const t = y - (c.anio_inicio || new Date().getFullYear()); if (t < 0) return 0; return (c.flujos || []).filter(f => f.tipo === 'beneficio' && (!cat || App.catOf(f) === cat)).reduce((a, f) => a + (Number((f.valores || [])[t]) || 0), 0); };
+  // Plan de captura: lo que el caso dice que se capturará, cada cuánto y hasta qué año del caso.
+  // Lo programado aparece solo en el mes a mes; cuenta como capturado cuando alguien lo confirma.
+  const FREC_N = { mensual: 12, trimestral: 4, semestral: 2, anual: 1 };
+  const FREC_T = { mensual: 'cada mes', trimestral: 'cada trimestre', semestral: 'cada semestre', anual: 'una vez al año' };
+  const planDe = c => (c && c.plan_captura && c.plan_captura.activo !== false && c.plan_captura.frecuencia ? c.plan_captura : null);
+  function programado(c, ym, cat) {
+    const pl = planDe(c); if (!pl) return 0;
+    const y = +ym.slice(0, 4), mm = +ym.slice(5), t = y - (c.anio_inicio || y);
+    if (t < 0 || (pl.hasta && t >= pl.hasta) || (pl.desde && ym < pl.desde)) return 0;
+    const f = FREC_N[pl.frecuencia] ? pl.frecuencia : 'mensual';
+    const toca = f === 'mensual' || (f === 'trimestral' && mm % 3 === 0) || (f === 'semestral' && mm % 6 === 0) || (f === 'anual' && mm === (Number(pl.mes) || 12));
+    if (!toca) return 0;
+    if (Number(pl.monto) > 0) { const k = pl.categoria || (catsDe(c)[0] || 'ahorro'); return !cat || cat === k ? Number(pl.monto) : 0; }
+    return proyAnio(c, y, cat) / FREC_N[f];
+  }
+  // Lo esperado de enero hasta el mes «hasta» (inclusive) según el plan; null si no hay plan
+  function esperadoHasta(c, y, hasta) { if (!planDe(c)) return null; let s = 0; for (let i = 1; i <= hasta; i++) s += programado(c, `${y}-${String(i).padStart(2, '0')}`); return s; }
   const capDe = (c, filtro) => (c.captado || []).filter(filtro).reduce((a, x) => a + (Number(x.valor) || 0), 0);
   const capMes = (c, ym, cat) => capDe(c, x => x.mes === ym && (!cat || x.categoria === cat));
   const capAnio = (c, y) => capDe(c, x => String(x.mes).startsWith(y + '-'));
@@ -47,6 +64,13 @@
     (c.recurrentes || []).filter(r => r.activo !== false && r.desde).forEach(r => {
       for (let ym = r.desde < lim ? lim : r.desde; ym < mesHoy(); ym = mesAnt(ym, -1)) if (!(c.captado || []).some(x => x.mes === ym && x.categoria === r.categoria)) out.push({ r, mes: ym });
     });
+    if (planDe(c)) {
+      const ini = `${c.anio_inicio || hoy().slice(0, 4)}-01`, cs = catsDe(c).length ? catsDe(c) : ['ahorro'];
+      for (let ym = [lim, ini, planDe(c).desde || ini].sort().pop(); ym < mesHoy(); ym = mesAnt(ym, -1)) cs.forEach(k => {
+        const v = Math.round(programado(c, ym, k));
+        if (v > 0 && !(c.captado || []).some(x => x.mes === ym && x.categoria === k) && !out.some(z => z.mes === ym && z.r.categoria === k)) out.push({ r: { id: 'plan', categoria: k, valor: v, plan: true }, mes: ym });
+      });
+    }
     return out.sort((a, b) => a.mes.localeCompare(b.mes));
   }
   async function guardarCaso(c, cambios) { const r = await App.patch('cases', c.id, cambios); Object.assign(c, cambios); return r; }
@@ -66,20 +90,21 @@
     const pend = pendientes(c), hip = hipotesis(p), proy = proyAnio(c, Y), cap = capAnio(c, Y), ver = verAnio(c, Y), vh = verHasta(c, Y);
     const ult12 = capDe(c, x => x.mes >= mesAnt(mesHoy(), 12) && x.mes < mesHoy());
     const meses = Array.from({ length: 12 }, (_, i) => `${Y}-${String(i + 1).padStart(2, '0')}`);
-    const celda = (ym, k) => { const v = capMes(c, ym, k), fut = ym >= mesHoy(), pe = pend.some(z => z.mes === ym && z.r.categoria === k);
-      return `<td class="${esVer(c, ym) && v ? 'ver' : ''} ${fut ? 'fut' : ''} ${pe ? 'pend' : ''} ${ro || fut ? '' : 'ed'}" data-cel="${ym}|${k}" title="${pe ? 'Recurrente por confirmar' : esVer(c, ym) && v ? 'Verificado' : ''}">${v ? esc(App.num(v / 1e6, 1)) : pe ? '?' : fut ? '' : '·'}</td>`; };
+    const celda = (ym, k) => { const v = capMes(c, ym, k), fut = ym >= mesHoy(), pz = pend.find(z => z.mes === ym && z.r.categoria === k), pe = !!pz, pg = !v && fut ? programado(c, ym, k) : 0;
+      return `<td class="${esVer(c, ym) && v ? 'ver' : ''} ${fut ? 'fut' : ''} ${pe ? 'pend' : ''} ${ro || fut ? '' : 'ed'}" data-cel="${ym}|${k}" title="${pe ? 'Programado, por confirmar' : pg ? 'Programado en el plan de captura' : esVer(c, ym) && v ? 'Verificado' : ''}">${v ? esc(App.num(v / 1e6, 1)) : pe ? `<span class="pg">${esc(App.num(pz.r.valor / 1e6, 1))}?</span>` : pg ? `<span class="pg">${esc(App.num(pg / 1e6, 1))}</span>` : fut ? '' : '·'}</td>`; };
     box.innerHTML = `<div class="vl-bar"><div class="vl-res">
         <span><b>${hip ? esc(m(hip.anual)) : '—'}</b>hipótesis al año${hip ? ` (Income ${hip.income})` : ''}</span><span><b>${esc(m(proy))}</b>proyectado ${Y}</span>
         <span><b>${esc(m(cap))}</b>capturado</span><span class="ok"><b>${esc(m(ver))}</b>verificado</span></div><span class="sp"></span>
         ${ro ? '' : '<button class="btn primary sm" data-v="registrar">Registrar captura</button><button class="btn sm" data-v="mas">⋯ Más</button>'}</div>
-      ${pend.length ? `<section class="vl-sec"><h3>Por confirmar <small>capturas recurrentes de meses ya cerrados</small>${ro ? '' : `<button class="t-lnk" data-v="conf-todo">Confirmar todas (${pend.length})</button>`}</h3>
-        <div class="vl-pend">${pend.slice(-6).map((z, i) => `<div class="vl-pi"><i class="ico ico-reloj"></i><span><b>${esc(App.catLabel(z.r.categoria))}, ${esc(mesTxt(z.mes))}</b><small>recurrente desde ${esc(mesTxt(z.r.desde))}</small></span><b class="v">${esc(m(z.r.valor))}</b>${ro ? '' : `<span><button class="btn primary sm" data-conf="${pend.indexOf(z)}">Confirmar</button><button class="btn sm" data-aj="${pend.indexOf(z)}">Ajustar</button></span>`}</div>`).join('')}
+      ${pend.length ? `<section class="vl-sec"><h3>Por confirmar <small>lo programado de meses ya cerrados: confirme o ajuste la cifra real</small>${ro ? '' : `<button class="t-lnk" data-v="conf-todo">Confirmar todas (${pend.length})</button>`}</h3>
+        <div class="vl-pend">${pend.slice(-6).map((z, i) => `<div class="vl-pi"><i class="ico ico-reloj"></i><span><b>${esc(App.catLabel(z.r.categoria))}, ${esc(mesTxt(z.mes))}</b><small>${z.r.plan ? 'programado en el plan de captura' : `recurrente desde ${esc(mesTxt(z.r.desde))}`}</small></span><b class="v">${esc(m(z.r.valor))}</b>${ro ? '' : `<span><button class="btn primary sm" data-conf="${pend.indexOf(z)}">Confirmar</button><button class="btn sm" data-aj="${pend.indexOf(z)}">Ajustar</button></span>`}</div>`).join('')}
         ${pend.length > 6 ? `<div class="faint">y ${pend.length - 6} más anteriores</div>` : ''}</div></section>` : ''}
-      <section class="vl-sec"><h3>Mes a mes <small>en millones, verde: verificado${vh ? ` hasta ${esc(mesTxt(vh))}` : ''}, ? recurrente por confirmar</small><span class="sp"></span><span class="vl-anio"><button data-anio="-1" aria-label="Año anterior">‹</button><b>${Y}</b><button data-anio="1" aria-label="Año siguiente">›</button></span></h3>
+      <section class="vl-sec"><h3>Mes a mes <small>en millones, verde: verificado${vh ? ` hasta ${esc(mesTxt(vh))}` : ''}, gris: programado en el plan, ? por confirmar</small><span class="sp"></span><span class="vl-anio"><button data-anio="-1" aria-label="Año anterior">‹</button><b>${Y}</b><button data-anio="1" aria-label="Año siguiente">›</button></span></h3>
         <div class="vl-tw"><table class="vl-t"><thead><tr><th>Tipo de valor</th>${meses.map(ym => `<th>${App.d.MES3[+ym.slice(5) - 1]}</th>`).join('')}<th>Total</th><th>Proyectado</th></tr></thead><tbody>
         ${cats.map(k => `<tr><td><span class="cat-dot cat-${k}"></span>${esc(App.catLabel(k))}</td>${meses.map(ym => celda(ym, k)).join('')}<td class="tot">${esc(App.num(capDe(c, x => String(x.mes).startsWith(Y + '-') && x.categoria === k) / 1e6, 1))}</td><td class="tot mu">${esc(App.num(proyAnio(c, Y, k) / 1e6, 1))}</td></tr>`).join('')}
         </tbody></table></div>${ro ? '' : '<div class="faint vl-nota">Clic en un mes para registrar o corregir lo capturado.</div>'}</section>
-      <div class="vl-dos"><section class="vl-sec"><h3>Capturas recurrentes</h3>
+      <section class="vl-sec vl-plan"><h3>Plan de captura</h3>${planTxt(c)}${ro ? '' : `<button class="btn sm" data-v="plan">${planDe(c) ? 'Cambiar el plan' : 'Definir el plan'}</button>`}</section>
+      <div class="vl-dos"><section class="vl-sec"><h3>Capturas recurrentes <small>montos fijos</small></h3>
         ${(c.recurrentes || []).length ? `<div class="vl-rec">${c.recurrentes.map(r => `<div class="vl-ri ${r.activo === false ? 'off' : ''}"><span><b>${esc(App.catLabel(r.categoria))}: ${esc(m(r.valor))} al mes</b><small>desde ${esc(mesTxt(r.desde))}${r.activo === false ? ', detenida' : ''}</small></span>${ro ? '' : `<button class="t-lnk" data-rec-t="${r.id}">${r.activo === false ? 'Reanudar' : 'Detener'}</button><button class="t-lnk x" data-rec-x="${r.id}">Quitar</button>`}</div>`).join('')}</div>` : '<p class="faint">Ninguna. Si un ahorro o ingreso se repite cada mes, márquelo una vez y cada mes aparecerá para confirmar.</p>'}
         ${ro ? '' : '<button class="btn sm" data-v="rec">+ Captura recurrente</button>'}</section>
       <section class="vl-sec"><h3>¿Se cumple la hipótesis?</h3>${hip ? `<div class="vl-hip"><div class="tr"><i class="${ult12 >= hip.anual * .9 ? 'g' : ult12 >= hip.anual * .5 ? 'o' : 'r'}" style="width:${Math.min(100, ult12 / hip.anual * 100)}%"></i></div><b>${Math.round(ult12 / hip.anual * 100)} %</b></div>
@@ -99,6 +124,7 @@
       const b = e.target.closest('[data-v]'); if (!b) return;
       if (b.dataset.v === 'registrar') return registrar(b, c, cats, repintar);
       if (b.dataset.v === 'rec') return recurrente(b, c, cats, repintar);
+      if (b.dataset.v === 'plan') return editarPlan(b, c, cats, repintar);
       if (b.dataset.v === 'mas') return App.menu(b, [{ id: 'rec', label: 'Captura recurrente' }, { id: 'ver', label: 'Marcar verificado por Finanzas' }, '-', { id: 'caso', label: 'Ver el caso de negocio' }], k => {
         if (k === 'rec') recurrente(b, c, cats, repintar);
         if (k === 'ver') verificar(b, c, Y, repintar);
@@ -128,6 +154,39 @@
       App.guard(async () => { const cap = (c.captado || []).filter(x => !(x.mes === mes && x.categoria === cat)); cap.push({ mes, categoria: cat, valor: v });
         const ch = { captado: cap }; if (q('rec').checked) ch.recurrentes = (c.recurrentes || []).concat({ id: App.uid(), categoria: cat, valor: v, desde: mes, activo: true });
         await guardarCaso(c, ch); App.closePop(true); App.toast('Captura registrada'); done(); });
+    };
+  }
+  const MESES_L = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  function planTxt(c) {
+    const pl = planDe(c), ini = c.anio_inicio || +hoy().slice(0, 4), n = c.anios || 10;
+    if (!pl) return `<p class="faint">Sin plan, los meses no se llenan solos. Con un plan, lo que el caso dice que se captura aparece programado cada mes y solo hay que confirmarlo (o ajustar la cifra real).</p>`;
+    const cuanto = Number(pl.monto) > 0 ? `${esc(m(pl.monto))} de ${esc(App.catLabel(pl.categoria || 'ahorro'))}` : 'Lo que dice el caso';
+    const cada = pl.frecuencia === 'anual' ? `una vez al año, en ${MESES_L[(Number(pl.mes) || 12) - 1]}` : FREC_T[pl.frecuencia];
+    const hasta = pl.hasta && pl.hasta < n ? `hasta el año ${pl.hasta} del caso (${ini + pl.hasta - 1})` : `durante todo el caso (${n} años, hasta ${ini + n - 1})`;
+    return `<p class="vl-plan-t"><b>${cuanto}, ${cada}</b>, ${hasta}${pl.desde ? `, desde ${esc(mesTxt(pl.desde))}` : ''}.${Number(pl.monto) > 0 ? '' : ` <span class="faint">${pl.frecuencia === 'mensual' ? 'El beneficio de cada año se reparte en 12 meses.' : pl.frecuencia === 'anual' ? 'El beneficio del año llega en un solo mes.' : 'El beneficio de cada año se reparte en partes iguales.'}</span>`}</p>`;
+  }
+  function editarPlan(anchor, c, cats, done) {
+    const pl = c.plan_captura || {}, n = c.anios || 10, ini = c.anio_inicio || +hoy().slice(0, 4);
+    const op = (v, t, sel) => `<option value="${v}" ${String(sel) === String(v) ? 'selected' : ''}>${t}</option>`;
+    const p = App.openPop(anchor, `<div class="lbl">Plan de captura</div><div class="vl-f">
+      <label>Cada cuánto se captura<select data-pl="frec">${op('mensual', 'Cada mes', pl.frecuencia || 'mensual')}${op('trimestral', 'Cada trimestre', pl.frecuencia)}${op('semestral', 'Cada semestre', pl.frecuencia)}${op('anual', 'Una vez al año', pl.frecuencia)}</select></label>
+      <label data-solo="anual">En qué mes<select data-pl="mes">${MESES_L.map((t, i) => op(i + 1, t, pl.mes || 12)).join('')}</select></label>
+      <label>Cuánto<select data-pl="modo">${op('caso', 'Lo que dice el caso, año por año', Number(pl.monto) > 0 ? 'fijo' : 'caso')}${op('fijo', 'Un monto fijo por período', Number(pl.monto) > 0 ? 'fijo' : 'caso')}</select></label>
+      <label data-solo="fijo">Monto por período (pesos)<input data-pl="monto" inputmode="decimal" value="${Number(pl.monto) > 0 ? pl.monto : ''}"></label>
+      <label data-solo="fijo">Tipo de valor<select data-pl="cat">${cats.map(k => op(k, App.catLabel(k), pl.categoria || cats[0])).join('')}</select></label>
+      <label>Hasta cuándo<select data-pl="hasta">${[[2, `Año 2 del caso (${ini + 1})`], [5, `Año 5 (${ini + 4})`], [n, `Todo el caso, ${n} años (${ini + n - 1})`]].filter((z, i, a) => z[0] <= n && a.findIndex(w => w[0] === z[0]) === i).map(([v, t]) => op(v, t, pl.hasta || n)).join('')}</select></label>
+      <label>Desde (opcional)<input type="month" data-pl="desde" value="${esc(pl.desde || '')}"></label></div>
+      <div class="row"><button class="btn primary sm" data-pl="ok">Guardar</button>${c.plan_captura ? '<button class="btn sm" data-pl="quitar">Quitar el plan</button>' : ''}</div>`, { width: 340 });
+    const q = k => p.querySelector(`[data-pl=${k}]`);
+    const vis = () => { p.querySelector('[data-solo=anual]').hidden = q('frec').value !== 'anual'; p.querySelectorAll('[data-solo=fijo]').forEach(x => { x.hidden = q('modo').value !== 'fijo'; }); };
+    vis(); p.onchange = vis;
+    p.onclick = e => {
+      if (e.target.closest('[data-pl=quitar]')) return App.guard(async () => { await guardarCaso(c, { plan_captura: null }); App.closePop(true); App.toast('Plan quitado'); done(); });
+      if (!e.target.closest('[data-pl=ok]')) return;
+      const fijo = q('modo').value === 'fijo', monto = fijo ? leerCifra(q('monto').value) : null;
+      if (fijo && !(monto > 0)) return App.toast('Escriba el monto por período', true);
+      const nuevo = { frecuencia: q('frec').value, mes: Number(q('mes').value) || 12, hasta: Number(q('hasta').value) || n, monto: fijo ? monto : null, categoria: fijo ? q('cat').value : null, desde: q('desde').value || null, activo: true };
+      App.guard(async () => { await guardarCaso(c, { plan_captura: nuevo }); App.closePop(true); App.toast('Plan de captura guardado'); done(); });
     };
   }
   function recurrente(anchor, c, cats, done) {
@@ -172,11 +231,11 @@
           ${fila('Proyectado', 'lo que dicen los casos', proy, 'az', hip ? `${Math.round(proy / hip * 100)} % de la hipótesis` : '')}
           ${fila('Capturado', 'reportado por cada iniciativa', cap, 'in', proy ? `${Math.round(cap / proy * 100)} % de lo proyectado` : '')}
           ${fila('Verificado', 'Finanzas lo encontró en el P&G', ver, 've', cap ? `${Math.round(ver / cap * 100)} % de lo capturado` : '')}</div></section>
-        <section class="vl-p"><h3>Por confirmar <small>capturas recurrentes de meses cerrados</small></h3>
+        <section class="vl-p"><h3>Por confirmar <small>lo programado de meses ya cerrados</small></h3>
           ${pend.length ? `<div class="vl-pend">${pend.slice(0, 6).map((z, i) => `<div class="vl-pi"><i class="ico ico-reloj"></i><span><a href="${ir(z.p, 'captura')}"><b>${esc(nom(z.p))}</b></a><small>${esc(App.catLabel(z.r.categoria))}, ${esc(mesTxt(z.mes))}</small></span><b class="v">${esc(m(z.r.valor))}</b>${App.canEdit() ? `<span><button class="btn primary sm" data-pconf="${i}">Confirmar</button></span>` : ''}</div>`).join('')}</div>${pend.length > 6 ? `<p class="faint">y ${pend.length - 6} más</p>` : ''}` : '<p class="faint">Nada por confirmar. Las capturas recurrentes se marcan en la pestaña «Captura de valor» de cada iniciativa.</p>'}</section></div>
-      <section class="vl-p"><h3>Mes a mes por iniciativa <small>en millones, verde: verificado, ? por confirmar, clic en el nombre para registrar</small></h3>
+      <section class="vl-p"><h3>Mes a mes por iniciativa <small>en millones, verde: verificado, gris: programado en el plan, ? por confirmar</small></h3>
         ${tabla.length ? `<div class="vl-tw"><table class="vl-t"><thead><tr><th>Iniciativa</th>${meses.map(ym => `<th>${App.d.MES3[+ym.slice(5) - 1]}</th>`).join('')}<th>Total</th><th>Proyectado</th></tr></thead><tbody>
-          ${tabla.map(z => { const pe = pendientes(z.c); return `<tr><td><a href="${ir(z.p, 'captura')}">${esc(nom(z.p))}</a></td>${meses.map(ym => { const v = capMes(z.c, ym); return `<td class="${v && esVer(z.c, ym) ? 'ver' : ''} ${ym >= mesHoy() ? 'fut' : ''} ${pe.some(x => x.mes === ym) ? 'pend' : ''}">${v ? esc(App.num(v / 1e6, 1)) : pe.some(x => x.mes === ym) ? '?' : ym >= mesHoy() ? '' : '·'}</td>`; }).join('')}<td class="tot">${esc(App.num(capAnio(z.c, Y) / 1e6, 1))}</td><td class="tot mu">${esc(App.num(proyAnio(z.c, Y) / 1e6, 1))}</td></tr>`; }).join('')}
+          ${tabla.map(z => { const pe = pendientes(z.c); return `<tr><td><a href="${ir(z.p, 'captura')}">${esc(nom(z.p))}</a></td>${meses.map(ym => { const v = capMes(z.c, ym), pv = pe.filter(x => x.mes === ym).reduce((a, x) => a + x.r.valor, 0), pg = !v && ym >= mesHoy() ? programado(z.c, ym) : 0; return `<td class="${v && esVer(z.c, ym) ? 'ver' : ''} ${ym >= mesHoy() ? 'fut' : ''} ${pv ? 'pend' : ''}">${v ? esc(App.num(v / 1e6, 1)) : pv ? `<span class="pg">${esc(App.num(pv / 1e6, 1))}?</span>` : pg ? `<span class="pg">${esc(App.num(pg / 1e6, 1))}</span>` : ym >= mesHoy() ? '' : '·'}</td>`; }).join('')}<td class="tot">${esc(App.num(capAnio(z.c, Y) / 1e6, 1))}</td><td class="tot mu">${esc(App.num(proyAnio(z.c, Y) / 1e6, 1))}</td></tr>`; }).join('')}
           </tbody></table></div>` : '<p class="faint">Ninguna iniciativa proyecta ni captura valor en este año.</p>'}</section>
       <section class="vl-p"><h3>¿Se cumplió la hipótesis? <small>capturado en los últimos 12 meses frente al Income declarado</small></h3><div class="vl-hips">
         ${filas.filter(z => z.h && z.c).map(z => ({ z, u: capDe(z.c, x => x.mes >= mesAnt(mesHoy(), 12) && x.mes < mesHoy()) })).sort((a, b) => b.u / b.z.h.anual - a.u / a.z.h.anual).slice(0, 10).map(({ z, u }) => { const pc = Math.round(u / z.h.anual * 100);
@@ -299,5 +358,5 @@
   // Casos de negocio pasa a ser la primera pestaña de Valor
   const casos = App.views.casos;
   if (casos) App.views.casos = { render: (main, params) => { casos.render(main, params); if ((params || [])[0]) return; const t = main.querySelector('.pg-top'); if (t) { t.querySelector('h1').textContent = 'Valor'; const kl = t.querySelector('.kl'); const hd = document.createElement('div'); hd.className = 'pf-head vl-head'; t.before(hd); hd.appendChild(t); hd.insertAdjacentHTML('beforeend', subnav('casos')); if (kl) { kl.classList.add('pf-kl'); hd.after(kl); } } } };
-  App.Valor = { captura, okrProyecto, avanceObj, objetivos, iniciativasDe, pendientes };
+  App.Valor = { captura, okrProyecto, avanceObj, objetivos, iniciativasDe, pendientes, planDe, programado, esperadoHasta };
 })();

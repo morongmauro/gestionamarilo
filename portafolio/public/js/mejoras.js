@@ -282,6 +282,6 @@
     box.addEventListener('click', e => { const b = e.target.closest('[data-qe=editar]'); if (b) editarQueEs(b); });
   }
 
-  App.Mejoras = { sigla, queEs, editarQueEs, verificado, validacionDe, capturasDelAnio, evidenciaHTML, evidenciaEditor, decisionesRecientes, decisionesEditor, decisionesDe, hitos, hitosHTML, enRealizacion, historia, preparar, proponer, desactualizadosItems, adminExtras };
+  App.Mejoras = { queEsTexto: () => direccion().que_es || QUE_ES_DEF, sigla, queEs, editarQueEs, verificado, validacionDe, capturasDelAnio, evidenciaHTML, evidenciaEditor, decisionesRecientes, decisionesEditor, decisionesDe, hitos, hitosHTML, enRealizacion, historia, preparar, proponer, desactualizadosItems, adminExtras };
   App.views.proponer = { render: proponer };
 })();

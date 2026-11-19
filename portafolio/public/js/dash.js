@@ -99,7 +99,7 @@
   /* ---------- salud de cada proyecto (para «Requiere atención» y la matriz) ---------- */
   // Reglas a la vista: nada se decide en secreto. Cada señal dice de dónde sale.
   // ¿La iniciativa registra su captura del año? (algún mes del año con captura, o una captura recurrente activa)
-  const registra = (caso, Y) => !!caso && ((caso.captado || []).some(c => String(c.mes || '').startsWith(Y + '-')) || (caso.recurrentes || []).some(r => r.activo !== false));
+  const registra = (caso, Y) => !!caso && ((caso.captado || []).some(c => String(c.mes || '').startsWith(Y + '-')) || (caso.recurrentes || []).some(r => r.activo !== false) || !!(caso.plan_captura && caso.plan_captura.activo !== false && caso.plan_captura.frecuencia));
   function senales(d) {
     const hoy = d.hoy, en14 = App.d.add(hoy, 14);
     return d.filas.map(x => {

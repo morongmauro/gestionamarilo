@@ -87,6 +87,7 @@
     avance: { t: 'avance', v: r => (r.pl.acts.length ? r.pl.avance : null), dir: -1 },
     fin: { t: 'fecha de fin', v: r => r.pl.fin || null, dir: 1 },
     valor: { t: 'valor a dos años', v: r => dosAnios(r) || r.valor || null, dir: -1 },
+    valor10: { t: 'valor a 10 años', v: r => r.valor || null, dir: -1 },
     alertas: { t: 'alertas', v: r => (r.al.length ? r.al[0].sev * 100 + r.al.length : sinDatos(r) ? 0.5 : inactiva(r) ? null : 0), dir: -1 },
   };
   function ordenar(l) {
@@ -124,6 +125,7 @@
     const tarde = pl.atrasadas > 0;
     return `<span class="pf-gantt ${tarde ? 'tarde' : ''}" title="${esc(App.d.fmt(pl.ini))} – ${esc(App.d.fmt(pl.fin))}"><i style="left:${x0}%;width:${Math.max(1.5, x1 - x0)}%"><b style="width:${pl.avance}%"></b></i><u style="left:${hoy}%"></u><em style="left:50%"></em></span><span class="pf-fin ${tarde ? 'tarde' : ''}">${esc(App.d.MES3[+pl.fin.slice(5, 7) - 1])} ${pl.fin.slice(2, 4)}</span>`;
   }
+  const diasSinCambio = p => { const c = App.caseOf(p.id), u = [p.updated_at || p.created_at || '', c ? c.updated_at || '' : '', ...App.actsOf(p.id).map(x => x.updated_at || '')].sort().pop(); return u ? Math.round((Date.now() - new Date(u)) / 864e5) : 0; };
   function filaHTML(r) {
     const ec = App.estadoCol(), est = r.x.estado, ice = r.x.ice;
     const okr = r.okrs.length ? `<button class="pf-okrs" data-okrs="${r.p.id}" title="Ver los OKR de esta iniciativa"><span class="t">${esc(r.okrs[0])}</span>${r.okrs.length > 1 ? `<em>+${r.okrs.length - 1}</em>` : ''}</button>` : '<span class="faint">—</span>';
@@ -135,7 +137,7 @@
       : r.valor ? `<span class="pf-caso"><b>${esc(m(r.valor))}</b><small class="pf-inc" title="Sin caso de negocio: valor del Income"> Income</small></span>` : (App.canEdit() && !inactiva(r) ? `<a class="pf-crear" href="#/proyectos/${r.p.id}/caso" title="Crear el caso de negocio"><span class="a">Sin caso</span><span class="b">+ Crear caso</span></a>` : '<span class="faint">Sin caso</span>');
     const al = r.al[0];
     const C = {
-      nombre: `<td class="pf-nm"><a href="#/proyectos/${r.p.id}"><b>${esc(App.projectName(r.p))}</b></a>${App.tagEjemplo(r.p)}</td>`,
+      nombre: `<td class="pf-nm"><a href="#/proyectos/${r.p.id}"><b>${esc(App.projectName(r.p))}</b></a>${App.tagEjemplo(r.p)}${(() => { const dd = diasSinCambio(r.p); return dd > 30 && !inactiva(r) ? `<small class="pf-viejo" title="Última edición del avance, el caso o la captura">sin cambios hace ${dd} días</small>` : ''; })()}</td>`,
       fase: `<td class="pf-fase-c">${ec ? `<button class="pf-fase" data-fase-ed="${r.p.id}" ${App.canEdit() ? '' : 'disabled'} title="${esc(est || 'Sin fase')}${App.canEdit() ? ', clic para cambiarla' : ''}"><span class="pill cl-${App.optColor(ec, est) || 'gris'}">${esc(est ? est.replace(/\s*·.*$/, '') : 'Sin fase')}</span></button>` : ''}</td>`,
       habilitadores: `${['habilitadores'].map(k => { const c = App.S.columns.find(x => x.id === k); const v = (r.p.props || {})[k]; return `<td class="pf-per-c">${c && v && (!Array.isArray(v) || v.length) ? App.Tabla.renderValue(c, v) : '<span class="faint">—</span>'}</td>`; }).join('')}`,
       realizadores: `${['realizadores'].map(k => { const c = App.S.columns.find(x => x.id === k); const v = (r.p.props || {})[k]; return `<td class="pf-per-c">${c && v && (!Array.isArray(v) || v.length) ? App.Tabla.renderValue(c, v) : '<span class="faint">—</span>'}</td>`; }).join('')}`,
@@ -144,6 +146,7 @@
       avance: `<td>${av}</td>`,
       fin: `<td><a class="pf-crono" href="#/cronograma/${r.p.id}" title="Abrir el cronograma">${mini(r)}</a></td>`,
       valor: `<td>${caso}</td>`,
+      valor10: `<td class="n">${r.x.caso && r.valor ? `<span class="pf-v10" title="Total de beneficios del caso, todos sus años">${esc(m(r.valor))}</span>` : '<span class="faint">—</span>'}</td>`,
       alertas: `<td>${al ? `<a class="pf-al ${al.sev >= 3 ? 'crit' : 'warn'}" href="${al.href}" title="${esc(r.al.map(o => '• ' + o.txt).join('\n'))}">${al.sev >= 3 ? '●' : '▲'} ${esc(cortoAlerta(al.txt))}${r.al.length > 1 ? ` <em>+${r.al.length - 1}</em>` : ''}</a>` : (() => { const av = App.Avance && App.Avance.de(r.p); return av && av.listo ? `<a class="pf-listo" href="#/proyectos/${r.p.id}" title="Cumple los criterios: confirma el cambio en su ficha">↗ Lista para ${esc(av.sig.corto)}</a>` : inactiva(r) ? '<span class="faint">—</span>' : sinDatos(r) ? '<span class="pf-sd" title="No tiene cronograma ni caso de negocio: no hay con qué medir si va bien">Sin datos</span>' : `<span class="pf-ok" title="Sin alertas en lo que tiene cargado">✓ Al día</span>${!r.x.caso ? '<small class="pf-falta">falta el caso</small>' : !r.pl.acts.length ? '<small class="pf-falta">falta el cronograma</small>' : ''}`; })()}</td>`,
     };
     return `<tr data-pid="${r.p.id}" class="${inactiva(r) ? 'pf-inact' : ''}">${colsVis().map(k => C[k] != null ? C[k] : celdaProp(k, r)).join('')}<td class="go" aria-hidden="true">›</td></tr>`;
@@ -152,10 +155,13 @@
   const cortoAlerta = t => t.replace(/ en el cronograma$/, '').replace(/^(\d+) actividad(?:es)? atrasadas?$/, (_, n) => n + (n === '1' ? ' atrasada' : ' atrasadas')).replace(/^1 compromiso de comité vencido$/, 'Compromiso vencido').replace(/^Captura (rezagada|por debajo): (\d+)%.*/, 'Captura al $2 %').replace(/^Termina (\d+) días? hábil(es)? después de la fecha meta$/, 'Meta +$1 días').replace(/ de comité vencidos?$/, ' vencido').replace(/^(\d+) actividad(es)? de la ruta crítica en riesgo$/, 'Ruta crítica en riesgo');
   const COLS_PER = ['habilitadores', 'realizadores'];
   // Columnas del Resumen. Las «p:<id>» son columnas del portafolio (atributos de la iniciativa): se editan en la celda.
-  const BASE = [['nombre', 'Iniciativa'], ['fase', 'Fase'], ['habilitadores', 'Habilitadores'], ['realizadores', 'Realizadores'], ['okr', 'OKR'], ['tipo', 'Tipo de valor'], ['ice', 'ICE'], ['avance', 'Avance'], ['fin', 'Cronograma'], ['valor', 'Valor a 2 años'], ['alertas', 'Alertas']];
+  const BASE = [['nombre', 'Iniciativa'], ['fase', 'Fase'], ['habilitadores', 'Habilitadores'], ['realizadores', 'Realizadores'], ['okr', 'OKR'], ['tipo', 'Tipo de valor'], ['ice', 'ICE'], ['avance', 'Avance'], ['fin', 'Cronograma'], ['valor', 'Valor a 2 años'], ['valor10', 'Valor a 10 años'], ['alertas', 'Alertas']];
   const POR_DEFECTO = BASE.map(b => b[0]);
   const colsVis = () => { const v = App.S.vistaPf && Array.isArray(App.S.vistaPf.cols) ? App.S.vistaPf.cols : POR_DEFECTO;
-    const ok = v.filter(k => BASE.some(b => b[0] === k) || (k.startsWith('p:') && App.S.columns.some(c => c.id === k.slice(2))));
+    // Una columna nueva del sitio entra sola después de su vecina, salvo que la vista guardada ya la conociera
+    const conoc = App.S.vistaPf && Array.isArray(App.S.vistaPf.conocidas) ? App.S.vistaPf.conocidas : ['nombre', 'fase', 'habilitadores', 'realizadores', 'okr', 'tipo', 'ice', 'avance', 'fin', 'valor', 'alertas'];
+    let v2 = v.slice(); BASE.forEach((b, i) => { if (!conoc.includes(b[0]) && !v2.includes(b[0])) { const ant = BASE[i - 1] && v2.indexOf(BASE[i - 1][0]); v2.splice(ant >= 0 ? ant + 1 : v2.length, 0, b[0]); } });
+    const ok = v2.filter(k => BASE.some(b => b[0] === k) || (k.startsWith('p:') && App.S.columns.some(c => c.id === k.slice(2))));
     return ok.includes('nombre') ? ok : ['nombre'].concat(ok); };
   const nombreCol = k => { const b = BASE.find(x => x[0] === k); if (b) return b[1]; const c = App.S.columns.find(x => 'p:' + x.id === k); return c ? c.name : k; };
   function celdaProp(k, r) {
@@ -163,7 +169,7 @@
     const v = (r.p.props || {})[c.id], vacio = v == null || v === '' || (Array.isArray(v) && !v.length);
     return `<td class="pf-prop ${App.canEdit() ? 'ed' : ''}" data-pedit="${r.p.id}" data-col="${c.id}" title="${App.canEdit() ? 'Clic para editar' : ''}">${vacio ? '<span class="faint">—</span>' : App.Tabla.renderValue(c, v)}</td>`;
   }
-  const guardarVista = cols => { App.S.vistaPf = { cols }; App.api('PUT', '/api/config/vista-portafolio', { cols }).then(v => { App.S.vistaPf = v; }).catch(e => App.toast(e.message || 'No se pudo guardar', true)); };
+  const guardarVista = cols => { const conocidas = BASE.map(b => b[0]); App.S.vistaPf = { cols, conocidas }; App.api('PUT', '/api/config/vista-portafolio', { cols, conocidas }).then(v => { App.S.vistaPf = v; }).catch(e => App.toast(e.message || 'No se pudo guardar', true)); };
   function panelColumnas(anchor, main) {
     const vis = colsVis(), props = App.S.columns.filter(c => c.type !== 'title' && !COLS_PER.includes(c.id) && c !== App.estadoCol());
     const fila = (k, t, fija) => `<label class="pc-f"><input type="checkbox" data-pc="${esc(k)}" ${vis.includes(k) ? 'checked' : ''} ${fija ? 'disabled' : ''}><span>${esc(t)}</span>${vis.includes(k) && !fija ? `<span class="pc-ord"><button data-pc-m="${esc(k)}:-1" title="Mover a la izquierda">‹</button><button data-pc-m="${esc(k)}:1" title="Mover a la derecha">›</button></span>` : ''}</label>`;
@@ -202,7 +208,7 @@
     const actPf = R.modo === 'mapa' ? 'mapa' : R.modo === 'riesgos' ? 'riesgos' : R.modo === 'cargar' ? 'cargar' : 'resumen';
     main.innerHTML = `${App.pfHead(actPf, `${App.zoomCtl()}${App.canEdit() ? '<a class="btn ghost sm" href="#/papelera" title="Lo eliminado en los últimos 30 días">Papelera</a>' : ''}<button class="btn ghost sm" data-pf="csv">Exportar a Excel</button>${App.canEdit() ? '<button class="btn primary sm" data-pf="nuevo">+ Nueva iniciativa</button>' : ''}`)}
       <div class="kl pf-kl"><span><b>${rows.length}</b>iniciativas</span><span title="Iniciativas en Fase 1, Fase 2 y Fase 3">${[1, 2, 3].map(k => `<b>${rows.filter(r => window.Fases && Fases.clasificar(r.x.estado) === k).length}</b>F${k}`).join(', ')}</span><span><b class="${nAl ? 'r' : ''}">${nAl}</b>con alertas</span><span><b>${rows.filter(sinDatos).length}</b>sin datos</span><span><b>${esc(m(total))}</b>valor proyectado, ${rows.filter(r => r.valor > 0).length} de ${rows.length} con cifras</span></div>
-      <div class="pf-bar"><label class="search"><span>⌕</span><input id="pfq" placeholder="Buscar iniciativa u OKR…" value="${esc(R.q)}"></label>${chips}
+      <div class="pf-bar ${R.masf ? 'abierta' : ''}"><label class="search"><span>⌕</span><input id="pfq" placeholder="Buscar iniciativa u OKR…" value="${esc(R.q)}"></label>${chips}<button class="pf-tg pf-masf ${[R.okr, R.cat, R.alertas, R.inact === true].filter(Boolean).length ? 'on' : ''}" data-pf="masf" aria-expanded="${!!R.masf}">Filtros${[R.okr, R.cat, R.alertas, R.inact === true].filter(Boolean).length ? ` (${[R.okr, R.cat, R.alertas, R.inact === true].filter(Boolean).length})` : ''} ▾</button>
         ${ec ? `<select class="pf-sel" data-pf-okr aria-label="OKR"><option value="">OKR: todos</option>${[...new Set(rows.flatMap(r => r.okrs))].sort((a, b) => a.localeCompare(b)).map(o => `<option value="${esc(o)}" ${R.okr === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}<option value="__sin" ${R.okr === '' ? 'selected' : ''}>Sin OKR asignado</option></select>
         <select class="pf-sel" data-pf-cat aria-label="Tipo de valor"><option value="">Tipo de valor: todos</option>${ORDEN_CAT.filter(k => rows.some(r => r.cats.includes(k))).map(k => `<option value="${k}" ${R.cat === k ? 'selected' : ''}>${esc(App.catLabel(k))}</option>`).join('')}</select>
         <select class="pf-sel" data-pf-etapa aria-label="Fase"><option value="">Fase: todas</option>${(ec.options || []).map(o => `<option ${R.etapa === o.name ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}</select>` : ''}
@@ -215,8 +221,8 @@
         <select class="pf-sel" data-pf-orden aria-label="Ordenar">${Object.entries(ORDEN).map(([k, o]) => `<option value="${k}" ${oAct === k ? 'selected' : ''}>Ordenar: ${o.t}${oAct === k ? (R.dir === 1 ? ' ▴' : ' ▾') : ''}</option>`).join('')}</select>
       </div>
       ${R.graf && R.modo !== 'riesgos' && R.modo !== 'cargar' ? lentes(rows) : ''}
-      ${R.modo === 'cargar' ? cargaHTML(vis) : R.modo === 'riesgos' && App.Riesgos ? App.Riesgos.portafolioHTML(vis.map(r => r.p)) : R.modo === 'mapa' ? mapaHTML(vis) : `<section class="t-card pf-tbl-card"><div class="pf-wrap"><table class="pf-tbl">
-        <thead><tr>${colsVis().map(k => ({ nombre: th('nombre', 'Iniciativa'), fase: '<th>Fase</th>', habilitadores: '<th>Habilitadores</th>', realizadores: '<th>Realizadores</th>', okr: th('okr', 'OKR'), tipo: th('tipo', 'Tipo de valor'), ice: th('ice', 'ICE', '', 'n'), avance: th('avance', 'Avance', 'real, ┃ esperado'), fin: th('fin', 'Cronograma', `${+d.hoy.slice(0, 4)} – ${+d.hoy.slice(0, 4) + 1}`), valor: th('valor', 'Valor a 2 años', 'caso de negocio'), alertas: th('alertas', 'Alertas') })[k] || `<th>${esc(nombreCol(k))}</th>`).join('')}<th aria-hidden="true"></th></tr></thead>
+      ${R.modo === 'cargar' ? viejasHTML() + cargaHTML(vis) : R.modo === 'riesgos' && App.Riesgos ? App.Riesgos.portafolioHTML(vis.map(r => r.p)) : R.modo === 'mapa' ? mapaHTML(vis) : `<section class="t-card pf-tbl-card"><div class="pf-wrap"><table class="pf-tbl">
+        <thead><tr>${colsVis().map(k => ({ nombre: th('nombre', 'Iniciativa'), fase: '<th>Fase</th>', habilitadores: '<th>Habilitadores</th>', realizadores: '<th>Realizadores</th>', okr: th('okr', 'OKR'), tipo: th('tipo', 'Tipo de valor'), ice: th('ice', 'ICE', '', 'n'), avance: th('avance', 'Avance', 'real, ┃ esperado'), fin: th('fin', 'Cronograma', `${+d.hoy.slice(0, 4)} – ${+d.hoy.slice(0, 4) + 1}`), valor: th('valor', 'Valor a 2 años', 'caso de negocio'), valor10: th('valor10', 'Valor a 10 años', '', 'n'), alertas: th('alertas', 'Alertas') })[k] || `<th>${esc(nombreCol(k))}</th>`).join('')}<th aria-hidden="true"></th></tr></thead>
         <tbody>${cuerpo(vis)}${(ejV => ejV.length ? `<tr class="pf-grp pf-grp-ej"><td colspan="${colsVis().length + 1}"><b>Ejemplo</b><small>no suma en los totales ni en el tablero</small></td></tr>${ejV.map(filaHTML).join('')}` : '')(ejs.filter(r => pasaFiltros(r)))}${cuerpo(vis) ? '' : `<tr><td colspan="${colsVis().length + 1}"><div class="t-vacio">${rows.length ? 'Ninguna iniciativa cumple estos filtros.' : fuera ? `Ninguna iniciativa está en el foco DGV. <button class="t-lnk" data-pf="dgv">Ver las ${fuera} iniciativas</button>` : 'Aún no hay iniciativas.'}</div></td></tr>`}</tbody></table></div>
         <div class="t-pie t-pie-row"><span class="t-tag">${vis.length} de ${rows.length} iniciativas, ordenadas por ${ORDEN[oAct].t}${R.okr != null ? `, OKR «${esc(R.okr || 'sin asignar')}»` : ''}${fuera ? `, <button class="t-lnk" data-pf="dgv">${fuera} archivadas ocultas (fuera del foco DGV)</button>` : ''}</span><span class="t-tag">Clic en un encabezado ordena, clic en un grupo lo pliega</span></div></section>`}`;
     const svg = $('#pfMapa', main); if (svg) dibujarMapa(svg, vis);
@@ -250,6 +256,7 @@
       const fila = e.target.closest('.pf-tbl tbody tr[data-pid]'); if (fila && !e.target.closest('a,button,select,input')) return App.go('#/proyectos/' + fila.dataset.pid);
       const gr = e.target.closest('[data-grp]'); if (gr && !e.target.closest('a,button')) { R.cerr = Object.assign({}, R.cerr); if (R.cerr[gr.dataset.grp]) delete R.cerr[gr.dataset.grp]; else R.cerr[gr.dataset.grp] = true; guardar(); return render(main); }
       const b = e.target.closest('[data-pf]'); if (!b) return;
+      if (b.dataset.pf === 'masf') { R.masf = !R.masf; guardar(); return render(main); }
       if (b.dataset.pf === 'inact') { R.inact = R.inact !== true; guardar(); return render(main); }
       if (b.dataset.pf === 'cols') return panelColumnas(b, main);
       if (b.dataset.pf === 'graf') { R.graf = !R.graf; guardar(); return render(main); }
@@ -339,6 +346,14 @@
     ['captura', 'Captura de valor', 2, p => { const c = App.caseOf(p.id); return !!(c && (c.captado || []).length); }, 'valor'],
     ['verif', 'Verificado', 3, p => { const c = App.caseOf(p.id); return !!(c && Object.keys(c.validacion || {}).length); }, 'valor'],
   ];
+  function viejasHTML() {
+    if (!App.aud() || !App.Mejoras || !App.Mejoras.desactualizadosItems) return '';
+    const it = App.Mejoras.desactualizadosItems(), Y = new Date().getFullYear();
+    const sin = App.Dash ? App.projectsSorted().filter(p => !App.esEjemplo(p) && App.enAlcance(p)).map(p => ({ p, c: App.caseOf(p.id) })).filter(z => z.c && App.Valor && !App.Dash.registra(z.c, Y) && z.c.flujos && (z.c.flujos || []).some(f => f.tipo === 'beneficio' && Number((f.valores || [])[Y - (z.c.anio_inicio || Y)]) > 0))
+      .map(z => ({ href: `#/proyectos/${z.p.id}/valor/captura`, t: App.projectName(z.p), s: `falta registrar la captura de ${Y}` })) : [];
+    const todo = sin.concat(it);
+    return `<section class="pf-viejas"><h3>Para poner al día <small>${todo.length ? `${todo.length} ${todo.length === 1 ? 'cosa' : 'cosas'}` : 'todo al día'}</small></h3>${todo.length ? `<div class="pf-vl">${todo.slice(0, 12).map(x => `<a href="${x.href}"><b>${esc(x.t)}</b><span>${esc(x.s)}</span></a>`).join('')}</div>${todo.length > 12 ? `<p class="faint">y ${todo.length - 12} más</p>` : ''}` : ''}</section>`;
+  }
   function cargaHTML(vis) {
     const faseDe = r => (window.Fases ? Fases.clasificar(r.x.estado) : null);
     const grupos = [1, 2, 3].map(k => ({ k, rows: vis.filter(r => faseDe(r) === k && !App.esEjemplo(r.p)) })).filter(g => g.rows.length);

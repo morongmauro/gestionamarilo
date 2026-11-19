@@ -19,6 +19,7 @@
   function panelApariencia(anchor) {
     const op = (k, lista) => `<div class="ap-op">${lista.map(([v, l]) => `<button data-ap="${k}" data-v="${v}" class="${AP[k] === v ? 'on' : ''}" aria-pressed="${AP[k] === v}">${l}</button>`).join('')}</div>`;
     const p = App.openPop(anchor, `<div class="lbl">Tema</div>${op('tema', [['claro', 'Claro'], ['oscuro', 'Oscuro']])}
+      <div class="lbl">Versión del sitio</div><div class="ap-op"><button data-aud="off" class="${App.aud() ? '' : 'on'}">Actual</button><button data-aud="on" class="${App.aud() ? 'on' : ''}">Auditada (prueba)</button></div>
       <div class="hint" style="padding:0 10px 6px">Se guarda en este navegador.</div>`, { width: 300, nofocus: true });
     p.onclick = ev => { const b = ev.target.closest('[data-ap]'); if (!b) return; App.apariencia(b.dataset.ap, b.dataset.v); panelApariencia(anchor); };
   }

@@ -182,6 +182,13 @@ App.parseNum = s => {
   const n = Number(s); return Number.isFinite(n) ? n : 0;
 };
 
+/* ---------- versión auditada (prueba): se activa por navegador; la actual sigue intacta ---------- */
+App.aud = () => document.documentElement.classList.contains('aud');
+App.esAdmin = () => !!(App.S && App.S.me && App.S.me.role === 'admin');
+App.setAud = on => { try { localStorage.setItem('pf.version', on ? 'auditada' : 'actual'); } catch (e) {} document.documentElement.classList.toggle('aud', !!on); if (App.render) App.render(); };
+try { if (localStorage.getItem('pf.version') === 'auditada') document.documentElement.classList.add('aud'); } catch (e) {}
+document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-aud]'); if (!b) return; e.preventDefault(); App.setAud(b.dataset.aud === 'on'); App.toast(b.dataset.aud === 'on' ? 'Versión auditada (prueba). Se vuelve a la actual con el mismo botón.' : 'Versión actual'); });
+
 /* ---------- popover ---------- */
 const pop = () => App.$('#pop');
 let popCtx = null, popAnchor = null, popT = null;

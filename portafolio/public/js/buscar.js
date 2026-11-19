@@ -6,7 +6,7 @@
 'use strict';
 (function () {
   const { esc } = App;
-  const SECC = [['Tablero', '#/tablero'], ['Portafolio', '#/proyectos'], ['Cronogramas', '#/cronograma'], ['Valor: casos de negocio', '#/casos'], ['Valor: captura de valor', '#/valor/captura'], ['Valor: OKR', '#/valor/okr'], ['Riesgos', '#/riesgos'], ['Comité de valor', '#/agenda'], ['Ideas', '#/proponer'], ['Historial', '#/historial']];
+  const SECC = [['Tablero', '#/tablero'], ['Portafolio', '#/proyectos'], ['Cronogramas', '#/cronograma'], ['Valor: casos de negocio', '#/casos'], ['Valor: captura de valor', '#/valor/captura'], ['Valor: OKR', '#/valor/okr'], ['Riesgos', '#/riesgos'], ['Comité de valor', '#/agenda'], ['Historial', '#/historial']];
   const PEST = [['cronograma', 'Cronograma'], ['caso', 'Caso'], ['captura', 'Captura'], ['okr', 'OKR'], ['riesgos', 'Riesgos']];
   const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   let bg = null, sel = 0, res = [];
