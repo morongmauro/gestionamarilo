@@ -41,13 +41,16 @@
       // Captura (aproximada): lo registrado a mano en el mes, o lo que proyecta el caso (o el Income) desde que la iniciativa escaló
       const desde = App.Valor ? App.Valor.escalaDesde(p, caso) : null, mesHoy = hoy.slice(0, 7);
       const manual = (cat, ym) => (caso && !esUSD ? (caso.captado || []) : []).filter(x => x.categoria === cat && x.mes === ym);
+      // Base oficial: el «Valor a crear/capturar» (Notion) repartido en los años del periodo; si no hay, lo que dice el caso en esos años
+      const PV = App.periodoValor();
+      const oficial = (cat, y) => { if (y < PV.d || y > PV.h) return 0; if (vc > 0) return cat === catInc ? vc / PV.n : 0; return fuente === 'caso' ? anual(cat, y) : 0; };
       const capMes = (cat, ym) => { const r = manual(cat, ym); if (r.length) return r.reduce((a, x) => a + (Number(x.valor) || 0), 0); if (!desde || ym < desde || ym >= mesHoy) return 0;
-        return fuente === 'caso' && App.Valor.planDe(caso) ? App.Valor.programado(caso, ym, cat) : anual(cat, +ym.slice(0, 4)) / 12; };
+        return !(vc > 0) && fuente === 'caso' && App.Valor.planDe(caso) ? App.Valor.programado(caso, ym, cat) : oficial(cat, +ym.slice(0, 4)) / 12; };
       const captado = (cat, y, mes) => { let s = 0; for (let i = 1; i <= (mes || 12); i++) s += capMes(cat, `${y}-${String(i).padStart(2, '0')}`); return s; };
       const capVer = (cat, y) => (caso && !esUSD ? (caso.captado || []) : []).filter(x => x.categoria === cat && x.mes.startsWith(y + '-') && App.Mejoras.verificado(x, caso)).reduce((a, x) => a + (Number(x.valor) || 0), 0);
       const vpn = caso && !esUSD ? Finanzas.calc(caso).vpn : null;
       const catsP = App.CATS.map(c => c.id).filter(id => [hoyY, hoyY + 1, hoyY + 2].some(y => anual(id, y) > 0));
-      return { p, caso, real, fuente, anual, captado, capMes, desde, capVer, vpn, ice: App.iceOf(p), estado: ec ? (p.props || {})[ec.id] || '' : '', catPrincipal: catsP[0] || (fuente === 'income' ? catInc : null), y0, nAnios };
+      return { p, caso, real, fuente, anual, oficial, base: vc > 0 ? 'notion' : fuente === 'caso' ? 'caso' : null, captado, capMes, desde, capVer, vpn, ice: App.iceOf(p), estado: ec ? (p.props || {})[ec.id] || '' : '', catPrincipal: catsP[0] || (fuente === 'income' ? catInc : null), y0, nAnios };
     }).filter(x => F.alcance !== 'real' || x.real);
     // años con datos
     let yMin = hoyY, yMax = hoyY + 4;

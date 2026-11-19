@@ -832,3 +832,36 @@ select:focus-visible,.tv-mini select:focus-visible{outline:2px solid var(--info-
 .pf-tvs .pf-tv{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block!important}
 .pf-tvs .pf-mas2,.pf-tvs+.pf-mas2{flex:none}
 .pf-tbl .pf-al{white-space:normal;display:inline-block;max-width:100%;line-height:1.3}.pf-tbl .pf-al em{white-space:nowrap}
+
+/* Tablero: lo capturado y lo que falta, bajo la cifra grande */
+.tv-cap2{display:flex;flex-direction:column;gap:2px;margin-top:12px;font-size:12.5px;color:var(--muted)}.tv-cap2 b{color:var(--ink);margin-left:4px}
+.vl-esc{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);margin-left:8px}.vl-esc input{font:inherit;border:0;background:var(--hover,#F2F1F6);border-radius:8px;padding:3px 6px}
+
+/* Animación de entrada: el logo aparece, la pantalla se abre y entra el sitio */
+.intro{position:fixed;inset:0;z-index:500;background:#160B29;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .7s ease,transform .8s cubic-bezier(.6,0,.3,1)}
+.intro .intro-lg path:nth-child(1){animation:in-a .9s cubic-bezier(.2,.8,.2,1) both}
+.intro .intro-lg path:nth-child(2){animation:in-b .9s .12s cubic-bezier(.2,.8,.2,1) both}
+.intro .intro-lg path:nth-child(n+3){animation:in-c .6s .55s ease both}
+.intro-t{font-size:14px;font-weight:600;letter-spacing:.02em;color:#CFC8E0;animation:in-c .6s .8s ease both}
+.intro.sale{opacity:0;transform:scale(1.06)}
+@keyframes in-a{from{opacity:0;transform:translate(-14px,-14px)}to{opacity:1;transform:none}}
+@keyframes in-b{from{opacity:0;transform:translate(14px,14px)}to{opacity:1;transform:none}}
+@keyframes in-c{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.app.entra #main{animation:entra-main .9s 1.45s cubic-bezier(.2,.8,.2,1) both}
+@keyframes entra-main{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.intro{display:none}}
+
+/* Mapa ICE: filtro propio, burbujas con número, nombres sin taparse y lista al lado */
+.pf-mh{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:8px}.pf-mf{display:flex;gap:6px}
+.pf-mg{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:start}
+.pf-mapa .pf-q{font-size:12px;font-weight:800;letter-spacing:0!important;text-transform:none;opacity:.6}
+.pf-mapa .pf-n{font-size:11px;font-weight:800;fill:#fff;pointer-events:none}
+.pf-mapa .pf-bur{cursor:pointer}
+.pf-mapa svg.foco circle{opacity:.25}.pf-mapa svg.foco circle.hl{opacity:1;stroke:var(--ink);stroke-width:3}
+.pf-rank{list-style:none;margin:0;padding:0;max-height:480px;overflow:auto;font-size:12.5px}
+.pf-rank li a{display:grid;grid-template-columns:22px minmax(0,1fr) 9px 40px;gap:8px;align-items:center;padding:5px 8px;border-radius:8px;color:var(--ink);text-decoration:none}
+.pf-rank li a:hover{background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.pf-rank li.h{display:flex;justify-content:space-between;padding:4px 8px 6px;color:var(--muted);font-size:11.5px;font-weight:700}
+.pf-rank em{font-style:normal;color:var(--muted);font-size:11px;text-align:right}.pf-rank .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pf-rank i{width:9px;height:9px;border-radius:50%}.pf-rank b{text-align:right;font-variant-numeric:tabular-nums}
+@media (max-width:1100px){.pf-mg{grid-template-columns:1fr}.pf-rank{max-height:260px}}

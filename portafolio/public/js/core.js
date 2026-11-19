@@ -183,7 +183,8 @@ App.parseNum = s => {
 };
 
 /* ---------- versión auditada (prueba): se activa por navegador; la actual sigue intacta ---------- */
-App.aud = () => document.documentElement.classList.contains('aud');
+App.aud = () => true; // la versión auditada quedó como definitiva
+document.documentElement.classList.add('aud');
 App.esAdmin = () => !!(App.S && App.S.me && App.S.me.role === 'admin');
 App.setAud = on => { try { localStorage.setItem('pf.version', on ? 'auditada' : 'actual'); } catch (e) {} document.documentElement.classList.toggle('aud', !!on); if (App.render) App.render(); };
 try { if (localStorage.getItem('pf.version') === 'auditada') document.documentElement.classList.add('aud'); } catch (e) {}
@@ -315,6 +316,8 @@ App.CATS = [
   { id: 'tiempo', label: 'Tiempo' }, { id: 'riesgo', label: 'Riesgo evitado' }, { id: 'otro', label: 'Otro' }];
 // Dos grupos para leer la captura: nuevo negocio (ingresos) y eficiencia (ahorro, eficiencia, tiempo y riesgo evitado)
 App.GRUPOS = [['nuevo', 'Nuevo negocio', ['ingresos']], ['efi', 'Eficiencia', ['ahorro', 'eficiencia', 'tiempo', 'riesgo']], ['otro', 'Sin clasificar', ['otro']]];
+// Periodo del «Valor a crear/capturar»: la cifra de la Oficina es un total por iniciativa para estos años
+App.periodoValor = () => { const t = App.S.tablero || {}, d = Number(t.valor_desde) || 2025, h = Number(t.valor_hasta) || 2027; return { d, h, n: Math.max(1, h - d + 1) }; };
 App.grupoDe = cat => (App.GRUPOS.find(g => g[2].includes(cat)) || App.GRUPOS[2])[0];
 App.grupoLabel = g => (App.GRUPOS.find(x => x[0] === g) || App.GRUPOS[2])[1];
 App.catLabel = id => (App.CATS.find(c => c.id === id) || App.CATS.at(-1)).label;

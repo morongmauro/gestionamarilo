@@ -221,11 +221,11 @@
         <select class="pf-sel" data-pf-orden aria-label="Ordenar">${Object.entries(ORDEN).map(([k, o]) => `<option value="${k}" ${oAct === k ? 'selected' : ''}>Ordenar: ${o.t}${oAct === k ? (R.dir === 1 ? ' ▴' : ' ▾') : ''}</option>`).join('')}</select>
       </div>
       ${R.graf && R.modo !== 'riesgos' && R.modo !== 'cargar' ? lentes(rows) : ''}
-      ${R.modo === 'cargar' ? viejasHTML() + cargaHTML(vis) : R.modo === 'riesgos' && App.Riesgos ? App.Riesgos.portafolioHTML(vis.map(r => r.p)) : R.modo === 'mapa' ? mapaHTML(vis) : `<section class="t-card pf-tbl-card"><div class="pf-wrap"><table class="pf-tbl">
+      ${R.modo === 'cargar' ? viejasHTML() + cargaHTML(vis) : R.modo === 'riesgos' && App.Riesgos ? App.Riesgos.portafolioHTML(vis.map(r => r.p)) : R.modo === 'mapa' ? mapaHTML(visMapa(vis)) : `<section class="t-card pf-tbl-card"><div class="pf-wrap"><table class="pf-tbl">
         <thead><tr>${colsVis().map(k => ({ nombre: th('nombre', 'Iniciativa'), fase: '<th>Fase</th>', habilitadores: '<th>Habilitadores</th>', realizadores: '<th>Realizadores</th>', okr: th('okr', 'OKR'), tipo: th('tipo', 'Tipo de valor'), ice: th('ice', 'ICE', '', 'n'), avance: th('avance', 'Avance', 'real, ┃ esperado'), fin: th('fin', 'Cronograma', `${+d.hoy.slice(0, 4)} – ${+d.hoy.slice(0, 4) + 1}`), valor: th('valor', 'Valor a 2 años', 'caso de negocio'), valor10: th('valor10', 'Valor a 10 años', '', 'n'), alertas: th('alertas', 'Alertas') })[k] || `<th>${esc(nombreCol(k))}</th>`).join('')}<th aria-hidden="true"></th></tr></thead>
         <tbody>${cuerpo(vis)}${(ejV => ejV.length ? `<tr class="pf-grp pf-grp-ej"><td colspan="${colsVis().length + 1}"><b>Ejemplo</b><small>no suma en los totales ni en el tablero</small></td></tr>${ejV.map(filaHTML).join('')}` : '')(ejs.filter(r => pasaFiltros(r)))}${cuerpo(vis) ? '' : `<tr><td colspan="${colsVis().length + 1}"><div class="t-vacio">${rows.length ? 'Ninguna iniciativa cumple estos filtros.' : fuera ? `Ninguna iniciativa está en el foco DGV. <button class="t-lnk" data-pf="dgv">Ver las ${fuera} iniciativas</button>` : 'Aún no hay iniciativas.'}</div></td></tr>`}${App.canEdit() ? `<tr class="pf-add"><td colspan="${colsVis().length + 1}"><input data-pf-nueva placeholder="+ Nueva iniciativa: escriba el nombre y presione Enter" aria-label="Nueva iniciativa"></td></tr>` : ''}</tbody></table></div>
         <div class="t-pie t-pie-row"><span class="t-tag">${vis.length} de ${rows.length} iniciativas, ordenadas por ${ORDEN[oAct].t}${R.okr != null ? `, OKR «${esc(R.okr || 'sin asignar')}»` : ''}${fuera ? `, <button class="t-lnk" data-pf="dgv">${fuera} archivadas ocultas (fuera del foco DGV)</button>` : ''}</span><span class="t-tag">Clic en un encabezado ordena, clic en un grupo lo pliega</span></div></section>`}`;
-    const svg = $('#pfMapa', main); if (svg) dibujarMapa(svg, vis);
+    const svg = $('#pfMapa', main); if (svg) dibujarMapa(svg, visMapa(vis), main);
     const q = $('#pfq', main);
     q.oninput = () => { R.q = q.value; const pos = q.selectionStart; render(main); const n = $('#pfq', main); n.focus(); n.setSelectionRange(pos, pos); };
     // Arrastrar el encabezado de una columna la cambia de lugar, para todos
@@ -255,6 +255,7 @@
       const ir = e.target.closest('[data-rk-ir]'); if (ir) return App.go('#/proyectos/' + ir.dataset.rkIr + '/riesgos');
       const fila = e.target.closest('.pf-tbl tbody tr[data-pid]'); if (fila && !e.target.closest('a,button,select,input')) return App.go('#/proyectos/' + fila.dataset.pid);
       const gr = e.target.closest('[data-grp]'); if (gr && !e.target.closest('a,button')) { R.cerr = Object.assign({}, R.cerr); if (R.cerr[gr.dataset.grp]) delete R.cerr[gr.dataset.grp]; else R.cerr[gr.dataset.grp] = true; guardar(); return render(main); }
+      const mf = e.target.closest('[data-mf]'); if (mf) { R.mapaF = mf.dataset.mf; guardar(); return render(main); }
       const b = e.target.closest('[data-pf]'); if (!b) return;
       if (b.dataset.pf === 'masf') { R.masf = !R.masf; guardar(); return render(main); }
       if (b.dataset.pf === 'inact') { R.inact = R.inact !== true; guardar(); return render(main); }
@@ -282,46 +283,73 @@
   // Línea vertical: umbral de la Oficina (Income 3). Línea horizontal: ICE mediano del portafolio.
   const COLOR_FASE = { 1: '#5B9BEA', 2: '#F08A5D', 3: '#3FC293' };
   const colorFase = e => { const f = window.Fases && Fases.de(e); return f && COLOR_FASE[f.id] || '#B9B5C6'; };
+  // El mapa tiene su propio filtro por fase (además de los filtros del Portafolio)
+  const visMapa = vis => (R.mapaF ? vis.filter(r => window.Fases && String(Fases.clasificar(r.x.estado)) === R.mapaF) : vis);
+  const cortaTxt = (t, n) => (t.length > n ? t.slice(0, n - 1) + '…' : t);
   function mapaHTML(vis) {
-    const con = vis.filter(r => r.x.ice != null).length, sin = vis.length - con;
+    const pts = vis.map(r => ({ r, d: App.ICE.detalle(r.p) })).filter(z => z.d.ice != null && z.d.income != null).sort((a, b) => b.d.ice - a.d.ice);
+    const sin = vis.length - pts.length, ec = App.estadoCol();
+    const chip = (k, t) => `<button class="pf-tg ${(R.mapaF || '') === k ? 'on' : ''}" data-mf="${k}">${t}</button>`;
     return `<section class="t-card t-pad pf-mapa">
-      <div class="t-lgd"><span><i style="background:#5B9BEA"></i>Fase 1 · Planeación</span><span><i style="background:#F08A5D"></i>Fase 2 · Ejecución y piloto</span><span><i style="background:#3FC293"></i>Fase 3 · Escalamiento</span><span><i style="background:#B9B5C6"></i>Cerrada, en pausa o cancelada</span></div>
-      <svg id="pfMapa" class="t-viz" height="460" role="img" aria-label="Iniciativas por ICE e Income"></svg>
-      <div class="t-pie"><span class="t-tag">${con} iniciativa${con === 1 ? '' : 's'} en el mapa${sin ? `, ${sin} sin ICE no aparecen (complétalo en su ficha)` : ''}</span><span class="t-tag">Clic en un punto abre la iniciativa, pasa el mouse para ver su ICE</span></div></section>`;
+      <div class="pf-mh"><div class="pf-mf">${chip('', 'Todas')}${chip('1', 'Fase 1')}${chip('2', 'Fase 2')}${chip('3', 'Fase 3')}</div>
+        <div class="t-lgd"><span><i style="background:#5B9BEA"></i>Fase 1</span><span><i style="background:#F08A5D"></i>Fase 2</span><span><i style="background:#3FC293"></i>Fase 3</span><span><i style="background:#B9B5C6"></i>Fuera del flujo</span><span>Un número dentro del punto: varias iniciativas en el mismo lugar</span></div></div>
+      <div class="pf-mg"><svg id="pfMapa" class="t-viz" height="480" role="img" aria-label="Iniciativas por ICE e Income"></svg>
+        <ol class="pf-rank" aria-label="Iniciativas por ICE, de mayor a menor"><li class="h"><span>Por ICE, de mayor a menor</span><b>ICE</b></li>${pts.map((z, k) => `<li data-pid="${z.r.p.id}"><a href="#/proyectos/${z.r.p.id}/valor/ice"><em>${k + 1}</em><span class="nm" title="${esc(App.projectName(z.r.p))}">${esc(App.projectName(z.r.p))}</span><i style="background:${colorFase(z.r.x.estado)}"></i><b>${esc(App.num(z.d.ice, 1))}</b></a></li>`).join('') || '<li class="faint">Ninguna con ICE en esta fase.</li>'}</ol></div>
+      <div class="t-pie"><span class="t-tag">${pts.length} en el mapa${sin ? `, ${sin} sin ICE no aparecen` : ''}. Pase el mouse por un nombre de la lista para ubicarla en el mapa.</span></div></section>`;
   }
-  function dibujarMapa(svg, vis) {
-    const W = svg.clientWidth || 900, H = 460, L = 56, R2 = 16, T = 16, B = 46;
+  function dibujarMapa(svg, vis, main) {
+    const W = svg.clientWidth || 900, H = 480, L = 56, R2 = 16, T = 30, B = 46;
     const FIB = App.ICE.FIB, pts = vis.map(r => ({ r, d: App.ICE.detalle(r.p) })).filter(z => z.d.ice != null && z.d.income != null);
     const band = (W - L - R2) / FIB.length;
     const tk = (hi => { const raw = hi / 4, mag = Math.pow(10, Math.floor(Math.log10(raw || 1))), st = [1, 2, 2.5, 5, 10].map(k => k * mag).find(k => raw <= k) || 10 * mag; const o = []; for (let v = 0; v <= hi + st * 0.999; v += st) o.push(Math.round(v / st) * st); return o; })(Math.max(10, ...pts.map(z => z.d.ice)));
     const top = tk.at(-1), y = v => T + (1 - v / top) * (H - T - B);
     const xs = FIB.map((_, i) => L + band * i + band / 2);
     const ices = pts.map(z => z.d.ice).sort((a, b) => a - b), med = ices.length ? ices[Math.floor(ices.length / 2)] : top / 2;
-    const xU = L + band * 2, yM = y(med); // umbral Oficina: entre Income 2 y 3
+    const xU = L + band * 2, yM = y(med);
     let h = '';
-    // cuadrantes
+    // cuadrantes, con su nombre en minúscula y una frase de qué hacer
     const q = (x0, y0, x1, y1, fill, t1, t2, anchor, tx, ty) => `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" fill="${fill}"/><text x="${tx}" y="${ty}" text-anchor="${anchor}" class="pf-q">${t1}</text><text x="${tx}" y="${ty + 14}" text-anchor="${anchor}" class="pf-q2">${t2}</text>`;
-    h += q(xU, T, W - R2, yM, 'rgba(63,194,147,.08)', 'PRIORIZAR', 'mucho valor y alto ICE', 'end', W - R2 - 8, T + 16);
-    h += q(L, T, xU, yM, 'rgba(91,155,234,.07)', 'GANANCIA RÁPIDA', 'poco valor, fácil y seguro', 'start', L + 8, T + 16);
-    h += q(xU, yM, W - R2, H - B, 'rgba(240,138,93,.07)', 'REPLANTEAR CÓMO', 'mucho valor, ICE bajo', 'end', W - R2 - 8, H - B - 22);
-    h += q(L, yM, xU, H - B, 'rgba(22,11,41,.035)', 'CUESTIONAR', 'poco valor y bajo ICE', 'start', L + 8, H - B - 22);
+    h += q(xU, T, W - R2, yM, 'rgba(63,194,147,.08)', 'Priorizar', 'mucho valor y alto ICE', 'end', W - R2 - 8, T + 16);
+    h += q(L, T, xU, yM, 'rgba(91,155,234,.07)', 'Ganancia rápida', 'poco valor, fácil y seguro', 'start', L + 8, T + 16);
+    h += q(xU, yM, W - R2, H - B, 'rgba(240,138,93,.07)', 'Replantear cómo', 'mucho valor, ICE bajo', 'end', W - R2 - 8, yM + 30);
+    h += q(L, yM, xU, H - B, 'rgba(22,11,41,.035)', 'Cuestionar', 'poco valor y bajo ICE', 'start', L + 8, yM + 30);
     h += tk.map(v => `<line x1="${L}" x2="${W - R2}" y1="${y(v)}" y2="${y(v)}" class="t-grid"/><text x="${L - 8}" y="${y(v) + 4}" text-anchor="end" class="t-ax">${v}</text>`).join('');
     h += xs.map((x, i) => `<text x="${x}" y="${H - B + 16}" text-anchor="middle" class="t-ax">${FIB[i]}</text>`).join('');
     h += `<text x="${(L + W - R2) / 2}" y="${H - 6}" text-anchor="middle" class="t-ax on">Income, valor a dos años (escala 1 a 55)</text><text transform="translate(14 ${(T + H - B) / 2}) rotate(-90)" text-anchor="middle" class="t-ax on">ICE</text>`;
-    h += `<line x1="${xU}" x2="${xU}" y1="${T}" y2="${H - B}" class="pf-umbral"/><text x="${xU + 6}" y="${T + 14}" class="pf-q2">← umbral Oficina (Income 3)</text>`;
+    h += `<line x1="${xU}" x2="${xU}" y1="${T}" y2="${H - B}" class="pf-umbral"/><text x="${xU + 6}" y="${T - 8}" class="pf-q2">umbral de la Oficina (Income 3)</text>`;
     h += `<line x1="${L}" x2="${W - R2}" y1="${yM}" y2="${yM}" class="pf-umbral"/><text x="${W - R2 - 4}" y="${yM - 5}" text-anchor="end" class="pf-q2">ICE mediano ${App.num(med, 1)}</text>`;
-    // puntos: los de igual Income se reparten dentro de su franja
-    const porI = {}; pts.forEach(z => { (porI[z.d.income] = porI[z.d.income] || []).push(z); });
-    const pos = new Map();
-    Object.entries(porI).forEach(([inc, l]) => { const i = FIB.indexOf(+inc); l.sort((a, b) => a.d.ice - b.d.ice).forEach((z, k) => { const off = l.length > 1 ? (k / (l.length - 1) - 0.5) * Math.min(band * 0.7, l.length * 14) : 0; pos.set(z, [xs[i] + off, y(z.d.ice)]); }); });
-    const nombres = pts.slice().sort((a, b) => b.d.ice - a.d.ice).slice(0, 6);
-    pts.forEach(z => { const [cx, cy] = pos.get(z), nm = App.projectName(z.r.p);
-      h += `<a href="#/proyectos/${z.r.p.id}"><circle cx="${cx}" cy="${cy}" r="7" fill="${colorFase(z.r.x.estado)}" stroke="var(--card)" stroke-width="2"><title>${esc(nm)}\nICE ${App.num(z.d.ice, 1)} = Income ${z.d.income} × ${z.d.conf} % ÷ ${z.d.esf} % × ${String(z.d.os).replace('.', ',')}\n${esc(z.r.x.estado || 'Sin fase')}</title></circle></a>`; });
-    const usadas = [];
-    nombres.forEach(z => { const [cx, cy] = pos.get(z); const nm = App.projectName(z.r.p), t = nm.length > 26 ? nm.slice(0, 25) + '…' : nm, der = cx < W * 0.62;
-      let yy = cy + 4; for (let k = 0; k < 5 && usadas.some(u => Math.abs(u - yy) < 13); k++) yy += 13; usadas.push(yy);
-      h += `<text x="${der ? cx + 11 : cx - 11}" y="${yy}" text-anchor="${der ? 'start' : 'end'}" class="pf-lbl">${esc(t)}</text>`; });
+    // Las que caen en el mismo punto (igual Income e ICE) se juntan en una burbuja con su número
+    const grupos = new Map(); pts.forEach(z => { const k = z.d.income + '|' + Math.round(z.d.ice * 10); if (!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(z); });
+    const gs = [...grupos.values()].map(l => ({ l, d: l[0].d, r: Math.min(18, 7 + (l.length - 1) * 2.5) }));
+    // en la misma franja de Income se reparten a lo ancho para no taparse
+    const porI = {}; gs.forEach(g => { (porI[g.d.income] = porI[g.d.income] || []).push(g); });
+    Object.entries(porI).forEach(([inc, l]) => { const i = FIB.indexOf(+inc); l.sort((a, b) => a.d.ice - b.d.ice).forEach((g, k) => { const off = l.length > 1 ? (k / (l.length - 1) - 0.5) * Math.min(band * 0.7, l.length * 16) : 0; g.x = xs[i] + off; g.y = y(g.d.ice); }); });
+    const fase = l => { const f = l.map(z => colorFase(z.r.x.estado)); return f.every(c => c === f[0]) ? f[0] : '#8E83A8'; };
+    gs.forEach(g => { const nm = g.l.map(z => App.projectName(z.r.p)), tip = `${nm.map(esc).join('\n')}\nICE ${App.num(g.d.ice, 1)}, Income ${g.d.income}`;
+      const pids = g.l.map(z => z.r.p.id).join(',');
+      h += g.l.length === 1
+        ? `<a href="#/proyectos/${g.l[0].r.p.id}/valor/ice"><circle data-pids="${pids}" cx="${g.x}" cy="${g.y}" r="${g.r}" fill="${fase(g.l)}" stroke="var(--card)" stroke-width="2"><title>${tip}</title></circle></a>`
+        : `<g class="pf-bur" data-grupo="${pids}"><circle data-pids="${pids}" cx="${g.x}" cy="${g.y}" r="${g.r}" fill="${fase(g.l)}" stroke="var(--card)" stroke-width="2"><title>${tip}\nClic para ver cuáles</title></circle><text x="${g.x}" y="${g.y + 4}" text-anchor="middle" class="pf-n">${g.l.length}</text></g>`; });
+    // Nombres: se ponen donde caben, sin taparse entre sí ni tapar puntos; el resto aparece al pasar el mouse
+    // los rótulos de los cuadrantes y de las líneas también ocupan su lugar
+    const rot = (tx, ty, an, t1, t2) => { const w = Math.max(t1.length * 7, t2.length * 5.8); const x0 = an === 'start' ? tx : an === 'end' ? tx - w : tx - w / 2; return [x0 - 2, ty - 13, x0 + w + 2, ty + 18]; };
+    const fijos = [rot(W - R2 - 8, T + 16, 'end', 'Priorizar', 'mucho valor y alto ICE'), rot(L + 8, T + 16, 'start', 'Ganancia rápida', 'poco valor, fácil y seguro'), rot(W - R2 - 8, yM + 30, 'end', 'Replantear cómo', 'mucho valor, ICE bajo'), rot(L + 8, yM + 30, 'start', 'Cuestionar', 'poco valor y bajo ICE'),
+      [W - R2 - 120, yM - 17, W - R2, yM - 1]];
+    const cajas = gs.map(g => [g.x - g.r, g.y - g.r, g.x + g.r, g.y + g.r]).concat(fijos), cruza = b => cajas.some(c => b[0] < c[2] && b[2] > c[0] && b[1] < c[3] && b[3] > c[1]);
+    gs.slice().sort((a, b) => b.d.ice - a.d.ice).forEach(g => {
+      const t = g.l.length === 1 ? cortaTxt(App.projectName(g.l[0].r.p), 24) : `${g.l.length} iniciativas`, w = t.length * 6.3, hh = 13;
+      const op = [[g.x + g.r + 4, g.y + 4, 'start'], [g.x - g.r - 4, g.y + 4, 'end'], [g.x, g.y - g.r - 5, 'middle'], [g.x, g.y + g.r + 13, 'middle']];
+      for (const [tx, ty, an] of op) { const x0 = an === 'start' ? tx : an === 'end' ? tx - w : tx - w / 2, b = [x0, ty - hh + 2, x0 + w, ty + 2];
+        if (b[0] < L || b[2] > W - R2 || b[1] < T || b[3] > H - B) continue;
+        if (!cruza(b)) { cajas.push(b); h += `<text x="${tx}" y="${ty}" text-anchor="${an}" class="pf-lbl">${esc(t)}</text>`; break; } } });
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.innerHTML = h;
+    if (!main) return;
+    // la lista y el mapa se señalan entre sí
+    const lista = main.querySelector('.pf-rank');
+    if (lista) { lista.onmouseover = e => { const li = e.target.closest('li[data-pid]'); svg.querySelectorAll('circle.hl').forEach(c => c.classList.remove('hl')); svg.classList.toggle('foco', !!li); if (li) svg.querySelectorAll('circle[data-pids]').forEach(c => { if (c.dataset.pids.split(',').includes(li.dataset.pid)) c.classList.add('hl'); }); };
+      lista.onmouseleave = () => { svg.classList.remove('foco'); svg.querySelectorAll('circle.hl').forEach(c => c.classList.remove('hl')); }; }
+    svg.onclick = e => { const g = e.target.closest('[data-grupo]'); if (!g) return; const l = g.dataset.grupo.split(',').map(id => App.byId('projects', id)).filter(Boolean);
+      App.openPop(g, `<div class="lbl">${l.length} iniciativas en el mismo punto</div><div class="tv-dl">${l.map(p => `<a class="tv-di" href="#/proyectos/${p.id}/valor/ice"><span class="t">${esc(App.projectName(p))}</span><i class="ico ico-flecha"></i></a>`).join('')}</div>`, { width: 300, nofocus: true }); };
   }
 
   function csv(vis) {

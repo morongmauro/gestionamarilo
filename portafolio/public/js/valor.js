@@ -56,16 +56,19 @@
     if (p.escala_desde) return p.escala_desde;
     const tz = App.S.columns.find(x => x.log) || App.S.columns.find(x => x.id === 'trazabilidad');
     const log = tz ? String((p.props || {})[tz.id] || '') : '';
-    const lin = log.split('\n').find(l => /→\s*Fase 3/i.test(l));
+    // La línea «(organización en 3 fases)» la escribió el sitio al reorganizar: no es la fecha real de escalamiento
+    const lin = log.split('\n').find(l => /→\s*Fase 3/i.test(l) && !/organizaci[oó]n en 3 fases/i.test(l));
     const mm = lin && lin.match(/^(\d{1,2})\s+(ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC)/i);
     if (mm) { const hy = +hoy().slice(0, 4), hm = +hoy().slice(5, 7), mo = MES_ABR[mm[2].toUpperCase()]; return `${mo > hm ? hy - 1 : hy}-${String(mo).padStart(2, '0')}`; }
-    return `${(c && c.anio_inicio) || hoy().slice(0, 4)}-01`;
+    return `${hoy().slice(0, 4)}-01`; // ya estaba en escalamiento antes: se toma desde enero del año en curso (se puede corregir)
   }
   // Lo capturado en un mes: lo registrado a mano si existe; si no, lo que proyecta el caso (aproximado) desde el escalamiento
   const manualMes = (c, ym, cat) => (c.captado || []).filter(x => x.mes === ym && (!cat || x.categoria === cat));
   function autoMes(c, ym, cat) {
-    const d = escalaDesde(App.byId('projects', c.project_id), c); if (!d || ym < d || ym >= mesHoy()) return 0;
-    return planDe(c) ? programado(c, ym, cat) : proyAnio(c, +ym.slice(0, 4), cat) / 12;
+    const p = App.byId('projects', c.project_id), d = escalaDesde(p, c); if (!d || ym < d || ym >= mesHoy()) return 0;
+    const vc = Number(((p || {}).props || {}).valor_crear) || 0, y = +ym.slice(0, 4), PV = App.periodoValor();
+    if (vc > 0) { const tv = App.S.columns.find(x => x.id === 'tipo_valor'); return y >= PV.d && y <= PV.h && cat === App.catDeTipoValor(tv ? (p.props || {})[tv.id] : '') ? vc / PV.n / 12 : 0; }
+    return planDe(c) ? programado(c, ym, cat) : proyAnio(c, y, cat) / 12;
   }
   function capMes(c, ym, cat) {
     if (cat) { const r = manualMes(c, ym, cat); return r.length ? r.reduce((a, x) => a + (Number(x.valor) || 0), 0) : autoMes(c, ym, cat); }
@@ -114,6 +117,10 @@
   function captura(box, pid) {
     const p = App.byId('projects', pid), c = App.caseOf(pid), ro = !App.canEdit();
     const Y = Number(App.store.get('captura.anio', +hoy().slice(0, 4)));
+    if (!c && escalaDesde(p, null)) { const ed = escalaDesde(p, null), vc = Number((p.props || {}).valor_crear) || 0, PV = App.periodoValor();
+      box.innerHTML = `<div class="vl-vacio"><b>Captura aproximada desde ${esc(mesTxt(ed))}.</b> ${vc ? `Se toma su valor a crear/capturar (${esc(m(vc))} para ${PV.d}–${PV.h}) repartido por mes desde que escaló.` : 'Sin valor a crear/capturar ni caso de negocio, no hay cifra que repartir.'}${ro ? '' : ` <label class="vl-esc">Escaló en <input type="month" data-esc value="${esc(ed)}"></label>`}</div>`;
+      box.onchange = e => { const i = e.target.closest('[data-esc]'); if (!i || !i.value) return; App.guard(async () => { await App.patch('projects', pid, { escala_desde: i.value }); App.toast('Fecha de escalamiento guardada'); captura(box, pid); }); };
+      return; }
     if (!c) { box.innerHTML = `<div class="vl-vacio"><b>Esta iniciativa aún no tiene caso de negocio.</b> La captura de valor se mide contra lo que proyecta el caso.${ro ? '' : ` <a class="t-lnk" href="${ir(p, 'caso')}">Crear el caso de negocio</a>`}</div>`; return; }
     const cats = catsDe(c).length ? catsDe(c) : ['ahorro'];
     const pend = pendientes(c), hip = hipotesis(p), proy = proyAnio(c, Y), cap = capAnio(c, Y), ver = verAnio(c, Y), vh = verHasta(c, Y);
@@ -132,6 +139,7 @@
         <div class="vl-tw"><table class="vl-t"><thead><tr><th>Tipo de valor</th>${meses.map(ym => `<th>${App.d.MES3[+ym.slice(5) - 1]}</th>`).join('')}<th>Total</th><th>Proyectado</th></tr></thead><tbody>
         ${cats.map(k => `<tr><td><span class="cat-dot cat-${k}"></span>${esc(App.catLabel(k))}</td>${meses.map(ym => celda(ym, k)).join('')}<td class="tot">${esc(App.num(meses.reduce((a, ym) => a + capMes(c, ym, k), 0) / 1e6, 1))}</td><td class="tot mu">${esc(App.num(proyAnio(c, Y, k) / 1e6, 1))}</td></tr>`).join('')}
         </tbody></table></div>${ro ? '' : '<div class="faint vl-nota">Clic en un mes para registrar o corregir lo capturado.</div>'}</section>
+      ${escalaDesde(p, c) ? `<p class="vl-plan-t">Captura aproximada desde <b>${esc(mesTxt(escalaDesde(p, c)))}</b>, mes en que pasó a escalamiento.${ro ? '' : ` <label class="vl-esc">Cambiar <input type="month" data-esc value="${esc(escalaDesde(p, c))}"></label>`}</p>` : ''}
       <section class="vl-sec vl-plan"><h3>Plan de captura</h3>${planTxt(c)}${ro ? '' : `<button class="btn sm" data-v="plan">${planDe(c) ? 'Cambiar el plan' : 'Definir el plan'}</button>`}</section>
       <div class="vl-dos"><section class="vl-sec"><h3>Capturas recurrentes <small>montos fijos</small></h3>
         ${(c.recurrentes || []).length ? `<div class="vl-rec">${c.recurrentes.map(r => `<div class="vl-ri ${r.activo === false ? 'off' : ''}"><span><b>${esc(App.catLabel(r.categoria))}: ${esc(m(r.valor))} al mes</b><small>desde ${esc(mesTxt(r.desde))}${r.activo === false ? ', detenida' : ''}</small></span>${ro ? '' : `<button class="t-lnk" data-rec-t="${r.id}">${r.activo === false ? 'Reanudar' : 'Detener'}</button><button class="t-lnk x" data-rec-x="${r.id}">Quitar</button>`}</div>`).join('')}</div>` : '<p class="faint">Ninguna. Si un ahorro o ingreso se repite cada mes, márquelo una vez y cada mes aparecerá para confirmar.</p>'}
@@ -141,6 +149,7 @@
         <p class="faint">${vh ? `Finanzas verificó hasta ${esc(mesTxt(vh))}${(c.validacion[String(Y)] || {}).por ? ` (${esc(c.validacion[String(Y)].por)})` : ''}.` : `Aún no hay meses verificados en ${Y}.`}</p></section></div>`;
 
     const repintar = () => captura(box, pid);
+    box.onchange = e => { const i = e.target.closest('[data-esc]'); if (!i || !i.value) return; App.guard(async () => { await App.patch('projects', pid, { escala_desde: i.value }); App.toast('Fecha de escalamiento guardada'); repintar(); }); };
     box.onclick = e => {
       const an = e.target.closest('[data-anio]'); if (an) { App.store.set('captura.anio', Y + Number(an.dataset.anio)); return repintar(); }
       if (ro) return;

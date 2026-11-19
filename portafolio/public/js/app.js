@@ -19,7 +19,7 @@
   function panelApariencia(anchor) {
     const op = (k, lista) => `<div class="ap-op">${lista.map(([v, l]) => `<button data-ap="${k}" data-v="${v}" class="${AP[k] === v ? 'on' : ''}" aria-pressed="${AP[k] === v}">${l}</button>`).join('')}</div>`;
     const p = App.openPop(anchor, `<div class="lbl">Tema</div>${op('tema', [['claro', 'Claro'], ['oscuro', 'Oscuro']])}
-      ${App.esAdmin() ? `<div class="lbl">Versión del sitio</div><div class="ap-op"><button data-aud="off" class="${App.aud() ? '' : 'on'}">Actual</button><button data-aud="on" class="${App.aud() ? 'on' : ''}">Auditada (prueba)</button></div>` : ''}
+      
       <div class="hint" style="padding:0 10px 6px">Se guarda en este navegador.</div>`, { width: 300, nofocus: true });
     p.onclick = ev => { const b = ev.target.closest('[data-ap]'); if (!b) return; App.apariencia(b.dataset.ap, b.dataset.v); panelApariencia(anchor); };
   }
@@ -130,8 +130,18 @@
       let visto = false; try { visto = !!sessionStorage.getItem('pf.avisoMemoria'); sessionStorage.setItem('pf.avisoMemoria', '1'); } catch (e) {}
       if (!visto) { setTimeout(() => App.toast('Demostración sin base de datos: los cambios se pierden cuando la app se reinicia'), 1200); }
     }
-    booted();
+    booted(); intro();
     if (!location.hash) location.hash = '#/tablero'; else App.render();
+  }
+
+  // Animación de entrada: el logo de Amarilo aparece y da paso al sitio, la primera vez de cada día
+  function intro() {
+    const hoyS = App.d.today(); let visto = ''; try { visto = localStorage.getItem('pf.intro') || ''; localStorage.setItem('pf.intro', hoyS); } catch (e) {}
+    if (visto === hoyS || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+    const d = document.createElement('div'); d.className = 'intro'; d.setAttribute('aria-hidden', 'true');
+    d.innerHTML = `<svg class="intro-lg" viewBox="0 0 70 64" width="150" height="137" role="img" aria-label="Amarilo"><path d="M51.2056 0H17.5927H12.7328V4.84725V38.3729H17.5927V4.84725H51.2056V0Z" fill="#FFC900"/><path d="M17.6598 43.2375H51.2727H56.1326V38.3902V4.86377H51.2727V38.3902H17.6598V43.2375Z" fill="#FFC900"/><path d="M4.82091 51.1899L0 61.8699H1.6603L2.83154 59.2342H7.27778L8.38603 61.8699H10.1375L5.43264 51.1899H4.82091ZM3.49383 57.7453L5.11683 54.0943L6.65196 57.7453H3.49383Z" fill="currentColor"/><path d="M30.4622 51.1899L25.6413 61.8699H27.3016L28.4728 59.2342H32.9191L34.0273 61.8699H35.7788L31.0739 51.1899H30.4622ZM29.1351 57.7453L30.7581 54.0943L32.2933 57.7453H29.1351Z" fill="currentColor"/><path d="M21.6973 51.1899L17.954 58.7216L14.311 51.1899H13.7183L11.4255 61.8699H13.2185L14.4991 55.3989L17.5992 61.8699H18.1877L21.3898 55.3989L22.5685 61.8699H24.3614L22.2867 51.1899H21.6973Z" fill="currentColor"/><path d="M47.6588 51.1899H46.083V61.8699H47.6588V51.1899Z" fill="currentColor"/><path d="M51.9293 51.1899H50.3527V60.2983V61.8699H51.9293H57.5659V60.2983H51.9293V51.1899Z" fill="currentColor"/><path d="M43.4263 54.3622C43.4263 52.6103 42.0023 51.1899 40.2458 51.1899H38.8118H37.2361V57.5353V61.8699H38.8118V57.5353H39.0995L42.3571 61.8699H44.3149L40.8907 57.3807C42.241 57.0252 43.4263 56.0438 43.4263 54.3622ZM40.1182 52.6723C41.0698 52.6723 41.8423 53.442 41.8423 54.3919C41.8423 55.3419 41.0706 56.1116 40.1182 56.1116H38.8118V52.6731H40.1182V52.6723Z" fill="currentColor"/><path d="M63.3126 50.9951C60.2506 50.9951 57.7598 53.4795 57.7598 56.5335C57.7598 59.5875 60.2506 62.0719 63.3126 62.0719C66.3746 62.0719 68.8654 59.5875 68.8654 56.5335C68.8654 53.4795 66.3746 50.9951 63.3126 50.9951ZM63.3126 60.7103C61.0033 60.7103 59.125 58.8369 59.125 56.5335C59.125 54.2302 61.0033 52.3568 63.3126 52.3568C65.6219 52.3568 67.5002 54.2302 67.5002 56.5335C67.5002 58.836 65.6211 60.7103 63.3126 60.7103Z" fill="currentColor"/></svg><div class="intro-t">Generación de Valor</div>`;
+    document.body.appendChild(d); document.getElementById('app').classList.add('entra');
+    setTimeout(() => d.classList.add('sale'), 1500); setTimeout(() => { d.remove(); document.getElementById('app').classList.remove('entra'); }, 2300);
   }
 
   /* ---------- navegación ---------- */
@@ -207,7 +217,7 @@
   $('#scrim').addEventListener('click', () => $('#app').classList.remove('open'));
   if (App.store.get('side.col', false)) $('#app').classList.add('col');
   $('#sideCol').addEventListener('click', () => { const c = $('#app').classList.toggle('col'); App.store.set('side.col', c); });
-  $('#meBtn').addEventListener('click', e => App.menu(e.currentTarget, [{ id: 'yo', label: (App.S.me && App.S.me.name) || 'Mi cuenta' }, '-', { id: 'ap', label: 'Apariencia: claro u oscuro' }].concat(App.esAdmin() ? [{ id: 'admin', label: 'Administración y usuarios' }, { id: 'ver', label: App.aud() ? 'Volver a la versión actual' : 'Probar la versión auditada' }] : []).concat([{ id: 'clave', label: 'Cambiar contraseña' }, '-', { id: 'salir', label: 'Cerrar sesión' }]), async m => {
+  $('#meBtn').addEventListener('click', e => App.menu(e.currentTarget, [{ id: 'yo', label: (App.S.me && App.S.me.name) || 'Mi cuenta' }, '-', { id: 'ap', label: 'Apariencia: claro u oscuro' }].concat(App.esAdmin() ? [{ id: 'admin', label: 'Administración y usuarios' }] : []).concat([{ id: 'clave', label: 'Cambiar contraseña' }, '-', { id: 'salir', label: 'Cerrar sesión' }]), async m => {
     if (m === 'admin') return App.go('#/usuarios');
     if (m === 'ver') return App.setAud(!App.aud());
     if (m === 'ap') return setTimeout(() => panelApariencia($('#meBtn')), 0);

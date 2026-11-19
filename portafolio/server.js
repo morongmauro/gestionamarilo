@@ -377,9 +377,12 @@ route('PUT', '/api/config/columnas', 'editor', async (req, ctx) => {
 
 // ---------- Ajustes del tablero (unidad del Income) ----------
 route('PUT', '/api/config/tablero', 'editor', async (req, ctx) => {
-  const u = Number(ctx.body.income_unidad);
+  const ant = (await store.getConfig('tablero')) || { income_unidad: 1e6 };
+  const u = ctx.body.income_unidad != null ? Number(ctx.body.income_unidad) : ant.income_unidad || 1e6;
   if (![1, 1e3, 1e6].includes(u)) throw new HttpError(400, 'Unidad inválida');
-  const v = { income_unidad: u }; await store.setConfig('tablero', v); return v;
+  const yd = ctx.body.valor_desde != null ? Number(ctx.body.valor_desde) : ant.valor_desde, yh = ctx.body.valor_hasta != null ? Number(ctx.body.valor_hasta) : ant.valor_hasta;
+  if ((yd != null && !(yd >= 2015 && yd <= 2045)) || (yh != null && !(yh >= 2015 && yh <= 2045)) || (yd && yh && yh < yd)) throw new HttpError(400, 'Periodo inválido');
+  const v = { income_unidad: u }; if (yd) v.valor_desde = yd; if (yh) v.valor_hasta = yh; await store.setConfig('tablero', v); return v;
 });
 
 // ---------- «Qué es la Dirección» y propuestas de necesidades (vista mejorada) ----------

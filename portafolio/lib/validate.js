@@ -74,7 +74,7 @@ const SCHEMAS = {
   // Proyecto: sus columnas (las define la tabla, como en Notion) van en props
   // Además, lo del plan de trabajo: fecha meta, línea base e involucrados ({nombre, area, rol})
   // Vista mejorada: «en una frase», área beneficiada, origen (cuando nace de una propuesta) y aprendizajes al cerrar
-  projects: { props: 'obj', position: 'num', fecha_meta: 'date', linea_base_at: 'stamp', miembros: 'objs', frase: 'str', area: 'str', origen: 'obj', aprendizajes: 'text', riesgos: 'objs', ejemplo: 'bool' },
+  projects: { escala_desde: 'str', props: 'obj', position: 'num', fecha_meta: 'date', linea_base_at: 'stamp', miembros: 'objs', frase: 'str', area: 'str', origen: 'obj', aprendizajes: 'text', riesgos: 'objs', ejemplo: 'bool' },
   // Actividades e hitos del cronograma (plan de trabajo, igual que en la app de gestión):
   // capítulo, duración en días hábiles, precedencias con su tipo (FC/CC/FF/CF y desfase),
   // fechas reales, línea base, entregable y área responsable
