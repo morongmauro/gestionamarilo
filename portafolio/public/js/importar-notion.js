@@ -62,8 +62,19 @@
   const PEOPLE = new Set(['habilitadores', 'realizadores']);
   const SELECT = new Set(['estado', 'tipo_valor', 'gerencia', 'vp', 'cadena_valor', 'captura_creacion', 'criterio', 'palanca', 'revision_dgv']);
 
+  // Exportación HTML de Notion: una tabla; las celdas de selección múltiple traen un <span> por valor
+  function parseHTML(txt) {
+    const doc = new DOMParser().parseFromString(txt, 'text/html'), t = doc.querySelector('table'); if (!t) return [];
+    const head = [...t.querySelectorAll('thead th')].map(th => th.textContent.replace(/\s+/g, ' ').trim());
+    return [...t.querySelectorAll('tbody tr')].map(tr => {
+      const tds = [...tr.querySelectorAll('td')];
+      return Object.fromEntries(head.map((h, i) => { const td = tds[i]; if (!td) return [h, ''];
+        const sv = td.querySelectorAll('.selected-value'); if (sv.length) return [h, [...sv].map(s => s.textContent.trim()).join(', ')];
+        td.querySelectorAll('br').forEach(b => b.replaceWith('\n')); return [h, td.textContent.replace(/[ \t]+/g, ' ').trim()]; }));
+    }).filter(r => Object.values(r).some(Boolean));
+  }
   function analizar(txt) {
-    const filas = parseCSV(txt);
+    const filas = /<table/i.test(txt) ? parseHTML(txt) : parseCSV(txt);
     if (!filas.length) throw new Error('El archivo no tiene filas');
     const heads = Object.keys(filas[0]);
     const mapeo = {}; heads.forEach(h => { const id = MAPA[norm(h)]; if (id) mapeo[h] = id; });
@@ -107,13 +118,85 @@
     return { creados, actualizados };
   }
 
+  /* ---------- comparar Notion con el sitio ---------- */
+  const nombreN = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
+  const CAMPOS = [['estado', 'Fase o estado'], ['ice_income', 'Income'], ['valor_crear', 'Valor a crear/capturar'], ['revision_dgv', '¿Revisión DGV?'], ['tipo_valor', 'Tipo de valor'], ['habilitadores', 'Habilitadores'], ['realizadores', 'Realizadores'], ['okrs', 'OKR']];
+  const colDe = id => (id === 'estado' ? App.estadoCol() : App.S.columns.find(c => c.id === id));
+  // Valor de Notion ya convertido a como lo guarda el sitio
+  function valorN(id, raw) {
+    if (raw == null || String(raw).trim() === '') return null;
+    if (NUM.has(id)) return num(raw);
+    if (PEOPLE.has(id)) return lista(raw);
+    if (id === 'estado') return Fases.mapear(String(raw).replace(/\s+/g, ' ').trim());
+    return String(raw).replace(/\s+/g, ' ').trim();
+  }
+  const vacio = v => v == null || v === '' || (Array.isArray(v) && !v.length);
+  const igual = (id, a, b) => { if (id === 'revision_dgv') { const sn = x => (vacio(x) || /^no$/i.test(String(x).trim()) ? 'NO' : String(x).trim().toUpperCase()); return sn(a) === sn(b); }
+    if (vacio(a) && vacio(b)) return true; if (vacio(a) || vacio(b)) return false;
+    if (NUM.has(id)) return Math.abs(Number(a) - Number(b)) < 0.5;
+    if (Array.isArray(a) || Array.isArray(b)) { const s = x => [].concat(x).map(nombreN).sort().join('|'); return s(a) === s(b); }
+    return nombreN(a) === nombreN(b); };
+  const verV = (id, v) => vacio(v) ? '—' : id === 'valor_crear' ? App.moneyShort(Number(v)) : Array.isArray(v) ? v.join(', ') : String(v).length > 60 ? String(v).slice(0, 60) + '…' : String(v);
+  function comparar(an) {
+    const tc = App.titleCol(), kN = Object.keys(an.mapeo).find(h => an.mapeo[h] === 'proyecto');
+    const hDe = id => Object.keys(an.mapeo).find(h => an.mapeo[h] === id);
+    const sitio = new Map(App.S.projects.filter(p => !App.esEjemplo(p)).map(p => [nombreN((p.props || {})[tc.id]), p]));
+    const usados = new Set(), ambos = [], soloN = [];
+    an.filas.forEach(f => {
+      const k = nombreN(f[kN]); if (!k) return;
+      let p = sitio.get(k);
+      if (!p && k.length > 12) { for (const [kk, pp] of sitio) if (!usados.has(pp.id) && (kk.startsWith(k) || k.startsWith(kk))) { p = pp; break; } }
+      const n = Object.fromEntries(CAMPOS.map(([id]) => [id, hDe(id) ? valorN(id, f[hDe(id)]) : null]));
+      if (!p) { soloN.push({ nombre: f[kN], n }); return; }
+      usados.add(p.id);
+      const dif = [], llenar = {};
+      CAMPOS.forEach(([id, lbl]) => { const c = colDe(id); if (!c || !hDe(id)) return; const s = (p.props || {})[c.id], v = n[id];
+        if (!igual(id, s, v)) { dif.push({ id, lbl, s, v }); if (vacio(s) && !vacio(v)) llenar[c.id] = v; } });
+      ambos.push({ p, nombre: f[kN], n, dif, llenar });
+    });
+    const soloS = App.S.projects.filter(p => !App.esEjemplo(p) && !usados.has(p.id));
+    const vcN = an.filas.filter(f => { const h = hDe('revision_dgv'); return h && /^s[ií]$/i.test(String(f[h]).trim()); }).reduce((a, f) => a + (num(f[hDe('valor_crear')]) || 0), 0);
+    const vcS = App.S.projects.filter(p => !App.esEjemplo(p) && App.enAlcance(p)).reduce((a, p) => a + (Number((p.props || {}).valor_crear) || 0), 0);
+    return { ambos, soloN, soloS, vcN, vcS };
+  }
+  function informeHTML(r) {
+    const conDif = r.ambos.filter(x => x.dif.length), nLlenar = r.ambos.reduce((a, x) => a + Object.keys(x.llenar).length, 0);
+    const faltaS = p => { const v = p.props || {}; return [['ice_income', 'Income'], ['valor_crear', 'valor a crear'], ['tipo_valor', 'tipo de valor'], ['realizadores', 'realizadores']].filter(([id]) => { const c = colDe(id); return c && vacio(v[c.id]); }).map(z => z[1]); };
+    return `<div class="nc">
+      <p class="nc-res"><b>${r.ambos.length}</b> están en los dos · <b>${r.soloN.length}</b> solo en Notion · <b>${r.soloS.length}</b> solo en el sitio</p>
+      <p class="nc-res">Valor a crear/capturar con «¿Revisión DGV?» en SI: Notion <b>${esc(App.moneyShort(r.vcN))}</b> · sitio (foco DGV) <b>${esc(App.moneyShort(r.vcS))}</b>${Math.abs(r.vcN - r.vcS) > 1e6 ? ' · <span class="crit">no coinciden</span>' : ' · <span class="good">coinciden</span>'}</p>
+      ${App.canEdit() ? `<div class="nc-acc">${nLlenar ? `<button class="btn primary sm" data-nc="llenar">Completar en el sitio ${nLlenar} ${nLlenar === 1 ? 'dato vacío' : 'datos vacíos'}</button>` : ''}${r.soloN.length ? `<button class="btn sm" data-nc="crear">Crear las ${r.soloN.length} que solo están en Notion</button>` : ''}<span class="faint">Completar no cambia nada que ya tenga dato en el sitio.</span></div>` : ''}
+      ${conDif.length ? `<h4>Diferencias (${conDif.length} iniciativas)</h4><div class="nc-tw"><table class="nc-t"><thead><tr><th>Iniciativa</th><th>Campo</th><th>En el sitio</th><th>En Notion</th></tr></thead><tbody>
+        ${conDif.map(x => x.dif.map((d, i) => `<tr>${i ? '<td></td>' : `<td rowspan="1"><a href="#/proyectos/${x.p.id}/info">${esc(App.projectName(x.p))}</a></td>`}<td>${esc(d.lbl)}</td><td class="${vacio(d.s) ? 'faint' : ''}">${esc(verV(d.id, d.s))}</td><td>${esc(verV(d.id, d.v))}${vacio(d.s) && !vacio(d.v) ? ' <small class="good">se completa</small>' : ''}</td></tr>`).join('')).join('')}</tbody></table></div>` : ''}
+      ${r.soloN.length ? `<h4>Solo en Notion (${r.soloN.length})</h4><div class="nc-l">${r.soloN.map(x => `<span>${esc(x.nombre)}${x.n.revision_dgv ? ` <small>DGV ${esc(x.n.revision_dgv)}</small>` : ''}${x.n.valor_crear ? ` <small>${esc(App.moneyShort(x.n.valor_crear))}</small>` : ''}</span>`).join('')}</div>` : ''}
+      ${r.soloS.length ? `<h4>Solo en el sitio (${r.soloS.length}): les falta</h4><div class="nc-l">${r.soloS.map(p => { const f = faltaS(p); return `<a href="#/proyectos/${p.id}/info">${esc(App.projectName(p))}${f.length ? ` <small>${esc(f.join(', '))}</small>` : ' <small class="good">completa</small>'}</a>`; }).join('')}</div>` : ''}
+    </div>`;
+  }
+  // Antes de escribir: que existan las columnas y las opciones de lo que se va a guardar
+  async function asegurar(r) {
+    const cols = App.S.columns, ids = new Set(CAMPOS.map(c => c[0]));
+    COLS.forEach(([id, name, type, hidden]) => { if (ids.has(id) && !cols.find(x => x.id === id)) { const c = { id, name, type, width: type === 'text' ? 240 : 150 }; if (['select', 'multi', 'people'].includes(type)) c.options = []; if (hidden) c.hidden = true; cols.push(c); } });
+    ['habilitadores', 'realizadores', 'okrs', 'tipo_valor'].forEach(id => { if (!cols.find(x => x.id === id)) cols.push({ id, name: { habilitadores: 'Habilitadores', realizadores: 'Realizadores', okrs: 'OKRS', tipo_valor: 'Tipo de valor' }[id], type: PEOPLE.has(id) ? 'people' : id === 'tipo_valor' ? 'select' : 'text', width: 180, options: [] }); });
+    const vals = r.soloN.map(x => x.n).concat(r.ambos.map(x => x.n));
+    CAMPOS.forEach(([id]) => { const c = colDe(id); if (!c || !['select', 'multi', 'people'].includes(c.type)) return; c.options = c.options || [];
+      vals.concat(id === 'revision_dgv' ? [{ revision_dgv: 'NO' }] : []).forEach(v => [].concat(v[id] || []).forEach(name => { if (name && !c.options.some(o => o.name === name)) c.options.push({ name, color: c.type === 'people' ? 'azul' : App.COLORS[(c.options.length + 1) % App.COLORS.length] }); })); });
+    await App.api('PUT', '/api/config/columnas', { columns: cols });
+  }
+  async function aplicar(r, que, onProgreso) {
+    let n = 0; await asegurar(r);
+    if (que === 'llenar') r.ambos.forEach(x => { x.llenar = {}; CAMPOS.forEach(([id]) => { const c = colDe(id); if (c && vacio((x.p.props || {})[c.id]) && !vacio(x.n[id])) x.llenar[c.id] = x.n[id]; }); });
+    if (que === 'llenar') { const xs = r.ambos.filter(x => Object.keys(x.llenar).length); for (const x of xs) { await App.api('PATCH', '/api/projects/' + x.p.id, { props: x.llenar }); n++; if (onProgreso) onProgreso(n, xs.length); } }
+    if (que === 'crear') { const tc = App.titleCol(); for (const x of r.soloN) { const props = { [tc.id]: x.nombre }; CAMPOS.forEach(([id]) => { const c = colDe(id); if (c && !vacio(x.n[id])) props[c.id] = x.n[id]; }); const cd = colDe('revision_dgv'); if (cd && vacio(x.n.revision_dgv)) props[cd.id] = 'NO'; /* vacío en Notion = fuera del foco, como en la cifra de la Oficina */ await App.api('POST', '/api/projects', { props }); n++; if (onProgreso) onProgreso(n, r.soloN.length); } }
+    return n;
+  }
+
   let ultimo = '';
   // Tarjeta de Administración
   function tarjeta() {
     const box = document.createElement('div'); box.className = 'card-box'; box.style.marginBottom = '16px';
-    box.innerHTML = `<h3 style="font-size:14px;font-weight:800;margin-bottom:4px">Importar iniciativas desde Notion</h3>
-      <div class="muted" style="font-size:12.5px;margin-bottom:10px">Exporta la tabla «ICE - Oficina de Generación de Valor» como CSV (Notion → ··· → Exportar → CSV) y súbela aquí. Crea las columnas que falten y una iniciativa por fila; si ya existe una con el mismo nombre, la actualiza. No borra nada.</div>
-      <input type="file" accept=".csv,text/csv" data-nf style="font-size:13px">
+    box.innerHTML = `<h3 style="font-size:14px;font-weight:800;margin-bottom:4px">Notion: comparar y completar</h3>
+      <div class="muted" style="font-size:12.5px;margin-bottom:10px">Suba la tabla «ICE - Oficina de Generación de Valor» exportada de Notion (HTML o CSV). Primero ve qué coincide y qué no; después puede completar lo vacío o crear lo que falta. El botón de abajo reemplaza todo con Notion. Crea las columnas que falten y una iniciativa por fila; si ya existe una con el mismo nombre, la actualiza. No borra nada.</div>
+      <input type="file" accept=".csv,text/csv,.html,text/html" data-nf style="font-size:13px"><div data-ncmp></div>
       <div data-nres style="margin-top:10px;font-size:13px">${ultimo ? `<span class="good">Última importación:</span> ${esc(ultimo)} · <a href="#/proyectos">Ver el portafolio →</a>` : ''}</div>`;
     let an = null;
     box.addEventListener('change', async e => {
@@ -121,6 +204,10 @@
       const res = $('[data-nres]', box);
       try {
         an = analizar(await f.text());
+        const cmp = comparar(an), bx = $('[data-ncmp]', box); bx.innerHTML = informeHTML(cmp);
+        bx.onclick = ev => { const b = ev.target.closest('[data-nc]'); if (!b) return; const q = b.dataset.nc;
+          if (q === 'crear' && !confirm(`¿Crear ${cmp.soloN.length} iniciativas que solo están en Notion? Las que no tengan «¿Revisión DGV?» en SI quedan como archivadas.`)) return;
+          b.disabled = true; App.guard(async () => { const k = await aplicar(cmp, q, (i, t) => { b.textContent = `${i} de ${t}…`; }); App.toast(q === 'llenar' ? `${k} iniciativas completadas` : `${k} iniciativas creadas`); await App.reload(); }); };
         const n = an.filas.length, est = {}; an.filas.forEach(r => { const k = Object.keys(an.mapeo).find(h => an.mapeo[h] === 'estado'); const v = k ? r[k] : ''; est[v || 'sin estado'] = (est[v || 'sin estado'] || 0) + 1; });
         res.innerHTML = `<b>${n} iniciativas</b> · ${Object.keys(an.mapeo).length} columnas reconocidas${an.sinMapear.length ? ` · sin usar: ${esc(an.sinMapear.join(', '))}` : ''}<div class="faint" style="margin:4px 0 8px">${esc(Object.entries(est).map(([k, v]) => `${k}: ${v}`).join(' · '))}</div><button class="btn amarillo" data-nok>Importar ${n} iniciativas</button>`;
       } catch (ex) { res.innerHTML = `<span class="crit">${esc(ex.message)}</span>`; }
@@ -138,5 +225,5 @@
     return box;
   }
 
-  App.ImportarNotion = { parseCSV, analizar, importar, tarjeta };
+  App.ImportarNotion = { parseCSV, parseHTML, analizar, importar, tarjeta, comparar };
 })();

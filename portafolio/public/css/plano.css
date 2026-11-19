@@ -801,3 +801,16 @@ select:focus-visible,.tv-mini select:focus-visible{outline:2px solid var(--info-
 .me .ic{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .pop{background:rgba(255,255,255,.84)!important}
 .me{color:#D9D4E6}.me .tx b{font-size:13.5px;color:inherit}
+
+/* Notion: comparar y completar */
+.nc{margin-top:10px;font-size:12.5px}.nc-res{margin:4px 0}.nc-acc{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.nc h4{font-size:13px;font-weight:800;margin:14px 0 6px;text-transform:none;letter-spacing:0;color:var(--ink)}
+.nc-tw{max-height:360px;overflow:auto;border-radius:10px}.nc-t{width:100%;border-collapse:collapse;font-size:12px}
+.nc-t th{text-align:left;color:var(--muted);font-weight:700;padding:6px 8px;background:var(--hover,#F2F1F6);position:sticky;top:0}
+.nc-t td{padding:5px 8px;vertical-align:top}.nc-t tr:nth-child(even) td{background:color-mix(in srgb,var(--ink) 3%,transparent)}
+.nc-l{display:flex;flex-wrap:wrap;gap:4px 14px}.nc-l>*{font-size:12.5px;color:var(--ink);text-decoration:none}.nc-l small{color:var(--muted)}
+/* Portafolio: fila para crear una iniciativa */
+.pf-tbl tr.pf-add td{padding:6px 16px}
+.pf-tbl tr.pf-add input{width:100%;border:0;background:transparent;font:inherit;font-size:13px;color:var(--ink);padding:6px 0;outline:none}
+.pf-tbl tr.pf-add input::placeholder{color:var(--muted)}
+.pf-tbl tr.pf-add:hover td{background:color-mix(in srgb,var(--ink) 3%,transparent)}
