@@ -684,3 +684,34 @@ button.tab#btnBuscar{font:inherit;border:0;background:none;width:100%;text-align
 .vl-sub a{padding:9px 0!important}
 .pf-head .pg-top{min-height:32px}
 .vl-head+.kl{margin:0 0 10px}
+
+/* Papelera */
+.pp-sub{font-size:13px;color:var(--muted);margin:2px 0 14px}
+.pp-tbl td small{display:block;font-size:11.5px;color:var(--muted);font-weight:500}
+.pp-tbl td.pp-acc{text-align:right;white-space:nowrap}.pp-tbl td.pp-acc .btn{margin-left:6px}
+
+/* Ficha, propuesta A: el siguiente paso arriba; lo que falta son botones */
+.av-next{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:color-mix(in srgb,var(--accent) 14%,var(--card,#fff));border-radius:14px;padding:11px 16px;margin:12px 0 0}
+.av-next .t{font-weight:800;font-size:13.5px;color:var(--ink)}.av-next .s{font-size:12px;color:var(--muted)}.av-next .sp{flex:1}
+.av-next.listo{background:color-mix(in srgb,var(--good,#16935A) 12%,var(--card,#fff))}
+.av-chips{display:flex;gap:6px;flex-wrap:wrap}
+.av-chip{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 12px;border-radius:999px;background:var(--card,#fff);border:0;font:inherit;font-weight:700;font-size:12px;color:var(--ink);text-decoration:none;cursor:pointer;white-space:nowrap}
+.av-chip i{width:13px;height:13px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--faint,#9C96AD);flex:none}
+.av-chip:not(.ok):hover{box-shadow:0 0 0 2px var(--accent)}
+.av-chip.ok{background:transparent;color:var(--muted);cursor:default;font-weight:600}.av-chip.ok i{background:var(--good,#16935A);box-shadow:none}
+.p-head .av-line{display:none}
+/* Cronograma vacío */
+.cr-vacio{display:flex;gap:28px;align-items:center;background:var(--sunk,#F5F4F8);border-radius:16px;padding:30px 30px;margin-top:4px}
+.cr-vacio h3{margin:0 0 4px;font-size:16px;font-weight:800}.cr-vacio p{margin:0 0 14px;color:var(--muted);max-width:540px;font-size:13px}
+.cr-acc{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.cr-ill{width:170px;height:96px;border-radius:12px;background:var(--card,#fff);position:relative;flex:none}
+.cr-ill i{position:absolute;height:10px;border-radius:5px;background:#C9D9F2}.cr-ill i:nth-child(1){left:14px;top:18px;width:84px;background:#9DBBE8}.cr-ill i:nth-child(2){left:42px;top:42px;width:96px}.cr-ill i:nth-child(3){left:70px;top:66px;width:76px;background:#E3ECF8}
+@media (max-width:700px){.cr-vacio{flex-direction:column;align-items:flex-start;padding:20px}.cr-ill{display:none}}
+
+/* Ritmo: «falta registrar» en neutro; aviso de años fuera de rango */
+.tv-k .st.nr{color:var(--muted)}
+.tv-k .c.sr{color:var(--muted);margin-top:2px}
+.tv-atip{display:flex;gap:10px;align-items:flex-start;background:color-mix(in srgb,#E07A12 10%,transparent);border-radius:10px;padding:9px 12px;margin-top:12px;font-size:12.5px;line-height:1.4;color:var(--ink)}
+.tv-atip .ico{color:var(--warn-ink,#9A5B00);width:15px;height:15px;flex:none;margin-top:1px}
+.tv-atip a{color:var(--info-ink);font-weight:700}
+#pTab>.tv-atip{margin:0 0 12px}

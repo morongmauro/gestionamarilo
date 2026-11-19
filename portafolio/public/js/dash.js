@@ -98,12 +98,16 @@
   const row = (c, lbl, val, bold) => `<div class="r"><span>${c ? `<i style="--c:${c}"></i>` : ''}${esc(lbl)}</span>${bold ? `<b>${esc(val)}</b>` : esc(val)}</div>`;
   /* ---------- salud de cada proyecto (para «Requiere atención» y la matriz) ---------- */
   // Reglas a la vista: nada se decide en secreto. Cada señal dice de dónde sale.
+  // ¿La iniciativa registra su captura del año? (algún mes del año con captura, o una captura recurrente activa)
+  const registra = (caso, Y) => !!caso && ((caso.captado || []).some(c => String(c.mes || '').startsWith(Y + '-')) || (caso.recurrentes || []).some(r => r.activo !== false));
   function senales(d) {
     const hoy = d.hoy, en14 = App.d.add(hoy, 14);
     return d.filas.map(x => {
       const p = x.p, pl = App.planOf(p.id), out = [];
       const st = estadoDe(x.pc);
-      if (st && st[0] !== 'good') out.push({ sev: st[0] === 'critical' ? 3 : 2, txt: `Captura ${st[0] === 'critical' ? 'rezagada' : 'por debajo'}: ${Math.round(x.pc * 100)}% de lo esperado a la fecha`, href: `#/casos/${p.id}` });
+      // Si no ha registrado nada no se sabe si capturó: se pide registrar (atención), no se acusa rezago (rojo)
+      if (x.esp > 0 && !registra(x.caso, d.Y)) out.push({ sev: 2, txt: `Falta registrar la captura de ${d.Y}`, href: `#/proyectos/${p.id}/valor/captura` });
+      else if (st && st[0] !== 'good') out.push({ sev: st[0] === 'critical' ? 3 : 2, txt: `Captura ${st[0] === 'critical' ? 'rezagada' : 'por debajo'}: ${Math.round(x.pc * 100)}% de lo esperado a la fecha`, href: `#/casos/${p.id}` });
       const masVieja = pl.atrasadas ? Math.max(...pl.acts.filter(a => a.fin && a.fin < hoy && (a.avance || 0) < 100).map(a => App.d.diff(a.fin, hoy))) : 0;
       // Crítico: 5 o más actividades atrasadas, o alguna con más de 30 días de atraso. Lo demás es «Atención».
       if (pl.atrasadas) out.push({ sev: pl.atrasadas >= 5 || masVieja > 30 ? 3 : 2, txt: `${pl.atrasadas} actividad${pl.atrasadas > 1 ? 'es' : ''} atrasada${pl.atrasadas > 1 ? 's' : ''} en el cronograma`, href: `#/cronograma/${p.id}` });
@@ -361,6 +365,6 @@
     window.onresize = () => { clearTimeout(render._rz); render._rz = setTimeout(() => { if (location.hash.startsWith('#/tablero')) draw(); }, 200); };
   }
 
-  App.Dash = { datos, senales };
+  App.Dash = { datos, senales, registra };
   App.views.tablero = { render };
 })();

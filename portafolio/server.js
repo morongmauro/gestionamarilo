@@ -594,6 +594,63 @@ route('DELETE', '/api/activities/:id/comentarios/:cid', 'editor', async (req, ct
   return { ok, activity: doc };
 });
 
+// ---------- Papelera ----------
+// Lo que se elimina (una iniciativa con todo lo suyo, o un caso de negocio) se guarda completo durante 30 días.
+// Cualquier editor lo restaura; solo un administrador lo elimina antes de tiempo.
+const PAPELERA_DIAS = 30, DIA_MS = 864e5;
+async function aPapelera(coll, cur, user) {
+  const x = { id: newId(), tipo: coll === 'projects' ? 'proyecto' : 'caso', ref: cur.id, nombre: '', borrado_at: now(), created_at: now(), por: user.name, por_id: user.id, datos: {} };
+  if (coll === 'projects') {
+    const [acts, secs, cases, ses] = await Promise.all(['activities', 'sections', 'cases', 'sessions'].map(c => store.list(c)));
+    x.nombre = await labelOf('projects', cur);
+    x.datos = { project: cur, activities: acts.filter(a => a.project_id === cur.id), sections: secs.filter(s => s.project_id === cur.id), cases: cases.filter(c => c.project_id === cur.id), sesiones: ses.filter(s => (s.proyectos || []).includes(cur.id)).map(s => s.id) };
+  } else {
+    const p = await store.get('projects', cur.project_id);
+    x.nombre = p ? await labelOf('projects', p) : 'Iniciativa eliminada';
+    x.datos = { case: cur };
+  }
+  await store.insert('papelera', x);
+}
+route('GET', '/api/papelera', 'editor', async () => {
+  const limite = Date.now() - PAPELERA_DIAS * DIA_MS, vivos = [];
+  for (const x of await store.list('papelera')) { if (Date.parse(x.borrado_at) < limite) await store.remove('papelera', x.id); else vivos.push(x); }
+  return vivos.sort((a, b) => String(b.borrado_at).localeCompare(String(a.borrado_at))).map(x => ({
+    id: x.id, tipo: x.tipo, ref: x.ref, nombre: x.nombre, borrado_at: x.borrado_at, por: x.por,
+    vence: new Date(Date.parse(x.borrado_at) + PAPELERA_DIAS * DIA_MS).toISOString(),
+    actividades: ((x.datos || {}).activities || []).length, con_caso: !!(((x.datos || {}).cases || []).length),
+  }));
+});
+route('POST', '/api/papelera/:id/restaurar', 'editor', async (req, ctx) => {
+  const x = await store.get('papelera', ctx.params.id);
+  if (!x) throw new HttpError(404, 'Ya no está en la papelera');
+  const d = x.datos || {};
+  if (x.tipo === 'proyecto') {
+    const p = d.project;
+    if (await store.get('projects', p.id)) throw new HttpError(409, 'Esa iniciativa ya existe');
+    await store.insert('projects', p);
+    for (const s of d.sections || []) if (!(await store.get('sections', s.id))) await store.insert('sections', s);
+    for (const a of d.activities || []) if (!(await store.get('activities', a.id))) await store.insert('activities', a);
+    const casos = await store.list('cases');
+    for (const c of d.cases || []) if (!casos.some(k => k.project_id === p.id) && !(await store.get('cases', c.id))) await store.insert('cases', c);
+    for (const sid of d.sesiones || []) await store.update('sessions', sid, s => ({ ...s, proyectos: [...new Set([...(s.proyectos || []), p.id])] }));
+  } else {
+    const c = d.case;
+    if (!(await store.get('projects', c.project_id))) throw new HttpError(409, 'Primero restaure la iniciativa de este caso');
+    if ((await store.list('cases')).some(k => k.project_id === c.project_id)) throw new HttpError(409, 'Esa iniciativa ya tiene otro caso de negocio');
+    await store.insert('cases', c);
+  }
+  await store.remove('papelera', x.id);
+  await log(ctx.user, 'restauró', x.tipo === 'proyecto' ? 'projects' : 'cases', x.ref, x.tipo === 'caso' ? 'Caso de negocio de ' + x.nombre : x.nombre);
+  return { ok: true };
+});
+route('DELETE', '/api/papelera/:id', 'admin', async (req, ctx) => {
+  const x = await store.get('papelera', ctx.params.id);
+  if (!x) throw new HttpError(404, 'Ya no está en la papelera');
+  await store.remove('papelera', x.id);
+  await log(ctx.user, 'eliminó definitivamente', x.tipo === 'proyecto' ? 'projects' : 'cases', x.ref, x.tipo === 'caso' ? 'Caso de negocio de ' + x.nombre : x.nombre);
+  return { ok: true };
+});
+
 // ---------- CRUD genérico de colecciones ----------
 const COLL_RX = `:coll(${COLLS.join('|')})`;
 route('POST', `/api/${COLL_RX}`, 'editor', async (req, ctx) => {
@@ -643,6 +700,7 @@ route('DELETE', `/api/${COLL_RX}/:id`, 'editor', async (req, ctx) => {
   const coll = ctx.params.coll, id = ctx.params.id;
   const cur = await store.get(coll, id); if (!cur) throw new HttpError(404, 'No encontrado');
   const nombre = await labelOf(coll, cur);
+  if (coll === 'projects' || coll === 'cases') await aPapelera(coll, cur, ctx.user); // queda 30 días en la papelera
   if (coll === 'projects') { // borra en cascada lo que cuelga del proyecto
     for (const a of (await store.list('activities')).filter(a => a.project_id === id)) await store.remove('activities', a.id);
     for (const x of (await store.list('sections')).filter(x => x.project_id === id)) await store.remove('sections', x.id);
@@ -658,7 +716,7 @@ route('DELETE', `/api/${COLL_RX}/:id`, 'editor', async (req, ctx) => {
   }
   if (coll === 'committees') for (const s of (await store.list('sessions')).filter(s => s.comite_id === id)) await store.update('sessions', s.id, d => ({ ...d, comite_id: null }));
   await store.remove(coll, id);
-  await log(ctx.user, 'eliminó', coll, id, nombre);
+  await log(ctx.user, coll === 'projects' || coll === 'cases' ? 'envió a la papelera' : 'eliminó', coll, id, nombre);
   return { ok: true };
 });
 

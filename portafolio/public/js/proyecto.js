@@ -89,6 +89,8 @@
     } else if (tab === 'cronograma') {
       App.PlanHost.render(box, id);
     } else if (tab === 'caso') {
+      const at = App.TableroVisual && App.TableroVisual.atipicoDe ? App.TableroVisual.atipicoDe(id) : [];
+      if (at.length) setTimeout(() => { const bx = $('#pTab', main); if (bx && !bx.querySelector('.tv-atip')) bx.insertAdjacentHTML('afterbegin', `<div class="tv-atip"><i class="ico ico-alerta"></i><span><b>Revisar las cifras:</b> en ${at.map(z => z.y).join(' y ')} este caso aporta ${at.map(z => App.moneyShort(z.top.v)).join(' y ')}, más de 4 veces lo que suma todo el portafolio en un año normal (${App.moneyShort(at[0].med)}). Confirme que las cifras están en la unidad correcta (pesos o millones).</span></div>`); }, 0);
       App.Caso.editor(box, id);
     } else if (tab === 'valor') {
       box.innerHTML = `<nav class="vl-sub ps-sub">${SUBV.map(([k, t]) => `<a href="#/proyectos/${id}/valor/${k}" class="${k === sub ? 'on' : ''}">${t}${k === 'okr' && nOkr ? ` <span class="n">${nOkr}</span>` : ''}${k === 'captura' && pendCap ? ` <span class="n a">${pendCap}</span>` : ''}</a>`).join('')}</nav><div id="pSub"></div>`;
@@ -170,8 +172,8 @@
   function confirmDelete(id) {
     const p = App.byId('projects', id); if (!p) return;
     const n = App.actsOf(id).length, c = App.caseOf(id);
-    if (!confirm(`¿Eliminar «${App.projectName(p)}»?\n\nSe borran también ${n} actividades del cronograma${c ? ' y su caso de negocio' : ''}. Las sesiones de comité se conservan.`)) return;
-    App.guard(async () => { await App.remove('projects', id); App.toast('Iniciativa eliminada'); App.go('#/proyectos'); });
+    if (!confirm(`¿Enviar «${App.projectName(p)}» a la papelera?\n\nSe va con sus ${n} actividades${c ? ' y su caso de negocio' : ''}. Se puede restaurar completa durante 30 días desde Portafolio → Papelera.`)) return;
+    App.guard(async () => { await App.remove('projects', id); App.toast('Enviada a la papelera. Se puede restaurar durante 30 días.'); App.go('#/proyectos'); });
   }
 
   App.Proyecto = { render, confirmDelete };

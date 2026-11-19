@@ -702,9 +702,21 @@
     const o = optsDe();
     o.owner = o.editable = editable();
     const head = $('.plan-head', cur.el), body = $('#plan-body', cur.el);
+    if (cur.pid && !(cur.M.activities || []).length && !(cur.M.sections || []).length && !cur.armar) {
+      head.innerHTML = '';
+      body.innerHTML = editable() ? `<div class="cr-vacio"><div class="cr-ill" aria-hidden="true"><i></i><i></i><i></i></div><div><h3>Esta iniciativa aún no tiene cronograma</h3>
+        <p>La forma más rápida es subir el Excel con las actividades. También puede empezar a mano con la primera etapa.</p>
+        <div class="cr-acc"><button class="btn amarillo" data-cv="excel">Subir Excel</button><button class="btn ghost" data-cv="etapa">Crear la primera etapa</button><button class="t-lnk" data-cv="plantilla">Descargar plantilla</button></div></div></div>`
+        : '<div class="cr-vacio"><div><h3>Esta iniciativa aún no tiene cronograma</h3><p>Cuando el equipo lo cargue aparecerá aquí.</p></div></div>';
+      body.onclick = e => { const b = e.target.closest('[data-cv]'); if (!b) return; const k = b.dataset.cv;
+        if (k === 'excel') subirExcel(b); if (k === 'plantilla') plantillaCrono();
+        if (k === 'etapa') { cur.armar = true; pintar(); const i = [...cur.el.querySelectorAll('tr.pl-add input')].find(x => /Nueva etapa/.test(x.placeholder)); if (i) { i.scrollIntoView({ block: 'center' }); i.focus(); } } };
+      return;
+    }
+    body.onclick = null;
     head.innerHTML = cabecera();
     const wrap = $('#pl-wrap', body), keep = wrap ? [wrap.scrollLeft, wrap.scrollTop] : null;
-    o.vacioHtml = cur.pid ? (editable() ? 'Aún no hay actividades. Tráelo de la app de gestión («Traer de la app de gestión», arriba), crea el primera etapa abajo («＋ Nueva etapa») o pega filas desde Excel.' : 'Aún no hay actividades en este plan.') : 'Aún no hay actividades en ninguna iniciativa.';
+    o.vacioHtml = cur.pid ? (editable() ? 'Escriba el nombre de la primera etapa abajo («＋ Nueva etapa») y Enter. También puede pegar filas copiadas de Excel.' : 'Aún no hay actividades en este plan.') : 'Aún no hay actividades en ninguna iniciativa.';
     const ancho = (body.clientWidth || cur.el.clientWidth || 1100) - (o.panel ? 236 : 0);
     o.anchoTL = P.anchoAjuste(ancho, (o.vista === 'tabla' ? 1300 : 700) + P.extraNombre());
     body.innerHTML = P.render(cur.M, o);

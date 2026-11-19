@@ -281,7 +281,7 @@
         const bajar = u => { const l = document.createElement('a'); l.href = u; l.download = ''; document.body.appendChild(l); l.click(); l.remove(); };
         if (m === 'excel') bajar(`/api/cases/${c.id}/excel`); if (m === 'plantilla') bajar('/api/cases/plantilla/excel'); if (m === 'pdf') window.print();
         if (m === 'importar') $('[data-c=archivo]', el).click();
-        if (m === 'del') { if (!confirm('¿Eliminar el caso de negocio de esta iniciativa? Se pierde toda su información.')) return; App.guard(async () => { await App.remove('cases', c.id); App.render(); }); }
+        if (m === 'del') { if (!confirm('¿Enviar el caso de negocio a la papelera? Se puede restaurar durante 30 días desde Portafolio → Papelera.')) return; App.guard(async () => { await App.remove('cases', c.id); App.toast('Caso enviado a la papelera'); App.render(); }); }
       }, 260);
       if (a === 'param') return parametros(b);
       if (a === 'comite') return App.guard(async () => {
@@ -311,7 +311,7 @@
         <div><b>+5%, −3%</b><span>sobre el valor del año anterior</span></div>
         <div><b>(1.200)</b><span>número negativo</span></div>
         <div><b>··· en cada fila</b><span>repetir, crecer un %, repartir un total</span></div></div>`, { width: 380, nofocus: true });
-      if (a === 'del') { if (!confirm('¿Eliminar el caso de negocio de esta iniciativa? Se pierde toda su información.')) return; App.guard(async () => { await App.remove('cases', c.id); App.render(); }); }
+      if (a === 'del') { if (!confirm('¿Enviar el caso de negocio a la papelera? Se puede restaurar durante 30 días desde Portafolio → Papelera.')) return; App.guard(async () => { await App.remove('cases', c.id); App.toast('Caso enviado a la papelera'); App.render(); }); }
     };
   }
 
