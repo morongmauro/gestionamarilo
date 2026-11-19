@@ -189,6 +189,10 @@ App.setAud = on => { try { localStorage.setItem('pf.version', on ? 'auditada' : 
 try { if (localStorage.getItem('pf.version') === 'auditada') document.documentElement.classList.add('aud'); } catch (e) {}
 document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-aud]'); if (!b) return; e.preventDefault(); App.setAud(b.dataset.aud === 'on'); App.toast(b.dataset.aud === 'on' ? 'Versión auditada (prueba). Se vuelve a la actual con el mismo botón.' : 'Versión actual'); });
 
+/* VPN, TIR, payback y ROI: se calculan solos con el flujo del caso; se muestran solo con «Más indicadores» */
+App.masInd = () => !!App.store.get('ind.fin', false);
+document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-ind-mas]'); if (!b) return; e.preventDefault(); App.store.set('ind.fin', !App.masInd()); if (App.render) App.render(); });
+
 /* ---------- popover ---------- */
 const pop = () => App.$('#pop');
 let popCtx = null, popAnchor = null, popT = null;

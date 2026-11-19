@@ -90,11 +90,11 @@
       const sinInv = !(f.totalInversion > 0);
       const pr = App.byId('projects', pid);
       return k(esc(App.moneyShort(dos, mon)), `valor a dos años${inc ? ` → Income ${inc}` : ''}`, '', 'Cifra oficial de la iniciativa: beneficios de los dos primeros años con beneficios. Es la base del Income del ICE') +
-        (sinInv ? k('—', 'VPN y TIR: aparecen al poner la inversión', '', 'Sin inversión el VPN y la TIR saldrían inflados') :
+        (!App.masInd() ? `<button class="t-lnk ind-mas" data-ind-mas title="VPN, TIR, payback y ROI: se calculan solos con el flujo del caso y la tasa de descuento">Más indicadores</button>` : sinInv ? k('—', 'VPN y TIR: aparecen al poner la inversión', '', 'Sin inversión el VPN y la TIR saldrían inflados') + '<button class="t-lnk ind-mas" data-ind-mas>Menos indicadores</button>' :
         k(esc(App.moneyShort(f.vpn, mon)), 'VPN', f.vpn == null ? '' : f.vpn >= 0 ? 'good' : 'bad', `Tasa de descuento ${App.num(c.tasa, 2) || 0} %`) +
         k(esc(App.pct(f.tir)), 'TIR', f.tir == null ? '' : f.tir * 100 >= (c.tasa || 0) ? 'good' : 'bad', f.tirMultiple ? 'El flujo cambia de signo varias veces: puede haber otra TIR' : '') +
         k(esc(pbTxt(f)), 'payback', '', 'Años para recuperar la inversión') +
-        k(esc(App.pct(f.roi)), 'ROI', f.roi == null ? '' : f.roi >= 0 ? 'good' : 'bad')) +
+        k(esc(App.pct(f.roi)), 'ROI', f.roi == null ? '' : f.roi >= 0 ? 'good' : 'bad') + '<button class="t-lnk ind-mas" data-ind-mas>Menos indicadores</button>') +
         (pr && App.ICE.avisoIncome ? App.ICE.avisoIncome(pr, ro) : '');
     };
     const sensHTML = rows => {
@@ -404,7 +404,7 @@
       && (!CF.cat || r.cats.includes(CF.cat));
     const vis = todos.filter(pasa);
     const aprob = sumables.filter(r => r.c.estado === 'Aprobado'), aprobCOP = aprob.filter(r => !r.usd), nUSD = aprob.length - aprobCOP.length;
-    const vpnAprob = aprobCOP.reduce((a, r) => a + (Number.isFinite(r.f.vpn) ? r.f.vpn : 0), 0);
+    const vpnAprob = aprobCOP.reduce((a, r) => a + (Number.isFinite(r.f.vpn) ? r.f.vpn : 0), 0), dosAprob = aprobCOP.reduce((a, r) => a + (App.Avance ? App.Avance.dosAnios(r.f) : 0), 0), MI = App.masInd();
     const capT = sumables.reduce((a, r) => a + r.cap, 0), proyT = sumables.reduce((a, r) => a + r.proy, 0);
     const nRev = sumables.filter(r => r.c.estado === 'En revisión').length;
     const m = v => App.moneyShort(v);
@@ -425,31 +425,31 @@
       return `<tr data-pid="${r.p.id}"><td class="pf-nm"><b title="${nm}">${nm}</b>${App.tagEjemplo(r.p)}<small>${sub}</small></td>
         <td><span class="pill cl-${estadoColor(c.estado)}">${esc(c.estado || 'Borrador')}</span>${c.origen === 'ice' ? ' <span class="cn-pre" title="Caso preliminar construido desde el ICE">preliminar</span>' : ''}</td>
         <td class="n">${f.totalInversion ? esc(App.moneyShort(f.totalInversion, mo)) : '<span class="faint">—</span>'}</td>
-        <td class="n cn-vpn">${f.vpn == null || !f.totalInversion ? '<span class="faint">—</span>' : `<b class="${f.vpn >= 0 ? '' : 'neg'}">${esc(App.moneyShort(f.vpn, mo))}</b>`}</td>
+        ${App.masInd() ? `<td class="n cn-vpn">${f.vpn == null || !f.totalInversion ? '<span class="faint">—</span>' : `<b class="${f.vpn >= 0 ? '' : 'neg'}">${esc(App.moneyShort(f.vpn, mo))}</b>`}</td>
         <td class="n">${f.tir == null ? '<span class="faint">—</span>' : esc(App.pct(f.tir))}</td>
-        <td class="n">${f.payback == null ? '<span class="faint">—</span>' : esc(pbTxt(f))}</td>
+        <td class="n">${f.payback == null ? '<span class="faint">—</span>' : esc(pbTxt(f))}</td>` : ''}
         <td>${cap ? bullet(r) : `<span class="cn-proy"><b>${r.proy ? esc(m(r.proy)) : '—'}</b> <small>${esc(App.moneyShort(f.totalBeneficio, mo))} en ${Math.round(c.anios || 0)} años</small></span>`}</td>
         <td class="cn-sup" title="${esc(sc)}">${sc ? esc(sc) : '<span class="faint">—</span>'}</td>
         <td class="cn-act">${c.updated_at ? esc(App.d.ago(c.updated_at)) : ''}</td><td class="go" aria-hidden="true">›</td></tr>`;
     };
     const grupos = GRUPOS.map(g => ({ g, l: vis.filter(r => r.c && g.de(r.c.estado)) })).filter(z => z.l.length);
     const sin = vis.filter(r => !r.c);
-    const COLS = 10;
+    const COLS = App.masInd() ? 10 : 7;
     // Las iniciativas sin caso no son casos: el grupo va cerrado, salvo que se busquen o se filtren a propósito
     const sinAbierto = !!CF.sin || CF.estado === 'Sin caso' || !!CF.q;
     const cuerpo = grupos.map(z => `<tr class="cn-grp"><td colspan="${COLS}"><b>${z.g.t}</b> <small>${z.l.length} ${z.l.length === 1 ? 'caso' : 'casos'}</small></td></tr>${z.l.map(fila).join('')}`).join('')
       + (sin.length ? `<tr class="cn-grp cn-tog" data-cn-sin="1" role="button" aria-expanded="${sinAbierto}"><td colspan="${COLS}"><b>${sinAbierto ? '▾' : '▸'} Sin caso de negocio</b> <small>${sin.length} ${sin.length === 1 ? 'iniciativa' : 'iniciativas'}${sinAbierto ? '' : ', clic para verlas'}</small></td></tr>${sinAbierto ? sin.map(fila).join('') : ''}` : '');
     const sel = (attr, label, val, opts) => `<label class="cn-f"><span>${label}</span><select data-cf="${attr}">${opts.map(([v, t]) => `<option value="${esc(v)}" ${String(val) === String(v) ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>`;
     main.innerHTML = `<div class="pg-top"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Casos de negocio</h1>
-        <div class="kl"><span><b>${sumables.length}</b>${sumables.length === 1 ? 'caso' : 'casos'}</span><span><b>${esc(m(vpnAprob))}</b>VPN total aprobado${nUSD ? `, ${nUSD} en USD aparte` : ''}</span><span><b>${esc(m(capT))}</b>captado ${Y} de ${esc(m(proyT))}</span><span><b class="${nRev ? 'r' : ''}">${nRev}</b>por aprobar en comité</span></div>
+        <div class="kl"><span><b>${sumables.length}</b>${sumables.length === 1 ? 'caso' : 'casos'}</span><span><b>${esc(m(MI ? vpnAprob : dosAprob))}</b>${MI ? 'VPN total aprobado' : 'a dos años en casos aprobados'}${nUSD ? `, ${nUSD} en USD aparte` : ''}</span><span><b>${esc(m(capT))}</b>captado ${Y} de ${esc(m(proyT))}</span><span><b class="${nRev ? 'r' : ''}">${nRev}</b>por aprobar en comité</span></div>
         <span class="sp"></span><button class="btn ghost sm" data-cn="csv">Exportar a Excel</button>${App.canEdit() ? '<button class="btn primary sm" data-cn="nuevo">+ Nuevo caso</button>' : ''}</div>
       <div class="pf-bar"><label class="search"><span>⌕</span><input id="cnq" placeholder="Buscar caso o iniciativa…" value="${esc(CF.q)}"></label>
         ${sel('estado', 'Estado', CF.estado, [['', 'Todos'], ...ESTADOS.map(e => [e.name, e.name]), ['Sin caso', 'Sin caso']])}
         ${sel('fase', 'Fase', CF.fase, [['', 'Todas'], ...(window.Fases ? Fases.FASES.map(x => [String(x.id), x.fuera ? x.nombre : x.corto + ', ' + x.nombre.split(' · ')[1].split(',')[0]]) : [])])}
         ${sel('cat', 'Tipo de valor', CF.cat, [['', 'Todos'], ...App.CATS.map(x => [x.id, App.catLabel(x.id)])])}
-        <div class="seg"><button class="on" data-vista-cn="casos">Casos</button><button data-vista-cn="cobertura" title="Qué iniciativas tienen caso, cuáles no y a cuáles les aplica">Cobertura</button></div><span class="sp"></span><div class="seg"><button data-modo="cap" class="${cap ? 'on' : ''}" aria-pressed="${cap}">Captado vs. proyectado</button><button data-modo="proy" class="${cap ? '' : 'on'}" aria-pressed="${!cap}">Proyectado</button></div></div>
+        <div class="seg"><button class="on" data-vista-cn="casos">Casos</button><button data-vista-cn="cobertura" title="Qué iniciativas tienen caso, cuáles no y a cuáles les aplica">Cobertura</button></div><span class="sp"></span><button class="pf-tg ${App.masInd() ? 'on' : ''}" data-ind-mas title="VPN, TIR y payback: se calculan solos con el flujo de cada caso">${App.masInd() ? 'Menos indicadores' : 'Más indicadores'}</button><div class="seg"><button data-modo="cap" class="${cap ? 'on' : ''}" aria-pressed="${cap}">Captado vs. proyectado</button><button data-modo="proy" class="${cap ? '' : 'on'}" aria-pressed="${!cap}">Proyectado</button></div></div>
       <section class="t-card pf-tbl-card"><div class="pf-wrap"><table class="pf-tbl cn-tbl">
-        <thead><tr><th>Iniciativa <small>responsables, fase</small></th><th>Estado del caso</th><th class="n">Inversión</th><th class="n">VPN</th><th class="n">TIR</th><th class="n">Payback</th>
+        <thead><tr><th>Iniciativa <small>responsables, fase</small></th><th>Estado del caso</th><th class="n">Inversión</th>${MI ? '<th class="n">VPN</th><th class="n">TIR</th><th class="n">Payback</th>' : ''}
           <th>${cap ? `Captado ${Y} <small>real / proyectado, ┃ esperado a hoy</small>` : `Beneficio ${Y} <small>proyectado, total del caso</small>`}</th><th class="cn-sup">Supuesto clave</th><th>Actualizado</th><th></th></tr></thead>
         <tbody>${cuerpo || `<tr><td colspan="${COLS}"><div class="t-vacio">${todos.length ? 'Ningún caso cumple estos filtros.' : 'Aún no hay iniciativas.'}</div></td></tr>`}</tbody></table></div>
         <div class="t-pie t-pie-row"><span class="t-tag">Clic en una fila abre el caso con su tabla y flujos</span><span class="t-tag">Cifras en pesos, VPN con la tasa de descuento de cada caso${D.usd ? ', casos en USD aparte' : ''}</span></div></section>`;

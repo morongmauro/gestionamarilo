@@ -749,3 +749,7 @@ select:focus-visible,.tv-mini select:focus-visible{outline:2px solid var(--info-
 #main.tv .tv-hit:focus-visible{outline:2px solid var(--info-ink,#2A5BD7);outline-offset:2px}
 .vl-t td .pg{color:var(--muted)!important;opacity:.55;font-weight:500;font-style:italic}
 .vl-t td.pend .pg{opacity:1;color:var(--warn-ink,#9A5B00)!important;font-style:normal;font-weight:700}
+
+/* «Más indicadores» en la barra del caso */
+.ind-mas{font-size:12px;margin-left:4px;white-space:nowrap}
+.ind-oculto{display:none!important}

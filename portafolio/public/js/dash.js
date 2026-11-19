@@ -115,7 +115,7 @@
       if (pl.acts.length && App.PlanHost) { try { riesgoRC = App.PlanHost.modelo(p.id).summary.rutaCriticaEnRiesgo || 0; } catch (e) { riesgoRC = 0; } }
       if (riesgoRC) out.push({ sev: 3, txt: `${riesgoRC} actividad${riesgoRC > 1 ? 'es' : ''} de la ruta crítica en riesgo`, href: `#/cronograma/${p.id}` });
       if (p.fecha_meta && pl.fin && pl.fin > p.fecha_meta && window.Plan) { const dif = Plan.cal.difHabiles(p.fecha_meta, pl.fin); out.push({ sev: 2, txt: `Termina ${dif} día${dif === 1 ? '' : 's'} hábil${dif === 1 ? '' : 'es'} después de la fecha meta`, href: `#/cronograma/${p.id}` }); }
-      if (x.vpn != null && x.vpn < 0) out.push({ sev: 2, txt: `VPN negativo (${m(x.vpn)})`, href: `#/casos/${p.id}` });
+      if (App.masInd() && x.vpn != null && x.vpn < 0) out.push({ sev: 2, txt: `VPN negativo (${m(x.vpn)})`, href: `#/casos/${p.id}` });
       if (App.Riesgos) out.push(...App.Riesgos.alertas(p));
       const vencidos = App.S.sessions.filter(s => (s.proyectos || []).includes(p.id)).flatMap(s => s.compromisos || []).filter(k => !k.hecho && k.fecha && k.fecha < hoy && (k.texto || '').trim()).length;
       if (vencidos) out.push({ sev: 2, txt: `${vencidos} compromiso${vencidos > 1 ? 's' : ''} de comité vencido${vencidos > 1 ? 's' : ''}`, href: '#/agenda' });
