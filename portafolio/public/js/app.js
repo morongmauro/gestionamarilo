@@ -143,7 +143,8 @@
     const { sec, params } = route();
     const main = $('#main');
     main.className = App.canEdit() ? '' : 'ro';
-    const zPf = sec === 'proyectos' && !params[0] ? App.zoomPf() : null;
+    // Portafolio y Valor comparten tamaño de letra y de tabla
+    const zPf = ((sec === 'proyectos' || sec === 'casos') && !params[0]) || sec === 'valor' ? App.zoomPf() : null;
     main.style.zoom = zPf || ''; main.style.setProperty('--z', zPf || 1);
     main.onclick = main.onchange = main.oninput = main.onmousedown = main.ondblclick = main.onmousemove = main.onmouseleave = null;
     main.ondragstart = main.ondragend = main.ondragover = main.ondrop = null;
@@ -173,7 +174,7 @@
     else if (pila[pila.length - 1] !== h) pila.push(h);
     pila = pila.slice(-40); guardaPila();
   };
-  const secDe = h => String(h || '').replace(/^#\/?/, '').split('/')[0] || 'proyectos';
+  const secDe = h => { const s = String(h || '').replace(/^#\/?/, '').split('/')[0] || 'proyectos'; return s === 'casos' ? 'valor' : s; };
   const NOMBRES = { tablero: 'Tablero', proyectos: 'Portafolio', cronograma: 'Cronogramas', casos: 'Valor', valor: 'Valor', riesgos: 'Riesgos', agenda: 'Comité de valor', historial: 'Historial', usuarios: 'Administración' };
   const nombreDe = h => { const p = String(h).replace(/^#\/?/, '').split('/'); const pr = p[0] === 'proyectos' && p[1] && App.byId('projects', decodeURIComponent(p[1])); return pr ? App.projectName(pr) : (NOMBRES[p[0]] || 'la página anterior'); };
   App.volverA = () => {

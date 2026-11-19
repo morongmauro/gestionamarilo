@@ -678,3 +678,9 @@ button.tab#btnBuscar{font:inherit;border:0;background:none;width:100%;text-align
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #main.tv .tv-p::before{background:radial-gradient(85% 120% at 100% 0%,rgba(255,201,0,.08),transparent 60%),linear-gradient(170deg,transparent 0%,rgba(255,255,255,.03) 100%)}}
 :root[data-theme="dark"] #main.tv .tv-p::before{background:radial-gradient(85% 120% at 100% 0%,rgba(255,201,0,.08),transparent 60%),linear-gradient(170deg,transparent 0%,rgba(255,255,255,.03) 100%)}
 @media (prefers-reduced-motion:reduce){#main.tv .tv-p::before{transition:none}}
+
+/* Valor con la misma cabecera y pestañas que el Portafolio */
+.vl-sub{gap:24px!important;margin:0 0 12px!important;font-size:14px}
+.vl-sub a{padding:9px 0!important}
+.pf-head .pg-top{min-height:32px}
+.vl-head+.kl{margin:0 0 10px}

@@ -293,10 +293,11 @@
   /* ---------- la sección Valor ---------- */
   const PEST = [['casos', 'Casos de negocio', '#/casos'], ['captura', 'Captura de valor', '#/valor/captura'], ['okr', 'OKR', '#/valor/okr']];
   const subnav = act => `<nav class="vl-sub" aria-label="Valor">${PEST.map(([k, t, h]) => `<a href="${h}" class="${k === act ? 'on' : ''}">${t}</a>`).join('')}</nav>`;
-  const cabecera = act => `<div class="pg-top"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Valor</h1></div>${subnav(act)}`;
+  // Misma cabecera que el Portafolio en las tres pestañas: título, pestañas y cifras siempre en el mismo lugar
+  const cabecera = act => `<div class="pf-head vl-head"><div class="pg-top"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Valor</h1><span class="sp"></span></div>${subnav(act)}</div>`;
   App.views.valor = { render: (main, params) => { main.className = 'vl'; if ((params || [])[0] === 'okr') return okrPortafolio(main); return capturaPortafolio(main); } };
   // Casos de negocio pasa a ser la primera pestaña de Valor
   const casos = App.views.casos;
-  if (casos) App.views.casos = { render: (main, params) => { casos.render(main, params); if ((params || [])[0]) return; const t = main.querySelector('.pg-top'); if (t) { t.querySelector('h1').textContent = 'Valor'; t.insertAdjacentHTML('afterend', subnav('casos')); } } };
+  if (casos) App.views.casos = { render: (main, params) => { casos.render(main, params); if ((params || [])[0]) return; const t = main.querySelector('.pg-top'); if (t) { t.querySelector('h1').textContent = 'Valor'; const kl = t.querySelector('.kl'); const hd = document.createElement('div'); hd.className = 'pf-head vl-head'; t.before(hd); hd.appendChild(t); hd.insertAdjacentHTML('beforeend', subnav('casos')); if (kl) { kl.classList.add('pf-kl'); hd.after(kl); } } } };
   App.Valor = { captura, okrProyecto, avanceObj, objetivos, iniciativasDe, pendientes };
 })();
