@@ -419,7 +419,7 @@
     };
     const fila = r => {
       const nm = esc(App.projectName(r.p)), per = responsablesDe(r.p);
-      const sub = `${per.map(n => `<span class="pf-per" title="${esc(n)}"><i class="cl-${App.colorPersona(n)}"></i>${esc(n)}</span>`).join('')}${r.est ? `<span class="cn-fase">${esc(window.Fases && Fases.de(r.est) ? Fases.de(r.est).corto : r.est)}</span>` : ''}`;
+      const sub = `${r.est ? `<span class="cn-fase">${esc(window.Fases && Fases.de(r.est) ? Fases.de(r.est).corto : r.est)}</span>` : ''}`;
       if (!r.c) return `<tr class="cn-sin" data-pid="${r.p.id}"><td class="pf-nm"><b>${nm}</b><small>${sub}</small></td><td colspan="8" class="faint">${App.canEdit() ? '<span class="t-lnk">+ Crear caso de negocio</span>, ' : ''}${(r.p.props || {}).income ? `con su Income se arma un caso preliminar` : 'sin caso todavía'}</td><td class="go" aria-hidden="true">›</td></tr>`;
       const c = r.c, f = r.f, mo = c.moneda, sc = supuestoClave(c);
       return `<tr data-pid="${r.p.id}"><td class="pf-nm"><b title="${nm}">${nm}</b>${App.tagEjemplo(r.p)}<small>${sub}</small></td>
@@ -449,7 +449,7 @@
         ${sel('cat', 'Tipo de valor', CF.cat, [['', 'Todos'], ...App.CATS.map(x => [x.id, App.catLabel(x.id)])])}
         <div class="seg"><button class="on" data-vista-cn="casos">Casos</button><button data-vista-cn="cobertura" title="Qué iniciativas tienen caso, cuáles no y a cuáles les aplica">Cobertura</button></div><span class="sp"></span><button class="pf-tg ${App.masInd() ? 'on' : ''}" data-ind-mas title="VPN, TIR y payback: se calculan solos con el flujo de cada caso">${App.masInd() ? 'Menos indicadores' : 'Más indicadores'}</button><div class="seg"><button data-modo="cap" class="${cap ? 'on' : ''}" aria-pressed="${cap}">Captado vs. proyectado</button><button data-modo="proy" class="${cap ? '' : 'on'}" aria-pressed="${!cap}">Proyectado</button></div></div>
       <section class="t-card pf-tbl-card"><div class="pf-wrap"><table class="pf-tbl cn-tbl">
-        <thead><tr><th>Iniciativa <small>responsables, fase</small></th><th>Estado del caso</th><th class="n">Inversión</th>${MI ? '<th class="n">VPN</th><th class="n">TIR</th><th class="n">Payback</th>' : ''}
+        <thead><tr><th>Iniciativa <small>fase</small></th><th>Estado del caso</th><th class="n">Inversión</th>${MI ? '<th class="n">VPN</th><th class="n">TIR</th><th class="n">Payback</th>' : ''}
           <th>${cap ? `Captado ${Y} <small>real / proyectado, ┃ esperado a hoy</small>` : `Beneficio ${Y} <small>proyectado, total del caso</small>`}</th><th class="cn-sup">Supuesto clave</th><th>Actualizado</th><th></th></tr></thead>
         <tbody>${cuerpo || `<tr><td colspan="${COLS}"><div class="t-vacio">${todos.length ? 'Ningún caso cumple estos filtros.' : 'Aún no hay iniciativas.'}</div></td></tr>`}</tbody></table></div>
         <div class="t-pie t-pie-row"><span class="t-tag">Clic en una fila abre el caso con su tabla y flujos</span><span class="t-tag">Cifras en pesos, VPN con la tasa de descuento de cada caso${D.usd ? ', casos en USD aparte' : ''}</span></div></section>`;

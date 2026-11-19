@@ -761,3 +761,43 @@ select:focus-visible,.tv-mini select:focus-visible{outline:2px solid var(--info-
 .tv-k .tv-gr i:nth-of-type(2){margin-left:6px}
 .tv-k .tv-gr{flex-direction:column;align-items:flex-start;gap:1px}.tv-k .tv-gr>span{display:inline-flex;align-items:center;gap:6px}.tv-k .tv-gr i:nth-of-type(2){margin-left:0}
 .tv-k .tv-gr>span{white-space:nowrap;font-size:11.5px}.tv-k.k1 .mini svg{max-width:110px}
+
+/* ============================================================
+   19 nov (c): degradados orgánicos, ventanas en vidrio, configuración
+   ============================================================ */
+/* Degradado al pasar el mouse: varias manchas suaves, no una sola esquina */
+#main.tv .tv-p::before{background:
+  radial-gradient(55% 75% at 100% 0%,rgba(255,201,0,.13),transparent 70%),
+  radial-gradient(50% 70% at 0% 100%,rgba(146,120,214,.10),transparent 70%),
+  radial-gradient(40% 60% at 85% 100%,rgba(255,201,0,.07),transparent 70%),
+  radial-gradient(45% 55% at 12% 8%,rgba(255,255,255,.75),transparent 70%)!important}
+/* La gráfica de valor por año: su degradado propio, también en varias manchas, y más vivo al pasar el mouse */
+#main.tv>.tv-kpi+.tv-g>.tv-p{background:
+  radial-gradient(48% 70% at 100% 0%,rgba(255,201,0,.12),transparent 70%),
+  radial-gradient(42% 65% at 0% 100%,rgba(146,120,214,.09),transparent 70%),
+  radial-gradient(35% 55% at 70% 100%,rgba(255,201,0,.06),transparent 70%),
+  radial-gradient(40% 50% at 18% 0%,rgba(146,120,214,.05),transparent 70%),
+  linear-gradient(180deg,#FBFBFD 0%,#F3F2F7 100%)!important}
+#main.tv>.tv-kpi+.tv-g>.tv-p::before{background:
+  radial-gradient(52% 75% at 100% 0%,rgba(255,201,0,.18),transparent 70%),
+  radial-gradient(46% 70% at 0% 100%,rgba(146,120,214,.13),transparent 70%),
+  radial-gradient(38% 60% at 72% 100%,rgba(255,201,0,.10),transparent 70%)!important}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #main.tv .tv-p::before{background:radial-gradient(55% 75% at 100% 0%,rgba(255,201,0,.09),transparent 70%),radial-gradient(50% 70% at 0% 100%,rgba(146,120,214,.12),transparent 70%),radial-gradient(40% 60% at 85% 100%,rgba(255,201,0,.05),transparent 70%)!important}
+  :root:not([data-theme="light"]) #main.tv>.tv-kpi+.tv-g>.tv-p{background:radial-gradient(48% 70% at 100% 0%,rgba(255,201,0,.08),transparent 70%),radial-gradient(42% 65% at 0% 100%,rgba(146,120,214,.12),transparent 70%),linear-gradient(180deg,#1F1636 0%,#170F2A 100%)!important}}
+:root[data-theme="dark"] #main.tv .tv-p::before{background:radial-gradient(55% 75% at 100% 0%,rgba(255,201,0,.09),transparent 70%),radial-gradient(50% 70% at 0% 100%,rgba(146,120,214,.12),transparent 70%),radial-gradient(40% 60% at 85% 100%,rgba(255,201,0,.05),transparent 70%)!important}
+:root[data-theme="dark"] #main.tv>.tv-kpi+.tv-g>.tv-p{background:radial-gradient(48% 70% at 100% 0%,rgba(255,201,0,.08),transparent 70%),radial-gradient(42% 65% at 0% 100%,rgba(146,120,214,.12),transparent 70%),linear-gradient(180deg,#1F1636 0%,#170F2A 100%)!important}
+
+/* Todas las ventanas que se abren encima: vidrio claro (gris y blanco) */
+.pop,.bs,.drawer,.dash-tip{background:rgba(255,255,255,.74)!important;backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);border:1px solid rgba(255,255,255,.65)!important;box-shadow:0 18px 50px rgba(22,11,41,.16),0 1px 0 rgba(255,255,255,.7) inset!important}
+.drawer-bg,.bs-bg{background:rgba(22,11,41,.18)!important}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pop,:root:not([data-theme="light"]) .bs,:root:not([data-theme="light"]) .drawer,:root:not([data-theme="light"]) .dash-tip{background:rgba(30,22,52,.74)!important;border-color:rgba(255,255,255,.08)!important}}
+:root[data-theme="dark"] .pop,:root[data-theme="dark"] .bs,:root[data-theme="dark"] .drawer,:root[data-theme="dark"] .dash-tip{background:rgba(30,22,52,.74)!important;border-color:rgba(255,255,255,.08)!important}
+.pop .mi:hover,.pop .opt:hover,.tv-di:hover{background:rgba(22,11,41,.06)}
+
+/* Configuración: tuerca en el pie de la barra lateral */
+.me .ic{width:18px;height:18px;flex:none;color:var(--nav-muted,#B9B3C7)}
+.me .tx b{font-weight:600}
+.me:hover .ic{color:#fff}
+.me .ic{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.pop{background:rgba(255,255,255,.84)!important}
+.me{color:#D9D4E6}.me .tx b{font-size:13.5px;color:inherit}

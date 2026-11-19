@@ -54,7 +54,7 @@
     else if (tab === 'comp') cuerpo = compromisosHTML(comps, today, ro);
     else cuerpo = actasHTML(today);
 
-    main.innerHTML = `<div class="pg-top"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Comité de valor</h1>
+    main.innerHTML = `<div class="pg-top"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Agenda del comité de valor</h1>
         <div class="kl"><span><b>${sig ? esc(App.d.fmtShort(sig.fecha)) : '—'}</b>próxima sesión</span><span><b>${sig ? (sig.proyectos || []).length : 0}</b>iniciativas en agenda</span><span><b class="${vencidos.length ? 'r' : ''}">${vencidos.length}</b>compromisos vencidos</span><span><b>${decsY.length}</b>decisiones en ${Y}</span></div>
         <span class="sp"></span>${sig ? `<a class="btn ghost sm" href="/api/sesiones/${sig.id}/ics" download title="Agregar la próxima sesión a Outlook">Próxima sesión a Outlook</a>` : ''}${ro ? '' : '<button class="btn primary sm" data-new="">+ Sesión</button>'}</div>
       <div class="cv-tabs" role="tablist">${TABS.map(([k, l]) => `<button role="tab" data-tab="${k}" class="${tab === k ? 'on' : ''}" aria-selected="${tab === k}">${l}${k === 'comp' && abiertos.length ? ` <em class="${vencidos.length ? 'r' : ''}">${abiertos.length}</em>` : ''}</button>`).join('')}

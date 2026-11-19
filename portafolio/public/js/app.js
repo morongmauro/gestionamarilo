@@ -19,7 +19,7 @@
   function panelApariencia(anchor) {
     const op = (k, lista) => `<div class="ap-op">${lista.map(([v, l]) => `<button data-ap="${k}" data-v="${v}" class="${AP[k] === v ? 'on' : ''}" aria-pressed="${AP[k] === v}">${l}</button>`).join('')}</div>`;
     const p = App.openPop(anchor, `<div class="lbl">Tema</div>${op('tema', [['claro', 'Claro'], ['oscuro', 'Oscuro']])}
-      <div class="lbl">Versión del sitio</div><div class="ap-op"><button data-aud="off" class="${App.aud() ? '' : 'on'}">Actual</button><button data-aud="on" class="${App.aud() ? 'on' : ''}">Auditada (prueba)</button></div>
+      ${App.esAdmin() ? `<div class="lbl">Versión del sitio</div><div class="ap-op"><button data-aud="off" class="${App.aud() ? '' : 'on'}">Actual</button><button data-aud="on" class="${App.aud() ? 'on' : ''}">Auditada (prueba)</button></div>` : ''}
       <div class="hint" style="padding:0 10px 6px">Se guarda en este navegador.</div>`, { width: 300, nofocus: true });
     p.onclick = ev => { const b = ev.target.closest('[data-ap]'); if (!b) return; App.apariencia(b.dataset.ap, b.dataset.v); panelApariencia(anchor); };
   }
@@ -176,7 +176,7 @@
     pila = pila.slice(-40); guardaPila();
   };
   const secDe = h => { const s = String(h || '').replace(/^#\/?/, '').split('/')[0] || 'proyectos'; return s === 'casos' ? 'valor' : s; };
-  const NOMBRES = { tablero: 'Tablero', proyectos: 'Portafolio', cronograma: 'Cronogramas', casos: 'Valor', valor: 'Valor', riesgos: 'Riesgos', agenda: 'Comité de valor', historial: 'Historial', usuarios: 'Administración' };
+  const NOMBRES = { tablero: 'Tablero', proyectos: 'Portafolio', cronograma: 'Cronogramas', casos: 'Valor', valor: 'Valor', riesgos: 'Riesgos', agenda: 'Agenda del comité', historial: 'Historial', usuarios: 'Administración' };
   const nombreDe = h => { const p = String(h).replace(/^#\/?/, '').split('/'); const pr = p[0] === 'proyectos' && p[1] && App.byId('projects', decodeURIComponent(p[1])); return pr ? App.projectName(pr) : (NOMBRES[p[0]] || 'la página anterior'); };
   App.volverA = () => {
     const h = location.hash, s = secDe(h), r = h.replace(/^#\/?/, '').split('/').filter(Boolean);
@@ -207,7 +207,9 @@
   $('#scrim').addEventListener('click', () => $('#app').classList.remove('open'));
   if (App.store.get('side.col', false)) $('#app').classList.add('col');
   $('#sideCol').addEventListener('click', () => { const c = $('#app').classList.toggle('col'); App.store.set('side.col', c); });
-  $('#meBtn').addEventListener('click', e => App.menu(e.currentTarget, [{ id: 'ap', label: '◐ Apariencia' }, { id: 'clave', label: '⚿ Cambiar contraseña' }, '-', { id: 'salir', label: '⎋ Cerrar sesión' }], async m => {
+  $('#meBtn').addEventListener('click', e => App.menu(e.currentTarget, [{ id: 'yo', label: (App.S.me && App.S.me.name) || 'Mi cuenta' }, '-', { id: 'ap', label: 'Apariencia: claro u oscuro' }].concat(App.esAdmin() ? [{ id: 'admin', label: 'Administración y usuarios' }, { id: 'ver', label: App.aud() ? 'Volver a la versión actual' : 'Probar la versión auditada' }] : []).concat([{ id: 'clave', label: 'Cambiar contraseña' }, '-', { id: 'salir', label: 'Cerrar sesión' }]), async m => {
+    if (m === 'admin') return App.go('#/usuarios');
+    if (m === 'ver') return App.setAud(!App.aud());
     if (m === 'ap') return setTimeout(() => panelApariencia($('#meBtn')), 0);
     if (m === 'salir') { await App.api('POST', '/api/auth/logout').catch(() => {}); showLogin('login'); }
     if (m === 'clave') cambiarClave();

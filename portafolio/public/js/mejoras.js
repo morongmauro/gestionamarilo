@@ -191,7 +191,7 @@
   /* ---------- preparar el comité (vista imprimible por sesión) ---------- */
   function preparar(main, sid) {
     const s = App.byId('sessions', sid);
-    if (!s) { main.innerHTML = '<div class="empty-box"><b>Esa sesión no existe</b><a class="back" href="#/agenda">← Comité de valor</a></div>'; return; }
+    if (!s) { main.innerHTML = '<div class="empty-box"><b>Esa sesión no existe</b><a class="back" href="#/agenda">← Agenda del comité</a></div>'; return; }
     const ec = App.estadoCol(), Y = Number(hoy().slice(0, 4));
     const ps = (s.proyectos || []).map(pid => App.byId('projects', pid)).filter(Boolean);
     const pend = decisiones().filter(d => d.estado !== 'Cumplida' && ps.some(p => p.id === d.project_id));

@@ -157,11 +157,11 @@
     const ritmo = pc == null ? (nSin ? ['nr', 'ico-reloj', `Falta registrar en ${plural(nSin, 'iniciativa', 'iniciativas')}`] : null) : pc >= .9 ? ['ok', 'ico-ok', 'Al ritmo'] : pc >= .6 ? ['o', 'ico-reloj', 'Algo por debajo'] : ['r', 'ico-alerta', 'Por debajo del ritmo'];
     const ec = App.estadoCol(), dgv = App.dgvHay();
     main.className = 'tv';
-    main.innerHTML = `<div class="tv-h"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Tablero</h1><span class="s">Datos al ${esc(App.d.fmt(d.hoy))}</span><span class="sp"></span>
+    main.innerHTML = `<div class="tv-h"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Tablero de valor</h1><span class="s">Gerencia de Generación de Valor, datos al ${esc(App.d.fmt(d.hoy))}</span><span class="sp"></span>
         ${App.esAdmin && App.esAdmin() ? `<button class="tv-aud" data-aud="${App.aud() ? 'off' : 'on'}">${App.aud() ? 'Volver a la versión actual' : 'Probar la versión auditada'}</button>` : ''}
         ${F.fase ? `<button class="tv-chip" data-fx="${esc(F.fase)}" title="Quitar el filtro">Mostrando ${esc(faseNombre(isNaN(+F.fase) ? F.fase : +F.fase))} <b>✕</b></button>` : ''}</div>
       ${sub}
-      ${App.aud() ? `<p class="tv-dir">${esc(((App.Mejoras && App.Mejoras.queEsTexto()) || '').split('\n')[0])}${App.esAdmin && App.esAdmin() ? ' <button class="t-lnk" data-qe-ed>editar</button>' : ''}</p>` : ''}
+      
       <div class="tv-kpi">
         <button class="tv-p tv-k k1" data-dv="kpi:cap"><span><span class="l">Capturado en ${Y}, aprox.</span><span class="n">${esc(m(D.captado))}</span>${App.aud() ? `<span class="c"><b>${esc(m(D.verif))}</b> verificado${D.captado ? ` (${Math.round(D.verif / D.captado * 100)} %)` : ''}</span>` : ''}<span class="c">de ${esc(m(D.metaTot))} proyectados en ${Y}</span><span class="c tv-gr"><span><i style="background:${CAT.nuevo}"></i><b>${esc(m(D.capGT.nuevo))}</b> nuevo negocio</span><span><i style="background:${CAT.efi}"></i><b>${esc(m(D.capGT.efi))}</b> eficiencia</span></span></span><span class="mini">${mini(D)}<span class="c">captura por mes</span></span></button>
         <button class="tv-p tv-k" data-dv="kpi:proy"><span class="l">Valor que proyecta el portafolio</span><span class="n">${esc(m(D.tot))}</span><span class="c">${App.aud() ? `<b>${esc(m(D.totAprob))}</b> en casos aprobados, ${esc(m(D.tot - D.totAprob))} en borrador o revisión` : `en ${d.anios.length} años, ${plural(D.X.filter(x => x.caso).length, 'caso de negocio', 'casos de negocio')}`}</span></button>
