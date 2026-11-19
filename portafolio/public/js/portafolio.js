@@ -237,7 +237,7 @@
       if (e.target.closest('.burger')) return App.toggleSide();
       const ok = e.target.closest('[data-okrs]');
       if (ok) { const p = App.byId('projects', ok.dataset.okrs), l = App.okrsDe(p);
-        const pp = App.openPop(ok, `<div class="lbl">OKR de ${esc(App.projectName(p))}</div><ul class="okr-lista">${l.map(o => `<li><span>${esc(o)}</span><button class="t-lnk" data-okr-ver="${esc(o)}">Ver las iniciativas con este OKR</button></li>`).join('')}</ul>`, { width: 380, nofocus: true });
+        const pp = App.openPop(ok, `<div class="lbl">OKR de ${esc(App.projectName(p))}</div><ul class="okr-lista">${l.map(o => `<li><span>${esc(o)}</span><button class="t-lnk" data-okr-ver="${esc(o)}">Ver las iniciativas con este OKR</button></li>`).join('')}</ul>`, { width: 300, nofocus: true });
         pp.onclick = ev => { const b = ev.target.closest('[data-okr-ver]'); if (!b) return; App.closePop(true); R.okr = b.dataset.okrVer; guardar(); render(main); };
         return; }
       const o = e.target.closest('[data-okr]'); if (o) { R.okr = R.okr === o.dataset.okr ? null : o.dataset.okr; guardar(); return render(main); }

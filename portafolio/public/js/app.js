@@ -151,6 +151,8 @@
     if (sec === 'proyectos' && params[0]) App.Proyecto.render(main, params);
     else (App.views[sec] || App.views.proyectos).render(main, params);
     window.scrollTo(0, keep);
+    const va = App.volverA && App.volverA();
+    if (va) { const l = `<a class="volver" href="${App.esc(va.href)}" data-volver title="Regresar a donde estaba">‹ ${App.esc(va.nombre)}</a>`; const nav = main.querySelector('.ph-nav'); if (nav) { const bc = nav.querySelector('.ph-bc'); bc ? bc.insertAdjacentHTML('beforebegin', l + '<span class="ph-bc2">·</span>') : nav.insertAdjacentHTML('afterbegin', l); } else main.insertAdjacentHTML('afterbegin', `<div class="volver-f">${l}</div>`); }
     const LISTAS = { proyectos: ['Portafolio', null], casos: ['Casos de negocio', 'caso'], riesgos: ['Riesgos', 'riesgos'] };
     if (LISTAS[sec] && !params[0]) {
       const ids = []; main.querySelectorAll('[data-pid],[data-rk-ir]').forEach(el => { const id = el.dataset.pid || el.dataset.rkIr; if (el.offsetParent !== null && App.byId('projects', id) && !ids.includes(id) && (sec !== 'casos' || App.caseOf(id))) ids.push(id); });
@@ -160,7 +162,29 @@
     sideProjects(sec === 'proyectos' ? params[0] : null);
     $('#app').classList.remove('open');
   };
-  window.addEventListener('hashchange', () => { App.closePop(true); if (App.drawerOpen()) App.closeDrawer(); App.render(); window.scrollTo(0, 0); });
+  /* ---------- volver: recuerda de dónde viene cada página ---------- */
+  let pila = []; try { pila = JSON.parse(sessionStorage.getItem('pf.pila') || '[]'); } catch (e) { pila = []; }
+  let volviendo = false;
+  const guardaPila = () => { try { sessionStorage.setItem('pf.pila', JSON.stringify(pila.slice(-40))); } catch (e) {} };
+  const anota = () => {
+    const h = location.hash || '#/tablero';
+    if (volviendo) { const j = pila.lastIndexOf(h); pila = j >= 0 ? pila.slice(0, j + 1) : pila.concat(h); volviendo = false; }
+    else if (pila[pila.length - 2] === h) pila.pop();
+    else if (pila[pila.length - 1] !== h) pila.push(h);
+    pila = pila.slice(-40); guardaPila();
+  };
+  const secDe = h => String(h || '').replace(/^#\/?/, '').split('/')[0] || 'proyectos';
+  const NOMBRES = { tablero: 'Tablero', proyectos: 'Portafolio', cronograma: 'Cronogramas', casos: 'Valor', valor: 'Valor', riesgos: 'Riesgos', agenda: 'Comité de valor', historial: 'Historial', usuarios: 'Administración' };
+  const nombreDe = h => { const p = String(h).replace(/^#\/?/, '').split('/'); const pr = p[0] === 'proyectos' && p[1] && App.byId('projects', decodeURIComponent(p[1])); return pr ? App.projectName(pr) : (NOMBRES[p[0]] || 'la página anterior'); };
+  App.volverA = () => {
+    const h = location.hash, s = secDe(h), r = h.replace(/^#\/?/, '').split('/').filter(Boolean);
+    if (r.length < 2) return null; // las secciones principales ya están en la barra lateral
+    for (let i = pila.length - 2; i >= 0; i--) { if (secDe(pila[i]) !== s) return { href: pila[i], nombre: nombreDe(pila[i]), pasos: pila.length - 1 - i }; if (pila[i] && r[1] && !pila[i].includes(r[1])) return null; }
+    return null;
+  };
+  document.addEventListener('click', e => { const v = e.target.closest('[data-volver]'); if (!v) return; e.preventDefault(); const a = App.volverA(); if (!a) return; volviendo = true; history.go(-a.pasos); });
+  anota();
+  window.addEventListener('hashchange', () => { anota(); App.closePop(true); if (App.drawerOpen()) App.closeDrawer(); App.render(); window.scrollTo(0, 0); });
 
   function sideProjects(activeId) {
     const caja = $('.side-proj'), ver = /^#\/proyectos/.test(location.hash) || location.hash === '' ;

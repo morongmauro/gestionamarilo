@@ -203,7 +203,7 @@
   function render(main, params) {
     const k = (params || [])[0];
     if (k !== 'pantalla') document.documentElement.classList.remove('pv-pantalla');
-    if (!k && App.TableroVisual) return App.TableroVisual.render(main, sub(''));
+    if (App.TableroVisual) return App.TableroVisual.render(main, '');
     if (k === 'okr') return okr(main);
     if (k === 'pantalla') return pantalla(main);
     if (k === 'analisis' && analisis) {

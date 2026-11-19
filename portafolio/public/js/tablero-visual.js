@@ -39,7 +39,7 @@
 
   /* ---------- el detalle: una lista de iniciativas con su enlace ---------- */
   function detalle(anchor, titulo, items, pie) {
-    const p = App.openPop(anchor, `<div class="lbl">${esc(titulo)}</div>${items.length ? `<div class="tv-dl">${items.map(it => `<a class="tv-di" href="${it.href}"><span class="t">${esc(it.nombre)}${it.sub ? `<small>${esc(it.sub)}</small>` : ''}</span>${it.v != null ? `<b>${esc(it.v)}</b>` : ''}<i class="ico ico-flecha"></i></a>`).join('')}</div>` : '<div class="hint" style="padding:0 12px 12px">No hay iniciativas aquí.</div>'}${pie ? `<div class="tv-dpie">${pie}</div>` : ''}`, { width: 360, nofocus: true });
+    const p = App.openPop(anchor, `<div class="lbl">${esc(titulo)}</div>${items.length ? `<div class="tv-dl">${items.map(it => `<a class="tv-di" href="${it.href}"><span class="t">${esc(it.nombre)}${it.sub ? `<small>${esc(it.sub)}</small>` : ''}</span>${it.v != null ? `<b>${esc(it.v)}</b>` : ''}<i class="ico ico-flecha"></i></a>`).join('')}</div>` : '<div class="hint" style="padding:0 12px 12px">No hay iniciativas aquí.</div>'}${pie ? `<div class="tv-dpie">${pie}</div>` : ''}`, { width: 300, nofocus: true });
     p.onclick = e => { if (e.target.closest('a')) App.closePop(true); };
   }
   const nom = p => App.projectName(p);

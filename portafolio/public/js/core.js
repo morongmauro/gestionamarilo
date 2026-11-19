@@ -184,10 +184,12 @@ App.parseNum = s => {
 
 /* ---------- popover ---------- */
 const pop = () => App.$('#pop');
-let popCtx = null;
+let popCtx = null, popAnchor = null, popT = null;
 App.openPop = (anchor, html, opts = {}) => {
   App.closePop(true);
-  const p = pop(); p.innerHTML = html; p.hidden = false; popCtx = opts;
+  const p = pop(); p.innerHTML = html; p.hidden = false; popCtx = opts; popAnchor = anchor;
+  // solo las de consulta (sin campos para escribir ni guardado al cerrar) se cierran solas
+  popCtx.auto = opts.auto != null ? opts.auto : (!opts.onClose && !App.$('textarea, input, select', p));
   p.onclick = null; p.onchange = null;
   const r = anchor.getBoundingClientRect();
   p.style.minWidth = (opts.width || Math.max(240, Math.min(r.width, 520))) + 'px';
@@ -204,12 +206,19 @@ App.openPop = (anchor, html, opts = {}) => {
 };
 App.closePop = cancel => {
   const p = pop(); if (p.hidden) return;
-  const ctx = popCtx; popCtx = null;
+  const ctx = popCtx; popCtx = null; popAnchor = null; clearTimeout(popT); popT = null;
   if (ctx && ctx.onClose) ctx.onClose(!!cancel); // primero guarda (lee el popover), luego lo cierra
   p.hidden = true; p.innerHTML = ''; p.onclick = null; p.onchange = null;
   App.$$('.ed').forEach(e => e.classList.remove('ed'));
 };
 App.popOpen = () => !pop().hidden;
+document.addEventListener('mousemove', e => {
+  if (!popCtx || !popCtx.auto || pop().hidden) return;
+  const dentro = pop().contains(e.target) || (popAnchor && popAnchor.isConnected && popAnchor.contains(e.target));
+  if (dentro) { clearTimeout(popT); popT = null; }
+  else if (!popT) popT = setTimeout(() => { popT = null; if (popCtx && popCtx.auto) App.closePop(true); }, 650);
+});
+window.addEventListener('scroll', e => { if (popCtx && popCtx.auto && !pop().hidden && !(e.target instanceof Node && pop().contains(e.target))) App.closePop(true); }, true);
 document.addEventListener('mousedown', e => { if (App.popOpen() && !pop().contains(e.target)) App.closePop(false); });
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
