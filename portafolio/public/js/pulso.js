@@ -131,7 +131,7 @@
     const pc = D.d.esperadoY ? D.d.captadoY / D.d.esperadoY : null;
     const lema = D.d.esperadoY ? `En ${D.d.Y} llevamos ${m(D.d.captadoY)} de los ${m(D.d.esperadoY)} que esperábamos a esta altura del año.` : D.meta ? `En ${D.d.Y} llevamos ${m(D.d.captadoY)} capturados de una meta de ${m(D.meta)}.` : `Aún no hay casos de negocio con beneficios para ${D.d.Y}.`;
     const frases = [D.brecha ? `La mayor brecha está en ${App.projectName(D.brecha.x.p)}.` : '', D.rev.length ? `${plural(D.rev.length, 'caso espera', 'casos esperan')} la decisión del comité${D.prox ? ' del ' + fechaCorta(D.prox.fecha) : ''}.` : '', D.crit.length ? `${plural(D.crit.length, 'iniciativa tiene', 'iniciativas tienen')} alertas críticas.` : 'Ninguna iniciativa tiene alertas críticas.'].filter(Boolean).join(' ');
-    const dgv = App.dgvHay() ? `<button class="pv-alc" data-dgv title="Cambiar qué iniciativas cuentan">${App.soloDgv() ? 'Foco DGV' : 'Con históricas'}</button>` : '';
+    const dgv = '';
     main.className = 'pv';
     main.innerHTML = `<div class="pv-top-bar"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Generación de Valor, semana del ${esc(rango)}</h1><span class="sp"></span>${dgv}</div>
       <p class="lema">${esc(lema)}</p>

@@ -19,9 +19,10 @@
 
   function datos() {
     const d = App.Dash.datos({ anio: F.anio, estado: '', tipo: '', alcance: 'todos', dgv: true });
-    const pasa = p => !App.esEjemplo(p) && (!F.fase || String(fase(p)) === F.fase);
-    const X = d.proyectos.filter(x => pasa(x.p));
-    const todos = App.projectsSorted().filter(p => App.enAlcance(p) && pasa(p));
+    const foco = p => !App.esEjemplo(p) && (!App.dgvHay() || App.dgvSi(p));
+    const pasa = p => foco(p) && (!F.fase || String(fase(p)) === F.fase);
+    const X = d.proyectos.filter(x => pasa(x.p)), Xf = d.proyectos.filter(x => foco(x.p));
+    const todos = App.projectsSorted().filter(p => pasa(p)), todosF = App.projectsSorted().filter(p => foco(p));
     const ps = todos.filter(p => { const f = fase(p); return f !== 'pausa' && f !== 'cerrada' && f !== 'cancelada'; });
     const Y = d.Y, cats = d.cats.filter(k => X.some(x => d.anios.some(y => x.anual(k, y) > 0)));
     const anual = (x, y) => d.cats.reduce((a, k) => a + x.anual(k, y), 0), capY = x => d.cats.reduce((a, k) => a + x.captado(k, Y), 0);
@@ -31,9 +32,9 @@
     const esperado = meta * d.corrido / 12;
     const cap = Array(12).fill(0), capPor = Array.from({ length: 12 }, () => []);
     X.forEach(x => (x.caso && x.caso.captado || []).forEach(c => { if (String(c.mes).startsWith(Y + '-')) { const i = +c.mes.slice(5) - 1, v = Number(c.valor) || 0; cap[i] += v; capPor[i].push({ x, v }); } }));
-    const casos = App.S.cases.filter(c => { const p = App.byId('projects', c.project_id); return p && pasa(p) && App.enAlcance(p); });
+    const casos = App.S.cases.filter(c => { const p = App.byId('projects', c.project_id); return p && pasa(p); });
     const sg = App.Dash.senales(d).filter(z => pasa(z.x.p));
-    return { d, X, ps, todos, Y, cats, anual, capY, porAnio, tot, meta, captado, esperado, cap, capPor, casos, sg, crit: sg.filter(z => z.max >= 3), rev: casos.filter(c => c.estado === 'En revisión'), aprob: casos.filter(c => c.estado === 'Aprobado') };
+    return { d, X, Xf, ps, todos, todosF, Y, cats, anual, capY, porAnio, tot, meta, captado, esperado, cap, capPor, casos, sg, crit: sg.filter(z => z.max >= 3), rev: casos.filter(c => c.estado === 'En revisión'), aprob: casos.filter(c => c.estado === 'Aprobado') };
   }
 
   /* ---------- el detalle: una lista de iniciativas con su enlace ---------- */
@@ -66,11 +67,11 @@
       ${App.d.MES3.map((mm, i) => `<g class="tv-hit" data-dv="mes:${i}"><title>${mm} ${Y}: ${esc(m(cap[i]))} capturados. Clic para ver quién</title><rect x="${x(i) - (W - L - R) / 22}" y="${T}" width="${(W - L - R) / 11}" height="${H - T}" fill="transparent"/><text x="${x(i)}" y="${H - 6}" text-anchor="middle" font-size="10.5" class="${i === hoyM ? '' : 'mu'}" font-weight="${i === hoyM ? 800 : 500}">${mm}</text></g>`).join('')}</svg>`;
   }
   function embudo(D) {
-    const { todos, X, capY } = D, lista = k => todos.filter(p => fase(p) === k);
+    const { todosF: todos, Xf: X, capY } = D, lista = k => todos.filter(p => fase(p) === k);
     const act = [1, 2, 3].map(k => ({ k, l: lista(k) })), inact = ['pausa', 'cerrada', 'cancelada'].map(k => ({ k, l: lista(k) })).filter(z => z.l.length);
     const mx = Math.max(...act.map(z => z.l.length), 1), dos = p => { const c = App.caseOf(p.id); return c && App.Avance ? App.Avance.dosAnios(Finanzas.calc(c)) || 0 : 0; };
     const capt = X.filter(x => capY(x) > 0);
-    const fila = (k, n, v, nombre, sub, cl) => `<button class="tv-fr ${cl || ''}" data-dv="fase:${k}" title="Clic para ver las iniciativas"><span class="n"><b>${esc(nombre)}</b><span>${esc(sub)}</span></span><span><span class="bar" style="width:${Math.max(12, n / mx * 100)}%;background:${FC[k] || '#160B29'}">${n}</span></span><span class="v">${v ? esc(m(v)) : '—'}</span></button>`;
+    const fila = (k, n, v, nombre, sub, cl) => `<div class="tv-fr ${cl || ''} ${F.fase ? (F.fase === String(k) ? 'sel' : 'dim') : ''}" ${k === 'capt' ? `data-dv="fase:${k}" title="Clic para ver cuáles"` : `data-fx="${k}" title="Clic para filtrar el tablero por esta fase"`} role="button" tabindex="0"><span class="n"><b>${esc(nombre)}</b><span>${esc(sub)}</span></span><span><span class="bar" style="width:${Math.max(12, n / mx * 100)}%;background:${FC[k] || '#160B29'}">${n}</span></span><span class="v">${v ? esc(m(v)) : '—'}</span>${k === 'capt' ? '' : `<button class="tv-ver" data-dv="fase:${k}" title="Ver las iniciativas">Ver</button>`}</div>`;
     return `<div class="tv-fun">${act.map(z => fila(z.k, z.l.length, z.l.reduce((a, p) => a + dos(p), 0), `Fase ${z.k}`, FN[z.k])).join('')}
       ${fila('capt', capt.length, D.captado, 'Capturando', 'ya registran valor')}
       ${inact.length ? `<div class="tv-sep">Fuera del flujo</div>${inact.map(z => fila(z.k, z.l.length, 0, FN[z.k], plural(z.l.length, 'iniciativa', 'iniciativas'), 'off')).join('')}` : ''}</div>`;
@@ -133,9 +134,7 @@
     const ec = App.estadoCol(), dgv = App.dgvHay();
     main.className = 'tv';
     main.innerHTML = `<div class="tv-h"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Tablero</h1><span class="s">Datos al ${esc(App.d.fmt(d.hoy))}</span><span class="sp"></span>
-        <div class="tv-f"><label>Año <select data-tvf="anio">${d.anios.map(y => `<option ${y === Y ? 'selected' : ''}>${y}</option>`).join('')}</select></label>
-        ${dgv ? `<button class="tv-fb" data-dgv>${App.soloDgv() ? 'Foco DGV' : 'Con históricas'}</button>` : ''}
-        ${ec ? `<label>Fase <select data-tvf="fase"><option value="">todas</option>${[1, 2, 3, 'pausa', 'cerrada', 'cancelada'].map(k => `<option value="${k}" ${F.fase === String(k) ? 'selected' : ''}>${esc(faseNombre(k))}</option>`).join('')}</select></label>` : ''}</div></div>
+        ${F.fase ? `<button class="tv-chip" data-fx="${esc(F.fase)}" title="Quitar el filtro">Mostrando ${esc(faseNombre(isNaN(+F.fase) ? F.fase : +F.fase))} <b>✕</b></button>` : ''}</div>
       ${sub}
       <div class="tv-kpi">
         <button class="tv-p tv-k k1" data-dv="kpi:cap"><span><span class="l">Capturado en ${Y}</span><span class="n">${esc(m(D.captado))}</span><span class="c">${pc == null ? 'sin captura esperada todavía' : `<b>${Math.round(pc * 100)} %</b> de lo esperado a hoy (${esc(m(D.esperado))})`}</span>${ritmo ? `<span class="st ${ritmo[0]}"><i class="ico ${ritmo[1]}"></i>${ritmo[2]}</span>` : ''}</span><span class="mini">${mini(D)}<span class="c">captura por mes</span></span></button>
@@ -147,9 +146,9 @@
       <div class="tv-g"><section class="tv-p"><div class="tv-t"><h2>¿Cuánto valor vamos a crear?</h2><small>lo que proyectan los casos de negocio, año por año, clic en un año para ver las iniciativas</small></div>
         <div class="tv-big"><div><div class="n">${esc(m(D.tot))}</div><div class="s">en ${d.anios.length} años; ${Y} aporta ${esc(m(D.meta))}.</div><div class="tv-rows">${D.cats.map(k => { const v = D.porAnio.reduce((a, z) => a + z.v[k], 0); return `<div><i style="background:${CAT[k]}"></i><span>${esc(App.catLabel(k))}</span><b>${esc(m(v))}</b><em>${D.tot ? Math.round(v / D.tot * 100) : 0} %</em></div>`; }).join('')}</div></div>${D.tot ? barras(D) : '<p class="tv-vacio">Aún no hay casos de negocio con beneficios.</p>'}</div></section></div>
       <div class="tv-g g2">
-        <section class="tv-p"><div class="tv-t"><h2>¿Vamos al ritmo?</h2><small>capturado frente a lo esperado, acumulado en ${Y}, clic en un mes</small></div>
+        <section class="tv-p"><div class="tv-t"><h2>¿Vamos al ritmo?</h2><small>capturado frente a lo esperado, acumulado, clic en un mes</small><span class="sp"></span><label class="tv-mini">Año <select data-tvf="anio">${d.anios.map(y => `<option ${y === Y ? 'selected' : ''}>${y}</option>`).join('')}</select></label></div>
           <div class="tv-lg"><span><i class="ink"></i>Capturado</span><span><i class="dash"></i>Esperado según los casos</span></div>${curva(D)}<div class="tv-nota">Meta del año: ${esc(m(D.meta))}. Se actualiza cada vez que alguien registra una captura.</div></section>
-        <section class="tv-p"><div class="tv-t"><h2>¿Dónde está el portafolio?</h2><small>iniciativas y valor a 2 años, clic para ver cuáles</small></div>${embudo(D)}</section>
+        <section class="tv-p"><div class="tv-t"><h2>¿Dónde está el portafolio?</h2><small>clic en una fase para ver solo esa en todo el tablero</small></div>${embudo(D)}</section>
       </div>
       <div class="tv-g g3">
         <section class="tv-p"><div class="tv-t"><h2>¿Qué priorizar?</h2><small>valor frente a esfuerzo</small></div><div class="tv-lg">${[1, 2, 3].map(k => `<span><i style="background:${FC[k]};border-radius:50%"></i>Fase ${k}</span>`).join('')}</div>${mapa(D)}</section>
@@ -165,12 +164,13 @@
     main.onclick = e => {
       if (e.target.closest('.burger')) return App.toggleSide();
       if (e.target.closest('[data-dgv]')) { App.store.set('alcance.dgv', App.soloDgv() ? 'todas' : 'si'); return App.render(); }
+      const fx = e.target.closest('[data-fx]'); if (fx && !e.target.closest('[data-dv]')) { F.fase = F.fase === fx.dataset.fx ? '' : fx.dataset.fx; guardar(); return App.render(); }
       const t = e.target.closest('[data-dv]'); if (!t) return;
       const [k, ...rest] = t.dataset.dv.split(':'), v = rest.join(':');
       if (k === 'anio') { const y = +v; return detalle(t, `Valor que proyectan para ${y}`, D.X.map(x => ({ x, val: D.anual(x, y) })).filter(z => z.val > 0).sort((a, b) => b.val - a.val).map(z => ({ nombre: nom(z.x.p), sub: App.catLabel(z.x.catPrincipal || 'otro'), v: m(z.val), href: ir(z.x.p, 'caso') }))); }
       if (k === 'mes') { const i = +v, l = D.capPor[i].sort((a, b) => b.v - a.v); return detalle(t, `Capturado en ${App.d.MESES ? App.d.MESES[i] : App.d.MES3[i]} de ${Y}`, l.map(z => ({ nombre: nom(z.x.p), v: m(z.v), href: ir(z.x.p, 'caso') }))); }
       if (k === 'fase') {
-        const l = v === 'capt' ? D.X.filter(x => D.capY(x) > 0).map(x => x.p) : D.todos.filter(p => String(fase(p)) === v);
+        const l = v === 'capt' ? D.Xf.filter(x => D.capY(x) > 0).map(x => x.p) : D.todosF.filter(p => String(fase(p)) === v);
         const dos = p => { const c = App.caseOf(p.id); return c && App.Avance ? App.Avance.dosAnios(Finanzas.calc(c)) || 0 : 0; };
         return detalle(t, v === 'capt' ? 'Ya registran valor' : faseNombre(isNaN(+v) ? v : +v), l.map(p => ({ nombre: nom(p), sub: (App.planOf(p.id).acts.length ? `${App.planOf(p.id).avance} % de avance` : 'sin cronograma') + (App.caseOf(p.id) ? '' : ', sin caso'), v: dos(p) ? m(dos(p)) : null, href: ir(p) })), v === 'capt' ? '' : `<a href="#/proyectos" data-fase-ir="${v}">Ver en el Portafolio</a>`);
       }

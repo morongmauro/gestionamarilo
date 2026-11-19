@@ -314,7 +314,7 @@
     const d = datos({ anio: F.anio, estado: '', tipo: '', alcance: 'todos', dgv: true });
     const sg = senales(d);
     const fuera = App.S.projects.length - d.proyectos.length;
-    const alcance = App.dgvHay() ? `<button class="pf-tg ${App.soloDgv() ? 'on' : ''}" data-dgv aria-pressed="${App.soloDgv()}" title="${App.soloDgv() ? `Solo cuenta las iniciativas del foco DGV. Hay ${fuera} históricas que no se cuentan. Clic para incluirlas.` : 'Cuenta también las históricas. Clic para ver solo el foco DGV.'}">${App.soloDgv() ? 'Foco DGV' : 'Con históricas'}</button>` : '';
+    const alcance = App.dgvHay() ? `<button class="pf-tg ${App.soloDgv() ? 'on' : ''}" data-dgv aria-pressed="${App.soloDgv()}" title="${App.soloDgv() ? `Solo cuenta las iniciativas del foco DGV. Hay ${fuera} archivadas que no se cuentan. Clic para incluirlas.` : 'Cuenta también las archivadas. Clic para ver solo el foco DGV.'}">${App.soloDgv() ? 'Foco DGV' : 'Con archivadas'}</button>` : '';
     const paso = (n, t, s, extra) => `<div class="t-paso" id="t${n}"><i>${n}</i><b>${t}</b><small>${s}</small><span class="sp"></span>${extra || ''}</div>`;
     const seg = (k, val, ops) => `<div class="seg t-seg" role="group">${ops.map(([v, l]) => `<button data-${k}="${v}" class="${val === v ? 'on' : ''}" aria-pressed="${val === v}">${l}</button>`).join('')}</div>`;
     main.innerHTML = `<div class="pg-top"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Tablero</h1><span class="pg-meta">Datos al ${esc(App.d.fmt(d.hoy))}, ${d.filas.length} iniciativa${d.filas.length === 1 ? '' : 's'}, ${d.filas.filter(x => x.caso).length} con caso de negocio, pesos colombianos</span><span class="sp"></span>

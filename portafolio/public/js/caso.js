@@ -344,7 +344,7 @@
       const aplica = !dgvNo && !!fa && !fa.fuera;
       const c = App.caseOf(p.id);
       const tipo = !c ? 'sin' : c.origen === 'ice' ? 'pre' : 'hecho';
-      const motivo = aplica ? '' : dgvNo ? 'histórica (fuera del foco DGV)' : fa ? fa.nombre : 'sin fase';
+      const motivo = aplica ? '' : dgvNo ? 'archivada (fuera del foco DGV)' : fa ? fa.nombre : 'sin fase';
       return { p, c, est, fa, aplica, tipo, motivo };
     });
   }

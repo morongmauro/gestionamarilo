@@ -13,7 +13,7 @@
   function resultados(q) {
     const n = norm(q).trim(), ec = App.estadoCol();
     const ps = App.projectsSorted().filter(p => !n || norm(App.projectName(p)).includes(n) || norm(App.okrsDe ? App.okrsDe(p).join(' ') : '').includes(n)).slice(0, 8)
-      .map(p => ({ t: App.projectName(p), s: [ec ? (p.props || {})[ec.id] : '', App.enAlcance(p) ? '' : 'histórica'].filter(Boolean).join(', '), href: `#/proyectos/${p.id}`, p }));
+      .map(p => ({ t: App.projectName(p), s: [ec ? (p.props || {})[ec.id] : '', App.enAlcance(p) ? '' : 'archivada'].filter(Boolean).join(', '), href: `#/proyectos/${p.id}`, p }));
     const ss = SECC.filter(([t]) => n && norm(t).includes(n)).map(([t, h]) => ({ t, s: 'sección del sitio', href: h }));
     return ps.concat(ss);
   }
