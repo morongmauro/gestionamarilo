@@ -76,6 +76,18 @@ document.addEventListener('click', e => {
   App.store.set('pf.zoom', App.ZOOMS[j]); const m = document.getElementById('main'); if (m) { m.style.zoom = App.ZOOMS[j]; m.style.setProperty('--z', App.ZOOMS[j]); }
   document.querySelectorAll('[data-zoom-v]').forEach(x => { x.textContent = Math.round(App.ZOOMS[j] * 100) + ' %'; });
 });
+// Portafolio: título, vistas y acciones siempre en el mismo lugar; al cambiar de vista solo cambia lo de abajo
+App.PF_VISTAS = [['resumen', 'Resumen'], ['mapa', 'Mapa ICE'], ['riesgos', 'Riesgos'], ['cargar', 'Datos por cargar'], ['tabla', 'Tabla completa'], ['tablero', 'Por fase']];
+App.pfHead = (act, acciones) => `<div class="pf-head"><div class="pg-top"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Portafolio</h1><span class="sp"></span>${acciones || ''}</div>
+  <nav class="pf-vistas" aria-label="Vistas del portafolio">${App.PF_VISTAS.map(([k, t]) => `<button data-pfv="${k}" class="${k === act ? 'on' : ''}" aria-pressed="${k === act}">${t}</button>`).join('')}</nav></div>`;
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('[data-pfv]'); if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  const v = b.dataset.pfv;
+  if (v === 'tabla' || v === 'tablero') return App.Tabla.setView(v);
+  if (App.Portafolio && App.Portafolio.setModo) App.Portafolio.setModo(v === 'resumen' ? 'tabla' : v);
+  App.Tabla.setView('resumen'); App.render();
+}, true);
 App.esEjemplo = p => { const x = typeof p === 'string' ? App.byId('projects', p) : p; return !!(x && x.ejemplo); };
 App.tagEjemplo = p => (App.esEjemplo(p) ? '<span class="tag-ej" title="Iniciativa de ejemplo: muestra cómo se ve una iniciativa completa. No suma en los totales ni en el tablero.">Ejemplo</span>' : '');
 // Una columna que ninguna iniciativa tiene diligenciada es una columna olvidada: no se muestra (sigue existiendo y se puede

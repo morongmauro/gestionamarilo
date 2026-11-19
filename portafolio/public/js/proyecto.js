@@ -6,11 +6,16 @@
 (function () {
   const { $, esc } = App;
   // Orden pedido por la Oficina: lo primero al abrir un proyecto es su cronograma; la información general va al final
-  const TABS = [['cronograma', 'Cronograma'], ['caso', 'Caso de negocio'], ['captura', 'Captura de valor'], ['okr', 'OKR'], ['riesgos', 'Riesgos'], ['comites', 'Comités'], ['info', 'Información general']];
+  // La hoja de cada iniciativa: Valor reúne la captura de valor, los OKR y el ICE
+  const TABS = [['cronograma', 'Cronograma'], ['caso', 'Caso de negocio'], ['riesgos', 'Riesgos'], ['valor', 'Valor'], ['info', 'Información general'], ['comites', 'Comités']];
+  const SUBV = [['captura', 'Captura de valor'], ['okr', 'OKR'], ['ice', 'ICE']];
 
   document.addEventListener('keydown', ev => { if (App.Proyecto && App.Proyecto._teclas) App.Proyecto._teclas(ev); });
   function render(main, params) {
-    const [id, tab0] = params;
+    const [id, tab1, sub1] = params;
+    const tab0 = tab1 === 'captura' || tab1 === 'okr' || tab1 === 'ice' ? 'valor' : tab1;
+    const sub = SUBV.some(x => x[0] === (tab1 === 'valor' ? sub1 : tab1)) ? (tab1 === 'valor' ? sub1 : tab1) : App.store.get('ficha.valor', 'captura');
+    if (tab0 === 'valor') App.store.set('ficha.valor', sub);
     const tab = TABS.some(t => t[0] === tab0) ? tab0 : 'cronograma';
     const p = App.byId('projects', id);
     if (!p) { main.innerHTML = `<div class="page-h"><a class="back" href="#/proyectos">← Portafolio</a></div><div class="card-box"><div class="empty-box"><b>Esta iniciativa no existe o fue eliminada</b></div></div>`; return; }
@@ -31,7 +36,7 @@
     const faseCorta = estado && window.Fases && Fases.de(estado) ? Fases.de(estado).corto.replace(/^F(\d)$/, 'Fase $1') : '';
     const pendCap = caso && App.Valor ? App.Valor.pendientes(caso).length : 0, nOkr = App.okrsDe ? App.okrsDe(p).length : 0;
     const cuenta = k => { if (k === 'cronograma' && pl.acts.length) return `<span class="n">${pl.acts.length}</span>`; if (k === 'comites' && ses.length) return `<span class="n">${ses.length}</span>`;
-      if (k === 'okr' && nOkr) return `<span class="n">${nOkr}</span>`; if (k === 'captura' && pendCap) return `<span class="n a" title="Capturas recurrentes por confirmar">${pendCap} por confirmar</span>`;
+      if (k === 'valor' && pendCap) return `<span class="n a" title="Capturas recurrentes por confirmar">${pendCap} por confirmar</span>`;
       if (k === 'riesgos' && App.Riesgos) { const q = App.Riesgos.resumen(p); return q.criticos ? `<span class="n r">${q.criticos} crítico${q.criticos === 1 ? '' : 's'}</span>` : q.n ? `<span class="n">${q.n}</span>` : ''; } return ''; };
     main.innerHTML = `<div class="ph-nav"><button class="burger" data-act="burger">☰</button><a class="ph-bc" href="${de.href}">${esc(de.de)}</a>${faseCorta ? `<span class="ph-bc2">› ${esc(faseCorta)}</span>` : ''}<span class="sp"></span>
         ${ant ? `<a class="ph-ar" href="${ir(ant)}" title="Anterior: ${esc(nomb(ant))} (Alt + ←)" aria-label="Iniciativa anterior">‹</a>` : '<span class="ph-ar off">‹</span>'}<span class="ph-pos">${pos + 1} de ${ids.length}</span>${sig ? `<a class="ph-ar" href="${ir(sig)}" title="Siguiente: ${esc(nomb(sig))} (Alt + →)" aria-label="Iniciativa siguiente">›</a>` : '<span class="ph-ar off">›</span>'}
@@ -85,10 +90,10 @@
       App.PlanHost.render(box, id);
     } else if (tab === 'caso') {
       App.Caso.editor(box, id);
-    } else if (tab === 'captura') {
-      App.Valor.captura(box, id);
-    } else if (tab === 'okr') {
-      App.Valor.okrProyecto(box, id);
+    } else if (tab === 'valor') {
+      box.innerHTML = `<nav class="vl-sub ps-sub">${SUBV.map(([k, t]) => `<a href="#/proyectos/${id}/valor/${k}" class="${k === sub ? 'on' : ''}">${t}${k === 'okr' && nOkr ? ` <span class="n">${nOkr}</span>` : ''}${k === 'captura' && pendCap ? ` <span class="n a">${pendCap}</span>` : ''}</a>`).join('')}</nav><div id="pSub"></div>`;
+      const sb = $('#pSub', box);
+      if (sub === 'okr') App.Valor.okrProyecto(sb, id); else if (sub === 'ice') iceVista(sb, p, ro); else App.Valor.captura(sb, id);
     } else if (tab === 'riesgos') {
       App.Riesgos.render(box, id);
     } else {
@@ -131,6 +136,13 @@
 
   // ICE con el método de la Oficina: Income × Confidence ÷ Effort × OS.
   // Cada factor se elige con su escala; «Automático» deja que se calcule del caso y del cronograma.
+  function iceVista(box, p, ro) {
+    const d = App.ICE.detalle(p) || {}, n = d.notas || {};
+    const F = [['Income', d.income, 'dinero captado o ahorrado a dos años, en escala de 1 a 55', n.income], ['Confianza', d.conf != null ? d.conf + ' %' : null, 'qué tan seguros estamos de lograrlo', n.conf], ['Esfuerzo', d.esf != null ? d.esf + ' %' : null, 'tiempo y recursos que pide (más alto, más esfuerzo)', n.esf], ['OS', d.os, 'alineación con los objetivos del semestre', n.os]];
+    box.innerHTML = `<div class="vl-bar"><div class="vl-res"><span><b>${d.ice == null ? '—' : esc(App.num(d.ice, 1))}</b>ICE</span><span>${d.oficina ? 'va a la Oficina de Valor (Income 3 o más)' : d.income != null ? 'por debajo del umbral de la Oficina' : ''}</span></div><span class="sp"></span>${ro ? '' : '<button class="btn primary sm" data-p="ice">Editar ICE</button>'}</div>
+      <p class="faint vl-nota">ICE = Income × Confianza ÷ Esfuerzo × OS. Lo que no registre la Oficina se calcula con el caso de negocio y el cronograma.</p>
+      <div class="ice-f">${F.map(([t, v, s, nota]) => `<div><b>${v == null ? '—' : esc(String(v))}</b><span class="t">${t}</span><small>${esc(s)}</small>${nota ? `<small class="nota">${esc(nota)}</small>` : ''}</div>`).join('')}</div>`;
+  }
   function iceEditor(anchor, p) {
     const I = App.ICE, v = p.props || {};
     const auto = I.detalle({ ...p, props: { ...v, ice_income: null, ice_confianza: null, ice_esfuerzo: null, ice_os: null } });

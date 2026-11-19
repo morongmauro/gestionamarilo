@@ -123,8 +123,7 @@
     if (P.view === 'resumen' && App.Portafolio) { root = null; return App.Portafolio.render(main); }
     root = main;
     const ro = !App.canEdit();
-    main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><div><h1>Portafolio</h1><div class="sub">${App.S.projects.length} ${App.S.projects.length === 1 ? 'iniciativa' : 'iniciativas'}, aquí se editan las columnas, como en Notion</div></div><span class="sp"></span>
-        <div class="seg"><button data-view="resumen">Resumen</button><button data-view="tabla" class="${P.view === 'tabla' ? 'on' : ''}">Tabla completa</button><button data-view="tablero" class="${P.view === 'tablero' ? 'on' : ''}" title="Tarjetas agrupadas por fase">Por fase</button></div></div>
+    main.innerHTML = `${App.pfHead(P.view === 'tablero' ? 'tablero' : 'tabla', `${App.zoomCtl()}${ro ? '' : '<button class="btn primary sm" data-act="new">+ Nueva iniciativa</button>'}`)}
       <div class="toolbar">
         <label class="search"><span>⌕</span><input id="tq" placeholder="Buscar en todas las columnas…" value="${esc(q)}"></label>
         <button class="tb ${P.filters.length ? 'on' : ''}" data-act="filtro">⚲ Filtrar</button>
@@ -132,8 +131,7 @@
         <button class="tb ${P.group ? 'on' : ''}" data-act="grupo">▤ Agrupar</button>
         <button class="tb ${App.S.columns.some(c => c.hidden) || !P.calc ? 'on' : ''}" data-act="cols">Columnas</button>
         <span class="sp"></span>
-        ${App.zoomCtl()}<button class="tb" data-act="csv" title="Descargar como CSV (se abre en Excel)">CSV</button>
-        ${ro ? '' : '<button class="tb primary" data-act="new">+ Nueva iniciativa</button>'}
+        <button class="tb" data-act="csv" title="Descargar como CSV (se abre en Excel)">CSV</button>
       </div>
       <div class="chips" id="tchips"></div>
       <div id="tview"></div>`;
@@ -446,7 +444,7 @@
   }
 
   App.Tabla = { TYPES, renderValue, openEditor, render, openAddColumn };
-  function setView(v) { const antes = P.view; P.view = v; savePrefs(); if (antes === 'resumen' || v === 'resumen' || !root) App.render(); else paint(); }
+  function setView(v) { P.view = v; savePrefs(); App.render(); }
   App.Tabla.setView = setView;
   App.views.proyectos = { render: main => render(main) };
 })();

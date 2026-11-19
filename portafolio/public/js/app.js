@@ -11,15 +11,14 @@
   const AP = Object.assign({ tema: 'claro', estilo: 'marco' }, App.store.get('apariencia', {}));
   function aplicarApariencia() {
     const h = document.documentElement;
-    if (AP.tema === 'auto') h.removeAttribute('data-theme'); else h.setAttribute('data-theme', AP.tema === 'oscuro' ? 'dark' : 'light');
-    h.setAttribute('data-estilo', ['claro', 'superior', 'marco'].includes(AP.estilo) ? AP.estilo : 'marco');
+    h.setAttribute('data-theme', AP.tema === 'oscuro' ? 'dark' : 'light');
+    h.setAttribute('data-estilo', 'marco'); // la barra siempre en el mismo lugar: solo cambia claro u oscuro
   }
   aplicarApariencia();
   App.apariencia = (k, v) => { if (k) { AP[k] = v; App.store.set('apariencia', AP); aplicarApariencia(); } return Object.assign({}, AP); };
   function panelApariencia(anchor) {
     const op = (k, lista) => `<div class="ap-op">${lista.map(([v, l]) => `<button data-ap="${k}" data-v="${v}" class="${AP[k] === v ? 'on' : ''}" aria-pressed="${AP[k] === v}">${l}</button>`).join('')}</div>`;
-    const p = App.openPop(anchor, `<div class="lbl">Tema</div>${op('tema', [['claro', 'Claro'], ['oscuro', 'Oscuro'], ['auto', 'Como el equipo']])}
-      <div class="lbl">Estilo</div>${op('estilo', [['claro', 'Barra blanca'], ['superior', 'Menú arriba'], ['marco', 'Barra morada']])}
+    const p = App.openPop(anchor, `<div class="lbl">Tema</div>${op('tema', [['claro', 'Claro'], ['oscuro', 'Oscuro']])}
       <div class="hint" style="padding:0 10px 6px">Se guarda en este navegador.</div>`, { width: 300, nofocus: true });
     p.onclick = ev => { const b = ev.target.closest('[data-ap]'); if (!b) return; App.apariencia(b.dataset.ap, b.dataset.v); panelApariencia(anchor); };
   }
@@ -158,15 +157,23 @@
       if (ids.length) App.store.set('nav.lista', { de: LISTAS[sec][0], href: '#/' + sec, tab: LISTAS[sec][1], ids });
     }
     $$('.tab[data-sec]').forEach(t => t.classList.toggle('active', t.dataset.sec === (sec === 'valor' ? 'casos' : sec)));
-    sideProjects(sec === 'proyectos' ? params[0] : sec === 'casos' ? params[0] : null);
+    sideProjects(sec === 'proyectos' ? params[0] : null);
     $('#app').classList.remove('open');
   };
   window.addEventListener('hashchange', () => { App.closePop(true); if (App.drawerOpen()) App.closeDrawer(); App.render(); window.scrollTo(0, 0); });
 
   function sideProjects(activeId) {
-    const ps = App.projectsSorted();
-    $('#sideProj').innerHTML = ps.map(p => { const pl = App.planOf(p.id);
-      return `<a class="sp-item ${p.id === activeId ? 'on' : ''}" href="#/proyectos/${p.id}" title="${esc(App.projectName(p))}"><i style="background:var(--c-${App.projectColor(p)}-i)"></i><span class="nm">${esc(App.projectName(p))}</span>${pl.acts.length ? `<span class="pc">${pl.avance}%</span>` : ''}</a>`; }).join('') || '<div class="faint" style="font-size:12px;padding:4px 10px">Sin iniciativas</div>';
+    const caja = $('.side-proj'), ver = /^#\/proyectos/.test(location.hash) || location.hash === '' ;
+    caja.hidden = !ver; if (!ver) return;
+    const q = App.store.get('side.q', ''), n = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    const ec = App.estadoCol(), ps = App.projectsSorted().filter(p => (App.enAlcance(p) || p.id === activeId) && (!q || n(App.projectName(p)).includes(n(q))));
+    const tabAct = (location.hash.split('/')[3] || '');
+    const grupos = [[1, 'Fase 1'], [2, 'Fase 2'], [3, 'Fase 3'], ['otras', 'Otras']].map(([k, t]) => ({ t, l: ps.filter(p => { const f = window.Fases && ec ? Fases.clasificar((p.props || {})[ec.id]) : null; return k === 'otras' ? ![1, 2, 3].includes(f) : f === k; }) })).filter(g => g.l.length);
+    const item = p => `<a class="sp-item ${p.id === activeId ? 'on' : ''}" href="#/proyectos/${p.id}${tabAct ? '/' + tabAct : ''}" title="${esc(App.projectName(p))}"><span class="nm">${esc(App.projectName(p))}</span></a>`;
+    if (!$('#sideQ')) $('#sideProj').insertAdjacentHTML('beforebegin', '<div class="sp-q"><input id="sideQ" placeholder="Buscar iniciativa…" aria-label="Buscar iniciativa"></div>');
+    const iq = $('#sideQ'); if (document.activeElement !== iq) iq.value = q;
+    iq.oninput = () => { App.store.set('side.q', iq.value); sideProjects(activeId); };
+    $('#sideProj').innerHTML = grupos.map(g => `<div class="sp-g">${g.t}<span>${g.l.length}</span></div>${g.l.map(item).join('')}`).join('') || '<div class="faint" style="font-size:12px;padding:4px 10px">Ninguna coincide.</div>';
   }
 
   /* ---------- barra lateral ---------- */

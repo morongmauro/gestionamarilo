@@ -199,9 +199,9 @@
       R.okr != null ? `<button class="pf-chip" data-quitar="okr">OKR, ${esc(R.okr || 'Sin OKR asignado')} ✕</button>` : '',
       R.cat ? `<button class="pf-chip" data-quitar="cat">${esc(App.catLabel(R.cat))} ✕</button>` : '',
     ].join('');
-    main.innerHTML = `<div class="pg-top"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Portafolio</h1>
-        <div class="kl"><span><b>${rows.length}</b>iniciativas</span><span title="Iniciativas en Fase 1, Fase 2 y Fase 3">${[1, 2, 3].map(k => `<b>${rows.filter(r => window.Fases && Fases.clasificar(r.x.estado) === k).length}</b>F${k}`).join(', ')}</span><span><b class="${nAl ? 'r' : ''}">${nAl}</b>con alertas</span><span><b>${rows.filter(sinDatos).length}</b>sin datos</span><span><b>${esc(m(total))}</b>valor proyectado, ${rows.filter(r => r.valor > 0).length} de ${rows.length} con cifras</span></div>
-        <span class="sp"></span>${App.zoomCtl()}<button class="btn ghost sm" data-pf="csv">Exportar a Excel</button>${App.canEdit() ? '<button class="btn primary sm" data-pf="nuevo">+ Nueva iniciativa</button>' : ''}</div>
+    const actPf = R.modo === 'mapa' ? 'mapa' : R.modo === 'riesgos' ? 'riesgos' : R.modo === 'cargar' ? 'cargar' : 'resumen';
+    main.innerHTML = `${App.pfHead(actPf, `${App.zoomCtl()}<button class="btn ghost sm" data-pf="csv">Exportar a Excel</button>${App.canEdit() ? '<button class="btn primary sm" data-pf="nuevo">+ Nueva iniciativa</button>' : ''}`)}
+      <div class="kl pf-kl"><span><b>${rows.length}</b>iniciativas</span><span title="Iniciativas en Fase 1, Fase 2 y Fase 3">${[1, 2, 3].map(k => `<b>${rows.filter(r => window.Fases && Fases.clasificar(r.x.estado) === k).length}</b>F${k}`).join(', ')}</span><span><b class="${nAl ? 'r' : ''}">${nAl}</b>con alertas</span><span><b>${rows.filter(sinDatos).length}</b>sin datos</span><span><b>${esc(m(total))}</b>valor proyectado, ${rows.filter(r => r.valor > 0).length} de ${rows.length} con cifras</span></div>
       <div class="pf-bar"><label class="search"><span>⌕</span><input id="pfq" placeholder="Buscar iniciativa u OKR…" value="${esc(R.q)}"></label>${chips}
         ${ec ? `<select class="pf-sel" data-pf-okr aria-label="OKR"><option value="">OKR: todos</option>${[...new Set(rows.flatMap(r => r.okrs))].sort((a, b) => a.localeCompare(b)).map(o => `<option value="${esc(o)}" ${R.okr === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}<option value="__sin" ${R.okr === '' ? 'selected' : ''}>Sin OKR asignado</option></select>
         <select class="pf-sel" data-pf-cat aria-label="Tipo de valor"><option value="">Tipo de valor: todos</option>${ORDEN_CAT.filter(k => rows.some(r => r.cats.includes(k))).map(k => `<option value="${k}" ${R.cat === k ? 'selected' : ''}>${esc(App.catLabel(k))}</option>`).join('')}</select>
@@ -213,15 +213,24 @@
         <button class="pf-tg ${R.graf ? 'on' : ''}" data-pf="graf" aria-pressed="${!!R.graf}" title="Minigráficas por OKR y por tipo de valor de lo que está filtrado">Gráficas</button>
         <select class="pf-sel" data-pf-grupo aria-label="Agrupar">${[['fase', 'Agrupar: por fase'], ...colsGrupo().map(c => ['col:' + c.id, 'Agrupar: por ' + c.name.toLowerCase()]), ['okr', 'Agrupar: por OKR'], ['tipo', 'Agrupar: por tipo de valor'], ['', 'Sin agrupar']].map(([k, l]) => `<option value="${k}" ${(R.grupo || '') === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
         <select class="pf-sel" data-pf-orden aria-label="Ordenar">${Object.entries(ORDEN).map(([k, o]) => `<option value="${k}" ${oAct === k ? 'selected' : ''}>Ordenar: ${o.t}${oAct === k ? (R.dir === 1 ? ' ▴' : ' ▾') : ''}</option>`).join('')}</select>
-        <span class="sp"></span><div class="seg"><button data-modo="riesgos" class="${R.modo === 'riesgos' ? 'on' : ''}" aria-pressed="${R.modo === 'riesgos'}" title="Todos los riesgos del portafolio" style="order:2">Riesgos</button><button data-modo="tabla" class="${R.modo !== 'mapa' ? 'on' : ''}" aria-pressed="${R.modo !== 'mapa'}">Resumen</button><button data-modo="mapa" class="${R.modo === 'mapa' ? 'on' : ''}" aria-pressed="${R.modo === 'mapa'}" title="Iniciativas por ICE e Income, en cuadrantes">Mapa ICE</button><button data-vista-pf="tabla" title="Tabla tipo Notion: aquí se editan las columnas">Tabla completa</button><button data-vista-pf="tablero" title="Tarjetas agrupadas por fase">Por fase</button></div></div>
-      ${R.graf && R.modo !== 'riesgos' ? lentes(rows) : ''}
-      ${R.modo === 'riesgos' && App.Riesgos ? App.Riesgos.portafolioHTML(vis.map(r => r.p)) : R.modo === 'mapa' ? mapaHTML(vis) : `<section class="t-card pf-tbl-card"><div class="pf-wrap"><table class="pf-tbl">
+      </div>
+      ${R.graf && R.modo !== 'riesgos' && R.modo !== 'cargar' ? lentes(rows) : ''}
+      ${R.modo === 'cargar' ? cargaHTML(vis) : R.modo === 'riesgos' && App.Riesgos ? App.Riesgos.portafolioHTML(vis.map(r => r.p)) : R.modo === 'mapa' ? mapaHTML(vis) : `<section class="t-card pf-tbl-card"><div class="pf-wrap"><table class="pf-tbl">
         <thead><tr>${colsVis().map(k => ({ nombre: th('nombre', 'Iniciativa'), fase: '<th>Fase</th>', habilitadores: '<th>Habilitadores</th>', realizadores: '<th>Realizadores</th>', okr: th('okr', 'OKR'), tipo: th('tipo', 'Tipo de valor'), ice: th('ice', 'ICE', '', 'n'), avance: th('avance', 'Avance', 'real, ┃ esperado'), fin: th('fin', 'Cronograma', `${+d.hoy.slice(0, 4)} – ${+d.hoy.slice(0, 4) + 1}`), valor: th('valor', 'Valor a 2 años', 'caso de negocio'), alertas: th('alertas', 'Alertas') })[k] || `<th>${esc(nombreCol(k))}</th>`).join('')}<th aria-hidden="true"></th></tr></thead>
         <tbody>${cuerpo(vis)}${(ejV => ejV.length ? `<tr class="pf-grp pf-grp-ej"><td colspan="${colsVis().length + 1}"><b>Ejemplo</b><small>no suma en los totales ni en el tablero</small></td></tr>${ejV.map(filaHTML).join('')}` : '')(ejs.filter(r => pasaFiltros(r)))}${cuerpo(vis) ? '' : `<tr><td colspan="${colsVis().length + 1}"><div class="t-vacio">${rows.length ? 'Ninguna iniciativa cumple estos filtros.' : fuera ? `Ninguna iniciativa está en el foco DGV. <button class="t-lnk" data-pf="dgv">Ver las ${fuera} iniciativas</button>` : 'Aún no hay iniciativas.'}</div></td></tr>`}</tbody></table></div>
         <div class="t-pie t-pie-row"><span class="t-tag">${vis.length} de ${rows.length} iniciativas, ordenadas por ${ORDEN[oAct].t}${R.okr != null ? `, OKR «${esc(R.okr || 'sin asignar')}»` : ''}${fuera ? `, <button class="t-lnk" data-pf="dgv">${fuera} históricas ocultas (fuera del foco DGV)</button>` : ''}</span><span class="t-tag">Clic en un encabezado ordena, clic en un grupo lo pliega</span></div></section>`}`;
     const svg = $('#pfMapa', main); if (svg) dibujarMapa(svg, vis);
     const q = $('#pfq', main);
     q.oninput = () => { R.q = q.value; const pos = q.selectionStart; render(main); const n = $('#pfq', main); n.focus(); n.setSelectionRange(pos, pos); };
+    // Arrastrar el encabezado de una columna la cambia de lugar, para todos
+    const ths = [...main.querySelectorAll('.pf-tbl:not(.dc-t) thead th')];
+    colsVis().forEach((k, i) => { const t = ths[i]; if (!t) return; t.dataset.pfcol = k; if (App.canEdit() && k !== 'nombre') { t.draggable = true; t.title = (t.title ? t.title + '. ' : '') + 'Arrastre para cambiar la columna de lugar'; } });
+    let arr = null; const limpia = () => main.querySelectorAll('th.col-ant,th.col-des,th.col-drag').forEach(x => x.classList.remove('col-ant', 'col-des', 'col-drag'));
+    main.ondragstart = e => { const t = e.target.closest && e.target.closest('th[data-pfcol]'); if (!t || !t.draggable) return; arr = t.dataset.pfcol; t.classList.add('col-drag'); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', arr); } catch (x) { /* */ } };
+    main.ondragend = () => { arr = null; limpia(); };
+    main.ondragover = e => { if (!arr) return; const t = e.target.closest('th[data-pfcol]'); if (!t || t.dataset.pfcol === 'nombre') return; e.preventDefault(); const r = t.getBoundingClientRect(); main.querySelectorAll('th.col-ant,th.col-des').forEach(x => x.classList.remove('col-ant', 'col-des')); if (t.dataset.pfcol !== arr) t.classList.add(e.clientX < r.left + r.width / 2 ? 'col-ant' : 'col-des'); };
+    main.ondrop = e => { if (!arr) return; const t = e.target.closest('th[data-pfcol]'); const de = arr; arr = null; limpia(); if (!t || t.dataset.pfcol === de || t.dataset.pfcol === 'nombre') return; e.preventDefault();
+      const v = colsVis().filter(k => k !== de), r = t.getBoundingClientRect(), j = v.indexOf(t.dataset.pfcol); v.splice(e.clientX < r.left + r.width / 2 ? j : j + 1, 0, de); guardarVista(v); App.toast('Orden de columnas guardado para todos'); render(main); };
     main.onclick = e => {
       const pe = e.target.closest('[data-pedit]'); if (pe) { e.stopPropagation(); if (App.canEdit()) App.Tabla.openEditor(pe, pe.dataset.pedit, pe.dataset.col); return; }
       const fe = e.target.closest('[data-fase-ed]'); if (fe) { e.stopPropagation(); if (App.canEdit() && App.estadoCol()) App.Tabla.openEditor(fe, fe.dataset.faseEd, App.estadoCol().id); return; }
@@ -317,5 +326,33 @@
   // Para el Tablero: el mismo resumen por OKR y por tipo de valor; el clic lleva al Portafolio con ese filtro
   const lentesTablero = () => { const { rows } = filas(); return lentes(rows.filter(r => App.enAlcance(r.p) && !App.esEjemplo(r.p)), true); };
   const filtrar = f => { R.okr = f.okr != null ? f.okr : null; R.cat = f.cat || ''; R.etapa = ''; R.q = ''; R.alertas = false; R.modo = 'tabla'; R.graf = true; guardar(); App.go('#/proyectos'); };
-  App.Portafolio = { render, lentesTablero, filtrar, filtrarFase };
+  // Qué información real tiene y qué le falta a cada iniciativa, por fase (lo que se exige crece con la fase)
+  const lleno = v => !(v == null || v === '' || (Array.isArray(v) && !v.length));
+  const CHECKS = [
+    ['resp', 'Responsables', 1, p => lleno((p.props || {}).habilitadores) || lleno((p.props || {}).realizadores), 'info'],
+    ['frase', 'Qué es', 1, p => lleno(p.frase), 'info'],
+    ['okr', 'OKR', 1, p => App.okrsDe(p).length > 0, 'valor'],
+    ['ice', 'ICE', 1, p => ['ice_income', 'ice_confianza', 'ice_esfuerzo'].every(k => lleno((p.props || {})[k])), 'info'],
+    ['caso', 'Caso de negocio', 1, p => { const c = App.caseOf(p.id); return !!(c && c.origen !== 'ice' && (c.flujos || []).some(f => f.tipo === 'beneficio' && (f.valores || []).some(Number))); }, 'caso'],
+    ['crono', 'Cronograma', 1, p => App.planOf(p.id).acts.length > 0, 'cronograma'],
+    ['riesgos', 'Riesgos', 2, p => (App.Riesgos ? App.Riesgos.lista(p) : []).length > 0, 'riesgos'],
+    ['captura', 'Captura de valor', 2, p => { const c = App.caseOf(p.id); return !!(c && (c.captado || []).length); }, 'valor'],
+    ['verif', 'Verificado', 3, p => { const c = App.caseOf(p.id); return !!(c && Object.keys(c.validacion || {}).length); }, 'valor'],
+  ];
+  function cargaHTML(vis) {
+    const faseDe = r => (window.Fases ? Fases.clasificar(r.x.estado) : null);
+    const grupos = [1, 2, 3].map(k => ({ k, rows: vis.filter(r => faseDe(r) === k && !App.esEjemplo(r.p)) })).filter(g => g.rows.length);
+    const sinF = vis.filter(r => ![1, 2, 3].includes(faseDe(r)) && !inactiva(r) && !App.esEjemplo(r.p));
+    if (sinF.length) grupos.push({ k: 0, rows: sinF });
+    const aplica = (c, k) => c[2] <= Math.max(1, k);
+    const fila = (r, k) => { const cs = CHECKS.filter(c => aplica(c, k)), ok = cs.filter(c => c[3](r.p)).length, pc = Math.round(ok / cs.length * 100);
+      return { r, pc, html: `<tr><td class="pf-nm"><a href="#/proyectos/${r.p.id}"><b>${esc(App.projectName(r.p))}</b></a></td><td class="n"><b>${pc} %</b></td>${CHECKS.map(c => !aplica(c, k) ? '<td class="dc-na" title="No se exige en esta fase">·</td>' : c[3](r.p) ? `<td class="dc-ok" title="${esc(c[1])}: cargado"><i class="ico ico-ok"></i></td>` : `<td class="dc-no"><a href="#/proyectos/${r.p.id}/${c[4]}" title="Falta: ${esc(c[1])}. Clic para cargarlo">falta</a></td>`).join('')}</tr>` }; };
+    const total = grupos.reduce((a, g) => a + g.rows.reduce((q, r) => q + CHECKS.filter(c => aplica(c, g.k) && !c[3](r.p)).length, 0), 0);
+    return `<section class="dc"><p class="dc-int">Lo que se exige crece con la fase: en Fase 1 lo básico (responsables, qué es, OKR, ICE, caso y cronograma); en Fase 2 además riesgos y captura de valor; en Fase 3 además lo verificado por Finanzas. Faltan <b>${total}</b> datos en total. Clic en «falta» para ir directo a cargarlo.</p>
+      ${grupos.map(g => { const fs = g.rows.map(r => fila(r, g.k)).sort((a, b) => a.pc - b.pc); const prom = Math.round(fs.reduce((a, x) => a + x.pc, 0) / fs.length);
+        return `<h3 class="dc-h">${g.k ? `<span class="pill cl-${['', 'azul', 'naranja', 'verde'][g.k]}">Fase ${g.k}</span> ${esc((Fases.deId(g.k) || {}).nombre ? Fases.deId(g.k).nombre.split(' · ')[1] : '')}` : 'Sin fase asignada'}<small>${fs.length} ${fs.length === 1 ? 'iniciativa' : 'iniciativas'}, ${prom} % de la información cargada</small></h3>
+          <div class="pf-wrap"><table class="pf-tbl dc-t"><thead><tr><th>Iniciativa</th><th class="n">Completo</th>${CHECKS.map(c => `<th>${esc(c[1])}</th>`).join('')}</tr></thead><tbody>${fs.map(x => x.html).join('')}</tbody></table></div>`; }).join('')}</section>`;
+  }
+  const setModo = v => { R.modo = v; guardar(); };
+  App.Portafolio = { render, lentesTablero, filtrar, filtrarFase, setModo };
 })();

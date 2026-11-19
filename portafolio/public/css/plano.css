@@ -513,3 +513,59 @@ button.tab#btnBuscar{font:inherit;border:0;background:none;width:100%;text-align
 .bs-p a:hover{background:var(--accent);color:#160B29}
 .bs-v{color:var(--muted);padding:12px;margin:0}
 .bs-pie{font-size:11.5px;color:var(--muted);padding:8px 16px;border-top:1px solid var(--line)}
+
+/* Portafolio: cabecera común; las vistas son pestañas que no se mueven */
+.pf-head .pg-top{margin-bottom:6px}
+.pf-vistas{display:flex;gap:24px;border-bottom:1px solid var(--line);margin:0 0 12px;overflow-x:auto;scrollbar-width:none}
+.pf-vistas button{font:inherit;font-size:14px;font-weight:700;color:var(--muted);background:none;border:0;padding:9px 0;cursor:pointer;white-space:nowrap}
+.pf-vistas button:hover{color:var(--ink)}.pf-vistas button.on{color:var(--ink);box-shadow:inset 0 -3px 0 var(--accent)}
+.pf-kl{margin:0 0 10px}
+/* Datos por cargar */
+.dc-int{font-size:13.5px;color:var(--muted);max-width:900px;margin:4px 0 14px;line-height:1.5}.dc-int b{color:var(--ink)}
+.dc-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:15px;font-weight:800;margin:18px 0 8px}.dc-h small{font-size:12.5px;font-weight:500;color:var(--muted)}
+.dc-t td,.dc-t th{text-align:center}.dc-t td.pf-nm,.dc-t th:first-child{text-align:left}
+.dc-ok{color:var(--good-ink)}.dc-ok .ico{width:16px;height:16px}
+.dc-no a{font-size:12px;font-weight:700;color:var(--crit-ink);text-decoration:none;background:var(--crit-bg);border-radius:999px;padding:2px 9px}
+.dc-no a:hover{text-decoration:underline}.dc-na{color:var(--faint)}
+
+/* Barra lateral: iniciativas con buscador, agrupadas por fase */
+.side-proj:not([hidden]){display:flex;flex-direction:column;min-height:0;flex:1;margin-top:10px;border-top:1px solid color-mix(in srgb,var(--nav-ink) 12%,transparent);padding-top:8px}
+.sp-q{padding:2px 8px 6px}.sp-q input{width:100%;font:inherit;font-size:12.5px;border:0;border-radius:8px;padding:7px 10px;background:color-mix(in srgb,var(--nav-ink) 9%,transparent);color:var(--nav-ink)}
+.sp-q input::placeholder{color:var(--nav-muted)}
+.sp-g{display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:var(--nav-muted);padding:8px 12px 3px}.sp-g span{opacity:.7}
+.sp-item{display:block;padding:5px 12px;border-radius:8px;font-size:12.5px;color:var(--nav-ink);text-decoration:none;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-item:hover{background:var(--nav-hover);opacity:1}.sp-item.on{background:var(--nav-on);opacity:1;font-weight:700}
+.sp-item .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-side{display:flex;flex-direction:column}
+.ps-sub{margin:-4px 0 12px}.ps-sub .n{font-size:11px;font-weight:700;background:var(--sunk);border-radius:999px;padding:1px 7px;margin-left:4px;color:var(--muted)}.ps-sub .n.a{background:var(--warn-bg);color:var(--warn-ink)}
+.ice-f{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;margin-top:6px}
+.ice-f b{display:block;font-size:28px;font-weight:800}.ice-f .t{display:block;font-weight:700;font-size:14px}.ice-f small{display:block;font-size:12px;color:var(--muted);line-height:1.4;margin-top:2px}.ice-f small.nota{color:var(--ink)}
+@media (max-width:800px){.ice-f{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.ad-como{font-size:13px;line-height:1.5;color:var(--muted);max-width:900px;margin:-4px 0 14px}.ad-como b{color:var(--ink)}
+.pf-tbl th[draggable=true]{cursor:grab}.pf-tbl th.col-drag{opacity:.45}
+.pf-tbl th.col-ant{box-shadow:inset 3px 0 0 var(--accent)}.pf-tbl th.col-des{box-shadow:inset -3px 0 0 var(--accent)}
+
+/* ============================================================
+   ESCALA DE LETRA · 6 tamaños, mínimo 11 px
+   26 título de página · 16 título de sección · 14 nombre de iniciativa y pestañas
+   13 texto y celdas · 12 dato secundario (personas, OKR, tipo, fase) · 11,5 encabezados y notas
+   ============================================================ */
+.pf-head h1,.pg-top h1,.page-h h1{font-size:26px}
+.ptabs a,.pf-vistas button,.vl-sub a{font-size:14px}
+.tv-t h2,.cs-th h3,.vl-sec h3,.vl-p h3,.pv-q,.dc-h{font-size:16px}
+.pf-tbl td{font-size:13px}
+.pf-tbl td.pf-nm b,.pf-nm b{font-size:14px;font-weight:600}
+.pf-tbl th{font-size:11.5px;font-weight:600;color:var(--muted)}
+/* personas: más pequeñas y discretas, sin competir con el nombre de la iniciativa */
+.pf-per-c .pill,.pf-per-c .pill.ppl{font-size:11.5px!important;font-weight:500!important;padding:1px 6px 1px 1px!important;gap:4px}
+.pf-per-c .pill .av,.pf-per-c .av{width:16px!important;height:16px!important;font-size:7.5px!important}
+.pf-per-c .c-in{gap:2px!important}
+.pf-okrs,.pf-tv,.pf-fase .pill,.pf-tvs{font-size:12px}
+.pf-okrs{font-weight:500;color:var(--ink)}
+.pf-kl,.kl{font-size:12px}
+.sp-item{font-size:12.5px}
+.tv-c .nm,.tv-o .nm{font-size:13px}
+.tv-t small,.vl-sec h3 small,.vl-p h3 small{font-size:12px}
+.facts{font-size:13.5px}
+.faint,.vl-nota,.tv-nota,.pv-nota{font-size:12px}
+#sideProj>.sp-item,#sideProj>.sp-g{flex:none}#sideProj{overflow-y:auto;scrollbar-width:thin}.side-proj:not([hidden]){min-height:120px}
