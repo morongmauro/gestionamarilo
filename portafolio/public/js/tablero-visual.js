@@ -176,6 +176,12 @@
     if (!ev.length) return '<p class="tv-vacio">Sin comités ni hitos en los próximos 30 días.</p>';
     return `<div class="tv-ag">${ev.map(e => `<a class="tv-a" href="${e.href}"><span class="d"><b>${+e.f.slice(8)}</b><small>${App.d.MES3[+e.f.slice(5, 7) - 1]}</small></span><span class="t"><b>${esc(e.t)}</b><span>${esc(e.s)}</span></span><em class="${e.k}"><i class="ico ${e.k === 'c' ? 'ico-comite' : 'ico-hito'}"></i>${e.k === 'c' ? 'Comité' : 'Hito'}</em></a>`).join('')}</div>`;
   }
+  function novedades(D) {
+    if (!App.Novedades) return '';
+    const ids = D.ps.map(p => p.id), l = App.Novedades.recientes(ids).slice(0, 6);
+    if (!l.length) return '<p class="tv-vacio">Aún no hay novedades. Se registran desde el cronograma de cada iniciativa («+ Novedad»).</p>';
+    return `<div class="tv-nvl">${l.map(n => { const p = App.byId('projects', n.project_id); return `<a class="tv-nv" href="#/proyectos/${esc(n.project_id)}/cronograma"><span class="t">${App.Novedades.tipoHTML(n)} · ${esc(n.texto)}</span><span class="s">${esc(nom(p))}, ${esc(App.Novedades.fechaTxt(n.fecha))}</span></a>`; }).join('')}</div>`;
+  }
   function mini(D) {
     const mx = Math.max(...D.cap, 1), hasta = D.Y === +D.d.hoy.slice(0, 4) ? +D.d.hoy.slice(5, 7) - 1 : 12;
     return `<svg viewBox="0 0 120 34" width="120" height="34" aria-hidden="true">${D.cap.map((v, i) => { const h = v / mx * 30; return `<rect x="${i * 10}" y="${34 - Math.max(h, 1.5)}" width="7" height="${Math.max(h, 1.5)}" rx="1.5" class="${i < hasta ? 'on' : 'off'}"/>`; }).join('')}</svg>`;
@@ -188,7 +194,7 @@
     const ritmo = pc == null ? (nSin ? ['nr', 'ico-reloj', `Falta registrar en ${plural(nSin, 'iniciativa', 'iniciativas')}`] : null) : pc >= .9 ? ['ok', 'ico-ok', 'Al ritmo'] : pc >= .6 ? ['o', 'ico-reloj', 'Algo por debajo'] : ['r', 'ico-alerta', 'Por debajo del ritmo'];
     const ec = App.estadoCol(), dgv = App.dgvHay();
     main.className = 'tv';
-    main.innerHTML = `<div class="tv-h"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Tablero de valor</h1><span class="s">Oficina de Generación de Valor, datos al ${esc(App.d.fmt(d.hoy))}</span><span class="sp"></span>
+    main.innerHTML = `<div class="tv-h"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>${App.esInvitado() ? 'Tablero de sus iniciativas' : 'Tablero de valor'}</h1><span class="s">${App.esInvitado() ? `${App.S.projects.length} ${App.S.projects.length === 1 ? 'iniciativa compartida' : 'iniciativas compartidas'} con usted` : 'Oficina de Generación de Valor'}, datos al ${esc(App.d.fmt(d.hoy))}</span><span class="sp"></span>
         ${F.fase ? `<button class="tv-chip" data-fx="${esc(F.fase)}" title="Quitar el filtro">Mostrando ${esc(faseNombre(isNaN(+F.fase) ? F.fase : +F.fase))} <b>✕</b></button>` : ''}</div>
       ${sub}
       
@@ -217,6 +223,7 @@
       <div class="tv-g g2b">
         <section class="tv-p"><div class="tv-t"><h2>¿Cómo vamos en cada OKR?</h2><small>capturado frente a lo proyectado ${Y}</small></div>${okrs(D)}</section>
         <section class="tv-p"><div class="tv-t"><h2>Próximos 30 días</h2><small>comités e hitos</small><span class="sp"></span><a href="#/agenda">Ver agenda</a></div>${agenda(D)}</section>
+        <section class="tv-p"><div class="tv-t"><h2>Novedades recientes</h2><small>lo último que contaron los equipos</small></div>${novedades(D)}</section>
       </div>`;
 
     main.onchange = e => { const k = e.target.dataset.tvf; if (!k) return; F[k] = k === 'anio' ? Number(e.target.value) : e.target.value; guardar(); App.render(); };

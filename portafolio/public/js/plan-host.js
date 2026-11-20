@@ -691,6 +691,8 @@
     return `<div class="plan-head-l">${kpis(M)}${p && M.lineaBase ? `<span class="lb-chip" title="Las fechas de la línea base no se mueven: se compara contra ellas. Se cambia en «⋯ Más».">Línea base del ${esc(lbF)}</span>` : ''}<span id="plan-saving" class="saving-dot" style="opacity:${guardando ? 1 : 0}">guardando…</span></div>
       <div class="plan-head-r">
         ${p && ed ? `<button class="btn sm ic" data-ph="undo" ${n ? '' : 'disabled'} title="${n ? 'Deshacer: ' + esc(pila.filter(x => x.pid === cur.pid).slice(-1)[0].desc) + ' (Ctrl+Z)' : 'Nada que deshacer'}" aria-label="Deshacer">↶</button>` : ''}
+        ${p && App.Novedades && !App.store.get('nv.panel', true) ? `<button class="btn sm" data-ph="nvver" title="Mostrar el panel de novedades">Novedades${App.Novedades.lista(p.id).length ? ' ' + App.Novedades.lista(p.id).length : ''}</button>` : ''}
+        ${p && ed && App.Novedades ? '<button class="btn amarillo sm" data-ph="novedad" title="Contar qué avanzó, qué está bloqueado o qué se decidió">+ Novedad</button>' : ''}
         ${p && ed ? '<button class="btn primary sm" data-ph="nueva">+ Actividad</button>' : ''}
         ${mesa ? '<button class="btn sm mesa-btn on" data-ph="mesa" title="Volver a la vista normal (Esc)">✕ Salir de mesa</button>' : `<button class="btn sm" data-ph="mas" aria-haspopup="menu">⋯ Más</button>`}
       </div>`;
@@ -723,14 +725,17 @@
     if (o.zoom === 'ajustar') { const a = P.medirAjuste(body); if (a && Math.abs(a - o.anchoTL) > 3) { o.anchoTL = a; body.innerHTML = P.render(cur.M, o); } }
     const n = $('#pl-wrap', body); if (n && keep) { n.scrollLeft = keep[0]; n.scrollTop = keep[1]; }
     requestAnimationFrame(() => P.dibujarLineas());
+    if (cur.pid && App.Novedades) App.Novedades.marcar(cur.el, cur.pid);
   }
   function montar(el, pid, M) {
-    cur = { el, pid, M, ro: !App.canEdit() };
+    cur = { el, pid, M, ro: !App.puedeRegistrar() };
     el.innerHTML = `<div class="pf-plan${pid ? '' : ' port'}"><div class="plan-head"></div><div id="plan-body"></div></div>`;
     $('.plan-head', el).addEventListener('click', ev => {
       const b = ev.target.closest('[data-ph]'); if (!b || b.disabled) return;
       const a = b.dataset.ph;
       if (a === 'undo') deshacer();
+      if (a === 'nvver') { App.store.set('nv.panel', true); return App.render(); }
+      if (a === 'novedad') return App.Novedades.editor(b, cur.pid, null);
       if (a === 'lb') fijarLineaBase(false);
       if (a === 'lb-otra') fijarLineaBase(true);
       if (a === 'lb-quitar') quitarLineaBase();

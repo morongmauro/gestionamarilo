@@ -196,6 +196,14 @@
       App.render(); openSession(s.id);
     });
   }
+  // Para preparar el comité: lo que contaron los equipos desde la sesión anterior (o el último mes)
+  function nvSesion(s) {
+    if (!App.Novedades || !(s.proyectos || []).length) return '';
+    const prev = App.S.sessions.filter(x => x.id !== s.id && x.comite_id === s.comite_id && x.fecha < s.fecha && x.estado !== 'Cancelada').map(x => x.fecha).sort().pop();
+    const desde = prev || App.d.add(s.fecha, -30);
+    const g = s.proyectos.map(pid => ({ p: App.byId('projects', pid), l: App.Novedades.lista(pid).filter(n => (n.fecha || '') >= desde && (n.fecha || '') <= s.fecha) })).filter(z => z.p && z.l.length);
+    return `<h4>Novedades ${prev ? 'desde el comité anterior' : 'del último mes'}</h4>${g.length ? `<div class="ag-nv">${g.map(z => `<div><a href="#/proyectos/${z.p.id}/cronograma">${esc(App.projectName(z.p))}</a><ul>${z.l.slice(0, 4).map(n => `<li>${App.Novedades.tipoHTML(n)} · ${esc(n.texto)} <span>${esc(App.Novedades.fechaTxt(n.fecha))}</span></li>`).join('')}${z.l.length > 4 ? `<li class="mas">y ${z.l.length - 4} más</li>` : ''}</ul></div>`).join('')}</div>` : '<p class="faint" style="font-size:12.5px;margin:0 0 8px">Las iniciativas de esta sesión no registraron novedades en ese tiempo.</p>'}`;
+  }
   function openSession(id) {
     const s = App.byId('sessions', id); if (!s) return;
     const ro = !App.canEdit(), dis = ro ? 'disabled' : '';
@@ -215,13 +223,14 @@
         <label>Enlace</label><div class="row"><input class="fld" data-s="enlace" value="${esc(s.enlace || '')}" placeholder="Enlace de Teams" ${dis}>${s.enlace && /^https?:\/\//i.test(s.enlace) ? `<a class="btn sm" href="${esc(s.enlace)}" target="_blank" rel="noopener">Abrir ↗</a>` : ''}</div>
         <label>Iniciativas</label><div class="chips-sel" id="sProj">${projHTML()}</div>
       </div>
+      ${nvSesion(s)}
       <h4>Orden del día y temas</h4><textarea class="fld" data-s="temas" rows="4" ${dis} placeholder="1. Avance de iniciativas…">${esc(s.temas || '')}</textarea>
       <h4>Asistentes</h4><textarea class="fld" data-s="asistentes" rows="2" ${dis}>${esc(s.asistentes || '')}</textarea>
       <h4>Decisiones</h4><textarea class="fld" data-s="decisiones" rows="4" ${dis} placeholder="Lo que se decidió en la sesión">${esc(s.decisiones || '')}</textarea>
       ${App.vista && App.vista.nueva ? '<div id="sDec" style="margin:12px 0"></div>' : ''}
       <h4>Compromisos</h4><div id="sComp">${compHTML()}</div>${ro ? '' : '<button class="btn sm" data-cadd="1" style="margin-top:4px">+ Compromiso</button>'}
       <datalist id="pplList">${App.S.people.map(u => `<option value="${esc(u.name)}">`).join('')}</datalist>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:22px"><a class="btn" href="/api/sesiones/${s.id}/ics" download>Agregar a Outlook (.ics)</a>${App.vista && App.vista.nueva ? `<a class="btn amarillo" href="#/agenda/preparar/${s.id}" data-prep="1">Preparar el comité</a>` : ''}${ro ? '' : '<button class="btn" data-rep="1">↻ Repetir…</button><span style="flex:1"></span><button class="btn danger" data-sdel="1">Eliminar sesión</button>'}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:22px">${App.esInvitado() ? '' : `<a class="btn" href="/api/sesiones/${s.id}/ics" download>Agregar a Outlook (.ics)</a>`}${App.vista && App.vista.nueva ? `<a class="btn amarillo" href="#/agenda/preparar/${s.id}" data-prep="1">Preparar el comité</a>` : ''}${ro ? '' : '<button class="btn" data-rep="1">↻ Repetir…</button><span style="flex:1"></span><button class="btn danger" data-sdel="1">Eliminar sesión</button>'}</div>
       <div class="meta-line">${s.updated_by_name ? `Última edición: ${esc(s.updated_by_name)}, ${esc(App.d.ago(s.updated_at))}` : ''}</div>`, { onClose: () => App.render() });
 
     const saveComp = () => App.patch('sessions', id, { compromisos: comp }).catch(() => {});

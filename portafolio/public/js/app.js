@@ -108,7 +108,7 @@
     App.S.demo = !!d.demo;
     App.S.almacenamiento = d.almacenamiento;
     App.S.direccion = d.direccion || null;
-    Object.assign(App.S, { me: d.me, org: d.org, columns: d.columns, projects: d.projects, activities: d.activities, sections: d.sections || [], cases: d.cases, sessions: d.sessions, committees: d.committees, people: d.people, tablero: d.tablero || { income_unidad: 1e6 }, vistaPf: d.vistaPf || null, dgvCorte: d.dgvCorte || null, okrs: d.okrs || [] });
+    Object.assign(App.S, { me: d.me, org: d.org, columns: d.columns, projects: d.projects, activities: d.activities, sections: d.sections || [], cases: d.cases, sessions: d.sessions, committees: d.committees, people: d.people, novedades: d.novedades || [], tablero: d.tablero || { income_unidad: 1e6 }, vistaPf: d.vistaPf || null, dgvCorte: d.dgvCorte || null, okrs: d.okrs || [] });
   }
   App.reload = async () => { try { await loadState(); App.render(); } catch (e) { console.error(e); } };
 
@@ -120,7 +120,8 @@
     document.title = `${App.S.org}, Portafolio de Generación de Valor`;
     $('#meAv').textContent = App.initials(App.S.me.name);
     $('#meName').textContent = App.S.me.name;
-    $('#meRole').textContent = { admin: 'Administrador', editor: 'Editor', lector: 'Solo lectura' }[App.S.me.role];
+    $('#meRole').textContent = { admin: 'Administrador', editor: 'Editor', lector: 'Solo lectura', invitado: 'Invitado' }[App.S.me.role];
+    $('#app').classList.toggle('inv', App.esInvitado());
     $('#tabUsuarios').hidden = !App.isAdmin();
     $('#demoTag').hidden = !App.S.demo; live(true);
     if (App.vista) App.vista.aplicar();
@@ -152,6 +153,8 @@
   App.render = () => {
     if ($('#app').hidden) return;
     const { sec, params } = route();
+    // Invitado: solo el Tablero de sus iniciativas y la ficha de cada una
+    if (App.esInvitado() && !(sec === 'tablero' || (sec === 'proyectos' && params[0]))) { location.hash = '#/tablero'; return; }
     const main = $('#main');
     main.className = App.canEdit() ? '' : 'ro';
     // Portafolio y Valor comparten tamaño de letra y de tabla
@@ -172,6 +175,7 @@
     }
     $$('.tab[data-sec]').forEach(t => t.classList.toggle('active', t.dataset.sec === (sec === 'valor' ? 'casos' : sec)));
     sideProjects(sec === 'proyectos' ? params[0] : null);
+    const spT = $('#sideProj'); if (spT) spT.previousElementSibling && spT.previousElementSibling.classList.contains('sp-q') && (spT.previousElementSibling.dataset.t = App.esInvitado() ? 'Mis iniciativas' : '');
     $('#app').classList.remove('open');
   };
   /* ---------- volver: recuerda de dónde viene cada página ---------- */
@@ -199,7 +203,7 @@
   window.addEventListener('hashchange', () => { anota(); App.closePop(true); if (App.drawerOpen()) App.closeDrawer(); App.render(); window.scrollTo(0, 0); });
 
   function sideProjects(activeId) {
-    const caja = $('.side-proj'), ver = /^#\/proyectos/.test(location.hash) || location.hash === '' ;
+    const caja = $('.side-proj'), ver = App.esInvitado() || /^#\/proyectos/.test(location.hash) || location.hash === '' ;
     caja.hidden = !ver; if (!ver) return;
     const q = App.store.get('side.q', ''), n = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
     const ec = App.estadoCol(), ps = App.projectsSorted().filter(p => (App.enAlcance(p) || p.id === activeId) && (!q || n(App.projectName(p)).includes(n(q))));
@@ -261,7 +265,7 @@
       if (s === snapshot || editing()) return;
       snapshot = s;
       App.S.direccion = d.direccion || null;
-      Object.assign(App.S, { columns: d.columns, projects: d.projects, activities: d.activities, sections: d.sections || [], cases: d.cases, sessions: d.sessions, committees: d.committees, people: d.people, me: d.me, tablero: d.tablero || { income_unidad: 1e6 } });
+      Object.assign(App.S, { columns: d.columns, projects: d.projects, activities: d.activities, sections: d.sections || [], cases: d.cases, sessions: d.sessions, committees: d.committees, people: d.people, novedades: d.novedades || [], me: d.me, tablero: d.tablero || { income_unidad: 1e6 } });
       if (!App.drawerOpen()) App.render();
     } catch (e) { if (e.status !== 401) live(false); }
   }, 20000);

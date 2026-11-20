@@ -4,8 +4,31 @@
 'use strict';
 (function () {
   const { $, esc } = App;
-  const ROLES = { admin: 'Administrador', editor: 'Editor', lector: 'Lector' };
-  const ROL_HELP = { admin: 'Todo, incluso administrar usuarios', editor: 'Crea y edita iniciativas, cronogramas, casos y agenda', lector: 'Solo consulta' };
+  const ROLES = { admin: 'Administrador', editor: 'Editor', lector: 'Lector', invitado: 'Invitado por iniciativa' };
+  const ROL_HELP = { admin: 'Todo, incluso administrar usuarios', editor: 'Crea y edita iniciativas, cronogramas, casos y agenda', lector: 'Solo consulta', invitado: 'Solo las iniciativas que usted le comparta: verlas, o verlas y registrar novedades, cronograma y riesgos' };
+  const PUEDE = { ver: 'Solo ver', registrar: 'Ver y registrar' };
+  // Para el invitado: qué puede hacer y en cuáles iniciativas
+  function accesoHTML(u) {
+    const sel = new Set(u.proyectos || []), ps = App.projectsSorted().filter(p => !App.esEjemplo(p));
+    return `<div class="inv-acc"><label>Puede <select class="fld" data-n="puede">${Object.entries(PUEDE).map(([k, l]) => `<option value="${k}" ${k === (u.puede || 'ver') ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <p class="faint" style="margin:0">«Ver y registrar» le deja escribir novedades, actualizar el cronograma y los riesgos. Nunca borra iniciativas ni cambia la fase.</p>
+      <label>Iniciativas <input class="fld" data-n="q" placeholder="Buscar iniciativa…"></label>
+      <div class="inv-ps">${ps.map(p => `<label data-nm="${esc(App.projectName(p).toLowerCase())}"><input type="checkbox" data-pid="${p.id}" ${sel.has(p.id) ? 'checked' : ''}> ${esc(App.projectName(p))}</label>`).join('')}</div>
+      <div class="faint" data-n="cuenta" style="font-size:12px"></div></div>`;
+  }
+  function accesoVivo(p) {
+    const cuenta = () => { const n = p.querySelectorAll('.inv-ps input:checked').length; const c = p.querySelector('[data-n=cuenta]'); if (c) c.textContent = n ? `${n} iniciativa${n === 1 ? '' : 's'} elegida${n === 1 ? '' : 's'}` : 'Elija al menos una iniciativa'; };
+    const q = p.querySelector('[data-n=q]'); if (q) q.oninput = () => { const t = q.value.trim().toLowerCase(); p.querySelectorAll('.inv-ps label').forEach(l => { l.hidden = !!t && !l.dataset.nm.includes(t); }); };
+    p.addEventListener('change', e => { if (e.target.closest('.inv-ps')) cuenta(); }); cuenta();
+  }
+  const leerAcceso = p => ({ puede: (p.querySelector('[data-n=puede]') || {}).value || 'ver', proyectos: [...p.querySelectorAll('.inv-ps input:checked')].map(x => x.dataset.pid) });
+  function editarAcceso(anchor, u) {
+    const p = App.openPop(anchor, `<div class="lbl">Acceso de ${esc(u.name)}</div><div class="vl-f">${accesoHTML(u)}<button class="btn primary" data-n="guardar">Guardar</button></div>`, { width: 380 });
+    accesoVivo(p);
+    p.onclick = e => { if (!e.target.closest('[data-n=guardar]')) return; const a = leerAcceso(p); if (!a.proyectos.length) return App.toast('Elija al menos una iniciativa', true);
+      App.guard(async () => { await App.api('PATCH', '/api/usuarios/' + u.id, a); App.closePop(true); App.toast('Acceso actualizado: se aplica en su próxima recarga'); App.render(); }); };
+  }
+  const accesoTxt = u => u.role !== 'invitado' ? '<span class="muted">Todo el portafolio</span>' : `<button class="t-lnk" data-u="acceso" title="${esc((u.proyectos || []).map(id => App.projectName(App.byId('projects', id))).join('\n'))}">${PUEDE[u.puede] || 'Solo ver'}, ${(u.proyectos || []).length} iniciativa${(u.proyectos || []).length === 1 ? '' : 's'}</button>`;
   const tempPass = () => { const L = 'abcdefghjkmnpqrstuvwxyz', r = n => Array.from(crypto.getRandomValues(new Uint32Array(n))); return 'Pf-' + r(4).map(x => x % 10).join('') + '-' + r(4).map(x => L[x % L.length]).join(''); };
 
   async function usuarios(main) {
@@ -20,9 +43,10 @@
     const tablas = ['proyectos', 'actividades', 'casos', 'flujos', 'sesiones', 'compromisos', 'comites'];
     main.innerHTML = `<div class="page-h"><button class="burger" data-act="burger">☰</button><div><h1>Administración</h1>${App.aud() ? '<a class="t-lnk ad-hist" href="#/historial">Historial de cambios</a>' : ''}<div class="sub">${users.length} ${users.length === 1 ? 'persona' : 'personas'} con acceso, cada quien entra con su correo y su propia contraseña</div></div><span class="sp"></span><button class="btn primary" data-u="new">+ Agregar persona</button></div>
       <div class="ad-como"><b>Cómo funciona.</b> Agregue a la persona con una contraseña temporal y compártale el mensaje por Teams o correo. Al entrar, el sitio le pide crear la suya. Si la olvida, use «Nueva contraseña temporal» en su fila y repita. No necesita correo automático.</div>
-      <div class="card-box" style="padding:0;overflow:auto;margin-bottom:16px"><table class="lst"><thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th>Último ingreso</th><th></th></tr></thead><tbody>
+      <div class="card-box" style="padding:0;overflow:auto;margin-bottom:16px"><table class="lst"><thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Acceso</th><th>Estado</th><th>Último ingreso</th><th></th></tr></thead><tbody>
         ${users.map(u => `<tr class="${u.active ? '' : 'off'}" data-id="${u.id}"><td><span style="display:inline-flex;align-items:center;gap:8px"><span class="av">${esc(App.initials(u.name))}</span><b>${esc(u.name)}</b>${u.id === App.S.me.id ? ' <span class="tag">tú</span>' : ''}</span></td><td>${esc(u.email)}</td>
           <td><select data-u="role" title="${esc(ROL_HELP[u.role])}">${Object.entries(ROLES).map(([k, l]) => `<option value="${k}" ${k === u.role ? 'selected' : ''}>${l}</option>`).join('')}</select></td>
+          <td>${accesoTxt(u)}</td>
           <td>${!u.active ? '<span class="tag">Desactivado</span>' : u.pide_clave ? `<button class="tag warn" data-u="enlace" title="Pidió restablecer su contraseña ${esc(App.d.ago(u.pide_clave))}. Clic para generar el enlace">Pidió restablecer su contraseña, enviar enlace</button>` : u.invitado ? `<span class="tag warn" title="${u.enlace_vence ? 'El enlace vence ' + esc(App.d.fmt(u.enlace_vence.slice(0, 10))) : ''}">Invitación pendiente</span>` : u.must_change ? '<span class="tag warn">Debe cambiar la contraseña</span>' : '<span class="tag">Activo</span>'}</td>
           <td class="muted">${u.last_login ? esc(App.d.ago(u.last_login)) : 'Nunca'}</td>
           <td style="white-space:nowrap;text-align:right">${u.active ? '<button class="btn sm" data-u="reset" title="Le da una contraseña temporal para entrar; al entrar la cambia">Nueva contraseña temporal</button> ' : ''}<button class="btn sm" data-u="more" aria-label="Más opciones">⋯</button></td></tr>`).join('')}
@@ -49,12 +73,13 @@
       if (b.dataset.u === 'enlace') { const u0 = users.find(x => x.id === (b.closest('[data-id]') || {}).dataset.id); if (u0) return accion('enlace', u0, b); }
       const id = b.closest('[data-id]') && b.closest('[data-id]').dataset.id; const u = users.find(x => x.id === id);
       if (b.dataset.u === 'reset') return accion('reset', u, b);
+      if (b.dataset.u === 'acceso') return editarAcceso(b, u);
       if (b.dataset.u === 'more') App.menu(b, [{ id: 'name', label: '✎ Cambiar nombre' }, { id: 'enlace', label: u.invitado ? '✉ Enviar de nuevo la invitación' : '✉ Enviar enlace para restablecer la contraseña' }, { id: 'reset', label: '⚿ Poner una contraseña temporal' }, { id: 'active', label: u.active ? '◌ Desactivar acceso' : '● Reactivar acceso' }, '-', { id: 'del', label: 'Eliminar usuario', danger: true }], m => accion(m, u, b), 240);
     };
     main.onchange = e => {
       const s = e.target.closest('[data-u=role]'); if (!s) return;
       const id = s.closest('[data-id]').dataset.id;
-      App.guard(async () => { await App.api('PATCH', '/api/usuarios/' + id, { role: s.value }); App.toast('Rol actualizado'); }).then(() => App.render());
+      App.guard(async () => { await App.api('PATCH', '/api/usuarios/' + id, { role: s.value }); App.toast(s.value === 'invitado' ? 'Ahora elija las iniciativas que puede ver (columna Acceso)' : 'Rol actualizado'); }).then(() => App.render());
     };
   }
   async function lakeCard(box) {
@@ -93,17 +118,21 @@
       <label>Nombre y apellido <input class="fld" data-n="name"></label>
       <label>Correo <input class="fld" type="email" data-n="email" placeholder="nombre@amarilo.com.co"></label>
       <label>Rol <select class="fld" data-n="role">${Object.entries(ROLES).map(([k, l]) => `<option value="${k}" ${k === 'editor' ? 'selected' : ''}>${l}: ${ROL_HELP[k].toLowerCase()}</option>`).join('')}</select></label>
+      <div data-n="invbox" hidden>${accesoHTML({})}</div>
       <label>Contraseña temporal <input class="fld" data-n="pw" value="${pw}"></label>
       <p class="faint" style="margin:0">Al entrar por primera vez, el sitio le pide crear su propia contraseña.</p>
       <button class="btn primary" data-n="ok">Agregar y ver el mensaje para compartir</button>
-      <button class="t-lnk" data-n="enlace" style="justify-self:start">Prefiero enviarle un enlace para que cree la contraseña</button></div>`, { width: 360 });
+      <button class="t-lnk" data-n="enlace" style="justify-self:start">Prefiero enviarle un enlace para que cree la contraseña</button></div>`, { width: 380 });
+    accesoVivo(p);
+    $('[data-n=role]', p).onchange = e => { $('[data-n=invbox]', p).hidden = e.target.value !== 'invitado'; };
     p.onclick = e => {
       const v = k => $(`[data-n=${k}]`, p).value.trim();
-      if (e.target.closest('[data-n=enlace]')) { const body = { name: v('name'), email: v('email'), role: v('role') };
+      const extra = () => { if (v('role') !== 'invitado') return {}; const a = leerAcceso(p); if (!a.proyectos.length) throw new Error('Elija al menos una iniciativa para el invitado'); return a; };
+      if (e.target.closest('[data-n=enlace]')) { let body; try { body = { name: v('name'), email: v('email'), role: v('role'), ...extra() }; } catch (ex) { return App.toast(ex.message, true); }
         return App.guard(async () => { const r = await App.api('POST', '/api/usuarios/invitar', body); App.closePop(true); mostrarEnlace(r.user.name, r.user.email, Object.assign({ tipo: 'invitacion' }, r)); App.reload(); }); }
       const ok = e.target.closest('[data-n=ok]'); if (!ok || ok.disabled) return;
+      let body; try { body = { name: v('name'), email: v('email'), role: v('role'), password: v('pw'), ...extra() }; } catch (ex) { return App.toast(ex.message, true); }
       ok.disabled = true;
-      const body = { name: v('name'), email: v('email'), role: v('role'), password: v('pw') };
       App.guard(async () => { const r = await App.api('POST', '/api/usuarios', body); App.closePop(true); credenciales(r.user.name, r.user.email, body.password); App.render(); }).finally(() => { ok.disabled = false; });
     };
   }

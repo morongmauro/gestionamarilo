@@ -30,7 +30,7 @@
     const enL = L && Array.isArray(L.ids) && L.ids.includes(id);
     const ids = enL ? L.ids.filter(x => App.byId('projects', x)) : App.projectsSorted().filter(x => (App.enAlcance(x) && !App.esEjemplo(x)) || x.id === id).map(x => x.id);
     const pos = ids.indexOf(id), ant = pos > 0 ? ids[pos - 1] : null, sig = pos >= 0 && pos < ids.length - 1 ? ids[pos + 1] : null;
-    const de = enL ? L : { de: 'Portafolio', href: '#/proyectos' };
+    const de = App.esInvitado() ? { de: 'Tablero', href: '#/tablero' } : enL ? L : { de: 'Portafolio', href: '#/proyectos' };
     const ir = x => `#/proyectos/${x}${tab === 'cronograma' ? '' : '/' + tab}`;
     const nomb = x => App.projectName(App.byId('projects', x));
     const faseCorta = estado && window.Fases && Fases.de(estado) ? Fases.de(estado).corto.replace(/^F(\d)$/, 'Fase $1') : '';
@@ -52,6 +52,7 @@
           <span>${prox ? `Comité el <b>${esc(App.d.fmtShort(prox.fecha))}</b>` : 'Sin comité programado'}</span>
           ${App.aud() ? (() => { const u = [p.updated_at || p.created_at || '', caso ? caso.updated_at || '' : '', ...pl.acts.map(x => x.updated_at || '')].sort().pop(), dd = u ? Math.round((Date.now() - new Date(u)) / 864e5) : null; return dd == null ? '' : `<span class="${dd > 30 ? 'viejo' : ''}">${dd < 1 ? 'Actualizada hoy' : `Actualizada hace <b>${dd}</b> ${dd === 1 ? 'día' : 'días'}`}</span>`; })() : ''}
         </div>
+        ${App.Novedades ? App.Novedades.ultimaHTML(id) : ''}
         ${App.Avance ? App.Avance.html(p, ro) : ''}
       </div>
       <nav class="ptabs">${TABS.map(([k, l]) => `<a href="#/proyectos/${id}/${k}" class="${k === tab ? 'on' : ''}">${k === 'valor' && App.aud() ? 'Captura y OKR' : l}${cuenta(k)}</a>`).join('')}</nav>
@@ -88,7 +89,11 @@
       box.innerHTML = barra + fi + `<details class="fi-campos"><summary>Todos los campos de la iniciativa</summary><div class="props ${ro ? '' : 'editable'}">${cols.map(fila).join('')}</div>${viejas.length ? `<details class="props-viejas"><summary>${viejas.length} campo${viejas.length === 1 ? '' : 's'} del método anterior (guardado${viejas.length === 1 ? '' : 's'}, ya no se usa${viejas.length === 1 ? '' : 'n'} para el ICE)</summary><div class="props">${viejas.map(fila).join('')}</div></details>` : ''}${vacias.length && !ro ? `<details class="props-viejas"><summary>${vacias.length} campo${vacias.length === 1 ? '' : 's'} que ninguna iniciativa tiene diligenciado${vacias.length === 1 ? '' : 's'}</summary><div class="props">${vacias.map(fila).join('')}</div></details>` : ''}
         <div class="meta-line">Creado ${esc(App.d.ago(p.created_at))}${p.updated_by_name ? `, Última edición: ${esc(p.updated_by_name)}, ${esc(App.d.ago(p.updated_at))}` : ''}${ro ? '' : ', Las columnas se administran en Portafolio → Tabla completa'}</div></details>`;
     } else if (tab === 'cronograma') {
-      App.PlanHost.render(box, id);
+      // El cronograma con sus novedades al lado (en pantallas angostas, debajo)
+      const abierto = App.store.get('nv.panel', true);
+      box.innerHTML = `<div class="cr-grid ${abierto ? '' : 'sin-nv'}"><div id="crPlan"></div><aside class="nv-panel" id="nvPanel" aria-label="Novedades"></aside></div>`;
+      App.PlanHost.render($('#crPlan', box), id);
+      App.Novedades.panel($('#nvPanel', box), id);
     } else if (tab === 'caso') {
       const at = App.TableroVisual && App.TableroVisual.atipicoDe ? App.TableroVisual.atipicoDe(id) : [];
       if (at.length) setTimeout(() => { const bx = $('#pTab', main); if (bx && !bx.querySelector('.tv-atip')) bx.insertAdjacentHTML('afterbegin', `<div class="tv-atip"><i class="ico ico-alerta"></i><span><b>Revisar las cifras:</b> en ${at.map(z => z.y).join(' y ')} este caso aporta ${at.map(z => App.moneyShort(z.top.v)).join(' y ')}, más de 4 veces lo que suma todo el portafolio en un año normal (${App.moneyShort(at[0].med)}). Confirme que las cifras están en la unidad correcta (pesos o millones).</span></div>`); }, 0);
@@ -109,6 +114,7 @@
     App.Proyecto._teclas = ev => { if (!ev.altKey || !/^#\/proyectos\/[^/]+/.test(location.hash) || /input|textarea|select/i.test((document.activeElement || {}).tagName || '')) return; if (ev.key === 'ArrowLeft' && ant) { ev.preventDefault(); App.go(ir(ant)); } if (ev.key === 'ArrowRight' && sig) { ev.preventDefault(); App.go(ir(sig)); } };
     main.onclick = e => {
       if (e.target.closest('.burger')) return App.toggleSide();
+      if (e.target.closest('[data-nv-ver]') && tab === 'cronograma') { e.preventDefault(); const pn = $('#nvPanel', main); if (pn) pn.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); return; }
       const ne = e.target.closest('[data-nav=elegir]');
       if (ne) return App.pickList(ne, { multi: false, placeholder: 'Buscar iniciativa…', empty: 'No hay iniciativas', selected: [id],
         items: ids.map(x => ({ id: x, label: nomb(x), color: App.projectColor(App.byId('projects', x)) })), onSave: x => { if (x && x !== id) App.go(ir(x)); } });
@@ -120,7 +126,7 @@
       if (a === 'titulo') App.Tabla.openEditor(b, id, tc.id);
       if (a === 'estado' && ec) App.Tabla.openEditor(b, id, ec.id);
       if (a === 'ice') return iceEditor(b, p);
-      if (a === 'avanzar' && ec) { const nueva = b.dataset.fase; if (!confirm(`¿Pasar «${App.projectName(p)}» a ${nueva}?\n\nQueda en la trazabilidad. Si lo decidió el comité, regístralo también en la sesión.`)) return;
+      if (a === 'avanzar' && ec) { const nueva = b.dataset.fase; if (!confirm(`¿Pasar «${App.projectName(p)}» a ${nueva}?\n\nQueda como novedad automática. Si lo decidió el comité, regístralo también en la sesión.`)) return;
         return App.guard(async () => { await App.patch('projects', id, { props: { [ec.id]: nueva } }); App.toast('Cambió de fase'); App.render(); }); }
       if (a === 'editar') { const d = $('.fi-campos', main); if (d) { d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'start' }); } return; }
       if (a === 'agendar') App.Agenda.openNewSession(App.d.add(App.d.today(), 7), { proyectos: [id] });

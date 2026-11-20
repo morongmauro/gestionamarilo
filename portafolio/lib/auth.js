@@ -9,7 +9,8 @@ const crypto = require('crypto');
 
 const COOKIE = 'pf_sesion';
 const DURACION_MS = 12 * 60 * 60 * 1000; // 12 horas
-const ROLES = ['admin', 'editor', 'lector'];
+// invitado: solo ve (o registra en) las iniciativas que el administrador le compartió
+const ROLES = ['admin', 'editor', 'lector', 'invitado'];
 
 function hashPassword(pw) {
   const salt = crypto.randomBytes(16);
@@ -105,7 +106,8 @@ function ipDe(req) {
 }
 
 const publicUser = u => u && ({ id: u.id, name: u.name, email: u.email, role: u.role, active: u.active !== false, must_change: !!u.must_change, created_at: u.created_at, last_login: u.last_login || null,
-  invitado: !u.pass, enlace_vence: u.inv && u.inv.exp || null, pide_clave: u.pide_clave || null });
+  invitado: !u.pass, enlace_vence: u.inv && u.inv.exp || null, pide_clave: u.pide_clave || null,
+  proyectos: u.role === 'invitado' ? (u.proyectos || []) : undefined, puede: u.role === 'invitado' ? (u.puede === 'registrar' ? 'registrar' : 'ver') : undefined });
 
 module.exports = {
   COOKIE, ROLES, hashPassword, verifyPassword, checkPasswordRules, setSecret, makeToken, readToken,

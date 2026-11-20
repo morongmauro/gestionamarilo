@@ -100,10 +100,12 @@ const SCHEMAS = {
     lugar: 'str', enlace: 'str', proyectos: 'ids', temas: 'text', asistentes: 'text', decisiones: 'text', compromisos: 'objs',
     decisiones_reg: 'objs', // decisiones estructuradas: { id, tipo, texto, project_id, responsable, fecha, estado }
   },
+  // Novedades de una iniciativa (avance, bloqueo, decisión, riesgo; «auto» las deja el sistema)
+  novedades: { project_id: 'id', tipo: 'str', texto: 'text', activity_id: 'id', fecha: 'date' },
   // Tipos de comité
   committees: { name: 'str', color: 'str', frecuencia: 'str', descripcion: 'text', integrantes: 'text' },
 };
-const REQUIRED = { activities: ['project_id'], sections: ['project_id', 'name'], cases: ['project_id'], sessions: ['fecha'], committees: ['name'] };
+const REQUIRED = { activities: ['project_id'], sections: ['project_id', 'name'], cases: ['project_id'], sessions: ['fecha'], committees: ['name'], novedades: ['project_id', 'texto'] };
 
 function cleanDoc(coll, data, partial) {
   const schema = SCHEMAS[coll];

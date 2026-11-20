@@ -14,7 +14,10 @@ App.$$ = (s, el) => Array.from((el || document).querySelectorAll(s));
 App.esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 App.uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'id-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
 App.initials = n => String(n || '').trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
-App.canEdit = () => !!App.S.me && App.S.me.role !== 'lector';
+App.canEdit = () => !!App.S.me && App.S.me.role !== 'lector' && App.S.me.role !== 'invitado';
+// Invitado: solo ve las iniciativas que le compartieron; si «puede registrar», también cronograma, novedades y riesgos
+App.esInvitado = () => !!App.S.me && App.S.me.role === 'invitado';
+App.puedeRegistrar = () => App.canEdit() || (App.esInvitado() && App.S.me.puede === 'registrar');
 App.isAdmin = () => !!App.S.me && App.S.me.role === 'admin';
 App.COLORS = ['gris', 'rojo', 'naranja', 'amarillo', 'verde', 'azul', 'morado', 'rosa', 'cafe'];
 App.store = {
@@ -63,7 +66,7 @@ App.dgvValor = p => { const c = App.dgvCol(), v = ((p && p.props) || {})[c ? c.i
 App.dgvSi = p => { const v = App.dgvValor(p); if (v === true || /^\s*s[ií]\s*$/i.test(String(v == null ? '' : v))) return true;
   const vacio = v == null || v === '' || v === false; return vacio && !!App.S.dgvCorte && !!(p && p.created_at) && p.created_at >= App.S.dgvCorte; };
 App.dgvHay = () => App.S.projects.some(p => { const v = App.dgvValor(p); return v != null && v !== '' && v !== false; });
-App.soloDgv = () => App.dgvHay() && App.store.get('alcance.dgv', 'si') === 'si';
+App.soloDgv = () => !App.esInvitado() && App.dgvHay() && App.store.get('alcance.dgv', 'si') === 'si';
 App.enAlcance = p => !App.soloDgv() || App.dgvSi(p);
 // Iniciativa de ejemplo: se ve completo al abrirlo, pero no suma en ningún total ni indicador del portafolio
 // Tamaño de la vista del Portafolio (como el zoom del navegador, pero solo ahí). Por defecto 90 %: cabe más.

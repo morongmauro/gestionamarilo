@@ -53,7 +53,7 @@
   const S = { sel: null, modo: 'antes' };
   function render(box, pid) {
     const p = App.byId('projects', pid); if (!p) return;
-    const ro = !App.canEdit(), rs = lista(p);
+    const ro = !App.puedeRegistrar(), rs = lista(p);
     if (!rs.some(r => r.id === S.sel)) S.sel = (rs[0] || {}).id || null;
     const r = rs.find(x => x.id === S.sel) || null, R = resumen(p);
     const dots = (pp, ii) => rs.filter(activo).map(x => {

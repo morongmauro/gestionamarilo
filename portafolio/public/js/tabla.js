@@ -97,6 +97,8 @@
   }
   function cellHTML(c, r) {
     // Bitácora (p. ej. Trazabilidad): en la tabla solo la primera línea; el resto con «Leer más»
+    // Con novedades registradas, la columna muestra la última (la bitácora de texto queda para leer en la ficha)
+    if (c.type === 'text' && c.log && App.Novedades && App.Novedades.ultima(r.id)) { const n = App.Novedades.ultima(r.id); return `<div class="c-in log1" title="${esc(n.texto)}"><span class="t">${esc(App.Novedades.fechaTxt(n.fecha))}: ${esc(App.Novedades.TIPOS[n.tipo] || '')}, ${esc(n.texto)}</span></div>`; }
     if (c.type === 'text' && c.log) { const v = String((r.props || {})[c.id] || '').trim(); if (!v) return '<div class="c-in txt empty">·</div>';
       const l = v.split(/\n/), uno = l[0];
       return `<div class="c-in log1"><span class="t">${esc(uno)}</span>${l.length > 1 || uno.length > 60 ? `<button class="leer" data-act="leer" data-id="${r.id}" data-col="${c.id}" title="Ver todo el texto">Leer más</button>` : ''}</div>`; }
