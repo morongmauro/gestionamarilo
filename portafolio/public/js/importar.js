@@ -118,7 +118,17 @@
       else if (/\.xlsx$/i.test(file.name)) {
         const b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(file); });
         App.toast('Leyendo el Excel…');
-        hojas = (await App.api('POST', '/api/excel/leer', { archivo: b64 })).hojas;
+        const resp = await App.api('POST', '/api/excel/leer', { archivo: b64 });
+        hojas = resp.hojas;
+        // El Excel trae un flujo por años: se puede traer completo, como libro (mismas hojas, fórmulas y resultados)
+        if (resp.libro && App.Libro) {
+          const lb = resp.libro, nfx = lb.hojas.reduce((a, h) => a + h.filas.reduce((b, f) => b + (f.c || []).filter(v => typeof v === 'string' && v[0] === '=').length, 0), 0);
+          if (confirm(`El Excel trae ${lb.hojas.length} hojas (${lb.hojas.map(h => h.nombre).join(', ')}) con ${nfx} fórmulas.\n\nAceptar: traerlo completo como libro del caso, igual que en Excel (reemplaza las cifras actuales${resp.consideraciones ? ' y las consideraciones' : ''}).\nCancelar: elegir fila por fila, solo con valores.`)) {
+            const patch = { libro: lb, flujos: App.Libro.flujos(lb), anios: Math.max(1, (lb.flujo.anios || 10) - 1) };
+            if (resp.consideraciones) patch.consideraciones = resp.consideraciones;
+            await App.patch('cases', caso.id, patch); App.toast(`Caso traído como libro: ${lb.hojas.length} hojas y ${nfx} fórmulas`); return done();
+          }
+        }
       } else return App.toast('Sube un archivo .xlsx o .csv (si es .xls, guárdalo como .xlsx)', true);
     } catch (e) { return App.toast(e.message, true); }
     const candidatas = hojas.map(h => ({ h, a: analizar(h.filas) })).filter(x => x.a && x.a.filas.length);

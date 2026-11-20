@@ -478,7 +478,10 @@ route('POST', '/api/excel/leer', 'editor', async (req, ctx) => {
   if (!b64) throw new HttpError(400, 'Falta el archivo');
   const buf = Buffer.from(b64, 'base64');
   if (buf.length > 4 * 1024 * 1024) throw new HttpError(413, 'El archivo pasa de 4 MB');
-  return require('./lib/excel').leer(buf);
+  const out = await require('./lib/excel').leer(buf);
+  // Además, el libro completo (hojas, fórmulas y formatos) si el Excel trae un flujo por años
+  try { const lb = await require('./lib/libro-excel').leer(buf); if (lb.libro.flujo) { out.libro = lb.libro; out.consideraciones = lb.consideraciones; } } catch (e) { /* sin libro: se importa como antes */ }
+  return out;
 });
 route('GET', '/api/cases/:id/excel', 'usuario', { inv: true }, async (req, ctx) => {
   const excel = require('./lib/excel');
@@ -488,6 +491,7 @@ route('GET', '/api/cases/:id/excel', 'usuario', { inv: true }, async (req, ctx) 
   const p = await store.get('projects', caso.project_id);
   const nombre = p ? (p.props || {})[(await titleColumn()).id] || 'Proyecto' : 'Proyecto';
   const file = `caso-${nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w-]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase().slice(0, 60) || 'proyecto'}.xlsx`;
+  if (caso.libro && Array.isArray(caso.libro.hojas) && caso.libro.hojas.length) return { __raw: Buffer.from(await require('./lib/libro-excel').exportar(caso.libro, nombre)), type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', file };
   return { __raw: Buffer.from(await excel.exportar(caso, nombre, false)), type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', file };
 });
 
@@ -1097,6 +1101,23 @@ async function prepare() {
       }
     }
     await store.setConfig('migr_crono_nueva_sas_v1', true);
+  }
+  // Migración (una sola vez): el caso de Nueva SAS pasa a libro, con las mismas hojas y fórmulas de su Excel
+  // (lib/semillas/nueva-sas-libro.json, leído del Excel con lib/libro-excel.js: sus 293 fórmulas dan lo mismo que en Excel).
+  if (!(await store.getConfig('migr_libro_nueva_sas_v1')) && (await store.list('projects')).length) {
+    const cols = await store.getConfig('project_columns');
+    const t = (cols || []).find(c => c.type === 'title') || { id: 'proyecto' };
+    const sinT = x => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const nsas = (await store.list('projects')).find(p => /nueva\s*sas|new\s*sas|\bnew\s*co\b|\bnewco\b/.test(sinT((p.props || {})[t.id])));
+    const caso = nsas && (await store.list('cases')).find(c => c.project_id === nsas.id);
+    if (caso && !caso.libro) {
+      const sem = JSON.parse(fs.readFileSync(path.join(__dirname, 'lib', 'semillas', 'nueva-sas-libro.json'), 'utf8'));
+      const Libro = require('./public/js/libro');
+      await store.update('cases', caso.id, d => ({ ...d, libro: sem.libro, flujos: Libro.flujos(sem.libro), anios: (sem.libro.flujo.anios || 10) - 1, updated_at: now(), updated_by_name: 'Sistema' }));
+      await store.insert('historial', { id: newId(), created_at: now(), user_id: 'sistema', user_name: 'Sistema', accion: 'pasó a libro', coll: 'cases', record_id: caso.id, nombre: 'Caso de negocio · Nueva SAS: hojas Supuestos, Gastos SAS y Flujo 10 años, con sus fórmulas', campos: [] });
+      console.log('Caso de Nueva SAS en formato de libro');
+    }
+    await store.setConfig('migr_libro_nueva_sas_v1', true);
   }
   // Proyecto de ejemplo: una iniciativa completa (ficha, caso, cronograma, riesgos) para mostrar cómo se ve todo.
   // Lleva «ejemplo: true» y por eso no suma en los totales, el tablero ni las exportaciones. Si se borra, no vuelve.

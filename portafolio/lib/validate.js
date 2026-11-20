@@ -90,6 +90,7 @@ const SCHEMAS = {
     problema: 'text', objetivo: 'text', alcance: 'text', fuera_alcance: 'text', beneficios_cual: 'text',
     riesgos: 'text', supuestos: 'text', recomendacion: 'text', consideraciones: 'text',
     tasa: 'num', anios: 'num', anio_inicio: 'num', moneda: 'str', flujos: 'objs', escenarios: 'obj', captado: 'objs',
+    libro: 'obj', // el caso como libro de Excel: { hojas: [{ nombre, anchos, filas: [{ t, n, rol, c: [valores o =fórmulas] }] }], flujo }
     plan_captura: 'obj', // { frecuencia: mensual|trimestral|semestral|anual, mes, hasta (años del caso), monto (fijo por período, o según el caso), categoria, desde: 'AAAA-MM', activo }
     recurrentes: 'objs', // capturas que se repiten cada mes: { id, categoria, valor, desde: 'AAAA-MM', activo }
     validacion: 'obj', // { '2026': { hasta: 'AAAA-MM', por, fecha, url, nota } } · lo captado hasta ese mes cuenta como verificado

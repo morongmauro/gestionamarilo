@@ -78,6 +78,9 @@
     }
     const dis = ro ? 'disabled' : '';
     const fl = JSON.parse(JSON.stringify(c.flujos || []));
+    // Caso con libro (como el Excel): sus hojas mandan; el flujo del sitio sale de las filas marcadas
+    const LB = c.libro && Array.isArray(c.libro.hojas) && c.libro.hojas.length ? JSON.parse(JSON.stringify(c.libro)) : null;
+    if (LB) { fl.length = 0; App.Libro.flujos(LB).forEach(x => fl.push(x)); }
     const n = () => Math.max(1, Math.min(App.Hoja.MAXY, Math.round(c.anios || 5))) + 1;
     const mon = c.moneda || 'COP';
     const escala = App.store.get('caso.escala', 1);
@@ -131,12 +134,14 @@
       gastos: { t: 'Gastos', sub: 'operación, implementación e inversión', tipos: ['costo', 'inversion'], tot: ['cos', 'inv'] },
       flujo: { t: `Flujo ${n()} años`, sub: 'ingresos, gastos, resultados y flujo de caja', tipos: ['beneficio', 'costo', 'inversion', 'calculo'], tot: ['ben', 'cos', 'inv', 'neto', 'acum'] },
     };
-    const tiposDe = k => TIPOS.filter(([x]) => HOJAS[k].tipos.includes(x));
-    const PESTANAS = [['supuestos', 'Supuestos'], ['gastos', 'Gastos'], ['flujo', `Flujo ${n()} años`], ['consideraciones', 'Consideraciones'], ['grafico', 'Gráfico del flujo'], ['captado', 'Valor captado'], ['escenarios', 'Escenarios']];
+    if (LB) { Object.keys(HOJAS).forEach(k => delete HOJAS[k]); LB.hojas.forEach((h, i) => { HOJAS['h' + i] = { t: h.nombre, sub: LB.flujo && LB.flujo.hoja === i ? 'las filas marcadas a la izquierda alimentan el valor del sitio' : '', i }; }); }
+    const tiposDe = k => TIPOS.filter(([x]) => (HOJAS[k].tipos || []).includes(x));
+    const PESTANAS = Object.keys(HOJAS).map(k => [k, HOJAS[k].t]).concat([['consideraciones', 'Consideraciones'], ['grafico', 'Gráfico del flujo'], ['captado', 'Valor captado'], ['escenarios', 'Escenarios']]);
     const pest0 = App.store.get('caso.tab', 'flujo') === 'tabla' ? 'flujo' : App.store.get('caso.tab', 'flujo');
-    const pest = PESTANAS.some(x => x[0] === pest0) ? pest0 : 'flujo', hoja0 = HOJAS[pest] ? pest : 'flujo';
+    const def = LB ? 'h' + (LB.flujo && LB.flujo.hoja != null ? LB.flujo.hoja : 0) : 'flujo';
+    const pest = PESTANAS.some(x => x[0] === pest0) ? pest0 : def, hoja0 = HOJAS[pest] ? pest : def;
     // Pestañas de hoja abajo, como en Excel
-    const hojasHTML = () => `<nav class="cs-hojas no-print" aria-label="Hojas del caso">${['supuestos', 'gastos', 'flujo', 'consideraciones'].map(k => `<button data-tab-c="${k}" class="${k === pest ? 'on' : ''}">${k === 'consideraciones' ? 'Consideraciones' : HOJAS[k].t}</button>`).join('')}</nav>`;
+    const hojasHTML = () => `<nav class="cs-hojas no-print" aria-label="Hojas del caso">${Object.keys(HOJAS).concat('consideraciones').map(k => `<button data-tab-c="${k}" class="${k === pest ? 'on' : ''}">${k === 'consideraciones' ? 'Consideraciones' : HOJAS[k].t}</button>`).join('')}</nav>`;
     const est = c.estado || 'Borrador';
     const prox = App.S.sessions.filter(x => x.fecha >= App.d.today() && x.estado !== 'Cancelada').sort((x, y) => (x.fecha + (x.hora_ini || '')).localeCompare(y.fecha + (y.hora_ini || '')))[0] || null;
     const enAgenda = !!(prox && (prox.proyectos || []).includes(pid));
@@ -153,11 +158,12 @@
       <section class="t-card t-pad cs-pane" data-pane="tabla" ${HOJAS[pest] ? '' : 'hidden'}>
         <div class="cs-th"><h3 id="cHojaT">${esc(HOJAS[hoja0].t)}</h3><small id="cHojaS">${esc(HOJAS[hoja0].sub)}</small><span class="sp"></span>
           <button class="cs-chip" data-c="param" title="Moneda, tasa de descuento, primer año y horizonte">${esc(mon)}, tasa ${App.num(c.tasa, 2) || 0} %, desde ${c.anio_inicio || new Date().getFullYear()}, ${n()} años</button>
-          <select class="cs-chip" data-c-escala title="Cómo se muestran y se escriben las cifras">${ESCALAS.map(([v, l]) => `<option value="${v}" ${v === escala ? 'selected' : ''}>Cifras: ${l.toLowerCase()}</option>`).join('')}</select>
+          ${LB ? '' : `<select class="cs-chip" data-c-escala title="Cómo se muestran y se escriben las cifras">${ESCALAS.map(([v, l]) => `<option value="${v}" ${v === escala ? 'selected' : ''}>Cifras: ${l.toLowerCase()}</option>`).join('')}</select>`}
+          ${LB && !ro ? '<button class="cs-chip" data-c="lb-fila" title="Insertar una fila debajo de la celda elegida (también con clic derecho)">+ Fila</button><button class="cs-chip" data-c="lb-col" title="Insertar una columna a la derecha de la celda elegida (también con clic derecho)">+ Columna</button>' : ''}
           ${ro ? '' : '<button class="cs-chip ic" data-c="undo" title="Deshacer (Ctrl+Z)" aria-label="Deshacer">↶</button><button class="cs-chip ic" data-c="redo" title="Rehacer (Ctrl+Y)" aria-label="Rehacer">↷</button>'}
           <button class="cs-chip ic" data-c="atajos" title="Cómo escribir cifras y fórmulas" aria-label="Ayuda">?</button></div>
         <div class="flujo-wrap hoja-wrap" id="cFlujo"></div>${hojasHTML()}</section>
-      <section class="t-card t-pad cs-pane" data-pane="grafico" ${pest === 'grafico' ? '' : 'hidden'}><div class="cs-th"><h3>Flujo a ${n()} años</h3><small>barras: flujo de caja de cada año, línea: acumulado</small></div><div id="cChart" class="cf-chart"></div></section>
+      <section class="t-card t-pad cs-pane" data-pane="grafico" ${pest === 'grafico' ? '' : 'hidden'}><div class="cs-th"><h3>Flujo a ${n()} años</h3><small>ingresos frente a gastos e inversión, y cuánto se acumula</small></div><div id="cChart" class="cf-chart"></div></section>
       <section class="t-card t-pad cs-pane cs-cons" data-pane="consideraciones" ${pest === 'consideraciones' ? '' : 'hidden'}><div class="cs-th"><h3>Consideraciones</h3><small>alcance, de dónde salen las cifras, riesgos y la decisión que se pide</small></div>
         <textarea class="cs-cons-t" data-f="consideraciones" ${dis} spellcheck="true" placeholder="${esc(PlantillaCaso.CONSIDERACIONES)}">${esc(consid || '')}</textarea>
         <div class="help" style="margin:6px 0 0">Se escribe como un documento: un título por línea (1. Ingresos) y una viñeta (•) por idea. Se guarda al salir del texto.</div>${hojasHTML()}</section>
@@ -168,10 +174,13 @@
     // Flujo: se guarda medio segundo después de cada cambio
     let tSave = null;
     const guard = t => { const g = $('#cGuard', el); if (g) g.textContent = t; };
-    const flush = () => { if (tSave) { clearTimeout(tSave); tSave = null; guard('Guardando…'); App.patch('cases', c.id, { flujos: fl }).then(() => guard('✓ Guardado')).catch(() => guard('')); } };
+    const flush = () => { if (tSave) { clearTimeout(tSave); tSave = null; guard('Guardando…'); App.patch('cases', c.id, LB ? { libro: LB, flujos: fl } : { flujos: fl }).then(() => guard('✓ Guardado')).catch(() => guard('')); } };
     const saveFlujo = () => { clearTimeout(tSave); guard('Guardando…'); tSave = setTimeout(flush, 500); };
     App.Caso._flush = flush; // si se cierra o recarga la pestaña, se envía lo pendiente
-    grid = App.Hoja.mount($('#cFlujo', el), {
+    if (LB) {
+      const ui = App.LibroUI.montar($('#cFlujo', el), { libro: LB, hoja: HOJAS[hoja0].i, ro, onChange: lib => { const nf = App.Libro.flujos(lib); fl.length = 0; nf.forEach(x => fl.push(x)); refresh(fl); saveFlujo(); } });
+      grid = { undo: ui.undo, redo: ui.redo, destroy: () => {}, vista: () => {}, hoja: ui.hoja, agregar: ui.agregar };
+    } else grid = App.Hoja.mount($('#cFlujo', el), {
       rows: fl, years: n(), escala, anioInicio: c.anio_inicio || null, ro, tipos: tiposDe(hoja0), totales: HOJAS[hoja0].tot, todos: TIPOS,
       onLive: rows => refresh(rows),
       onCommit: rows => { refresh(rows); saveFlujo(); },
@@ -283,17 +292,20 @@
     el.onclick = e => {
       const tb = e.target.closest('[data-tab-c]');
       if (tb) { const k = tb.dataset.tabC; App.store.set('caso.tab', k); el.querySelectorAll('[data-tab-c]').forEach(x => { const on = x.dataset.tabC === k; x.classList.toggle('on', on); x.setAttribute('aria-selected', on); }); const pn = HOJAS[k] ? 'tabla' : k; el.querySelectorAll('.cs-pane').forEach(p => { p.hidden = p.dataset.pane !== pn; }); if (k === 'grafico') refresh(fl);
-        if (HOJAS[k] && grid) { grid.vista(tiposDe(k), HOJAS[k].tot); $('#cHojaT', el).textContent = HOJAS[k].t; $('#cHojaS', el).textContent = HOJAS[k].sub; }
+        if (HOJAS[k] && grid && LB) { grid.hoja(HOJAS[k].i); $('#cHojaT', el).textContent = HOJAS[k].t; $('#cHojaS', el).textContent = HOJAS[k].sub; }
+        else if (HOJAS[k] && grid) { grid.vista(tiposDe(k), HOJAS[k].tot); $('#cHojaT', el).textContent = HOJAS[k].t; $('#cHojaS', el).textContent = HOJAS[k].sub; }
         return; }
       const es = e.target.closest('[data-escala]');
       if (es) { flush(); App.store.set('caso.escala', Number(es.dataset.escala)); return editor(el, pid); }
       const b = e.target.closest('[data-c]'); if (!b) return;
       const a = b.dataset.c;
       if (a === 'print') return window.print();
-      if (a === 'mas') return App.menu(b, [{ id: 'excel', label: 'Descargar Excel' }, { id: 'pdf', label: 'Imprimir o guardar PDF' }].concat(ro ? [] : [{ id: 'importar', label: 'Reemplazar con un Excel' }, { id: 'plantilla', label: 'Plantilla vacía' }, '-', { id: 'del', label: 'Eliminar el caso', danger: true }]), m => {
+      if (a === 'mas') return App.menu(b, [{ id: 'excel', label: 'Descargar Excel' }, { id: 'pdf', label: 'Imprimir o guardar PDF' }].concat(ro ? [] : [{ id: 'importar', label: 'Reemplazar con un Excel' }, { id: 'plantilla', label: 'Plantilla vacía' }].concat(LB ? [] : [{ id: 'libro', label: 'Pasar al formato de libro (hojas como Excel)' }]).concat(['-', { id: 'del', label: 'Eliminar el caso', danger: true }])), m => {
         const bajar = u => { const l = document.createElement('a'); l.href = u; l.download = ''; document.body.appendChild(l); l.click(); l.remove(); };
         if (m === 'excel') bajar(`/api/cases/${c.id}/excel`); if (m === 'plantilla') bajar('/api/cases/plantilla/excel'); if (m === 'pdf') window.print();
         if (m === 'importar') $('[data-c=archivo]', el).click();
+        if (m === 'libro') { if (!confirm('Se arma el libro del caso con sus cifras actuales: una hoja de Supuestos y otra con el flujo año a año, con totales y flujo de caja en fórmulas. Las fórmulas con [nombres] de la tabla anterior pasan como valores. ¿Continuar?')) return;
+          const lb = App.LibroUI.desdeFlujos(Object.assign({}, c, { flujos: fl })); flush(); App.guard(async () => { await App.patch('cases', c.id, { libro: lb, flujos: App.Libro.flujos(lb) }); App.toast('El caso quedó en formato de libro'); editor(el, pid); }); }
         if (m === 'del') { if (!confirm('¿Enviar el caso de negocio a la papelera? Se puede restaurar durante 30 días desde Portafolio → Papelera.')) return; App.guard(async () => { await App.remove('cases', c.id); App.toast('Caso enviado a la papelera'); App.render(); }); }
       }, 260);
       if (a === 'param') return parametros(b);
@@ -305,6 +317,8 @@
         editor(el, pid);
       });
       if (a === 'prelim-ok') return App.guard(async () => { await App.patch('cases', c.id, { origen: '' }); editor(el, pid); });
+      if (a === 'lb-fila') return grid.agregar('fila');
+      if (a === 'lb-col') return grid.agregar('col');
       if (a === 'undo') return grid.undo();
       if (a === 'redo') return grid.redo();
       if (a === 'importar') return $('[data-c=archivo]', el).click();
