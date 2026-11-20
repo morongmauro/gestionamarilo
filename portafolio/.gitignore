@@ -3,3 +3,6 @@ data/
 .env
 respaldos/
 cloud-sql-proxy
+
+# Cronograma de Nueva SAS con nombres de personas: va solo en el zip de entrega, no en este repositorio
+lib/semillas/nueva-sas-cronograma.json

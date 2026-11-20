@@ -1001,3 +1001,9 @@ select:focus-visible,.tv-mini select:focus-visible{outline:2px solid var(--info-
 .ag-nota{font-size:11px;color:var(--muted);padding:2px 16px 10px}
 #app[hidden] .ag-btn,#app[hidden] .ag-win{display:none}
 @media print{.ag-btn,.ag-win{display:none}}
+
+/* ---------- Hojas del caso, como en Excel ---------- */
+.cs-hojas{display:flex;gap:2px;margin:10px 0 -4px;padding:0;border-top:1px solid color-mix(in srgb,var(--ink) 8%,transparent);overflow-x:auto}
+.cs-hojas button{border:0;background:none;padding:7px 14px 6px;font:500 12.5px/1.2 Montserrat,sans-serif;color:var(--muted);cursor:pointer;border-radius:0 0 10px 10px;white-space:nowrap}
+.cs-hojas button:hover{color:var(--ink);background:color-mix(in srgb,var(--ink) 4%,transparent)}
+.cs-hojas button.on{color:var(--ink);font-weight:700;background:color-mix(in srgb,#FFC900 22%,transparent)}

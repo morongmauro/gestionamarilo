@@ -163,7 +163,9 @@
       const sum = a => a.reduce((x, y) => x + y, 0);
       const cells = a => a.map(v => `<td><span class="${v < 0 ? 'neg' : ''}">${esc(App.num(v / o.escala, dec))}</span></td>`).join('');
       const line = (lbl, a, cls, tot = true) => `<tr class="tot ${cls || ''}"><td>${lbl}</td>${cells(a)}<td>${tot ? `<span class="${sum(a) < 0 ? 'neg' : ''}">${esc(App.num(sum(a) / o.escala, dec))}</span>` : ''}</td><td></td></tr>`;
-      return line('Total ingresos y ahorros', f.beneficios) + line('Total gastos', f.costos) + line('Total inversión', f.inversion) + line('Flujo de caja del año', f.netos, 'neto') + line('Flujo de caja acumulado', f.acumulado, '', false);
+      const T = o.totales || ['ben', 'cos', 'inv', 'neto', 'acum'];
+      return (T.includes('ben') ? line('Total ingresos y ahorros', f.beneficios) : '') + (T.includes('cos') ? line('Total gastos', f.costos) : '') + (T.includes('inv') ? line('Total inversión', f.inversion) : '')
+        + (T.includes('neto') ? line('Flujo de caja del año', f.netos, 'neto') : '') + (T.includes('acum') ? line('Flujo de caja acumulado', f.acumulado, '', false) : '');
     }
     const rowTotal = idx => (rows[idx].valores || []).slice(0, NC()).reduce((a, b) => a + (Number(b) || 0), 0);
     const totTxt = (r, idx) => (r.tipo === 'supuesto' || r.tipo === 'calculo' && r.pct ? '' : App.num((r.valores || []).slice(0, NC()).reduce((a, b) => a + (Number(b) || 0), 0) / o.escala, dec));
@@ -353,7 +355,7 @@
         '-', { id: 'del', label: 'Eliminar fila', danger: true }], m => {
         const first = () => { for (let t = 0; t < NC(); t++) if (val(idx, t)) return t; return -1; };
         if (m === 'nota') return App.editText(anchor, r.nota || '', { multi: true, placeholder: 'De dónde sale este dato o cómo se calcula', onSave: x => op(() => { const t = String(x || '').trim().slice(0, 1000); if (t) r.nota = t; else delete r.nota; }, true) });
-        if (m === 'mover') return App.menu(anchor, o.tipos.filter(([k]) => k !== r.tipo).map(([k, l]) => ({ id: k, label: l.split(' · ')[0] })), k => op(() => { r.tipo = k; if (k !== 'supuesto') delete r.pct; }, true));
+        if (m === 'mover') return App.menu(anchor, (o.todos || o.tipos).filter(([k]) => k !== r.tipo).map(([k, l]) => ({ id: k, label: l.split(' · ')[0] })), k => op(() => { r.tipo = k; if (k !== 'supuesto') delete r.pct; }, true));
         if (m === 'rep') { const t0 = first(); if (t0 < 0) return App.toast('La fila no tiene valores', true); op(() => { for (let t = t0 + 1; t < NC(); t++) setVal(idx, t, val(idx, t0)); }); }
         if (m === 'crec' || m === 'dist') {
           const p = App.openPop(anchor, m === 'crec'
@@ -482,6 +484,8 @@
       undo: () => undo(false), redo: () => undo(true),
       destroy: () => document.removeEventListener('mouseup', up),
       canUndo: () => S.undo.length > 0,
+      // Cambiar de hoja (Supuestos, Gastos, Flujo): las mismas filas, otras secciones y otros totales
+      vista: (tipos, totales) => { o.tipos = tipos; o.totales = totales; S.sel = null; S.act = null; render(); },
     };
   }
 

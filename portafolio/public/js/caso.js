@@ -125,8 +125,18 @@
     const consid = String(c.consideraciones || '').trim() ? c.consideraciones : PlantillaCaso.consideracionesDe(c);
     const paso = (n, t, sub, extra) => `<div class="t-paso"><i>${n}</i><b>${t}</b><small>${sub}</small><span class="sp"></span>${extra || ''}</div>`;
     // Una barra: estado y cifras a la izquierda; la acción principal y «⋯ Más» a la derecha. Debajo, una pestaña a la vez.
-    const PESTANAS = [['tabla', 'Tabla'], ['grafico', 'Gráfico del flujo'], ['consideraciones', 'Consideraciones'], ['captado', 'Valor captado'], ['escenarios', 'Escenarios']];
-    const pest = PESTANAS.some(x => x[0] === App.store.get('caso.tab', 'tabla')) ? App.store.get('caso.tab', 'tabla') : 'tabla';
+    // Como el Excel del caso: una hoja para los supuestos, otra para los gastos y el flujo a 10 años (las mismas filas, vistas por partes)
+    const HOJAS = {
+      supuestos: { t: 'Supuestos', sub: 'datos de entrada; no suman al flujo', tipos: ['supuesto'], tot: [] },
+      gastos: { t: 'Gastos', sub: 'operación, implementación e inversión', tipos: ['costo', 'inversion'], tot: ['cos', 'inv'] },
+      flujo: { t: `Flujo ${n()} años`, sub: 'ingresos, gastos, resultados y flujo de caja', tipos: ['beneficio', 'costo', 'inversion', 'calculo'], tot: ['ben', 'cos', 'inv', 'neto', 'acum'] },
+    };
+    const tiposDe = k => TIPOS.filter(([x]) => HOJAS[k].tipos.includes(x));
+    const PESTANAS = [['supuestos', 'Supuestos'], ['gastos', 'Gastos'], ['flujo', `Flujo ${n()} años`], ['consideraciones', 'Consideraciones'], ['grafico', 'Gráfico del flujo'], ['captado', 'Valor captado'], ['escenarios', 'Escenarios']];
+    const pest0 = App.store.get('caso.tab', 'flujo') === 'tabla' ? 'flujo' : App.store.get('caso.tab', 'flujo');
+    const pest = PESTANAS.some(x => x[0] === pest0) ? pest0 : 'flujo', hoja0 = HOJAS[pest] ? pest : 'flujo';
+    // Pestañas de hoja abajo, como en Excel
+    const hojasHTML = () => `<nav class="cs-hojas no-print" aria-label="Hojas del caso">${['supuestos', 'gastos', 'flujo', 'consideraciones'].map(k => `<button data-tab-c="${k}" class="${k === pest ? 'on' : ''}">${k === 'consideraciones' ? 'Consideraciones' : HOJAS[k].t}</button>`).join('')}</nav>`;
     const est = c.estado || 'Borrador';
     const prox = App.S.sessions.filter(x => x.fecha >= App.d.today() && x.estado !== 'Cancelada').sort((x, y) => (x.fecha + (x.hora_ini || '')).localeCompare(y.fecha + (y.hora_ini || '')))[0] || null;
     const enAgenda = !!(prox && (prox.proyectos || []).includes(pid));
@@ -140,17 +150,17 @@
         <input type="file" accept=".xlsx" data-c="archivo" hidden></div>
       ${c.origen === 'ice' ? `<div class="cs-prelim">⚠️ <span><b>Caso preliminar, construido desde el ICE.</b> Las cifras son una estimación: reemplázalas con las reales y agrega la inversión cuando el equipo las tenga.</span>${ro ? '' : '<button class="btn sm" data-c="prelim-ok">Ya tiene cifras reales</button>'}</div>` : ''}
       <nav class="cs-tabs no-print" role="tablist">${PESTANAS.map(([k, l]) => `<button role="tab" data-tab-c="${k}" class="${k === pest ? 'on' : ''}" aria-selected="${k === pest}">${l}</button>`).join('')}</nav>
-      <section class="t-card t-pad cs-pane" data-pane="tabla" ${pest === 'tabla' ? '' : 'hidden'}>
-        <div class="cs-th"><h3>Supuestos, ingresos, gastos e inversión</h3><span class="sp"></span>
+      <section class="t-card t-pad cs-pane" data-pane="tabla" ${HOJAS[pest] ? '' : 'hidden'}>
+        <div class="cs-th"><h3 id="cHojaT">${esc(HOJAS[hoja0].t)}</h3><small id="cHojaS">${esc(HOJAS[hoja0].sub)}</small><span class="sp"></span>
           <button class="cs-chip" data-c="param" title="Moneda, tasa de descuento, primer año y horizonte">${esc(mon)}, tasa ${App.num(c.tasa, 2) || 0} %, desde ${c.anio_inicio || new Date().getFullYear()}, ${n()} años</button>
           <select class="cs-chip" data-c-escala title="Cómo se muestran y se escriben las cifras">${ESCALAS.map(([v, l]) => `<option value="${v}" ${v === escala ? 'selected' : ''}>Cifras: ${l.toLowerCase()}</option>`).join('')}</select>
           ${ro ? '' : '<button class="cs-chip ic" data-c="undo" title="Deshacer (Ctrl+Z)" aria-label="Deshacer">↶</button><button class="cs-chip ic" data-c="redo" title="Rehacer (Ctrl+Y)" aria-label="Rehacer">↷</button>'}
           <button class="cs-chip ic" data-c="atajos" title="Cómo escribir cifras y fórmulas" aria-label="Ayuda">?</button></div>
-        <div class="flujo-wrap hoja-wrap" id="cFlujo"></div></section>
+        <div class="flujo-wrap hoja-wrap" id="cFlujo"></div>${hojasHTML()}</section>
       <section class="t-card t-pad cs-pane" data-pane="grafico" ${pest === 'grafico' ? '' : 'hidden'}><div class="cs-th"><h3>Flujo a ${n()} años</h3><small>barras: flujo de caja de cada año, línea: acumulado</small></div><div id="cChart" class="cf-chart"></div></section>
       <section class="t-card t-pad cs-pane cs-cons" data-pane="consideraciones" ${pest === 'consideraciones' ? '' : 'hidden'}><div class="cs-th"><h3>Consideraciones</h3><small>alcance, de dónde salen las cifras, riesgos y la decisión que se pide</small></div>
         <textarea class="cs-cons-t" data-f="consideraciones" ${dis} spellcheck="true" placeholder="${esc(PlantillaCaso.CONSIDERACIONES)}">${esc(consid || '')}</textarea>
-        <div class="help" style="margin:6px 0 0">Se escribe como un documento: un título por línea (1. Ingresos) y una viñeta (•) por idea. Se guarda al salir del texto.</div></section>
+        <div class="help" style="margin:6px 0 0">Se escribe como un documento: un título por línea (1. Ingresos) y una viñeta (•) por idea. Se guarda al salir del texto.</div>${hojasHTML()}</section>
       <section class="t-card t-pad cs-pane" data-pane="captado" id="cCapt" ${pest === 'captado' ? '' : 'hidden'}></section>
       <section class="t-card t-pad cs-pane" data-pane="escenarios" ${pest === 'escenarios' ? '' : 'hidden'}><div class="cs-th"><h3>Escenarios y margen de seguridad</h3><small>cambia los porcentajes y mira cómo se mueve el caso</small></div><div id="cSens"></div></section>
       <div class="meta-line">${c.updated_by_name ? `Última edición: ${esc(c.updated_by_name)}, ${esc(App.d.ago(c.updated_at))}` : ''}</div>`;
@@ -162,7 +172,7 @@
     const saveFlujo = () => { clearTimeout(tSave); guard('Guardando…'); tSave = setTimeout(flush, 500); };
     App.Caso._flush = flush; // si se cierra o recarga la pestaña, se envía lo pendiente
     grid = App.Hoja.mount($('#cFlujo', el), {
-      rows: fl, years: n(), escala, anioInicio: c.anio_inicio || null, ro, tipos: TIPOS,
+      rows: fl, years: n(), escala, anioInicio: c.anio_inicio || null, ro, tipos: tiposDe(hoja0), totales: HOJAS[hoja0].tot, todos: TIPOS,
       onLive: rows => refresh(rows),
       onCommit: rows => { refresh(rows); saveFlujo(); },
       onYears: years => { flush(); App.patch('cases', c.id, { anios: years - 1, flujos: fl }).then(() => { App.toast(`Horizonte ampliado a ${years} años`); editor(el, pid); }).catch(() => {}); },
@@ -272,7 +282,9 @@
     };
     el.onclick = e => {
       const tb = e.target.closest('[data-tab-c]');
-      if (tb) { const k = tb.dataset.tabC; App.store.set('caso.tab', k); el.querySelectorAll('[data-tab-c]').forEach(x => { const on = x.dataset.tabC === k; x.classList.toggle('on', on); x.setAttribute('aria-selected', on); }); el.querySelectorAll('.cs-pane').forEach(p => { p.hidden = p.dataset.pane !== k; }); if (k === 'grafico') refresh(fl); return; }
+      if (tb) { const k = tb.dataset.tabC; App.store.set('caso.tab', k); el.querySelectorAll('[data-tab-c]').forEach(x => { const on = x.dataset.tabC === k; x.classList.toggle('on', on); x.setAttribute('aria-selected', on); }); const pn = HOJAS[k] ? 'tabla' : k; el.querySelectorAll('.cs-pane').forEach(p => { p.hidden = p.dataset.pane !== pn; }); if (k === 'grafico') refresh(fl);
+        if (HOJAS[k] && grid) { grid.vista(tiposDe(k), HOJAS[k].tot); $('#cHojaT', el).textContent = HOJAS[k].t; $('#cHojaS', el).textContent = HOJAS[k].sub; }
+        return; }
       const es = e.target.closest('[data-escala]');
       if (es) { flush(); App.store.set('caso.escala', Number(es.dataset.escala)); return editor(el, pid); }
       const b = e.target.closest('[data-c]'); if (!b) return;

@@ -1069,6 +1069,35 @@ async function prepare() {
     if (creadas.length || nsas) console.log(`Iniciativas: ${creadas.length ? 'creadas ' + creadas.join(', ') : 'ya existían'}${nsas ? ' · caso de Nueva SAS cargado' : ''}`);
     await store.setConfig('migr_iniciativas_nov26_v1', true);
   }
+  // Migración (una sola vez): el cronograma de Nueva SAS que viene de la app de gestión (enlace compartido del 20 nov. 2026,
+  // guardado en lib/semillas/nueva-sas-cronograma.json). Solo se carga si Nueva SAS aún no tiene cronograma: nunca reemplaza.
+  const semCrono = path.join(__dirname, 'lib', 'semillas', 'nueva-sas-cronograma.json');
+  if (fs.existsSync(semCrono) && !(await store.getConfig('migr_crono_nueva_sas_v1')) && (await store.list('projects')).length) {
+    const cols = await store.getConfig('project_columns');
+    const t = (cols || []).find(c => c.type === 'title') || { id: 'proyecto' };
+    const sinTildes = x => String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    const nsas = (await store.list('projects')).find(p => /nueva\s*sas|new\s*sas|\bnew\s*co\b|\bnewco\b/.test(sinTildes((p.props || {})[t.id])));
+    if (nsas) {
+      const [acts, secs] = await Promise.all(['activities', 'sections'].map(c => store.list(c)));
+      if (acts.some(a => a.project_id === nsas.id) || secs.some(x => x.project_id === nsas.id)) console.log('Nueva SAS ya tiene cronograma: no se carga el de la app de gestión');
+      else {
+        const sem = JSON.parse(fs.readFileSync(semCrono, 'utf8'));
+        const base = { project_id: nsas.id, created_at: now(), updated_at: now(), updated_by_name: 'Sistema' };
+        let ns = 0, na = 0;
+        for (const s of sem.sections) if (!(await store.get('sections', s.id))) { await store.insert('sections', { ...cleanDoc('sections', s, true), ...base, id: s.id }); ns++; }
+        for (const a of sem.activities) if (!(await store.get('activities', a.id))) { await store.insert('activities', { ...cleanDoc('activities', a, true), ...base, id: a.id }); na++; }
+        await store.update('projects', nsas.id, p => {
+          const ms = (p.miembros || []).slice();
+          for (const m of sem.miembros) if (!ms.some(x => sinTildes(x.nombre) === sinTildes(m.nombre))) ms.push(m);
+          return { ...p, miembros: ms, fecha_meta: p.fecha_meta || sem.project.fecha_meta || null, linea_base_at: p.linea_base_at || sem.project.linea_base_at || null, updated_at: now() };
+        });
+        await store.insert('historial', { id: newId(), created_at: now(), user_id: 'sistema', user_name: 'Sistema', accion: 'cargó el cronograma de', coll: 'projects', record_id: nsas.id, nombre: `Nueva SAS: ${ns} etapas y ${na} actividades (desde la app de gestión)`, campos: [] });
+        await store.insert('novedades', { id: newId(), project_id: nsas.id, tipo: 'auto', texto: `Se cargó el cronograma desde la app de gestión: ${ns} etapas y ${na} actividades. Desde ahora se actualiza aquí.`, fecha: hoyLocal(), created_at: now(), autor: 'Sistema', autor_id: 'sistema' });
+        console.log(`Cronograma de Nueva SAS cargado: ${ns} etapas y ${na} actividades`);
+      }
+    }
+    await store.setConfig('migr_crono_nueva_sas_v1', true);
+  }
   // Proyecto de ejemplo: una iniciativa completa (ficha, caso, cronograma, riesgos) para mostrar cómo se ve todo.
   // Lleva «ejemplo: true» y por eso no suma en los totales, el tablero ni las exportaciones. Si se borra, no vuelve.
   if (!(await store.getConfig('migr_ejemplo_v1')) && (await store.list('projects')).length) {
