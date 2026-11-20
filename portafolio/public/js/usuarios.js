@@ -5,7 +5,7 @@
 (function () {
   const { $, esc } = App;
   const ROLES = { admin: 'Administrador', editor: 'Editor', lector: 'Lector', invitado: 'Invitado por iniciativa' };
-  const ROL_HELP = { admin: 'Todo, incluso administrar usuarios', editor: 'Crea y edita iniciativas, cronogramas, casos y agenda', lector: 'Solo consulta', invitado: 'Solo las iniciativas que usted le comparta: verlas, o verlas y registrar novedades, cronograma y riesgos' };
+  const ROL_HELP = { admin: 'Todo, incluso administrar usuarios', editor: 'Crea y edita iniciativas, cronogramas, casos y agenda', lector: 'Solo consulta', invitado: 'Solo las iniciativas que usted le comparta, para ver o registrar' };
   const PUEDE = { ver: 'Solo ver', registrar: 'Ver y registrar' };
   // Para el invitado: qué puede hacer y en cuáles iniciativas
   function accesoHTML(u) {

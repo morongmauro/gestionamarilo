@@ -278,7 +278,7 @@
     if (App.ImportarNotion) box.appendChild(App.ImportarNotion.tarjeta());
     if (App.Columnas) box.appendChild(App.Columnas.tarjeta());
     if (App.Caso && App.Caso.tarjetaPreliminares) box.appendChild(App.Caso.tarjetaPreliminares());
-    const first = $('.card-box', main); if (first) first.insertAdjacentElement('beforebegin', box); else main.appendChild(box);
+    const first = $('.card-box', main); if (first) first.insertAdjacentElement('afterend', box); else main.appendChild(box); // primero la tabla de personas
     box.addEventListener('click', e => { const b = e.target.closest('[data-qe=editar]'); if (b) editarQueEs(b); });
   }
 

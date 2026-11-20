@@ -949,7 +949,7 @@ select:focus-visible,.tv-mini select:focus-visible{outline:2px solid var(--info-
 #app.inv a[href="#/riesgos"],#app.inv a[href="#/agenda"],#app.inv [data-periodo],#app.inv [data-dgv]{display:none}
 #app.inv .sp-q[data-t]::before{content:attr(data-t);display:block;font-size:11.5px;font-weight:600;color:rgba(255,255,255,.6);margin:0 0 6px 2px}
 .inv-acc{display:grid;gap:8px}
-.inv-ps{max-height:190px;overflow:auto;display:flex;flex-direction:column;gap:2px;padding:6px 8px;border-radius:10px;background:color-mix(in srgb,var(--ink) 4%,transparent)}
+.inv-ps{max-height:150px;overflow:auto;display:flex;flex-direction:column;gap:2px;padding:6px 8px;border-radius:10px;background:color-mix(in srgb,var(--ink) 4%,transparent)}
 .inv-ps label{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.35;cursor:pointer;padding:2px 0}
 .inv-ps label[hidden]{display:none}
 .inv-ps input{margin-top:2px;flex:none}
