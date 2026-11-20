@@ -11,87 +11,132 @@
   const guardar = () => { try { sessionStorage.setItem('pf.agente', JSON.stringify(hist.slice(-20))); } catch (e) {} };
   let ocupado = false, win = null;
 
-  // «Mente de Amarilo»: una nube de puntos que respira mientras espera y, cuando piensa,
-  // se ordena en el cuadro del logo y lo recorre. Los puntos son los mismos en la bienvenida
-  // y en la burbuja de «leyendo», así que pasan de una forma a la otra sin saltos.
+  // «Mente de Amarilo»: puntos que, mientras esperan, van y vienen entre una nube y el logo de Amarilo;
+  // y, mientras piensan, forman un cerebro y luego un bombillo que se enciende, una y otra vez.
   const Mente = (() => {
-    const N = 80, ND = 150, P = [], Q = [], CH = [];
+    const N = 90, ND = 170, P = [], Q = [], CH = [];
     const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let modo = 'espera', raf = 0, mezcla = 0, energia = 0;
+    let modo = 'espera', raf = 0, energia = 0, forma = 'nube', desdeForma = 0, luz = 0;
     const t0 = performance.now(), azar = (a, b) => a + Math.random() * (b - a);
     const gauss = () => { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
-    // El logo: dos escuadras que forman el cuadro (arriba-izquierda y abajo-derecha)
-    // ida y vuelta por cada escuadra: así ningún punto salta del final al comienzo
-    const ruta = (k, s0) => { const u = (s0 % 1) * 2, s = u < 1 ? u : 2 - u, d = s * 1.34; return k === 0 ? (d < 0.62 ? [0, 0.62 - d] : [d - 0.62, 0]) : (d < 0.62 ? [1, 0.38 + d] : [1 - (d - 0.62), 1]); };
+    // El logo: dos escuadras (arriba-izquierda y abajo-derecha), recorridas de ida y vuelta para que nada salte
+    const ruta = (k, s0) => { const u = (s0 % 1 + 1) % 1 * 2, s = u < 1 ? u : 2 - u, d = s * 1.34; return k === 0 ? (d < 0.62 ? [0, 0.62 - d] : [d - 0.62, 0]) : (d < 0.62 ? [1, 0.38 + d] : [1 - (d - 0.62), 1]); };
+    // Cerebro y bombillo: se dibujan con trazos (caja de 28 × 28) y se toman puntos a lo largo de ellos
+    const FORMAS = {
+      cerebro: [['M14 6.2c-1.1-1.8-3.1-2.6-5-2-1.6.5-2.7 2-2.8 3.6-1.7.5-2.8 2.1-2.7 3.9.1 1 .5 1.8 1.1 2.4-.8.8-1.2 2-1.1 3.2.2 1.8 1.6 3.2 3.3 3.5.4 1.9 2 3.3 4 3.3 1.1 0 2.1-.5 2.8-1.2', 3], ['espejo', 3],
+        ['M14 6.2v18.5', 1], ['M9.7 10.6c1.2.2 2.2 1.1 2.5 2.3', 0.8], ['M18.3 10.6c-1.2.2-2.2 1.1-2.5 2.3', 0.8], ['M8 16.3c1.3-.4 2.7 0 3.6 1', 0.8], ['M20 16.3c-1.3-.4-2.7 0-3.6 1', 0.8], ['M10 21c.9-.6 2-.6 2.8.1', 0.6], ['M18 21c-.9-.6-2-.6-2.8.1', 0.6]],
+      bombillo: [['M14 3.8a7.6 7.6 0 0 0-4.6 13.6c.9.7 1.4 1.7 1.4 2.8v1.1h6.4v-1.1c0-1.1.5-2.1 1.4-2.8A7.6 7.6 0 0 0 14 3.8z', 4], ['M10.9 23.4h6.2', 0.8], ['M11.7 25.6h4.6', 0.7],
+        ['M11.6 15.4l1.2-2.2 1.2 2.2 1.2-2.2 1.2 2.2', 1.1], ['M14 .4v1.6', 0.35], ['M4.6 3.9l1.2 1.2', 0.35], ['M23.4 3.9l-1.2 1.2', 0.35], ['M1.4 11.4h1.7', 0.35], ['M24.9 11.4h1.7', 0.35]],
+    };
+    const PTS = {};
+    function muestrear() {
+      if (PTS.cerebro) return true;
+      try {
+        const ns = 'http://www.w3.org/2000/svg', sv = document.createElementNS(ns, 'svg'); sv.setAttribute('width', '0'); sv.setAttribute('height', '0'); sv.style.position = 'absolute'; document.body.appendChild(sv);
+        for (const [k, lista] of Object.entries(FORMAS)) {
+          const tr = []; let prev = null;
+          for (const [d, peso] of lista) {
+            if (d === 'espejo') { tr.push({ espejo: prev, peso }); continue; }
+            const p = document.createElementNS(ns, 'path'); p.setAttribute('d', d); sv.appendChild(p); prev = p; tr.push({ p, peso });
+          }
+          const tot = tr.reduce((a, x) => a + x.peso, 0);
+          const toma = n => { const out = []; tr.forEach(x => { const m = Math.max(2, Math.round(n * x.peso / tot)), el = x.p || x.espejo, L = el.getTotalLength();
+            for (let i = 0; i < m; i++) { const q = el.getPointAtLength(L * (i + Math.random() * 0.6) / m); out.push([(x.espejo ? 28 - q.x : q.x) / 28, q.y / 28]); } });
+            for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
+            while (out.length < n) out.push(out[out.length % Math.max(1, out.length)]); return out.slice(0, n); };
+          PTS[k] = { n: toma(N), d: toma(ND) };
+        }
+        sv.remove(); return true;
+      } catch (e) { return false; }
+    }
     const lobulos = [[0.36, 0.48], [0.62, 0.52], [0.5, 0.36], [0.47, 0.62]];
-    // Neuronas: los puntos grandes, unidos por líneas
-    for (let i = 0; i < N; i++) { const [cx, cy] = lobulos[i % 4]; P.push({ hx: cx + gauss() * 0.1, hy: cy + gauss() * 0.11, x: azar(0.3, 0.7), y: azar(0.3, 0.7), ph: azar(0, 6.283), sp: azar(0.35, 1), r: azar(1.1, 2.5), am: i % 3 === 0, k: i % 2, s: (i / N + Math.random() * 0.04) % 1 }); }
-    // Polvo: puntos diminutos que orbitan la nube y, al pensar, corren por el cuadro como una corriente
-    for (let i = 0; i < ND; i++) Q.push({ a: azar(0, 6.283), rad: azar(0.12, 0.48), w: azar(0.08, 0.35) * (Math.random() < 0.5 ? -1 : 1), x: 0.5, y: 0.5, r: azar(0.35, 0.95), ph: azar(0, 6.283), k: i % 2, s: Math.random(), v: azar(0.12, 0.32), off: azar(-0.09, 0.09), am: Math.random() < 0.45 });
-    function cuadro(cv) {
+    for (let i = 0; i < N; i++) { const [cx, cy] = lobulos[i % 4]; P.push({ hx: cx + gauss() * 0.1, hy: cy + gauss() * 0.11, x: azar(0.3, 0.7), y: azar(0.3, 0.7), ph: azar(0, 6.283), sp: azar(0.35, 1), r: azar(1.1, 2.4), am: i % 3 === 0, k: i % 2, s: (i / N + Math.random() * 0.04) % 1 }); }
+    for (let i = 0; i < ND; i++) Q.push({ a: azar(0, 6.283), rad: azar(0.12, 0.48), w: azar(0.1, 0.4) * (Math.random() < 0.5 ? -1 : 1), x: 0.5, y: 0.5, r: azar(0.35, 0.95), ph: azar(0, 6.283), k: i % 2, s: Math.random(), v: azar(0.12, 0.3), off: azar(-0.07, 0.07), am: Math.random() < 0.45, gx: gauss() * 0.018, gy: gauss() * 0.018 });
+    // Ritmo: esperando, nube ↔ logo cada pocos segundos; pensando, cerebro ↔ bombillo
+    function elegir(t) {
+      const ciclo = modo === 'piensa' ? [['cerebro', 2.6], ['bombillo', 2.4]] : [['nube', 1.6], ['logo', 2.2]];
+      const tot = ciclo.reduce((a, c) => a + c[1], 0); let x = (t - desdeForma) % tot;
+      for (const [f, d] of ciclo) { if (x < d) return f; x -= d; }
+      return ciclo[0][0];
+    }
+    function cuadro(cv, t) {
       const dpr = Math.min(2, window.devicePixelRatio || 1), w = Math.round(cv.clientWidth * dpr), h = Math.round(cv.clientHeight * dpr);
       if (w && h && (cv.width !== w || cv.height !== h)) { cv.width = w; cv.height = h; }
       const W = cv.width, H = cv.height; if (!W || !H) return;
       const g = cv.getContext('2d'), osc = document.documentElement.getAttribute('data-theme') === 'dark';
-      const t = reduce ? 2 : (performance.now() - t0) / 1000, esc = Math.max(0.75, Math.min(W, H) / 170 / dpr) * dpr;
-      mezcla += ((modo === 'piensa' ? 1 : 0) - mezcla) * (reduce ? 1 : 0.045); energia *= 0.95;
-      const S = Math.min(W, H) * 0.66, ox = (W - S) / 2, oy = (H - S) / 2, resp = 1 + Math.sin(t * 0.9) * 0.035;
-      const logo = (k, s, o) => { const [lx, ly] = ruta(k, s); const nx = k === 0 ? (ly > 0.01 ? -1 : 0) : (ly < 0.99 ? 1 : 0), ny = k === 0 ? (ly > 0.01 ? 0 : -1) : (ly < 0.99 ? 0 : 1); return [(ox + (lx + nx * o) * S) / W, (oy + (ly + ny * o) * S) / H]; };
-      for (const p of P) {
-        const a = t * p.sp * 0.42 + p.ph, ag = 1 + energia * 1.6;
-        const cx = 0.5 + (p.hx - 0.5) * resp + (Math.sin(a) * 0.035 + Math.sin(a * 0.41 + p.ph) * 0.025) * ag;
-        const cy = 0.5 + (p.hy - 0.5) * resp + (Math.cos(a * 0.83) * 0.03 + Math.cos(a * 0.29 + p.ph) * 0.02) * ag;
-        const [lx, ly] = logo(p.k, p.s + t * 0.035, Math.sin(t * 3 + p.ph) * 0.012);
-        const tx = cx * (1 - mezcla) + lx * mezcla, ty = cy * (1 - mezcla) + ly * mezcla;
-        p.x += (tx - p.x) * (reduce ? 1 : 0.075); p.y += (ty - p.y) * (reduce ? 1 : 0.075);
-      }
-      for (const q of Q) {
-        const a = q.a + t * q.w * (1 + energia * 2), rr = q.rad * (1 + Math.sin(t * 0.7 + q.ph) * 0.12);
-        const cx = 0.5 + Math.cos(a) * rr * 0.8, cy = 0.5 + Math.sin(a) * rr * 0.62;
-        const [lx, ly] = logo(q.k, q.s + t * q.v * 0.5, q.off + Math.sin(t * 5 + q.ph) * 0.02);
-        const tx = cx * (1 - mezcla) + lx * mezcla, ty = cy * (1 - mezcla) + ly * mezcla;
-        q.x += (tx - q.x) * (reduce ? 1 : 0.06); q.y += (ty - q.y) * (reduce ? 1 : 0.06);
-      }
-      // Estela: el cuadro anterior se desvanece en vez de borrarse (más larga cuando piensa)
+      const esc = Math.max(0.75, Math.min(W, H) / 170 / dpr) * dpr, S = Math.min(W, H) * (forma === 'logo' ? 0.7 : 0.9), ox = (W - S) / 2, oy = (H - S) / 2;
+      const enCaja = (x, y) => [(ox + x * S) / W, (oy + y * S) / H];
+      const fluido = forma !== 'nube', resp = 1 + Math.sin(t * 1.1) * 0.04, ag = 1 + energia * 1.8, vel = reduce ? 1 : 0.11;
+      P.forEach((p, i) => {
+        let tx, ty; const a = t * p.sp * 0.6 + p.ph;
+        if (forma === 'nube') { tx = 0.5 + (p.hx - 0.5) * resp + (Math.sin(a) * 0.035 + Math.sin(a * 0.41 + p.ph) * 0.025) * ag; ty = 0.5 + (p.hy - 0.5) * resp + (Math.cos(a * 0.83) * 0.03 + Math.cos(a * 0.29 + p.ph) * 0.02) * ag; }
+        else if (forma === 'logo') { const [lx, ly] = ruta(p.k, p.s + t * 0.06); [tx, ty] = enCaja(lx + Math.sin(t * 3 + p.ph) * 0.01, ly - Math.sin(t * 3 + p.ph) * 0.01); }
+        else { const q = PTS[forma].n[i]; [tx, ty] = enCaja(q[0] + Math.sin(a * 2) * 0.006 * ag, q[1] + Math.cos(a * 2) * 0.006 * ag); }
+        p.x += (tx - p.x) * vel; p.y += (ty - p.y) * vel;
+      });
+      Q.forEach((q, i) => {
+        let tx, ty; const a = q.a + t * q.w * (1 + energia * 2);
+        if (forma === 'nube') { const rr = q.rad * (1 + Math.sin(t * 0.8 + q.ph) * 0.12); tx = 0.5 + Math.cos(a) * rr * 0.8; ty = 0.5 + Math.sin(a) * rr * 0.62; }
+        else if (forma === 'logo') { const [lx, ly] = ruta(q.k, q.s + t * q.v * 0.6); [tx, ty] = enCaja(lx + q.off * Math.cos(a), ly + q.off * Math.sin(a)); }
+        else { const z = PTS[forma].d[i]; [tx, ty] = enCaja(z[0] + q.gx * 0.35 + Math.cos(a * 1.7) * 0.005, z[1] + q.gy * 0.35 + Math.sin(a * 1.7) * 0.005); }
+        q.x += (tx - q.x) * vel * 0.85; q.y += (ty - q.y) * vel * 0.85;
+      });
+      // Estela: el cuadro anterior se desvanece en vez de borrarse
+      const fade = reduce ? 1 : forma === 'logo' ? 0.26 : 0.42;
       if (reduce) g.clearRect(0, 0, W, H);
-      const fade = reduce ? 1 : 0.42 - mezcla * 0.2;
-      if (!reduce) { g.globalCompositeOperation = 'destination-out'; g.fillStyle = `rgba(0,0,0,${fade.toFixed(3)})`; g.fillRect(0, 0, W, H); g.globalCompositeOperation = 'source-over'; }
-      const tinta = osc ? '201,195,214' : '22,11,41', oro = '255,201,0', D = 34 * esc * (1 - mezcla * 0.45);
-      // Halo suave que late detrás de la mente
-      const hr = Math.min(W, H) * (0.42 + 0.04 * Math.sin(t * 1.4)), halo = g.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, hr);
-      halo.addColorStop(0, `rgba(${oro},${((0.06 + mezcla * 0.05 + energia * 0.05) * fade).toFixed(3)})`); halo.addColorStop(1, `rgba(${oro},0)`);
+      else { g.globalCompositeOperation = 'destination-out'; g.fillStyle = `rgba(0,0,0,${fade})`; g.fillRect(0, 0, W, H); g.globalCompositeOperation = 'source-over'; }
+      const tinta = osc ? '201,195,214' : '22,11,41', oro = '255,201,0';
+      // El bombillo se enciende: un halo amarillo que crece desde su centro
+      luz += ((forma === 'bombillo' ? 1 : 0) - luz) * 0.06;
+      const [hx, hy] = luz > 0.05 ? enCaja(0.5, 0.38) : [0.5, 0.5];
+      const hr = Math.min(W, H) * (0.4 + 0.05 * Math.sin(t * 2) - luz * 0.12), halo = g.createRadialGradient(hx * W, hy * H, 0, hx * W, hy * H, hr);
+      halo.addColorStop(0, `rgba(${oro},${((0.06 + luz * (0.4 + 0.15 * Math.sin(t * 6)) + energia * 0.06) * fade).toFixed(3)})`); halo.addColorStop(1, `rgba(${oro},0)`);
       g.fillStyle = halo; g.fillRect(0, 0, W, H);
+      const D = 30 * esc * (fluido ? 0.7 : 1);
       g.lineWidth = Math.max(0.6, 0.8 * esc);
       const vec = [];
       for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) {
         const a = P[i], b = P[j], dx = (a.x - b.x) * W, dy = (a.y - b.y) * H, d = Math.hypot(dx, dy); if (d > D) continue;
         vec.push([i, j]);
-        g.strokeStyle = `rgba(${a.am && b.am ? oro : tinta},${((1 - d / D) * (0.1 - mezcla * 0.04 + energia * 0.1)).toFixed(3)})`;
+        g.strokeStyle = `rgba(${a.am && b.am ? oro : tinta},${((1 - d / D) * (0.12 + energia * 0.12)).toFixed(3)})`;
         g.beginPath(); g.moveTo(a.x * W, a.y * H); g.lineTo(b.x * W, b.y * H); g.stroke();
       }
-      // Chispas: una señal que viaja de una neurona a otra (más seguido cuando piensa)
-      if (!reduce && vec.length && Math.random() < 0.05 + mezcla * 0.35 + energia * 0.3) { const [i, j] = vec[Math.floor(Math.random() * vec.length)]; CH.push({ i, j, t0: t, dur: azar(0.35, 0.8) }); }
+      // Chispas entre neuronas: más cuando escribe o piensa
+      if (!reduce && vec.length && Math.random() < 0.12 + (modo === 'piensa' ? 0.4 : 0) + energia * 0.4) { const [i, j] = vec[Math.floor(Math.random() * vec.length)]; CH.push({ i, j, t0: t, dur: azar(0.25, 0.6) }); }
       for (let c = CH.length - 1; c >= 0; c--) {
-        const ch = CH[c], f = (t - ch.t0) / ch.dur; if (f >= 1 || CH.length > 40) { CH.splice(c, 1); continue; }
+        const ch = CH[c], f = (t - ch.t0) / ch.dur; if (f >= 1 || CH.length > 50) { CH.splice(c, 1); continue; }
         const a = P[ch.i], b = P[ch.j], x = (a.x + (b.x - a.x) * f) * W, y = (a.y + (b.y - a.y) * f) * H;
         const gl = g.createRadialGradient(x, y, 0, x, y, 6 * esc); gl.addColorStop(0, `rgba(${oro},0.9)`); gl.addColorStop(1, `rgba(${oro},0)`);
         g.fillStyle = gl; g.beginPath(); g.arc(x, y, 6 * esc, 0, 6.283); g.fill();
         g.fillStyle = 'rgba(255,240,180,1)'; g.beginPath(); g.arc(x, y, 1.1 * esc, 0, 6.283); g.fill();
       }
       for (const q of Q) {
-        const tw = 0.5 + 0.5 * Math.sin(t * 3.1 + q.ph);
-        g.fillStyle = `rgba(${q.am ? oro : tinta},${(0.18 + tw * 0.45 + mezcla * 0.15).toFixed(3)})`;
+        const tw = 0.5 + 0.5 * Math.sin(t * 3.4 + q.ph);
+        g.fillStyle = `rgba(${q.am ? oro : tinta},${((0.2 + tw * 0.45) * (fluido && forma !== 'logo' ? 0.6 : 1)).toFixed(3)})`;
         g.beginPath(); g.arc(q.x * W, q.y * H, q.r * esc * (0.7 + tw * 0.5), 0, 6.283); g.fill();
       }
       for (const p of P) {
-        const pulso = mezcla * (0.5 + 0.5 * Math.sin(t * 4.2 - p.s * 14)), al = 0.42 + 0.3 * Math.sin(t * 1.3 + p.ph) * (1 - mezcla) + pulso * 0.5;
-        g.fillStyle = `rgba(${p.am ? oro : tinta},${Math.min(1, al + (p.am ? 0.25 : 0)).toFixed(3)})`;
-        g.beginPath(); g.arc(p.x * W, p.y * H, p.r * esc * (1 - mezcla * 0.25 + pulso * 0.5), 0, 6.283); g.fill();
+        const pulso = fluido ? 0.5 + 0.5 * Math.sin(t * 4.5 - p.s * 14) : 0, al = 0.5 + 0.3 * Math.sin(t * 1.6 + p.ph) + pulso * 0.3;
+        g.fillStyle = `rgba(${p.am ? oro : tinta},${Math.min(1, al + (p.am ? 0.2 : 0)).toFixed(3)})`;
+        g.beginPath(); g.arc(p.x * W, p.y * H, p.r * esc * (fluido ? 0.8 : 1) * (1 + pulso * 0.35), 0, 6.283); g.fill();
       }
     }
-    function ciclo() { raf = 0; const cvs = document.querySelectorAll('.ag-win canvas.ag-mente'); if (!cvs.length) return; cvs.forEach(cuadro); if (!reduce) raf = requestAnimationFrame(ciclo); }
+    function ciclo() {
+      raf = 0; const cvs = document.querySelectorAll('.ag-win canvas.ag-mente'); if (!cvs.length) return;
+      const t = reduce ? 2 : (performance.now() - t0) / 1000;
+      energia *= 0.95;
+      let f = elegir(t); if ((f === 'cerebro' || f === 'bombillo') && !muestrear()) f = 'logo';
+      forma = reduce ? (modo === 'piensa' ? (muestrear() ? 'cerebro' : 'logo') : 'logo') : f;
+      cvs.forEach(cv => cuadro(cv, t));
+      if (!reduce) raf = requestAnimationFrame(ciclo);
+    }
     const andar = () => { if (!raf) raf = requestAnimationFrame(ciclo); };
-    return { modo: m => { modo = m; andar(); }, excitar: () => { energia = Math.min(1, energia + 0.35); andar(); }, andar, parar: () => { if (raf) cancelAnimationFrame(raf); raf = 0; } };
+    return {
+      modo: m => { if (m !== modo) { modo = m; desdeForma = (performance.now() - t0) / 1000; } andar(); },
+      // al escribir: se agita y, si estaba en nube, arma el logo enseguida
+      excitar: () => { energia = Math.min(1, energia + 0.35); if (modo === 'espera' && forma === 'nube') desdeForma = (performance.now() - t0) / 1000 - 1.6; andar(); },
+      andar, parar: () => { if (raf) cancelAnimationFrame(raf); raf = 0; },
+    };
   })();
 
   const m = v => (v ? App.moneyShort(v) : '$0');
