@@ -958,12 +958,12 @@ select:focus-visible,.tv-mini select:focus-visible{outline:2px solid var(--info-
 .ag-btn{position:fixed;right:22px;bottom:22px;z-index:140;display:flex;align-items:center;gap:11px;border:0;border-radius:999px;padding:13px 24px 13px 16px;background:#160B29;color:#fff;font:600 15.5px/1 Montserrat,sans-serif;cursor:pointer;box-shadow:0 12px 32px rgba(22,11,41,.3);transition:transform .15s,background .15s}
 .ag-btn:hover{background:#2A1B47;transform:translateY(-1px)}
 .ag-ico{width:30px;height:30px;flex:none}
-.ag-ico circle{animation:agTit 2.6s ease-in-out infinite}
-.ag-ico .a{fill:#FFC900}.ag-ico .b{fill:#fff}.ag-ico .c{fill:#FFC900;opacity:.75}
-@keyframes agTit{0%,100%{opacity:1}50%{opacity:.35}}
+.ag-ico .cb{fill:none;stroke:#FFC900;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.ag-ico .sn{fill:#fff;animation:agTit 2s ease-in-out infinite}
+@keyframes agTit{0%,100%{opacity:1}50%{opacity:.15}}
 @media (prefers-reduced-motion:reduce){.ag-ico circle{animation:none}}
-.ag-btn.on{background:#FFC900;color:#160B29}.ag-btn.on .ag-ico .a,.ag-btn.on .ag-ico .c{fill:#160B29}.ag-btn.on .ag-ico .b{fill:#160B29;opacity:.55}
-[data-theme=dark] .ag-btn{background:#FFC900;color:#160B29}[data-theme=dark] .ag-ico .a,[data-theme=dark] .ag-ico .c{fill:#160B29}[data-theme=dark] .ag-ico .b{fill:#160B29;opacity:.55}
+.ag-btn.on{background:#FFC900;color:#160B29}.ag-btn.on .ag-ico .cb{stroke:#160B29}.ag-btn.on .ag-ico .sn{fill:#160B29}
+[data-theme=dark] .ag-btn{background:#FFC900;color:#160B29}[data-theme=dark] .ag-ico .cb{stroke:#160B29}[data-theme=dark] .ag-ico .sn{fill:#160B29}
 .ag-win{position:fixed;right:22px;bottom:90px;z-index:141;width:min(420px,calc(100vw - 32px));height:min(600px,calc(100vh - 110px));display:flex;flex-direction:column;border-radius:20px;overflow:hidden;
   background:rgba(255,255,255,.78);backdrop-filter:blur(22px) saturate(1.5);-webkit-backdrop-filter:blur(22px) saturate(1.5);border:1px solid rgba(255,255,255,.7);box-shadow:0 24px 60px rgba(22,11,41,.22),0 1px 0 rgba(255,255,255,.8) inset;color:var(--ink);animation:agIn .18s ease-out}
 [data-theme=dark] .ag-win{background:rgba(23,15,42,.9);border-color:rgba(255,255,255,.12)}

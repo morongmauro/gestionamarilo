@@ -15,41 +15,77 @@
   // se ordena en el cuadro del logo y lo recorre. Los puntos son los mismos en la bienvenida
   // y en la burbuja de «leyendo», así que pasan de una forma a la otra sin saltos.
   const Mente = (() => {
-    const N = 88, P = [], reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const N = 80, ND = 150, P = [], Q = [], CH = [];
+    const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
     let modo = 'espera', raf = 0, mezcla = 0, energia = 0;
     const t0 = performance.now(), azar = (a, b) => a + Math.random() * (b - a);
     const gauss = () => { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
     // El logo: dos escuadras que forman el cuadro (arriba-izquierda y abajo-derecha)
-    const ruta = (k, s) => { const d = s * 1.34; return k === 0 ? (d < 0.62 ? [0, 0.62 - d] : [d - 0.62, 0]) : (d < 0.62 ? [1, 0.38 + d] : [1 - (d - 0.62), 1]); };
+    // ida y vuelta por cada escuadra: así ningún punto salta del final al comienzo
+    const ruta = (k, s0) => { const u = (s0 % 1) * 2, s = u < 1 ? u : 2 - u, d = s * 1.34; return k === 0 ? (d < 0.62 ? [0, 0.62 - d] : [d - 0.62, 0]) : (d < 0.62 ? [1, 0.38 + d] : [1 - (d - 0.62), 1]); };
     const lobulos = [[0.36, 0.48], [0.62, 0.52], [0.5, 0.36], [0.47, 0.62]];
+    // Neuronas: los puntos grandes, unidos por líneas
     for (let i = 0; i < N; i++) { const [cx, cy] = lobulos[i % 4]; P.push({ hx: cx + gauss() * 0.1, hy: cy + gauss() * 0.11, x: azar(0.3, 0.7), y: azar(0.3, 0.7), ph: azar(0, 6.283), sp: azar(0.35, 1), r: azar(1.1, 2.5), am: i % 3 === 0, k: i % 2, s: (i / N + Math.random() * 0.04) % 1 }); }
+    // Polvo: puntos diminutos que orbitan la nube y, al pensar, corren por el cuadro como una corriente
+    for (let i = 0; i < ND; i++) Q.push({ a: azar(0, 6.283), rad: azar(0.12, 0.48), w: azar(0.08, 0.35) * (Math.random() < 0.5 ? -1 : 1), x: 0.5, y: 0.5, r: azar(0.35, 0.95), ph: azar(0, 6.283), k: i % 2, s: Math.random(), v: azar(0.12, 0.32), off: azar(-0.09, 0.09), am: Math.random() < 0.45 });
     function cuadro(cv) {
       const dpr = Math.min(2, window.devicePixelRatio || 1), w = Math.round(cv.clientWidth * dpr), h = Math.round(cv.clientHeight * dpr);
       if (w && h && (cv.width !== w || cv.height !== h)) { cv.width = w; cv.height = h; }
       const W = cv.width, H = cv.height; if (!W || !H) return;
       const g = cv.getContext('2d'), osc = document.documentElement.getAttribute('data-theme') === 'dark';
-      const t = reduce ? 2 : (performance.now() - t0) / 1000, esc = Math.max(0.75, Math.min(W, H) / 170 / Math.min(2, window.devicePixelRatio || 1)) * Math.min(2, window.devicePixelRatio || 1);
+      const t = reduce ? 2 : (performance.now() - t0) / 1000, esc = Math.max(0.75, Math.min(W, H) / 170 / dpr) * dpr;
       mezcla += ((modo === 'piensa' ? 1 : 0) - mezcla) * (reduce ? 1 : 0.045); energia *= 0.95;
       const S = Math.min(W, H) * 0.66, ox = (W - S) / 2, oy = (H - S) / 2, resp = 1 + Math.sin(t * 0.9) * 0.035;
+      const logo = (k, s, o) => { const [lx, ly] = ruta(k, s); const nx = k === 0 ? (ly > 0.01 ? -1 : 0) : (ly < 0.99 ? 1 : 0), ny = k === 0 ? (ly > 0.01 ? 0 : -1) : (ly < 0.99 ? 0 : 1); return [(ox + (lx + nx * o) * S) / W, (oy + (ly + ny * o) * S) / H]; };
       for (const p of P) {
         const a = t * p.sp * 0.42 + p.ph, ag = 1 + energia * 1.6;
         const cx = 0.5 + (p.hx - 0.5) * resp + (Math.sin(a) * 0.035 + Math.sin(a * 0.41 + p.ph) * 0.025) * ag;
         const cy = 0.5 + (p.hy - 0.5) * resp + (Math.cos(a * 0.83) * 0.03 + Math.cos(a * 0.29 + p.ph) * 0.02) * ag;
-        const [lx, ly] = ruta(p.k, (p.s + t * 0.07) % 1), jit = Math.sin(t * 3 + p.ph) * 0.012;
-        const tx = cx * (1 - mezcla) + ((ox + (lx + jit) * S) / W) * mezcla, ty = cy * (1 - mezcla) + ((oy + (ly - jit) * S) / H) * mezcla;
+        const [lx, ly] = logo(p.k, p.s + t * 0.035, Math.sin(t * 3 + p.ph) * 0.012);
+        const tx = cx * (1 - mezcla) + lx * mezcla, ty = cy * (1 - mezcla) + ly * mezcla;
         p.x += (tx - p.x) * (reduce ? 1 : 0.075); p.y += (ty - p.y) * (reduce ? 1 : 0.075);
       }
-      g.clearRect(0, 0, W, H);
-      const tinta = osc ? '201,195,214' : '22,11,41', D = 34 * esc * (1 - mezcla * 0.45);
+      for (const q of Q) {
+        const a = q.a + t * q.w * (1 + energia * 2), rr = q.rad * (1 + Math.sin(t * 0.7 + q.ph) * 0.12);
+        const cx = 0.5 + Math.cos(a) * rr * 0.8, cy = 0.5 + Math.sin(a) * rr * 0.62;
+        const [lx, ly] = logo(q.k, q.s + t * q.v * 0.5, q.off + Math.sin(t * 5 + q.ph) * 0.02);
+        const tx = cx * (1 - mezcla) + lx * mezcla, ty = cy * (1 - mezcla) + ly * mezcla;
+        q.x += (tx - q.x) * (reduce ? 1 : 0.06); q.y += (ty - q.y) * (reduce ? 1 : 0.06);
+      }
+      // Estela: el cuadro anterior se desvanece en vez de borrarse (más larga cuando piensa)
+      if (reduce) g.clearRect(0, 0, W, H);
+      const fade = reduce ? 1 : 0.42 - mezcla * 0.2;
+      if (!reduce) { g.globalCompositeOperation = 'destination-out'; g.fillStyle = `rgba(0,0,0,${fade.toFixed(3)})`; g.fillRect(0, 0, W, H); g.globalCompositeOperation = 'source-over'; }
+      const tinta = osc ? '201,195,214' : '22,11,41', oro = '255,201,0', D = 34 * esc * (1 - mezcla * 0.45);
+      // Halo suave que late detrás de la mente
+      const hr = Math.min(W, H) * (0.42 + 0.04 * Math.sin(t * 1.4)), halo = g.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, hr);
+      halo.addColorStop(0, `rgba(${oro},${((0.06 + mezcla * 0.05 + energia * 0.05) * fade).toFixed(3)})`); halo.addColorStop(1, `rgba(${oro},0)`);
+      g.fillStyle = halo; g.fillRect(0, 0, W, H);
       g.lineWidth = Math.max(0.6, 0.8 * esc);
+      const vec = [];
       for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) {
         const a = P[i], b = P[j], dx = (a.x - b.x) * W, dy = (a.y - b.y) * H, d = Math.hypot(dx, dy); if (d > D) continue;
-        g.strokeStyle = `rgba(${a.am && b.am ? '255,201,0' : tinta},${((1 - d / D) * (0.1 - mezcla * 0.04 + energia * 0.1)).toFixed(3)})`;
+        vec.push([i, j]);
+        g.strokeStyle = `rgba(${a.am && b.am ? oro : tinta},${((1 - d / D) * (0.1 - mezcla * 0.04 + energia * 0.1)).toFixed(3)})`;
         g.beginPath(); g.moveTo(a.x * W, a.y * H); g.lineTo(b.x * W, b.y * H); g.stroke();
+      }
+      // Chispas: una señal que viaja de una neurona a otra (más seguido cuando piensa)
+      if (!reduce && vec.length && Math.random() < 0.05 + mezcla * 0.35 + energia * 0.3) { const [i, j] = vec[Math.floor(Math.random() * vec.length)]; CH.push({ i, j, t0: t, dur: azar(0.35, 0.8) }); }
+      for (let c = CH.length - 1; c >= 0; c--) {
+        const ch = CH[c], f = (t - ch.t0) / ch.dur; if (f >= 1 || CH.length > 40) { CH.splice(c, 1); continue; }
+        const a = P[ch.i], b = P[ch.j], x = (a.x + (b.x - a.x) * f) * W, y = (a.y + (b.y - a.y) * f) * H;
+        const gl = g.createRadialGradient(x, y, 0, x, y, 6 * esc); gl.addColorStop(0, `rgba(${oro},0.9)`); gl.addColorStop(1, `rgba(${oro},0)`);
+        g.fillStyle = gl; g.beginPath(); g.arc(x, y, 6 * esc, 0, 6.283); g.fill();
+        g.fillStyle = 'rgba(255,240,180,1)'; g.beginPath(); g.arc(x, y, 1.1 * esc, 0, 6.283); g.fill();
+      }
+      for (const q of Q) {
+        const tw = 0.5 + 0.5 * Math.sin(t * 3.1 + q.ph);
+        g.fillStyle = `rgba(${q.am ? oro : tinta},${(0.18 + tw * 0.45 + mezcla * 0.15).toFixed(3)})`;
+        g.beginPath(); g.arc(q.x * W, q.y * H, q.r * esc * (0.7 + tw * 0.5), 0, 6.283); g.fill();
       }
       for (const p of P) {
         const pulso = mezcla * (0.5 + 0.5 * Math.sin(t * 4.2 - p.s * 14)), al = 0.42 + 0.3 * Math.sin(t * 1.3 + p.ph) * (1 - mezcla) + pulso * 0.5;
-        g.fillStyle = `rgba(${p.am ? '255,201,0' : tinta},${Math.min(1, al + (p.am ? 0.25 : 0)).toFixed(3)})`;
+        g.fillStyle = `rgba(${p.am ? oro : tinta},${Math.min(1, al + (p.am ? 0.25 : 0)).toFixed(3)})`;
         g.beginPath(); g.arc(p.x * W, p.y * H, p.r * esc * (1 - mezcla * 0.25 + pulso * 0.5), 0, 6.283); g.fill();
       }
     }
@@ -155,10 +191,10 @@
 
   // Ícono: el cuadro de Amarilo hecho de puntos (una escuadra amarilla, otra clara) que titilan
   function icono() {
-    const pts = [], paso = 3.4;
-    const tramo = (x0, y0, x1, y1, c) => { const n = Math.round(Math.hypot(x1 - x0, y1 - y0) / paso); for (let i = 0; i <= n; i++) pts.push([x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n, c]); };
-    tramo(4, 15, 4, 4, 'a'); tramo(4 + paso, 4, 19, 4, 'a'); tramo(24, 13, 24, 24, 'b'); tramo(24 - paso, 24, 9, 24, 'b');
-    return `<svg class="ag-ico" viewBox="0 0 28 28" aria-hidden="true">${pts.map((p, i) => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="1.45" class="${p[2]}" style="animation-delay:${(i * 0.13).toFixed(2)}s"/>`).join('')}<circle cx="14" cy="14" r="1.6" class="c"/><circle cx="11" cy="11.5" r="1" class="c" style="animation-delay:.4s"/><circle cx="17" cy="16.5" r="1" class="c" style="animation-delay:.9s"/></svg>`;
+    // Un cerebro de línea, con sinapsis que titilan
+    const lado = m => `<path d="M14 6.2c-1.1-1.8-3.1-2.6-5-2-1.6.5-2.7 2-2.8 3.6-1.7.5-2.8 2.1-2.7 3.9.1 1 .5 1.8 1.1 2.4-.8.8-1.2 2-1.1 3.2.2 1.8 1.6 3.2 3.3 3.5.4 1.9 2 3.3 4 3.3 1.1 0 2.1-.5 2.8-1.2" transform="${m ? 'matrix(-1 0 0 1 28 0)' : ''}"/>`;
+    return `<svg class="ag-ico" viewBox="0 0 28 28" aria-hidden="true"><g class="cb">${lado(false)}${lado(true)}<path d="M14 6.2v18.5"/><path d="M9.7 10.6c1.2.2 2.2 1.1 2.5 2.3M18.3 10.6c-1.2.2-2.2 1.1-2.5 2.3M8 16.3c1.3-.4 2.7 0 3.6 1M20 16.3c-1.3-.4-2.7 0-3.6 1"/></g>`
+      + [[9.7, 10.6, 0], [18.3, 10.6, .5], [8, 16.3, 1], [20, 16.3, 1.5], [14, 13, .8], [11.6, 20.6, 1.2], [16.4, 20.6, .3]].map(([x, y, d]) => `<circle cx="${x}" cy="${y}" r="1.25" class="sn" style="animation-delay:${d}s"/>`).join('') + '</svg>';
   }
   function montar() {
     const app = document.getElementById('app'); if (!app || document.getElementById('agBtn')) return;
