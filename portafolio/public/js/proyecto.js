@@ -45,13 +45,7 @@
         <div class="ph-tit"><h1 class="p-title" data-p="titulo">${esc(App.projectName(p))}</h1>
           ${ec ? `<button class="f-fase" data-p="estado" ${ro ? 'disabled' : ''} title="${ro ? '' : 'Cambiar la fase'}"><span class="pill cl-${App.optColor(ec, estado) || 'gris'}">${esc(estado || 'Sin ' + ec.name.toLowerCase())}</span></button>` : ''}
           ${App.esEjemplo(p) ? '<span class="ej-txt" title="Iniciativa de ejemplo: muestra cómo se ve una iniciativa completa. No suma en los totales ni en el tablero.">ejemplo, no suma en los totales</span>' : ''}</div>
-        <div class="facts">
-          <span>${pl.acts.length ? `<b>${pl.avance} %</b> de avance${pl.atrasadas ? `, <b class="r">${pl.atrasadas} atrasada${pl.atrasadas > 1 ? 's' : ''}</b>` : ''}${pl.fin ? `, termina el <b>${esc(App.d.fmt(pl.fin))}</b>` : ''}` : esc(App.sinPlan(p).corto)}</span>
-          <span>${caso ? `Caso <b>${esc((caso.estado || 'Borrador').toLowerCase())}</b>${App.Avance && App.Avance.dosAnios(f) > 0 ? `, <b>${esc(App.moneyShort(App.Avance.dosAnios(f), caso.moneda))}</b> a dos años` : ''}${caso.origen === 'ice' ? ', preliminar' : ''}` : 'Sin caso de negocio'}</span>
-          <span title="${esc((App.ICE.detalle(p).notas || []).join('\n'))}">ICE <b>${App.iceOf(p) == null ? '—' : esc(App.num(App.iceOf(p), 1))}</b>${ro ? '' : ' <button class="t-lnk" data-p="ice">editar</button>'}</span>
-          <span>${prox ? `Comité el <b>${esc(App.d.fmtShort(prox.fecha))}</b>` : 'Sin comité programado'}</span>
-          ${App.aud() ? (() => { const u = [p.updated_at || p.created_at || '', caso ? caso.updated_at || '' : '', ...pl.acts.map(x => x.updated_at || '')].sort().pop(), dd = u ? Math.round((Date.now() - new Date(u)) / 864e5) : null; return dd == null ? '' : `<span class="${dd > 30 ? 'viejo' : ''}">${dd < 1 ? 'Actualizada hoy' : `Actualizada hace <b>${dd}</b> ${dd === 1 ? 'día' : 'días'}`}</span>`; })() : ''}
-        </div>
+        <!-- los datos de cada parte (avance, caso, ICE, comités) van en su propia pestaña -->
         ${App.Novedades ? App.Novedades.ultimaHTML(id) : ''}
         ${App.Avance ? App.Avance.html(p, ro) : ''}
       </div>

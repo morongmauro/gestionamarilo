@@ -1071,7 +1071,10 @@ tr.lb-drop td,tr.lb-drop th{box-shadow:inset 0 2px 0 #FFC900}
 .cs-pie .ico-hj{width:11px;height:11px;border-radius:2px;background:linear-gradient(90deg,currentColor 1px,transparent 1px) 0 0/4px 4px,linear-gradient(currentColor 1px,transparent 1px) 0 0/4px 4px;opacity:.55}
 .cs-pie button.hj+button:not(.hj){margin-left:14px}
 .en-hoja [data-pane=tabla]{padding:8px 10px 6px}
-.en-hoja .lb-wrap{max-height:calc(100vh - 200px);min-height:320px}
+.en-hoja .lb-wrap{max-height:var(--lbh, calc(100vh - 200px));min-height:300px}
+.en-hoja .meta-line{display:none}
+.en-hoja [data-pane=tabla]{margin-bottom:0}
+.ptabs{overflow-y:hidden}
 .lb-barra{position:sticky;top:0;z-index:8}
 /* toda la pantalla */
 .cs-ampliado{position:fixed;inset:10px;z-index:160;display:flex;flex-direction:column;background:var(--card);border-radius:18px;padding:10px 14px;box-shadow:0 24px 70px rgba(22,11,41,.28);overflow:hidden}

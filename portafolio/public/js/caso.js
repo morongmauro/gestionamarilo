@@ -152,11 +152,11 @@
         <select class="estado-sel cs-est cl-${estadoColor(c.estado)}" data-f="estado" ${dis} title="Estado del caso">${ESTADOS.map(e => `<option ${e.name === est ? 'selected' : ''}>${e.name}</option>`).join('')}</select>
         <div class="kl" id="cKpi"></div><span class="sp"></span>
         <span class="cs-herr no-print">
-          <button class="cs-chip" data-c="param" title="Moneda, tasa de descuento, primer año y horizonte">${esc(mon)}, tasa ${App.num(c.tasa, 2) || 0} %, ${n()} años</button>
+          <button class="cs-chip" data-c="param" title="Parámetros del caso: moneda ${esc(mon)}, tasa de descuento, primer año y horizonte">Tasa ${App.num(c.tasa, 2) || 0} %, ${n()} años</button>
           ${ro ? '' : '<button class="cs-chip ic" data-c="undo" title="Deshacer (Ctrl+Z)" aria-label="Deshacer">↶</button><button class="cs-chip ic" data-c="redo" title="Rehacer (Ctrl+Y)" aria-label="Rehacer">↷</button>'}
           <button class="cs-chip ic" data-c="atajos" title="Cómo usar el libro: fórmulas, filas y columnas" aria-label="Ayuda">?</button>
           ${App.zoomCtl('libro')}
-          <button class="cs-chip" data-c="ampliar" title="Ver el libro en pantalla completa (Esc para volver)">⤢ Ampliar</button></span>
+          <button class="cs-chip ic" data-c="ampliar" title="Ver el libro en pantalla completa (Esc para volver)" aria-label="Pantalla completa">⤢</button></span>
         <span class="cs-guard" id="cGuard" aria-live="polite"></span>${accion}
         <button class="btn sm no-print" data-c="mas" aria-haspopup="menu">⋯ Más</button>
         <input type="file" accept=".xlsx" data-c="archivo" hidden></div>
@@ -184,6 +184,12 @@
     }
     refresh(fl);
     el.classList.toggle('en-hoja', !!HOJAS[pest]);
+    // Una sola barra de desplazamiento: la hoja toma el alto que queda en la pantalla (la página no se desplaza)
+    const ajustarAlto = () => { const box = $('#cFlujo', el); if (!box || !document.body.contains(box)) return window.removeEventListener('resize', ajustarAlto);
+      const top = box.getBoundingClientRect().top + window.scrollY, pie = ($('.cs-pie', el) || {}).offsetHeight || 50;
+      el.style.setProperty('--lbh', Math.max(300, window.innerHeight - top - 56 - pie - 14) + 'px'); };
+    requestAnimationFrame(ajustarAlto); window.addEventListener('resize', ajustarAlto);
+    App.Caso._alto = ajustarAlto;
     const ta = $('.cs-cons-t', el); const alto = () => { ta.style.height = 'auto'; ta.style.height = Math.max(160, ta.scrollHeight + 4) + 'px'; }; alto(); ta.addEventListener('input', alto);
 
     // Valor captado (real), mes a mes, por tipo de valor
@@ -290,7 +296,7 @@
       const tb = e.target.closest('[data-tab-c]');
       if (tb) { const k = tb.dataset.tabC; App.store.set('caso.tab', k); el.querySelectorAll('[data-tab-c]').forEach(x => { const on = x.dataset.tabC === k; x.classList.toggle('on', on); x.setAttribute('aria-selected', on); }); const pn = HOJAS[k] ? 'tabla' : k; el.querySelectorAll('.cs-pane').forEach(p => { p.hidden = p.dataset.pane !== pn; }); if (k === 'grafico') refresh(fl);
         if (HOJAS[k] && grid) grid.hoja(HOJAS[k].i);
-        el.classList.toggle('en-hoja', !!HOJAS[k]);
+        el.classList.toggle('en-hoja', !!HOJAS[k]); if (HOJAS[k]) requestAnimationFrame(ajustarAlto);
         return; }
       const es = e.target.closest('[data-escala]');
       if (es) { flush(); App.store.set('caso.escala', Number(es.dataset.escala)); return editor(el, pid); }
@@ -314,7 +320,7 @@
         editor(el, pid);
       });
       if (a === 'prelim-ok') return App.guard(async () => { await App.patch('cases', c.id, { origen: '' }); editor(el, pid); });
-      if (a === 'ampliar') { const on = el.classList.toggle('cs-ampliado'); b.textContent = on ? '✕ Cerrar' : '⤢ Ampliar'; document.body.classList.toggle('con-ampliado', on); return; }
+      if (a === 'ampliar') { const on = el.classList.toggle('cs-ampliado'); b.textContent = on ? '✕' : '⤢'; b.title = on ? 'Salir de pantalla completa (Esc)' : 'Ver el libro en pantalla completa (Esc para volver)'; document.body.classList.toggle('con-ampliado', on); return; }
       if (a === 'lb-fila') return grid.agregar('fila');
       if (a === 'lb-col') return grid.agregar('col');
       if (a === 'undo') return grid.undo();
@@ -512,7 +518,7 @@
 
   App.Caso = { editor, estadoColor, ESTADOS, preliminar, tarjetaPreliminares, nuevoCaso };
   window.addEventListener('pagehide', () => { if (App.Caso._flush) App.Caso._flush(); });
-  document.addEventListener('keydown', ev => { if (ev.key !== 'Escape') return; const x = document.querySelector('.cs-ampliado'); if (!x || document.querySelector('.lb-ed, .lb-acc')) return; x.classList.remove('cs-ampliado'); document.body.classList.remove('con-ampliado'); const b = x.querySelector('[data-c=ampliar]'); if (b) b.textContent = '⤢ Ampliar'; });
+  document.addEventListener('keydown', ev => { if (ev.key !== 'Escape') return; const x = document.querySelector('.cs-ampliado'); if (!x || document.querySelector('.lb-ed, .lb-acc')) return; x.classList.remove('cs-ampliado'); document.body.classList.remove('con-ampliado'); const b = x.querySelector('[data-c=ampliar]'); if (b) b.textContent = '⤢'; });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && App.Caso._flush) App.Caso._flush(); });
   App.views.casos = { render: section };
 })();
