@@ -965,8 +965,8 @@ select:focus-visible,.tv-mini select:focus-visible{outline:2px solid var(--info-
 .ag-btn.on{background:#FFC900;color:#160B29}.ag-btn.on .ag-ico .cb{stroke:#160B29}.ag-btn.on .ag-ico .sn{fill:#160B29}
 [data-theme=dark] .ag-btn{background:#FFC900;color:#160B29}[data-theme=dark] .ag-ico .cb{stroke:#160B29}[data-theme=dark] .ag-ico .sn{fill:#160B29}
 .ag-win{position:fixed;right:22px;bottom:90px;z-index:141;width:min(420px,calc(100vw - 32px));height:min(600px,calc(100vh - 110px));display:flex;flex-direction:column;border-radius:20px;overflow:hidden;
-  background:rgba(255,255,255,.78);backdrop-filter:blur(22px) saturate(1.5);-webkit-backdrop-filter:blur(22px) saturate(1.5);border:1px solid rgba(255,255,255,.7);box-shadow:0 24px 60px rgba(22,11,41,.22),0 1px 0 rgba(255,255,255,.8) inset;color:var(--ink);animation:agIn .18s ease-out}
-[data-theme=dark] .ag-win{background:rgba(23,15,42,.9);border-color:rgba(255,255,255,.12)}
+  background:linear-gradient(180deg,rgba(255,255,255,.97),rgba(246,245,248,.97));backdrop-filter:blur(22px) saturate(1.5);-webkit-backdrop-filter:blur(22px) saturate(1.5);border:1px solid rgba(255,255,255,.7);box-shadow:0 24px 60px rgba(22,11,41,.22),0 1px 0 rgba(255,255,255,.8) inset;color:var(--ink);animation:agIn .18s ease-out}
+[data-theme=dark] .ag-win{background:rgba(23,15,42,.97);border-color:rgba(255,255,255,.12)}
 @keyframes agIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
 .ag-win header{display:flex;align-items:center;gap:10px;padding:13px 14px 10px 18px}
 .ag-win header b{font-size:14.5px}

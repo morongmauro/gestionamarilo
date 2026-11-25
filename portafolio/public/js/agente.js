@@ -11,98 +11,126 @@
   const guardar = () => { try { sessionStorage.setItem('pf.agente', JSON.stringify(hist.slice(-20))); } catch (e) {} };
   let ocupado = false, win = null;
 
-  // «Mente de Amarilo»: una cabeza de perfil hecha de puntos (gris, negro y amarillo, como una trama de impresión)
-  // que gira despacio y respira; cada tanto los puntos se reagrupan en el logo de Amarilo y vuelven.
-  // Mientras se escribe, ondas que salen del oído (escucha). Mientras piensa, una ola amarilla y el logo más seguido.
+  // «Mente de Amarilo»: una cabeza en 3D hecha de miles de puntos (trama de impresión): de frente y en perspectiva,
+  // con luz y sombra (en la sombra los puntos son más grandes y oscuros), girando despacio. Unas zonas amarillas se
+  // mueven sobre la piel. Al escribir, la superficie vibra (escucha); al pensar, el amarillo crece y se forma el logo.
   const Mente = (() => {
     const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let modo = 'espera', raf = 0, energia = 0, desde = 0, forma = 'cabeza', luz = 0;
+    let modo = 'espera', raf = 0, energia = 0, desde = 0, forma = 'cara', luz = 0, P = null;
     const t0 = performance.now();
-    // Perfil mirando a la derecha, en una caja de 100 × 100: nuca, coronilla, frente, nariz, labios, mentón y cuello
-    const CABEZA = 'M40 9C58 5 75 13 80 30C82 37 81 42 83 47L90 58C91.5 60.5 89.5 62 86.5 62.5L85 63.5C86.5 66 85.5 68 83 69C84.5 71 84 73.5 81 74.5C81.5 79 80.5 83 76.5 85C71 87 65 85.5 61 87.5L61 98L31 98L33 84C22 77 15.5 64 16 47.5C16.5 26 25 12 40 9Z';
-    // El logo: dos escuadras gruesas (arriba-izquierda y abajo-derecha)
-    const enLogo = (x, y) => (x >= 18 && x <= 30 && y >= 18 && y <= 66) || (x >= 18 && x <= 76 && y >= 18 && y <= 30) || (x >= 70 && x <= 82 && y >= 34 && y <= 82) || (x >= 24 && x <= 82 && y >= 70 && y <= 82);
-    let P = null, nLogo = 0;
+    /* ---------- la cabeza como campo de distancia (y hacia arriba, z hacia quien mira) ---------- */
+    const len = (x, y, z) => Math.sqrt(x * x + y * y + z * z);
+    const smin = (a, b, k) => { const h = Math.max(0, Math.min(1, 0.5 + 0.5 * (b - a) / k)); return b + (a - b) * h - k * h * (1 - h); };
+    const smax = (a, b, k) => -smin(-a, -b, k);
+    const elip = (x, y, z, cx, cy, cz, rx, ry, rz) => { const k0 = len((x - cx) / rx, (y - cy) / ry, (z - cz) / rz), k1 = len((x - cx) / (rx * rx), (y - cy) / (ry * ry), (z - cz) / (rz * rz)); return k1 ? k0 * (k0 - 1) / k1 : -Math.min(rx, ry, rz); };
+    const esf = (x, y, z, cx, cy, cz, r) => len(x - cx, y - cy, z - cz) - r;
+    const cap = (x, y, z, ax, ay, az, bx, by, bz, r) => { const px = x - ax, py = y - ay, pz = z - az, vx = bx - ax, vy = by - ay, vz = bz - az; const h = Math.max(0, Math.min(1, (px * vx + py * vy + pz * vz) / (vx * vx + vy * vy + vz * vz))); return len(px - vx * h, py - vy * h, pz - vz * h) - r; };
+    function sdf(x, y, z) {
+      const ax = Math.abs(x); // la cara es simétrica
+      let d = elip(x, y, z, 0, 0.18, -0.08, 0.74, 0.92, 0.84);                    // cráneo
+      d = smin(d, elip(x, y, z, 0, -0.38, 0.12, 0.56, 0.6, 0.62), 0.22);          // cara y mandíbula
+      d = smin(d, elip(x, y, z, 0, -0.86, 0.36, 0.22, 0.16, 0.2), 0.16);          // mentón
+      d = smin(d, esf(ax, y, z, 0.38, -0.1, 0.46, 0.21), 0.16);                   // pómulos
+      d = smin(d, cap(ax, y, z, 0, 0.36, 0.64, 0.4, 0.33, 0.56, 0.1), 0.12);      // frente y cejas
+      d = smax(d, -esf(ax, y, z, 0.27, 0.16, 0.86, 0.17), 0.1);                    // cuencas de los ojos
+      d = smin(d, esf(ax, y, z, 0.27, 0.15, 0.62, 0.135), 0.05);                  // ojos
+      d = smin(d, cap(x, y, z, 0, 0.16, 0.74, 0, -0.2, 0.95, 0.07), 0.08);        // tabique de la nariz
+      d = smin(d, esf(x, y, z, 0, -0.24, 0.9, 0.1), 0.08);                        // punta de la nariz
+      d = smin(d, esf(ax, y, z, 0.1, -0.27, 0.8, 0.075), 0.06);                   // aletas
+      d = smin(d, cap(ax, y, z, 0, -0.45, 0.84, 0.19, -0.47, 0.74, 0.065), 0.06); // labio superior
+      d = smin(d, cap(ax, y, z, 0, -0.56, 0.8, 0.16, -0.55, 0.72, 0.07), 0.06);   // labio inferior
+      d = smax(d, -cap(ax, y, z, 0, -0.505, 0.9, 0.2, -0.505, 0.82, 0.018), 0.02);// comisura
+      d = smin(d, elip(ax, y, z, 0.76, 0.02, -0.06, 0.08, 0.22, 0.14), 0.06);     // orejas
+      d = smin(d, cap(x, y, z, 0, -0.75, -0.12, 0, -1.6, -0.18, 0.36), 0.2);      // cuello
+      return Math.max(d, -(y + 1.42));                                             // corte del cuello
+    }
+    const normal = (x, y, z) => { const e = 0.004, nx = sdf(x + e, y, z) - sdf(x - e, y, z), ny = sdf(x, y + e, z) - sdf(x, y - e, z), nz = sdf(x, y, z + e) - sdf(x, y, z - e), l = len(nx, ny, nz) || 1; return [nx / l, ny / l, nz / l]; };
+    // El logo en 3D: dos escuadras gruesas, como una placa de puntos
+    const enLogo = (x, y) => (x >= -0.62 && x <= -0.38 && y >= -0.14 && y <= 0.62) || (x >= -0.62 && x <= 0.42 && y >= 0.38 && y <= 0.62) || (x >= 0.38 && x <= 0.62 && y >= -0.62 && y <= 0.14) || (x >= -0.42 && x <= 0.62 && y >= -0.62 && y <= -0.38);
     function preparar() {
       if (P) return true;
-      try {
-        const cv = document.createElement('canvas'); cv.width = cv.height = 10; const g = cv.getContext('2d'), path = new Path2D(CABEZA);
-        const paso = 2.15, cab = [], logo = [];
-        for (let y = 4; y < 100; y += paso * 0.87) for (let x = 10 + ((Math.round(y / (paso * 0.87)) % 2) * paso / 2); x < 96; x += paso) {
-          if (g.isPointInPath(path, x, y)) cab.push([x, y]);
-          if (enLogo(x, y)) logo.push([x, y]);
-        }
-        const gauss = (x, y, cx, cy, s) => Math.exp(-((x - cx) ** 2 + (y - cy) ** 2) / (2 * s * s));
-        P = cab.map(([x, y], i) => {
-          // sombra: la nuca más oscura, el ojo, el oído, la mejilla y bajo el mentón; la frente y la nariz con luz
-          let s = 0.38 + (52 - x) / 85 + 0.45 * gauss(x, y, 71, 44, 4.5) + 0.35 * gauss(x, y, 41, 52, 6) + 0.25 * gauss(x, y, 66, 66, 7) + 0.35 * gauss(x, y, 62, 88, 6) - 0.3 * gauss(x, y, 74, 27, 9);
-          // el contorno se marca más (así se lee el perfil: frente, nariz, labios, mentón)
-          const borde = [[2.6, 0], [-2.6, 0], [0, 2.6], [0, -2.6], [1.9, 1.9], [-1.9, 1.9], [1.9, -1.9], [-1.9, -1.9]].some(([dx, dy]) => !g.isPointInPath(path, x + dx, y + dy));
-          s = Math.max(0.3, Math.min(1, s + (borde ? 0.55 : 0)));
-          const am = gauss(x, y, 52, 32, 16) > 0.35 && Math.random() < 0.22; // algunos puntos amarillos en la frente (la idea)
-          return { hx: x, hy: y, s, am, x, y, ph: Math.random() * 6.283, lx: 50, ly: 50, vis: 1 };
-        });
-        // a cada punto, un lugar en el logo (los que sobran se desvanecen)
-        const orden = P.map((p, i) => i).sort((a, b) => P[a].hy - P[b].hy || P[a].hx - P[b].hx);
-        logo.sort((a, b) => a[1] - b[1] || a[0] - b[0]);
-        nLogo = Math.min(logo.length, P.length);
-        orden.forEach((pi, k) => { const p = P[pi]; if (k < nLogo) { const q = logo[Math.floor(k * logo.length / nLogo)]; p.lx = q[0]; p.ly = q[1]; p.enL = true; } else { const q = logo[k % logo.length]; p.lx = q[0]; p.ly = q[1]; p.enL = false; } });
-        return true;
-      } catch (e) { return false; }
+      // puntos al azar proyectados sobre la superficie y repartidos parejo (una celda, un punto)
+      let s = 7; const azar = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+      const celdas = new Map(), C = 0.021, out = [];
+      for (let i = 0; i < 140000 && out.length < 16000; i++) {
+        let x = azar() * 1.8 - 0.9, y = azar() * 2.9 - 1.45, z = azar() * 2.1 - 1.05;
+        for (let k = 0; k < 7; k++) { const d = sdf(x, y, z); if (Math.abs(d) < 1e-4) break; const n = normal(x, y, z); x -= n[0] * d; y -= n[1] * d; z -= n[2] * d; }
+        if (Math.abs(sdf(x, y, z)) > 0.004) continue;
+        const key = Math.round(x / C) + ',' + Math.round(y / C) + ',' + Math.round(z / C); if (celdas.has(key)) continue; celdas.set(key, 1);
+        const n = normal(x, y, z);
+        // oclusión: cuánto «se hunde» el punto (cuencas, comisuras, debajo de la nariz): más oscuro
+        const oc = Math.max(0, Math.min(1, (sdf(x + n[0] * 0.08, y + n[1] * 0.08, z + n[2] * 0.08) - 0.08) / -0.08));
+        out.push({ x, y, z, nx: n[0], ny: n[1], nz: n[2], oc, ph: azar() * 6.283, lx: 0, ly: 0, lz: 0, enL: false, vis: 1, cx: x, cy: y, cz: z });
+      }
+      // a cada punto, su lugar en el logo (los que sobran se esconden)
+      const logo = []; for (let y = 0.62; y >= -0.62; y -= 0.03) for (let x = -0.62; x <= 0.62; x += 0.03) if (enLogo(x, y)) for (const z of [-0.06, 0, 0.06]) logo.push([x, y, z]);
+      const orden = out.map((p, i) => i).sort((a, b) => out[b].y - out[a].y || out[a].x - out[b].x);
+      orden.forEach((pi, k) => { const p = out[pi]; const q = logo[Math.floor(k * logo.length / out.length)] || logo[k % logo.length]; p.lx = q[0]; p.ly = q[1]; p.lz = q[2]; p.enL = k % Math.max(1, Math.round(out.length / logo.length)) === 0 || out.length <= logo.length; });
+      P = out; return true;
     }
-    // Ritmo: esperando, casi siempre la cabeza y cada tanto el logo; pensando, alterna más rápido
     function elegir(t) {
-      const ciclo = modo === 'piensa' ? [['cabeza', 1.9], ['logo', 1.5]] : [['cabeza', 5.5], ['logo', 2.2]];
+      const ciclo = modo === 'piensa' ? [['cara', 2.4], ['logo', 1.6]] : [['cara', 7], ['logo', 2.2]];
       const tot = ciclo.reduce((a, c) => a + c[1], 0); let x = ((t - desde) % tot + tot) % tot;
       for (const [f, d] of ciclo) { if (x < d) return f; x -= d; }
-      return 'cabeza';
+      return 'cara';
     }
+    const LX = -0.78, LY = 0.42, LZ = 0.55, LL = len(LX, LY, LZ); // luz: de frente, arriba a la izquierda
     function cuadro(cv, t) {
       const dpr = Math.min(2, window.devicePixelRatio || 1), w = Math.round(cv.clientWidth * dpr), h = Math.round(cv.clientHeight * dpr);
       if (w && h && (cv.width !== w || cv.height !== h)) { cv.width = w; cv.height = h; }
       const W = cv.width, H = cv.height; if (!W || !H) return;
       const g = cv.getContext('2d'), osc = document.documentElement.getAttribute('data-theme') === 'dark';
-      const S = Math.min(W, H) * 0.94, ox = (W - S) / 2, oy = (H - S) / 2, k = S / 100;
-      const giro = reduce ? 0 : Math.sin(t * 0.55) * 0.42, cg = Math.cos(giro), sg = Math.sin(giro), resp = 1 + Math.sin(t * 1.3) * 0.012;
-      luz += ((modo === 'piensa' ? 1 : 0) - luz) * 0.05;
       g.clearRect(0, 0, W, H);
-      const tinta = osc ? [214, 208, 228] : [28, 22, 38];
+      luz += ((modo === 'piensa' ? 1 : 0) - luz) * 0.04;
+      // giro: de frente, volteando a cada lado (tres cuartos) y un leve cabeceo
+      const yaw = reduce ? 0.35 : Math.sin(t * 0.32) * 0.75 + 0.2, pitch = reduce ? 0.08 : 0.08 + Math.sin(t * 0.21) * 0.07;
+      const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+      const esc = Math.min(W / 2.3, H / 3.05), ox = W / 2, oy = H * 0.47, foco = 4.2;
+      const tinta = osc ? '226,220,238' : '24,18,34', oro = '255,201,0';
+      const lotes = new Map();
       for (const p of P) {
-        let tx, ty, vis = 1;
-        if (forma === 'logo') { tx = p.lx; ty = p.ly; vis = p.enL ? 1 : 0; }
-        else {
-          // giro en 3D: la cabeza se ve más angosta al voltear, y respira
-          tx = 50 + (p.hx - 50) * cg * resp; ty = 50 + (p.hy - 50) * resp;
-          // escucha: ondas que salen del oído mientras se escribe
-          if (energia > 0.02) { const dx = p.hx - 41, dy = p.hy - 52, d = Math.hypot(dx, dy) || 1, o = Math.sin(d * 0.32 - t * 11) * energia * 2.6; tx += dx / d * o; ty += dy / d * o; }
-        }
-        const v = reduce ? 1 : 0.13;
-        p.x += (tx - p.x) * v; p.y += (ty - p.y) * v; p.vis += (vis - p.vis) * v;
-        if (p.vis < 0.03) continue;
-        // sombra según el giro (el lado que se aleja se oscurece) y una ola amarilla cuando piensa
-        const s = forma === 'logo' ? 0.8 : Math.max(0.25, Math.min(1, p.s + sg * (p.hx - 50) / -140));
-        const ola = luz * Math.max(0, Math.sin(t * 3.2 - p.hy * 0.11 + p.hx * 0.04)) ** 3;
-        const amar = p.am ? 0.75 + 0.25 * Math.sin(t * 2 + p.ph) : 0;
-        const a = forma === 'logo' ? (p.ph < 5.2 ? 0.9 : 0) : Math.max(amar, ola); // el logo, amarillo como el de Amarilo, con algo de textura
-        const col = a > 0.35 ? [255, 201, 0] : tinta;
-        const onda = energia > 0.02 && forma !== 'logo' ? energia * Math.max(0, Math.sin(Math.hypot(p.hx - 41, p.hy - 52) * 0.32 - t * 11)) : 0;
-        const alfa = (0.3 + s * 0.68 + onda * 0.35) * p.vis;
-        const r = (0.28 + s * 0.62 + (a > 0.35 ? 0.15 : 0)) * k * 0.62;
-        g.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${Math.min(1, alfa).toFixed(3)})`;
-        g.beginPath(); g.arc(ox + p.x * k, oy + p.y * k, r, 0, 6.283); g.fill();
+        // hacia dónde va el punto: la cara (con su vibración al escribir) o el logo
+        let tx = p.x, ty = p.y, tz = p.z, vis = 1;
+        if (forma === 'logo') { tx = p.lx; ty = p.ly; tz = p.lz; vis = p.enL ? 1 : 0; }
+        else if (energia > 0.02) { const o = Math.sin(len(p.x - 0.76, p.y, p.z) * 14 - t * 10) * 0.025 * energia; tx += p.nx * o; ty += p.ny * o; tz += p.nz * o; }
+        const v = reduce ? 1 : 0.1; p.cx += (tx - p.cx) * v; p.cy += (ty - p.cy) * v; p.cz += (tz - p.cz) * v; p.vis += (vis - p.vis) * v;
+        if (p.vis < 0.04) continue;
+        // rotar y proyectar con perspectiva
+        const x1 = p.cx * cy + p.cz * sy, z1 = -p.cx * sy + p.cz * cy, y2 = p.cy * cp - z1 * sp, z2 = p.cy * sp + z1 * cp;
+        const enLogoAhora = p.vis < 0.999 || forma === 'logo';
+        const nx1 = p.nx * cy + p.nz * sy, nz1 = -p.nx * sy + p.nz * cy, ny2 = p.ny * cp - nz1 * sp, nz2 = p.ny * sp + nz1 * cp;
+        const mira = forma === 'logo' ? 1 : nz2; if (mira < -0.05) continue; // solo la cara que se ve
+        const k = foco / (foco - z2), sx = ox + x1 * esc * k, syy = oy - y2 * esc * k;
+        // luz y sombra (Lambert) + oclusión; la trama: sombra = puntos más grandes y oscuros
+        const dif = forma === 'logo' ? 0.55 : Math.max(0, (nx1 * LX + ny2 * LY + nz2 * LZ) / LL);
+        let oscuro = Math.max(0, Math.min(1, 1 - (0.08 + 0.92 * dif) + p.oc * 0.5));
+        // zonas amarillas que se mueven sobre la piel (como el rojo de la referencia); al pensar crecen
+        // manchas suaves: cada punto es amarillo con una probabilidad que sigue un campo que se mueve despacio
+        const campo = 0.5 + 0.5 * Math.sin(p.x * 2.2 + t * 0.6) * Math.cos(p.y * 1.7 - t * 0.45) + 0.35 * Math.sin(p.z * 2.4 + p.y * 1.3 + t * 0.5);
+        const prob = forma === 'logo' ? (p.ph < 5 ? 1 : 0) : Math.max(0, campo - 0.52) * 1.9 * (0.75 + luz * 0.9) + luz * 0.6 * Math.max(0, Math.sin(t * 2.6 - p.y * 4)) ** 4;
+        const amar = (p.ph / 6.283) < prob ? 1 : 0;
+        const prof = forma === 'logo' ? 1 : Math.pow(Math.max(0, mira), 0.7); // el borde se desvanece (sin contorno)
+        // puntos diminutos y tenues: la sombra se forma por acumulación
+        const r = (0.32 + oscuro * 0.95) * esc / 330 * k * (forma === 'logo' ? 1.5 : 1);
+        if (r < 0.12) continue;
+        const a = Math.min(1, (0.14 + oscuro * 0.74) * prof * p.vis);
+        const esAm = amar > 0.4, col = esAm ? oro : tinta, aq = Math.round((esAm ? Math.min(1, a * 1.6 + 0.25) : a) * 20) / 20;
+        if (aq <= 0) continue;
+        const llave = col + '|' + aq; let pth = lotes.get(llave); if (!pth) { pth = new Path2D(); lotes.set(llave, pth); }
+        pth.moveTo(sx + r, syy); pth.arc(sx, syy, r, 0, 6.283);
       }
+      lotes.forEach((pth, llave) => { const [c, a] = llave.split('|'); g.fillStyle = `rgba(${c},${a})`; g.fill(pth); });
     }
     function ciclo() {
       raf = 0; const cvs = document.querySelectorAll('.ag-win canvas.ag-mente'); if (!cvs.length || !preparar()) return;
       const t = reduce ? 0 : (performance.now() - t0) / 1000;
-      energia *= 0.965; forma = reduce ? 'cabeza' : elegir(t);
+      energia *= 0.965; forma = reduce ? 'cara' : elegir(t);
       cvs.forEach(cv => cuadro(cv, t));
       if (!reduce) raf = requestAnimationFrame(ciclo);
     }
     const andar = () => { if (!raf) raf = requestAnimationFrame(ciclo); };
     return {
       modo: m => { if (m !== modo) { modo = m; desde = (performance.now() - t0) / 1000; } andar(); },
-      // al escribir: escucha (ondas desde el oído) y vuelve a la cabeza si estaba en el logo
       excitar: () => { energia = Math.min(1, energia + 0.4); if (modo === 'espera' && forma === 'logo') desde = (performance.now() - t0) / 1000; andar(); },
       andar, parar: () => { if (raf) cancelAnimationFrame(raf); raf = 0; },
     };
