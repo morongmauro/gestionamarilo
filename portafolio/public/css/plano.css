@@ -1060,3 +1060,46 @@ tr.lb-drop td,tr.lb-drop th{box-shadow:inset 0 2px 0 #FFC900}
 .cf2-fin{fill:var(--ink);stroke:var(--card);stroke-width:2}
 .cf2-val{fill:var(--ink);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
 .cf2 .cf-tip{min-width:240px}
+
+/* ---------- Caso de negocio: una barra arriba, hojas abajo, más alto para el libro ---------- */
+#main.ficha-caso .av-next,#main.ficha-caso .nv-ult,#main.ficha-caso .av-line{display:none}
+.cs-herr{display:none;align-items:center;gap:6px}
+.en-hoja .cs-herr{display:inline-flex}
+.cs-pie{position:sticky;bottom:0;z-index:20;margin:0;padding:4px 6px;gap:2px;border-top:0;border-radius:14px 14px 0 0;background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 -6px 18px rgba(22,11,41,.06)}
+.cs-pie button{border-radius:10px;padding:7px 13px}
+.cs-pie button.hj{display:inline-flex;align-items:center;gap:6px}
+.cs-pie .ico-hj{width:11px;height:11px;border-radius:2px;background:linear-gradient(90deg,currentColor 1px,transparent 1px) 0 0/4px 4px,linear-gradient(currentColor 1px,transparent 1px) 0 0/4px 4px;opacity:.55}
+.cs-pie button.hj+button:not(.hj){margin-left:14px}
+.en-hoja [data-pane=tabla]{padding:8px 10px 6px}
+.en-hoja .lb-wrap{max-height:calc(100vh - 200px);min-height:320px}
+.lb-barra{position:sticky;top:0;z-index:8}
+/* toda la pantalla */
+.cs-ampliado{position:fixed;inset:10px;z-index:160;display:flex;flex-direction:column;background:var(--card);border-radius:18px;padding:10px 14px;box-shadow:0 24px 70px rgba(22,11,41,.28);overflow:hidden}
+.cs-ampliado>.cs-pane:not([hidden]){flex:1;min-height:0;overflow:auto;margin:0}
+.cs-ampliado .lb-host{display:flex;flex-direction:column;height:100%}
+.cs-ampliado .lb-wrap{flex:1;max-height:none}
+.cs-ampliado .meta-line{display:none}
+body.con-ampliado{overflow:hidden}
+body.con-ampliado .ag-btn{display:none}
+/* fila o columna elegida: sus botones van en la barra de arriba */
+.lb-acc{gap:6px;flex-wrap:wrap;background:color-mix(in srgb,#FFC900 18%,var(--card))}
+.lb-acc b{font-size:13px;margin-right:6px}
+.lb-acc button{border:0;border-radius:9px;padding:6px 11px;background:var(--card);color:var(--ink);font:600 12.5px/1 Montserrat,sans-serif;cursor:pointer}
+.lb-acc button:hover{background:color-mix(in srgb,var(--ink) 7%,var(--card))}
+.lb-acc button.borrar{color:#B3261E}
+.lb-acc button.borrar:hover{background:color-mix(in srgb,#B3261E 10%,var(--card))}
+.lb-acc button.x{background:transparent;color:var(--muted);padding:6px 8px}
+.lb-acc .sp{flex:1}
+.lb-tip{font-size:11.5px;color:var(--muted)}
+table.lb td.ent{background:color-mix(in srgb,#FFC900 22%,var(--card))!important;color:var(--ink)}
+.lb-seccion td.ent{color:#160B29}
+.lb-letras th.ent,tbody th.lb-n.ent{background:#FFC900;color:#160B29}
+.lb-letras th[data-col]{cursor:pointer}
+.lb-letras th[data-col]:hover,tbody th.lb-n:hover{color:var(--ink)}
+.lb-dropc{box-shadow:inset 2px 0 0 #FFC900!important}
+table.lb td{color:var(--ink)}
+table.lb .lb-seccion td{color:#fff}
+table.lb .lb-seccion td.ent{color:#160B29}
+.cs-ampliado>[data-pane=tabla]:not([hidden]){display:flex;flex-direction:column;overflow:hidden}
+.cs-ampliado .lb-host{display:flex;flex-direction:column;flex:1;min-height:0;height:auto;max-height:none;overflow:hidden}
+.cs-ampliado .lb-host .lb-wrap{flex:1;min-height:0;max-height:none}

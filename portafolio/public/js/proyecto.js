@@ -58,6 +58,7 @@
       <nav class="ptabs">${TABS.map(([k, l]) => `<a href="#/proyectos/${id}/${k}" class="${k === tab ? 'on' : ''}">${k === 'valor' && App.aud() ? 'Captura y OKR' : l}${cuenta(k)}</a>`).join('')}</nav>
       <div id="pTab"></div>`;
     const box = $('#pTab', main);
+    main.classList.toggle('ficha-caso', tab === 'caso');
 
     if (tab === 'info') {
       // B5, Los campos del método anterior (Impacto, Confianza y Facilidad de 1 a 10, e Income antiguo) no se muestran

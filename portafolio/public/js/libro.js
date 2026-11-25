@@ -220,6 +220,16 @@
     aplicar(libro, (hi, eje, i) => (hi === h && eje === 'r' && nueva.has(i) ? nueva.get(i) : i));
     const F = libro.hojas[h].filas; const [f] = F.splice(de, 1); F.splice(a, 0, f);
   }
+  // Mover una columna de «de» a «a»: las fórmulas siguen a sus celdas
+  function moverCol(libro, h, de, a) {
+    if (de === a) return;
+    const H = libro.hojas[h], n = Math.max(de, a, ...H.filas.map(f => (f.c || []).length - 1)) + 1;
+    const orden = Array.from({ length: n }, (_, i) => i); const [x] = orden.splice(de, 1); orden.splice(a, 0, x);
+    const nueva = new Map(orden.map((viejo, nuevo) => [viejo, nuevo]));
+    aplicar(libro, (hi, eje, i) => (hi === h && eje === 'c' && nueva.has(i) ? nueva.get(i) : i));
+    H.filas.forEach(f => { const c = f.c || []; while (c.length < n) c.push(''); const [v] = c.splice(de, 1); c.splice(a, 0, v); while (c.length && (c[c.length - 1] === '' || c[c.length - 1] == null)) c.pop(); f.c = c; });
+    if (H.anchos) { while (H.anchos.length < n) H.anchos.push(120); const [w] = H.anchos.splice(de, 1); H.anchos.splice(a, 0, w); }
+  }
   // Copiar una fórmula a otra celda moviendo sus referencias relativas (llenar a la derecha o hacia abajo)
   function desplazar(formula, dr, dc) {
     if (typeof formula !== 'string' || formula[0] !== '=') return formula;
@@ -241,9 +251,13 @@
   function flujos(libro) {
     const F = libro.flujo || {}; const h = F.hoja != null ? F.hoja : libro.hojas.length - 1, hoja = libro.hojas[h]; if (!hoja) return [];
     const E = crear(libro), c0 = F.col0 != null ? F.col0 : 1, n = F.anios || 10, out = [];
+    // cada año se busca por su encabezado («Año 1», «Año 2»…): si se mueven o insertan columnas, el año sigue siendo el mismo
+    const colDe = Array.from({ length: n }, (_, t) => c0 + t);
+    const enc = hoja.filas.find(f => (f.c || []).some(x => /^a[nñ]o\s*1\b/i.test(String(x).trim())));
+    if (enc) enc.c.forEach((x, c) => { const m = /^a[nñ]o\s*(\d+)\b/i.exec(String(x).trim()); if (m && +m[1] >= 1 && +m[1] <= n) colDe[+m[1] - 1] = c; });
     hoja.filas.forEach((f, r) => {
       if (!f.rol) return;
-      const valores = Array.from({ length: n }, (_, t) => { const v = E.val(h, r, c0 + t); return typeof v === 'number' ? Math.round(v * 100) / 100 : 0; });
+      const valores = Array.from({ length: n }, (_, t) => { const v = E.val(h, r, colDe[t]); return typeof v === 'number' ? Math.round(v * 100) / 100 : 0; });
       const concepto = String((f.c || [])[F.colNombre || 0] || '').trim() || 'Concepto';
       // la inversión se registra en positivo aunque en la hoja sea una salida de caja (negativa)
       out.push({ concepto, tipo: f.rol, valores: f.rol === 'inversion' ? valores.map(v => Math.abs(v)) : valores, ...(f.cat ? { categoria: f.cat } : {}) });
@@ -251,5 +265,5 @@
     return out;
   }
 
-  return { crear, arbol, fichas, colLet, colNum, dir, esErr, ERR, norm, reescribir, insertarFila, eliminarFila, insertarCol, eliminarCol, moverFila, desplazar, flujos };
+  return { crear, arbol, fichas, colLet, colNum, dir, esErr, ERR, norm, reescribir, insertarFila, eliminarFila, insertarCol, eliminarCol, moverFila, moverCol, desplazar, flujos };
 });

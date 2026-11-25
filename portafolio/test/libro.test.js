@@ -18,6 +18,15 @@ test('mover filas no desajusta las fórmulas', () => {
   Libro.moverFila(L, h, 6, 8); Libro.moverFila(L, h, 13, 16); Libro.moverFila(L, 0, 10, 20);
   assert.deepStrictEqual(flujoCaja(L), BASE);
 });
+test('mover columnas no desajusta las fórmulas', () => {
+  const L = copia(); Libro.moverCol(L, 0, 3, 0); Libro.moverCol(L, 1, 4, 1); Libro.moverCol(L, 0, 4, 2);
+  assert.deepStrictEqual(flujoCaja(L), BASE);
+});
+test('mover la columna de un año no cambia el flujo del sitio (cada año se lee por su encabezado)', () => {
+  const L = copia(), antes = JSON.stringify(Libro.flujos(L).map(f => f.valores));
+  Libro.moverCol(L, 2, 1, 4); Libro.insertarCol(L, 2, 3);
+  assert.strictEqual(JSON.stringify(Libro.flujos(L).map(f => f.valores)), antes);
+});
 test('borrar una fila vacía no cambia nada; borrar una usada deja #REF!', () => {
   const L = copia(); const h = 0, vac = L.hojas[h].filas.findIndex((f, i) => i > 3 && f.t === 'vacia');
   Libro.eliminarFila(L, h, vac); assert.deepStrictEqual(flujoCaja(L), BASE);
