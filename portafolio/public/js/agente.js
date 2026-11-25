@@ -25,7 +25,7 @@
     const elip = (x, y, z, cx, cy, cz, rx, ry, rz) => { const k0 = len((x - cx) / rx, (y - cy) / ry, (z - cz) / rz), k1 = len((x - cx) / (rx * rx), (y - cy) / (ry * ry), (z - cz) / (rz * rz)); return k1 ? k0 * (k0 - 1) / k1 : -Math.min(rx, ry, rz); };
     const esf = (x, y, z, cx, cy, cz, r) => len(x - cx, y - cy, z - cz) - r;
     const cap = (x, y, z, ax, ay, az, bx, by, bz, r) => { const px = x - ax, py = y - ay, pz = z - az, vx = bx - ax, vy = by - ay, vz = bz - az; const h = Math.max(0, Math.min(1, (px * vx + py * vy + pz * vz) / (vx * vx + vy * vy + vz * vz))); return len(px - vx * h, py - vy * h, pz - vz * h) - r; };
-    function sdf(x, y, z) {
+    function sdfDetalle(x, y, z) {
       const ax = Math.abs(x); // la cara es simétrica
       let d = elip(x, y, z, 0, 0.18, -0.08, 0.74, 0.92, 0.84);                    // cráneo
       d = smin(d, elip(x, y, z, 0, -0.38, 0.12, 0.56, 0.6, 0.62), 0.22);          // cara y mandíbula
@@ -44,6 +44,26 @@
       d = smin(d, cap(x, y, z, 0, -0.75, -0.12, 0, -1.6, -0.18, 0.36), 0.2);      // cuello
       return Math.max(d, -(y + 1.42));                                             // corte del cuello
     }
+    // Cabeza suave: solo el volumen, con un leve relieve de la frente y la nariz (sin ojos, labios ni orejas)
+    function sdfSuave(x, y, z) {
+      let d = elip(x, y, z, 0, 0.16, -0.06, 0.74, 0.9, 0.82);
+      d = smin(d, elip(x, y, z, 0, -0.4, 0.14, 0.54, 0.58, 0.6), 0.3);
+      d = smin(d, elip(x, y, z, 0, -0.82, 0.32, 0.24, 0.18, 0.22), 0.22);
+      d = smin(d, cap(x, y, z, 0, 0.1, 0.72, 0, -0.18, 0.84, 0.05), 0.16);
+      d = smin(d, cap(Math.abs(x), y, z, 0, 0.34, 0.66, 0.34, 0.31, 0.58, 0.06), 0.16);
+      d = smin(d, cap(x, y, z, 0, -0.72, -0.12, 0, -1.6, -0.16, 0.35), 0.26);
+      return Math.max(d, -(y + 1.42));
+    }
+    const sdfOrbe = (x, y, z) => len(x, y, z) - 1.02;
+    // Dos perfiles suaves mirándose (cada cabeza girada hacia la otra)
+    function sdfDos(x, y, z) {
+      const S = 0.62, una = (cx, giro) => { const px = (x - cx) / S, py = (y + 0.05) / S, pz = z / S, c = Math.cos(giro), sn = Math.sin(giro); return sdfSuave(px * c - pz * sn, py, px * sn + pz * c) * S; };
+      return Math.min(una(-0.62, -1.25), una(0.62, 1.25));
+    }
+    const VARIANTES = { suave: [sdfSuave, [1.8, 2.9, 2.1]], orbe: [sdfOrbe, [2.2, 2.2, 2.2]], dos: [sdfDos, [2.6, 2.0, 1.6]], detalle: [sdfDetalle, [1.8, 2.9, 2.1]] };
+    let variante = (() => { try { return App.store.get('agente.forma', 'suave'); } catch (e) { return 'suave'; } })();
+    if (!VARIANTES[variante]) variante = 'suave';
+    const sdf = (x, y, z) => VARIANTES[variante][0](x, y, z);
     const normal = (x, y, z) => { const e = 0.004, nx = sdf(x + e, y, z) - sdf(x - e, y, z), ny = sdf(x, y + e, z) - sdf(x, y - e, z), nz = sdf(x, y, z + e) - sdf(x, y, z - e), l = len(nx, ny, nz) || 1; return [nx / l, ny / l, nz / l]; };
     // El logo en 3D: dos escuadras gruesas, como una placa de puntos
     const enLogo = (x, y) => (x >= -0.62 && x <= -0.38 && y >= -0.14 && y <= 0.62) || (x >= -0.62 && x <= 0.42 && y >= 0.38 && y <= 0.62) || (x >= 0.38 && x <= 0.62 && y >= -0.62 && y <= 0.14) || (x >= -0.42 && x <= 0.62 && y >= -0.62 && y <= -0.38);
@@ -53,7 +73,8 @@
       let s = 7; const azar = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
       const celdas = new Map(), C = 0.021, out = [];
       for (let i = 0; i < 140000 && out.length < 16000; i++) {
-        let x = azar() * 1.8 - 0.9, y = azar() * 2.9 - 1.45, z = azar() * 2.1 - 1.05;
+        const [bx, by, bz] = VARIANTES[variante][1];
+        let x = (azar() - 0.5) * bx, y = (azar() - 0.5) * by, z = (azar() - 0.5) * bz;
         for (let k = 0; k < 7; k++) { const d = sdf(x, y, z); if (Math.abs(d) < 1e-4) break; const n = normal(x, y, z); x -= n[0] * d; y -= n[1] * d; z -= n[2] * d; }
         if (Math.abs(sdf(x, y, z)) > 0.004) continue;
         const key = Math.round(x / C) + ',' + Math.round(y / C) + ',' + Math.round(z / C); if (celdas.has(key)) continue; celdas.set(key, 1);
@@ -83,9 +104,9 @@
       g.clearRect(0, 0, W, H);
       luz += ((modo === 'piensa' ? 1 : 0) - luz) * 0.04;
       // giro: de frente, volteando a cada lado (tres cuartos) y un leve cabeceo
-      const yaw = reduce ? 0.35 : Math.sin(t * 0.32) * 0.75 + 0.2, pitch = reduce ? 0.08 : 0.08 + Math.sin(t * 0.21) * 0.07;
+      const yaw = reduce ? 0.35 : variante === 'orbe' ? t * 0.25 : variante === 'dos' ? Math.sin(t * 0.3) * 0.35 : Math.sin(t * 0.32) * 0.75 + 0.2, pitch = reduce ? 0.08 : 0.08 + Math.sin(t * 0.21) * 0.07;
       const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
-      const esc = Math.min(W / 2.3, H / 3.05), ox = W / 2, oy = H * 0.47, foco = 4.2;
+      const esc = variante === 'orbe' ? Math.min(W, H) / 2.6 : variante === 'dos' ? Math.min(W / 2.9, H / 2.2) : Math.min(W / 2.3, H / 3.05), ox = W / 2, oy = H * (variante === 'suave' || variante === 'detalle' ? 0.47 : 0.5), foco = 4.2;
       const tinta = osc ? '226,220,238' : '24,18,34', oro = '255,201,0';
       const lotes = new Map();
       for (const p of P) {
@@ -130,6 +151,7 @@
     }
     const andar = () => { if (!raf) raf = requestAnimationFrame(ciclo); };
     return {
+      variante: v => { if (VARIANTES[v]) { variante = v; P = null; try { App.store.set('agente.forma', v); } catch (e) {} andar(); } },
       modo: m => { if (m !== modo) { modo = m; desde = (performance.now() - t0) / 1000; } andar(); },
       excitar: () => { energia = Math.min(1, energia + 0.4); if (modo === 'espera' && forma === 'logo') desde = (performance.now() - t0) / 1000; andar(); },
       andar, parar: () => { if (raf) cancelAnimationFrame(raf); raf = 0; },
@@ -244,5 +266,5 @@
     document.getElementById('agBtn').onclick = () => (win ? cerrar() : abrir());
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', montar); else montar();
-  App.Agente = { abrir, cerrar, contexto, formato };
+  App.Agente = { abrir, cerrar, contexto, formato, forma: v => Mente.variante(v) };
 })();
