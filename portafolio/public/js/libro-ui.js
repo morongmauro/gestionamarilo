@@ -234,14 +234,22 @@
     const FX = r => (conFormulas && r.formulas) || {}, val = (r, t) => Number((r.valores || [])[t]) || 0, esSup = r => r.tipo === 'supuesto';
     const efectivo = (r, t) => { if (!esSup(r)) return val(r, t); for (let k = t; k >= 0; k--) if (val(r, k) || (r.formulas || {})[k]) return val(r, k); return 0; };
     const fijo = r => esSup(r) && !Object.keys(FX(r)).length && Array.from({ length: N }, (_, t) => efectivo(r, t)).every(v => v === efectivo(r, 0));
-    const sup = fl.filter(esSup), fijos = sup.filter(fijo), varios = sup.filter(r => !fijo(r));
+    // Supuestos como en el Excel: un valor por fila. Los que cambian por año van en una fila por cada año en que cambian;
+    // los que se calculan año a año con fórmulas pasan al Flujo, en «Cálculos de apoyo»
+    const conFx = r => Object.keys(FX(r)).length > 0;
+    const sup = fl.filter(esSup), fijos = sup.filter(fijo), calcSup = sup.filter(r => !fijo(r) && conFx(r)), varios = sup.filter(r => !fijo(r) && !conFx(r));
+    const cortes = r => Array.from({ length: N }, (_, t) => t).filter(t => t === 0 || efectivo(r, t) !== efectivo(r, t - 1));
     const de = k => fl.filter(r => r.tipo === k), ben = de('beneficio'), cos = de('costo'), inv = de('inversion'), calc = de('calculo');
     const anios = Array.from({ length: N }, (_, t) => 'Año ' + (t + 1) + (y0 ? ` (${y0 + t})` : ''));
     const H = [], pos = new Map(), tot = {};
     // 1) dónde va cada fila
-    const S = { nombre: 'Supuestos', anchos: [170, 330, 90, 160, 260], filas: [{ t: 'titulo', c: ['SUPUESTOS DEL CASO DE NEGOCIO'] }, { t: 'vacia', c: [] }] };
+    const S = { nombre: 'Supuestos', anchos: [250, 300, 80, 150, 260], filas: [{ t: 'titulo', c: ['SUPUESTOS DEL CASO DE NEGOCIO'] }, { t: 'vacia', c: [] }] };
     if (fijos.length) { S.filas.push({ t: 'seccion', c: ['SUPUESTOS GENERALES'] }, { t: 'encab', c: ['Línea', 'Concepto', 'Unidad', 'Valor', 'Tipo'] }); fijos.forEach(r => { pos.set(nom(r.concepto), { h: 0, r: S.filas.length, fijo: true }); S.filas.push({ t: 'dato', n: r.pct ? 'pct' : 'num', src: r, kind: 'fijo' }); }); S.filas.push({ t: 'vacia', c: [] }); }
-    if (varios.length) { S.filas.push({ t: 'seccion', c: ['SUPUESTOS QUE CAMBIAN CADA AÑO'] }, { t: 'encab', c: ['Concepto'].concat(anios) }); varios.forEach(r => { pos.set(nom(r.concepto), { h: 0, r: S.filas.length }); S.filas.push({ t: 'dato', n: r.pct ? 'pct' : 'num', src: r, kind: 'anual' }); }); }
+    if (varios.length) {
+      S.filas.push({ t: 'seccion', c: ['SUPUESTOS QUE CAMBIAN POR AÑO'] }, { t: 'encab', c: ['Línea', 'Concepto', 'Unidad', 'Valor', 'Tipo'] });
+      varios.forEach(r => { const porAnio = Array(N).fill(0); cortes(r).forEach(t0 => { const fila = S.filas.length; for (let t = t0; t < N; t++) porAnio[t] = fila; S.filas.push({ t: 'dato', n: r.pct ? 'pct' : 'num', src: r, kind: 'corte', t0 }); }); pos.set(nom(r.concepto), { h: 0, porAnio }); });
+      S.filas.push({ t: 'vacia', c: [] });
+    }
     if (S.filas.length === 2) S.filas.push({ t: 'seccion', c: ['SUPUESTOS GENERALES'] }, { t: 'encab', c: ['Línea', 'Concepto', 'Unidad', 'Valor', 'Tipo'] }, { t: 'dato', c: [] });
     H.push(S);
     if (cos.length) {
@@ -255,6 +263,7 @@
       rows.forEach(r => { if (!enlace) pos.set(nom(r.concepto), { h: hF, r: Fl.filas.length }); Fl.filas.push({ t: 'dato', n: 'cop', rol, ...(r.categoria ? { cat: r.categoria } : {}), src: r, kind: enlace ? 'enlace' : 'anual' }); });
       tot[key] = { h: hF, r: Fl.filas.length }; Fl.filas.push({ t: 'total', n: 'cop', kind: 'suma', de: [d, Fl.filas.length - 1], c: [nt] }); Fl.filas.push({ t: 'vacia', c: [] });
     };
+    if (calcSup.length) { Fl.filas.push({ t: 'seccion', c: ['CÁLCULOS DE APOYO'] }); calcSup.forEach(r => { pos.set(nom(r.concepto), { h: hF, r: Fl.filas.length }); Fl.filas.push({ t: 'dato', n: r.pct ? 'pct' : 'num', src: r, kind: 'anual' }); }); Fl.filas.push({ t: 'vacia', c: [] }); }
     bloque('INGRESOS Y AHORROS', ben, 'beneficio', 'TOTAL INGRESOS Y AHORROS', 'beneficio');
     bloque('GASTOS', cos, 'costo', 'TOTAL GASTOS', 'costo', true);
     bloque('INVERSIÓN', inv, 'inversion', 'TOTAL INVERSIÓN', 'inversion');
@@ -264,7 +273,7 @@
     H.push(Fl);
     // 2) las celdas, con referencias tipo Excel
     const pre = (h, actual) => (h === actual ? '' : (/^[A-Za-zÀ-ÿ_][\wÀ-ÿ.]*$/.test(H[h].nombre) ? H[h].nombre : `'${H[h].nombre}'`) + '!');
-    const celda = (p, t, actual) => pre(p.h, actual) + (p.fijo ? '$D$' + (p.r + 1) : L.colLet(t + 1) + (p.r + 1));
+    const celda = (p, t, actual) => pre(p.h, actual) + (p.porAnio ? '$D$' + (p.porAnio[t] + 1) : p.fijo ? '$D$' + (p.r + 1) : L.colLet(t + 1) + (p.r + 1));
     const TOT = { 'total ingresos': 'beneficio', 'total beneficios': 'beneficio', 'total ingresos y ahorros': 'beneficio', 'total gastos': 'costo', 'total costos': 'costo', 'total inversion': 'inversion' };
     const letras = i => { let x = ''; do { x = String.fromCharCode(97 + i % 26) + x; i = Math.floor(i / 26); } while (i > 0); return x; };
     function tr(fx, t, actual) {
@@ -283,12 +292,13 @@
     H.forEach((h, hi) => h.filas.forEach(f => {
       const r = f.src;
       if (f.kind === 'fijo') f.c = ['', r.concepto || '', r.pct ? '%' : '', efectivo(r, 0), r.nota || 'Input editable'];
+      else if (f.kind === 'corte') f.c = [r.concepto || '', f.t0 === 0 ? 'Desde el Año 1' + (y0 ? ` (${y0})` : '') : `Desde el Año ${f.t0 + 1}` + (y0 ? ` (${y0 + f.t0})` : ''), r.pct ? '%' : '', efectivo(r, f.t0), f.t0 === 0 ? (r.nota || 'Input editable') : 'Input editable'];
       else if (f.kind === 'anual') f.c = [r.concepto || ''].concat(Array.from({ length: N }, (_, t) => (FX(r)[t] ? tr(FX(r)[t], t, hi) : esSup(r) ? efectivo(r, t) : val(r, t))));
       else if (f.kind === 'enlace') { const p = pos.get(nom(r.concepto)); f.c = [r.concepto || ''].concat(Array.from({ length: N }, (_, t) => '=' + celda(p, t, hi))); }
       else if (f.kind === 'suma') f.c = f.c.concat(Array.from({ length: N }, (_, t) => `=SUM(${yr(t)}${f.de[0] + 1}:${yr(t)}${f.de[1] + 1})`));
       else if (f.kind === 'neto') f.c = f.c.concat(Array.from({ length: N }, (_, t) => '=' + ['beneficio', 'costo', 'inversion'].map((k, i) => (tot[k] ? (i ? '-' : '') + yr(t) + (tot[k].r + 1) : i ? '' : '0')).join('')));
       else if (f.kind === 'acum') f.c = f.c.concat(Array.from({ length: N }, (_, t) => `=SUM($B${fc + 1}:${yr(t)}${fc + 1})`));
-      delete f.src; delete f.kind; delete f.de;
+      delete f.src; delete f.kind; delete f.de; delete f.t0;
     }));
     return { v: 1, hojas: H, flujo: { hoja: hF, col0: 1, anios: N, colNombre: 0 } };
   }
