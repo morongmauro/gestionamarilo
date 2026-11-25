@@ -27,6 +27,16 @@
     return w ? Math.round(s / w) : null;
   }
 
+  // Buscar: cualquier dato de la iniciativa (nombre, personas, fase, OKR, tipo de valor, descripción…), sin tildes ni mayúsculas;
+  // con varias palabras, deben estar todas
+  const sinT = x => String(x == null ? '' : x).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  function coincide(r) {
+    const q = sinT(R.q).trim(); if (!q) return true;
+    const p = r.p, txt = sinT([App.projectName(p), p.frase, p.area, ...(r.okrs || []), ...Object.values(p.props || {}).map(v => (Array.isArray(v) ? v.join(' ') : typeof v === 'object' ? '' : v)), ...(p.miembros || []).map(m => m.nombre)].join(' '));
+    // con números o palabras muy cortas («fase 2») se busca la frase tal cual; si no, todas las palabras en cualquier orden
+    const ws = q.split(/\s+/);
+    return txt.includes(q) || (!ws.some(w => w.length < 3 || /^\d+$/.test(w)) && ws.every(w => txt.includes(w)));
+  }
   function filas() {
     const d = App.Dash.datos({ anio: null, estado: '', tipo: '', alcance: 'todos', conEjemplo: true });
     const sg = App.Dash.senales(d), alerta = new Map(sg.map(z => [z.x.p.id, z.out.filter(o => o.sev >= 2).sort((a, b) => b.sev - a.sev)]));
@@ -46,7 +56,7 @@
     && (!R.etapa || r.x.estado === R.etapa)
     && (!R.alertas || r.al.length)
     && (R.inact === true || !inactiva(r))
-    && (!R.q || App.projectName(r.p).toLowerCase().includes(R.q.toLowerCase()) || r.okrs.join(' ').toLowerCase().includes(R.q.toLowerCase()));
+    && coincide(r);
 
   /* ---------- listas para hacer zoom ---------- */
   // limpio = para el Tablero: sin los filtros del Portafolio y sin marcar nada; el clic abre el Portafolio ya filtrado
@@ -210,7 +220,7 @@
     const actPf = R.modo === 'mapa' ? 'mapa' : R.modo === 'riesgos' ? 'riesgos' : R.modo === 'cargar' ? 'cargar' : 'resumen';
     main.innerHTML = `${App.pfHead(actPf, `${App.zoomCtl()}${App.canEdit() ? '<a class="btn ghost sm" href="#/papelera" title="Lo eliminado en los últimos 30 días">Papelera</a>' : ''}<button class="btn ghost sm" data-pf="csv">Exportar a Excel</button>${App.canEdit() ? '<button class="btn primary sm" data-pf="nuevo">+ Nueva iniciativa</button>' : ''}`)}
       <div class="kl pf-kl"><span><b>${rows.length}</b>iniciativas</span><span title="Iniciativas en Fase 1, Fase 2 y Fase 3">${[1, 2, 3].map(k => `<b>${rows.filter(r => window.Fases && Fases.clasificar(r.x.estado) === k).length}</b>F${k}`).join(', ')}</span><span><b class="${nAl ? 'r' : ''}">${nAl}</b>con alertas</span><span><b>${rows.filter(sinDatos).length}</b>sin datos</span><span><b>${esc(m(total))}</b>valor proyectado, ${rows.filter(r => r.valor > 0).length} de ${rows.length} con cifras</span></div>
-      <div class="pf-bar ${R.masf ? 'abierta' : ''}"><label class="search"><span>⌕</span><input id="pfq" placeholder="Buscar iniciativa u OKR…" value="${esc(R.q)}"></label>${chips}<button class="pf-tg pf-masf ${[R.okr, R.cat, R.alertas, R.inact === true].filter(Boolean).length ? 'on' : ''}" data-pf="masf" aria-expanded="${!!R.masf}">Filtros${[R.okr, R.cat, R.alertas, R.inact === true].filter(Boolean).length ? ` (${[R.okr, R.cat, R.alertas, R.inact === true].filter(Boolean).length})` : ''} ▾</button>
+      <div class="pf-bar ${R.masf ? 'abierta' : ''}"><label class="search"><span>⌕</span><input id="pfq" type="search" placeholder="Buscar por nombre, persona, fase, OKR o cualquier dato…" aria-label="Buscar en el portafolio" value="${esc(R.q)}"></label>${chips}<button class="pf-tg pf-masf ${[R.okr, R.cat, R.alertas, R.inact === true].filter(Boolean).length ? 'on' : ''}" data-pf="masf" aria-expanded="${!!R.masf}">Filtros${[R.okr, R.cat, R.alertas, R.inact === true].filter(Boolean).length ? ` (${[R.okr, R.cat, R.alertas, R.inact === true].filter(Boolean).length})` : ''} ▾</button>
         ${ec ? `<select class="pf-sel" data-pf-okr aria-label="OKR"><option value="">OKR: todos</option>${[...new Set(rows.flatMap(r => r.okrs))].sort((a, b) => a.localeCompare(b)).map(o => `<option value="${esc(o)}" ${R.okr === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}<option value="__sin" ${R.okr === '' ? 'selected' : ''}>Sin OKR asignado</option></select>
         <select class="pf-sel" data-pf-cat aria-label="Tipo de valor"><option value="">Tipo de valor: todos</option>${ORDEN_CAT.filter(k => rows.some(r => r.cats.includes(k))).map(k => `<option value="${k}" ${R.cat === k ? 'selected' : ''}>${esc(App.catLabel(k))}</option>`).join('')}</select>
         <select class="pf-sel" data-pf-etapa aria-label="Fase"><option value="">Fase: todas</option>${(ec.options || []).map(o => `<option ${R.etapa === o.name ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}</select>` : ''}

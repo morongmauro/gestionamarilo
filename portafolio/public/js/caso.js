@@ -155,6 +155,7 @@
           <button class="cs-chip" data-c="param" title="Moneda, tasa de descuento, primer año y horizonte">${esc(mon)}, tasa ${App.num(c.tasa, 2) || 0} %, ${n()} años</button>
           ${ro ? '' : '<button class="cs-chip ic" data-c="undo" title="Deshacer (Ctrl+Z)" aria-label="Deshacer">↶</button><button class="cs-chip ic" data-c="redo" title="Rehacer (Ctrl+Y)" aria-label="Rehacer">↷</button>'}
           <button class="cs-chip ic" data-c="atajos" title="Cómo usar el libro: fórmulas, filas y columnas" aria-label="Ayuda">?</button>
+          ${App.zoomCtl('libro')}
           <button class="cs-chip" data-c="ampliar" title="Ver el libro en pantalla completa (Esc para volver)">⤢ Ampliar</button></span>
         <span class="cs-guard" id="cGuard" aria-live="polite"></span>${accion}
         <button class="btn sm no-print" data-c="mas" aria-haspopup="menu">⋯ Más</button>

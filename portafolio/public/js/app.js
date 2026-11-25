@@ -203,7 +203,8 @@
   window.addEventListener('hashchange', () => { anota(); App.closePop(true); if (App.drawerOpen()) App.closeDrawer(); App.render(); window.scrollTo(0, 0); });
 
   function sideProjects(activeId) {
-    const caja = $('.side-proj'), ver = App.esInvitado() || /^#\/proyectos/.test(location.hash) || location.hash === '' ;
+    // La lista de iniciativas en la barra lateral solo la usa el invitado (no tiene Portafolio); los demás buscan en el Portafolio
+    const caja = $('.side-proj'), ver = App.esInvitado();
     caja.hidden = !ver; if (!ver) return;
     const q = App.store.get('side.q', ''), n = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
     const ec = App.estadoCol(), ps = App.projectsSorted().filter(p => (App.enAlcance(p) || p.id === activeId) && (!q || n(App.projectName(p)).includes(n(q))));

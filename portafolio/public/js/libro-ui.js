@@ -84,7 +84,7 @@
         : `<div class="lb-barra lb-acc"><b>Fila ${ent.i + 1}</b><button data-acc="fa">↑ Insertar arriba</button><button data-acc="fb">Insertar abajo ↓</button><button data-acc="mu" title="Subir la fila">Subir</button><button data-acc="md" title="Bajar la fila">Bajar</button><span class="lb-tip">o arrastre el número para moverla</span><span class="sp"></span><button data-acc="bf" class="borrar">Borrar fila ${ent.i + 1}</button><button data-acc="x" class="x" title="Volver a la celda (Esc)">✕</button></div>`) : '';
       el.innerHTML = acc || `<div class="lb-barra"><span class="lb-dir">${L.dir(s.r, s.c)}</span><span class="lb-fx">ƒx</span><input class="lb-in" spellcheck="false" ${o.ro ? 'readonly' : ''} value="${esc(crudo == null ? '' : typeof crudo === 'number' && hoja().filas[s.r] && hoja().filas[s.r].n === 'pct' ? App.num(crudo * 100, 4).replace(/,?0+$/, '') + '%' : String(crudo))}" aria-label="Contenido de la celda ${L.dir(s.r, s.c)}"></div>`;
       el.innerHTML += `
-        <div class="lb-wrap"><table class="lb" style="width:${46 + Array.from({ length: nc }, (_, c) => w(c)).reduce((x, y) => x + y, 0)}px"><thead>${enc}</thead><tbody>${filas}</tbody></table></div>`;
+        <div class="lb-wrap"><table class="lb" style="zoom:${App.zoomDe ? App.zoomDe('libro') : 1};width:${46 + Array.from({ length: nc }, (_, c) => w(c)).reduce((x, y) => x + y, 0)}px"><thead>${enc}</thead><tbody>${filas}</tbody></table></div>`;
       marcar();
     }
     function marcar() {

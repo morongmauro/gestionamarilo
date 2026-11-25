@@ -751,7 +751,7 @@
     if (!h || ev.button !== 0) return;
     ev.preventDefault(); ev.stopPropagation();
     const th = h.parentElement, n = [...th.parentElement.children].indexOf(th) + 1, k = h.dataset.col;
-    const x0 = ev.clientX, w0 = th.getBoundingClientRect().width;
+    const zf = zoomDe(th), x0 = ev.clientX, w0 = th.getBoundingClientRect().width / zf; // con zoom, los px del mouse se pasan a px de la tabla
     let live = document.getElementById('pl-colw-live');
     if (!live) { live = document.createElement('style'); live.id = 'pl-colw-live'; document.head.appendChild(live); }
     document.body.classList.add('pl-resizing');
@@ -759,7 +759,7 @@
     const mover = e => {
       if (Math.abs(e.clientX - x0) > 2) movio = true;
       if (!movio) return;
-      w = Math.max(30, Math.min(700, Math.round(w0 + e.clientX - x0)));
+      w = Math.max(30, Math.min(700, Math.round(w0 + (e.clientX - x0) / zf)));
       live.textContent = anchoCss(n, w);
     };
     const soltar = () => {
@@ -794,10 +794,10 @@
     const h = ev.target.closest && ev.target.closest('.pl-resz');
     if (!h) return;
     ev.preventDefault();
-    const th = h.parentElement, x0 = ev.clientX, w0 = th.getBoundingClientRect().width;
+    const th = h.parentElement, zf = zoomDe(th), x0 = ev.clientX, w0 = th.getBoundingClientRect().width / zf;
     document.body.classList.add('pl-resizing');
     let movio = false;
-    const mover = e => { if (Math.abs(e.clientX - x0) > 2) movio = true; if (movio) fijarAnchoNm(w0 + e.clientX - x0, false); };
+    const mover = e => { if (Math.abs(e.clientX - x0) > 2) movio = true; if (movio) fijarAnchoNm(w0 + (e.clientX - x0) / zf, false); };
     const soltar = () => {
       document.removeEventListener('mousemove', mover); document.removeEventListener('mouseup', soltar);
       document.body.classList.remove('pl-resizing');
@@ -828,8 +828,8 @@
   document.addEventListener('touchstart', ev => {
     const h = ev.target.closest && ev.target.closest('.pl-resz');
     if (!h) return;
-    const th = h.parentElement, x0 = ev.touches[0].clientX, w0 = th.getBoundingClientRect().width;
-    const mover = e => { e.preventDefault(); fijarAnchoNm(w0 + e.touches[0].clientX - x0, false); };
+    const th = h.parentElement, zf = zoomDe(th), x0 = ev.touches[0].clientX, w0 = th.getBoundingClientRect().width / zf;
+    const mover = e => { e.preventDefault(); fijarAnchoNm(w0 + (e.touches[0].clientX - x0) / zf, false); };
     const soltar = () => { h.removeEventListener('touchmove', mover); h.removeEventListener('touchend', soltar); fijarAnchoNm(anchoNm, true); alTerminarAncho(); };
     h.addEventListener('touchmove', mover, { passive: false }); h.addEventListener('touchend', soltar);
   }, { passive: true });
@@ -1713,7 +1713,7 @@
     ev.preventDefault();
     const E = escalaActual, hito = bar.classList.contains('pl-ms');
     const modo = ev.target.classList.contains('pl-bh') ? (ev.target.classList.contains('l') ? 'ini' : 'fin') : 'mover';
-    const dur = Math.max(1, diasHabiles(ini, fin)), x0 = ev.clientX;
+    const dur = Math.max(1, diasHabiles(ini, fin)), x0 = ev.clientX, zf = zoomDe(bar.closest('table') || bar);
     let ni = ini, nf = fin, movio = false, tip = null;
     const pintar = () => {
       if (hito) bar.style.left = (E.x(ni) + E.ppd / 2) + 'px';
@@ -1723,7 +1723,7 @@
       tip.innerHTML = `<b>${esc(a._cod || '')}</b> ${fCorta(ni)} → ${fCorta(nf)}, ${diasHabiles(ni, nf)} día${diasHabiles(ni, nf) === 1 ? '' : 's'} hábil${diasHabiles(ni, nf) === 1 ? '' : 'es'}${deps.length ? `<br><span>Depende de: ${esc(deps.join(', '))}</span>` : ''}${cambios.length ? '<br><em>Se ajusta el desfase</em>' : ''}`;
     };
     const mover = e => {
-      const dd = Math.round((e.clientX - x0) / E.ppd);
+      const dd = Math.round((e.clientX - x0) / (E.ppd * zf));
       if (!movio && Math.abs(e.clientX - x0) < 4) return;
       if (!movio) {
         movio = true;
@@ -1803,6 +1803,8 @@
   document.addEventListener('scroll', quitarTip, true);
   document.addEventListener('focusin', quitarTip);
 
+  // Zoom de la vista (CSS zoom de quien la contiene): cuánto mide en pantalla 1 px de la tabla
+  const zoomDe = el => { const r = el && el.getBoundingClientRect().width, w = el && el.offsetWidth; return r && w ? r / w : 1; };
   // ---------- Líneas de relación (dependencias) sobre el cronograma ----------
   function dibujarLineas(raiz) {
     const cont = raiz || document;

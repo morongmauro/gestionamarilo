@@ -694,6 +694,7 @@
         ${p && App.Novedades && !App.store.get('nv.panel', true) ? `<button class="btn sm" data-ph="nvver" title="Mostrar el panel de novedades">Novedades${App.Novedades.lista(p.id).length ? ' ' + App.Novedades.lista(p.id).length : ''}</button>` : ''}
         ${p && ed && App.Novedades ? '<button class="btn amarillo sm" data-ph="novedad" title="Contar qué avanzó, qué está bloqueado o qué se decidió">+ Novedad</button>' : ''}
         ${p && ed ? '<button class="btn primary sm" data-ph="nueva">+ Actividad</button>' : ''}
+        ${App.zoomCtl('crono')}
         ${mesa ? '<button class="btn sm mesa-btn on" data-ph="mesa" title="Volver a la vista normal (Esc)">✕ Salir de mesa</button>' : `<button class="btn sm" data-ph="mas" aria-haspopup="menu">⋯ Más</button>`}
       </div>`;
   }
@@ -721,6 +722,7 @@
     o.vacioHtml = cur.pid ? (editable() ? 'Escriba el nombre de la primera etapa abajo («＋ Nueva etapa») y Enter. También puede pegar filas copiadas de Excel.' : 'Aún no hay actividades en este plan.') : 'Aún no hay actividades en ninguna iniciativa.';
     const ancho = (body.clientWidth || cur.el.clientWidth || 1100) - (o.panel ? 236 : 0);
     o.anchoTL = P.anchoAjuste(ancho, (o.vista === 'tabla' ? 1300 : 700) + P.extraNombre());
+    body.style.zoom = App.zoomDe('crono'); body.style.setProperty('--plz', App.zoomDe('crono'));
     body.innerHTML = P.render(cur.M, o);
     if (o.zoom === 'ajustar') { const a = P.medirAjuste(body); if (a && Math.abs(a - o.anchoTL) > 3) { o.anchoTL = a; body.innerHTML = P.render(cur.M, o); } }
     const n = $('#pl-wrap', body); if (n && keep) { n.scrollLeft = keep[0]; n.scrollTop = keep[1]; }
@@ -834,6 +836,6 @@
 
   window.addEventListener('resize', () => { if (cur && document.body.contains(cur.el)) { if (optsDe().zoom === 'ajustar') pintar(); else P.dibujarLineas(); } });
 
-  App.PlanHost = { render, renderPortafolio, ocupado, deshacer, modelo, aModelo, aNativo };
+  App.PlanHost = { lineas: () => requestAnimationFrame(() => P.dibujarLineas()), render, renderPortafolio, ocupado, deshacer, modelo, aModelo, aNativo };
   App.views.cronograma = { render: seccion };
 })();

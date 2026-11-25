@@ -1103,3 +1103,9 @@ table.lb .lb-seccion td.ent{color:#160B29}
 .cs-ampliado>[data-pane=tabla]:not([hidden]){display:flex;flex-direction:column;overflow:hidden}
 .cs-ampliado .lb-host{display:flex;flex-direction:column;flex:1;min-height:0;height:auto;max-height:none;overflow:hidden}
 .cs-ampliado .lb-host .lb-wrap{flex:1;min-height:0;max-height:none}
+
+/* Zoom del cronograma: las flechas entre actividades se miden en pantalla, así que su capa no se vuelve a escalar */
+#plan-body svg.pl-links{zoom:calc(1 / var(--plz, 1));overflow:visible}
+.cs-herr .zm,.plan-head-r .zm{height:30px}
+.pf-bar .search{min-width:340px}
+.pf-bar .search input{width:100%}

@@ -70,15 +70,39 @@ App.soloDgv = () => !App.esInvitado() && App.dgvHay() && App.store.get('alcance.
 App.enAlcance = p => !App.soloDgv() || App.dgvSi(p);
 // Iniciativa de ejemplo: se ve completo al abrirlo, pero no suma en ningún total ni indicador del portafolio
 // Tamaño de la vista del Portafolio (como el zoom del navegador, pero solo ahí). Por defecto 90 %: cabe más.
-App.ZOOMS = [0.75, 0.8, 0.85, 0.9, 1, 1.1];
-App.zoomPf = () => { const z = Number(App.store.get('pf.zoom', 0.9)); return App.ZOOMS.includes(z) ? z : 0.9; };
-App.zoomCtl = () => `<span class="zm" title="Tamaño de la vista: más pequeño muestra más iniciativas y columnas (se guarda en este navegador)"><button data-zoom="-" aria-label="Más pequeño">−</button><b data-zoom-v>${Math.round(App.zoomPf() * 100)} %</b><button data-zoom="+" aria-label="Más grande">+</button></span>`;
+// Zoom de cada vista (como el del navegador, pero solo ahí y se guarda en este navegador):
+// «pf» la tabla del Portafolio y Valor, «libro» las hojas del caso, «crono» los cronogramas. También con Ctrl + rueda del mouse.
+App.ZOOMS = [0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 1, 1.1, 1.25, 1.4, 1.6];
+const ZK = { pf: ['pf.zoom', 0.9], libro: ['zoom.libro', 1], crono: ['zoom.crono', 1] };
+App.zoomDe = (k = 'pf') => { const [key, def] = ZK[k] || ZK.pf, z = Number(App.store.get(key, def)); return App.ZOOMS.includes(z) ? z : def; };
+App.zoomPf = () => App.zoomDe('pf');
+App.zoomCtl = (k = 'pf') => `<span class="zm" data-zk="${k}" title="Zoom: agrandar o achicar la tabla (también Ctrl + rueda del mouse sobre ella). Se guarda en este navegador"><button data-zoom="-" aria-label="Alejar">−</button><b data-zoom-v="${k}">${Math.round(App.zoomDe(k) * 100)} %</b><button data-zoom="+" aria-label="Acercar">+</button></span>`;
+App.zoomAplicar = k => {
+  const z = App.zoomDe(k);
+  if (k === 'pf') { const m = document.getElementById('main'); if (m && m.style.zoom) { m.style.zoom = z; m.style.setProperty('--z', z); } }
+  if (k === 'libro') document.querySelectorAll('table.lb').forEach(t => { t.style.zoom = z; });
+  if (k === 'crono') { document.querySelectorAll('#plan-body').forEach(b => { b.style.zoom = z; b.style.setProperty('--plz', z); }); if (App.PlanHost && App.PlanHost.lineas) App.PlanHost.lineas(); }
+  document.querySelectorAll(`[data-zoom-v="${k}"]`).forEach(x => { x.textContent = Math.round(z * 100) + ' %'; });
+};
+App.zoomPaso = (k, dir) => {
+  const Z = App.ZOOMS, i = Z.indexOf(App.zoomDe(k)), j = Math.max(0, Math.min(Z.length - 1, i + dir));
+  App.store.set((ZK[k] || ZK.pf)[0], Z[j]); App.zoomAplicar(k);
+};
 document.addEventListener('click', e => {
   const b = e.target.closest && e.target.closest('[data-zoom]'); if (!b) return;
-  const i = App.ZOOMS.indexOf(App.zoomPf()), j = Math.max(0, Math.min(App.ZOOMS.length - 1, i + (b.dataset.zoom === '+' ? 1 : -1)));
-  App.store.set('pf.zoom', App.ZOOMS[j]); const m = document.getElementById('main'); if (m) { m.style.zoom = App.ZOOMS[j]; m.style.setProperty('--z', App.ZOOMS[j]); }
-  document.querySelectorAll('[data-zoom-v]').forEach(x => { x.textContent = Math.round(App.ZOOMS[j] * 100) + ' %'; });
+  const k = (b.closest('[data-zk]') || { dataset: { zk: 'pf' } }).dataset.zk;
+  App.zoomPaso(k, b.dataset.zoom === '+' ? 1 : -1);
 });
+// Ctrl + rueda del mouse sobre una tabla: acerca o aleja solo esa tabla (no toda la página)
+let ultRueda = 0;
+document.addEventListener('wheel', e => {
+  if (!e.ctrlKey || !e.target.closest) return;
+  const k = e.target.closest('.lb-wrap') ? 'libro' : e.target.closest('#plan-body') ? 'crono' : (e.target.closest('#main') && document.querySelector('#main [data-zk="pf"]')) ? 'pf' : null;
+  if (!k) return;
+  e.preventDefault();
+  const ahora = Date.now(); if (ahora - ultRueda < 120) return; ultRueda = ahora;
+  App.zoomPaso(k, e.deltaY < 0 ? 1 : -1);
+}, { passive: false });
 // Portafolio: título, vistas y acciones siempre en el mismo lugar; al cambiar de vista solo cambia lo de abajo
 App.PF_VISTAS = [['resumen', 'Resumen'], ['mapa', 'Mapa ICE'], ['riesgos', 'Riesgos'], ['cargar', 'Datos por cargar'], ['tabla', 'Tabla completa'], ['tablero', 'Por fase']];
 App.pfHead = (act, acciones) => `<div class="pf-head"><div class="pg-top"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>Portafolio</h1><span class="sp"></span>${acciones || ''}</div>
