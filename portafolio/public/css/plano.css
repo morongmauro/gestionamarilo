@@ -1112,3 +1112,16 @@ table.lb .lb-seccion td.ent{color:#160B29}
 .cs-herr .zm,.plan-head-r .zm{height:30px}
 .pf-bar .search{min-width:340px}
 .pf-bar .search input{width:100%}
+
+/* Agente: solo administradores; tarjetas de cambios propuestos */
+#app:not(.es-admin) .ag-btn,#app:not(.es-admin) .ag-win{display:none!important}
+.ag-prop{align-self:stretch;border-radius:14px;background:color-mix(in srgb,#FFC900 12%,var(--card));padding:10px 12px;font-size:12.8px}
+.ag-pt{display:flex;flex-direction:column;gap:2px;margin-bottom:6px}.ag-pt b{font-size:13.5px}.ag-pt span{color:var(--muted)}
+.ag-prop ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;max-height:260px;overflow:auto}
+.ag-prop li label{display:flex;gap:8px;align-items:flex-start;cursor:pointer;line-height:1.4}
+.ag-prop li input{margin-top:3px;flex:none}
+.ag-prop li em{display:block;font-style:normal;font-size:11px;color:var(--muted);font-weight:600}
+.ag-prop li small{display:block;color:#B3261E}
+.ag-prop li.ok span{color:var(--muted)}.ag-prop li.ok em::after{content:'  ✓ aplicado';color:#1E8A5A}
+.ag-pb{display:flex;gap:6px;margin-top:8px}
+.ag-pe{margin-top:8px;color:var(--muted);font-size:12px}

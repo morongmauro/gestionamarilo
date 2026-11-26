@@ -122,6 +122,7 @@
     $('#meName').textContent = App.S.me.name;
     $('#meRole').textContent = { admin: 'Administrador', editor: 'Editor', lector: 'Solo lectura', invitado: 'Invitado' }[App.S.me.role];
     $('#app').classList.toggle('inv', App.esInvitado());
+    $('#app').classList.toggle('es-admin', App.esAdmin()); // el agente es solo para administradores
     $('#tabUsuarios').hidden = !App.isAdmin();
     $('#demoTag').hidden = !App.S.demo; live(true);
     if (App.vista) App.vista.aplicar();
