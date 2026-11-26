@@ -63,7 +63,8 @@
         ${info.actual ? '' : '<label>Contraseña actual</label><input class="fld" name="actual" type="password" required autocomplete="current-password">'}
         <label>Nueva contraseña</label><input class="fld" name="nueva" type="password" required autocomplete="new-password" placeholder="Mínimo 8 caracteres, letras y números">
         <label>Repítela</label><input class="fld" name="nueva2" type="password" required autocomplete="new-password">
-        <button class="btn primary" type="submit">Guardar y entrar</button><div class="err"></div>`;
+        <button class="btn primary" type="submit">Guardar y entrar</button><div class="err"></div>
+        <button class="btn ghost" type="button" data-l="salir" style="margin-top:8px">‹ Volver al ingreso: entrar con otra cuenta</button>`;
     } else {
       f.innerHTML = `<div class="eyebrow">${org}</div><h1>Inicia sesión</h1><p>Usa tu correo corporativo y tu contraseña.</p>${info.demo ? '<div class="demo-note">Versión de demostración: usa solo datos de prueba.</div>' : ''}
         <label>Correo</label><input class="fld" name="email" type="email" required autocomplete="username">
@@ -72,7 +73,9 @@
         <button class="btn ghost" type="button" data-l="olvide" style="margin-top:8px">¿Olvidaste tu contraseña?</button>`;
     }
     const first = $('input:not([type=hidden]):not([readonly])', f); if (first) first.focus();
-    f.onclick = e => { const l = e.target.closest('[data-l]'); if (!l) return; if (location.hash.startsWith('#/clave/')) history.replaceState(null, '', location.pathname); showLogin(l.dataset.l === 'olvide' ? 'olvide' : 'login', info); };
+    f.onclick = e => { const l = e.target.closest('[data-l]'); if (!l) return;
+      // salir de la cuenta con contraseña temporal y volver al ingreso (para entrar con otra)
+      if (l.dataset.l === 'salir') { App.api('POST', '/api/auth/logout').catch(() => {}).finally(() => showLogin('login', info)); return; } if (location.hash.startsWith('#/clave/')) history.replaceState(null, '', location.pathname); showLogin(l.dataset.l === 'olvide' ? 'olvide' : 'login', info); };
     f.onsubmit = async e => {
       e.preventDefault();
       const d = Object.fromEntries(new FormData(f).entries());
@@ -107,7 +110,7 @@
     snapshot = JSON.stringify(d);
     App.S.demo = !!d.demo;
     App.S.almacenamiento = d.almacenamiento;
-    App.S.direccion = d.direccion || null;
+    App.S.direccion = d.direccion || null; App.S.agenteActivo = !!d.agente;
     Object.assign(App.S, { me: d.me, org: d.org, columns: d.columns, projects: d.projects, activities: d.activities, sections: d.sections || [], cases: d.cases, sessions: d.sessions, committees: d.committees, people: d.people, novedades: d.novedades || [], tablero: d.tablero || { income_unidad: 1e6 }, vistaPf: d.vistaPf || null, dgvCorte: d.dgvCorte || null, okrs: d.okrs || [] });
   }
   App.reload = async () => { try { await loadState(); App.render(); } catch (e) { console.error(e); } };

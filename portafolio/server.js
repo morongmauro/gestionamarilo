@@ -349,6 +349,7 @@ route('GET', '/api/estado', 'usuario', { inv: true }, async (req, ctx) => {
     columns: await projectColumns(),
     tablero: (await store.getConfig('tablero')) || { income_unidad: 1e6 },
     dgvCorte: (await store.getConfig('dgv_corte')) || null,
+    agente: agenteActivo(),
     okrs: (await store.getConfig('okrs')) || [],
     direccion: (await store.getConfig('direccion')) || null,
     vistaPf: esInv(ctx.user) ? null : (await store.getConfig('vista_portafolio')) || null,
@@ -787,9 +788,11 @@ const AGENTE_TOOLS = [{
     required: ['resumen', 'cambios'],
   },
 }];
+// El agente se enciende con la llave y AGENTE_ACTIVO=true en Vercel; mientras tanto responde que está en desarrollo
+const agenteActivo = () => process.env.AGENTE_ACTIVO === 'true' && !!process.env.ANTHROPIC_API_KEY;
 route('POST', '/api/agente', 'admin', async (req, ctx) => {
   const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) throw new HttpError(503, 'El agente aún no está activado: falta la llave ANTHROPIC_API_KEY en la configuración del servidor (Vercel)');
+  if (!agenteActivo()) return { __stream: async res => { res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }); res.end('Estoy **en desarrollo** y pronto estaré listo para responder sus preguntas sobre el portafolio y ayudarle con cambios en los casos de negocio, los cronogramas y el Portafolio. ¡Gracias por la paciencia!'); } };
   const b = ctx.body || {};
   const pregunta = String(b.pregunta || '').trim().slice(0, 2000);
   if (!pregunta) throw new HttpError(400, 'Escriba su pregunta');

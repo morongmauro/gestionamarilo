@@ -1125,3 +1125,4 @@ table.lb .lb-seccion td.ent{color:#160B29}
 .ag-prop li.ok span{color:var(--muted)}.ag-prop li.ok em::after{content:'  ✓ aplicado';color:#1E8A5A}
 .ag-pb{display:flex;gap:6px;margin-top:8px}
 .ag-pe{margin-top:8px;color:var(--muted);font-size:12px}
+.ag-dev{font:600 11px/1 Montserrat,sans-serif;padding:4px 9px;border-radius:999px;background:color-mix(in srgb,var(--ink) 8%,transparent);color:var(--muted);margin-left:4px}

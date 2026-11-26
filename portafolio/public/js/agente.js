@@ -11,89 +11,121 @@
   const guardar = () => { try { sessionStorage.setItem('pf.agente', JSON.stringify(hist.slice(-20))); } catch (e) {} };
   let ocupado = false, win = null;
 
-  // «Galaxia de conocimiento»: miles de puntos (gris, negro y amarillo) en un disco espiral que gira en 3D.
-  // Esperando: la galaxia gira despacio y cada tanto forma el logo de Amarilo. Al escribir: gira más rápido
-  // y late hacia el centro. Al pensar: los puntos forman un círculo en órbita con una estela amarilla, y el logo.
+  // Figura del agente, en puntos gris oscuro y gris claro (el amarillo solo como acento). Dos variantes:
+  //  · «galaxia»: un sistema de puntos en espiral con órbitas, que gira en perspectiva.
+  //  · «neuronas»: una nube de conocimiento con forma de cerebro: neuronas unidas por conexiones con impulsos que viajan.
+  // Esperando: gira despacio y cada tanto forma el logo de Amarilo (trazo delgado). Al escribir: se acelera y se
+  // encienden más impulsos. Al pensar: los puntos forman un círculo en órbita y alternan con el logo.
   const Mente = (() => {
     const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let modo = 'espera', raf = 0, energia = 0, desde = 0, forma = 'galaxia', P = null;
+    let modo = 'espera', raf = 0, energia = 0, desde = 0, forma = 'base', P = null, E = null;
+    let variante = (() => { try { return App.store.get('agente.forma', 'neuronas'); } catch (e) { return 'neuronas'; } })();
+    if (variante !== 'galaxia' && variante !== 'neuronas') variante = 'neuronas';
     const t0 = performance.now(), TAU = Math.PI * 2;
-    const enLogo = (x, y) => (x >= -0.62 && x <= -0.38 && y >= -0.14 && y <= 0.62) || (x >= -0.62 && x <= 0.42 && y >= 0.38 && y <= 0.62) || (x >= 0.38 && x <= 0.62 && y >= -0.62 && y <= 0.14) || (x >= -0.42 && x <= 0.62 && y >= -0.62 && y <= -0.38);
+    // El logo de Amarilo con trazo delgado: una escuadra arriba-izquierda y otra abajo-derecha
+    const G = 0.075, enLogo = (x, y) => (x >= -0.6 && x <= -0.6 + G && y >= -0.2 && y <= 0.6) || (x >= -0.6 && x <= 0.42 && y >= 0.6 - G && y <= 0.6) || (x >= 0.6 - G && x <= 0.6 && y >= -0.6 && y <= 0.2) || (x >= -0.42 && x <= 0.6 && y >= -0.6 && y <= -0.6 + G);
     function preparar() {
       if (P) return true;
-      let s = 11; const azar = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+      let s = 23; const azar = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
       const gauss = () => { let u = 0, v = 0; while (!u) u = azar(); while (!v) v = azar(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(TAU * v); };
-      const N = 6500, logo = [];
-      for (let y = 0.62; y >= -0.62; y -= 0.026) for (let x = -0.62; x <= 0.62; x += 0.026) if (enLogo(x, y)) logo.push([x + (azar() - 0.5) * 0.012, y + (azar() - 0.5) * 0.012]);
-      P = Array.from({ length: N }, (_, i) => {
-        const nucleo = i < N * 0.16, brazo = i % 3;
-        const r = nucleo ? Math.abs(gauss()) * 0.14 : 0.12 + Math.pow(azar(), 0.75) * 0.95;
-        const a = nucleo ? azar() * TAU : brazo * TAU / 3 + r * 3.4 + gauss() * 0.32 / (0.5 + r);
-        const h = gauss() * (nucleo ? 0.07 : 0.03 * (1.15 - r));
-        const q = logo[i % logo.length];
-        return { r, a, h, tam: 0.45 + azar() * 1.1, am: nucleo ? azar() < 0.45 : azar() < 0.07, ph: azar() * TAU,
-          ra: azar() * TAU, rr: 0.84 + gauss() * 0.035, rh: gauss() * 0.03, lx: q[0], ly: q[1], enL: i < logo.length * 1.15, x: 0, y: 0, z: 0, vis: 1 };
-      });
+      const N = 5200, logo = [];
+      for (let y = 0.6; y >= -0.6; y -= 0.014) for (let x = -0.6; x <= 0.6; x += 0.014) if (enLogo(x, y)) logo.push([x, y]);
+      // tono de cada punto: 45 % gris oscuro, 52 % gris claro, 3 % amarillo
+      const tono = () => { const r = azar(); return r < 0.03 ? 2 : r < 0.48 ? 0 : 1; };
+      const base = i => { const q = logo[i % logo.length]; return { tam: 0.45 + azar() * 1.0, tono: tono(), ph: azar() * TAU, ra: azar() * TAU, rr: 0.84 + gauss() * 0.03, rh: gauss() * 0.025, lx: q[0], ly: q[1], enL: i < logo.length, x: 0, y: 0, z: 0, vis: 1 }; };
+      if (variante === 'galaxia') {
+        P = Array.from({ length: N }, (_, i) => {
+          const p = base(i), nucleo = i < N * 0.12, orbita = !nucleo && i < N * 0.3;
+          if (nucleo) { p.r = Math.abs(gauss()) * 0.12; p.a = azar() * TAU; p.h = gauss() * 0.05; }
+          else if (orbita) { const k = i % 3; p.r = [0.42, 0.66, 0.92][k] + gauss() * 0.006; p.a = azar() * TAU; p.h = gauss() * 0.006; p.orb = true; p.tam *= 0.7; }
+          else { const br = i % 2; p.r = 0.14 + Math.pow(azar(), 0.8) * 0.9; p.a = br * Math.PI + p.r * 3.6 + gauss() * 0.28 / (0.5 + p.r); p.h = gauss() * 0.025 * (1.1 - p.r); }
+          return p;
+        });
+        // «planetas»: algunos puntos de las órbitas más grandes y oscuros
+        P.filter(p => p.orb).slice(0, 7).forEach((p, k) => { p.tam = 3.2 - k * 0.2; p.tono = k === 2 ? 2 : 0; p.planeta = true; });
+        E = null;
+      } else {
+        // nube con forma de cerebro: dos hemisferios (vista de frente y algo de lado), neuronas y conexiones
+        const enCerebro = (x, y, z) => { const h = (cx) => ((x - cx) / 0.46) ** 2 + ((y - 0.02) / 0.5) ** 2 + (z / 0.66) ** 2; return Math.min(h(-0.26), h(0.26)) < 1 && Math.abs(x) > 0.025; };
+        const nodos = []; while (nodos.length < 95) { const x = (azar() - 0.5) * 1.5, y = (azar() - 0.5) * 1.1, z = (azar() - 0.5) * 1.4; if (enCerebro(x, y, z)) nodos.push([x, y, z]); }
+        const aristas = [];
+        nodos.forEach((a, i) => { nodos.map((b, j) => [j, Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])]).filter(([j, d]) => j !== i && d < 0.42).sort((u, v) => u[1] - v[1]).slice(0, 3).forEach(([j]) => { if (!aristas.some(e => (e[0] === i && e[1] === j) || (e[0] === j && e[1] === i))) aristas.push([i, j]); }); });
+        const pts = [];
+        nodos.forEach((n, k) => { for (let m = 0; m < 20; m++) pts.push({ n: [n[0] + gauss() * 0.02, n[1] + gauss() * 0.02, n[2] + gauss() * 0.02], nodo: k }); });
+        aristas.forEach(([i, j]) => { const a = nodos[i], b = nodos[j], d = Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]), m = Math.max(4, Math.round(d / 0.016)); for (let k = 1; k < m; k++) { const f = k / m; pts.push({ n: [a[0] + (b[0] - a[0]) * f + gauss() * 0.004, a[1] + (b[1] - a[1]) * f + gauss() * 0.004, a[2] + (b[2] - a[2]) * f + gauss() * 0.004], via: true }); } });
+        while (pts.length < N) { const x = (azar() - 0.5) * 1.5, y = (azar() - 0.5) * 1.1, z = (azar() - 0.5) * 1.4; if (enCerebro(x, y, z)) pts.push({ n: [x, y, z], polvo: true }); }
+        P = pts.slice(0, N).map((q, i) => Object.assign(base(i), q, q.via ? { tam: 0.62, tono: azar() < 0.6 ? 0 : 1 } : q.polvo ? { tam: 0.3 + azar() * 0.4, tono: 1 } : { tam: 0.7 + azar() * 0.9 }));
+        E = { nodos, aristas, pulsos: Array.from({ length: 70 }, () => ({ e: Math.floor(azar() * aristas.length), f: azar(), v: 0.25 + azar() * 0.5, am: azar() < 0.2 })) };
+      }
       return true;
     }
     function elegir(t) {
-      const ciclo = modo === 'piensa' ? [['circulo', 2.6], ['logo', 1.4]] : [['galaxia', 7.5], ['logo', 2.3]];
+      const ciclo = modo === 'piensa' ? [['circulo', 2.6], ['logo', 1.5]] : [['base', 8], ['logo', 2.4]];
       const tot = ciclo.reduce((a, c) => a + c[1], 0); let x = ((t - desde) % tot + tot) % tot;
       for (const [f, d] of ciclo) { if (x < d) return f; x -= d; }
       return ciclo[0][0];
     }
-    function cuadro(cv, t) {
+    function cuadro(cv, t, dt) {
       const dpr = Math.min(2, window.devicePixelRatio || 1), w = Math.round(cv.clientWidth * dpr), h = Math.round(cv.clientHeight * dpr);
       if (w && h && (cv.width !== w || cv.height !== h)) { cv.width = w; cv.height = h; }
       const W = cv.width, H = cv.height; if (!W || !H) return;
       const g = cv.getContext('2d'), osc = document.documentElement.getAttribute('data-theme') === 'dark';
       g.clearRect(0, 0, W, H);
-      const esc = Math.min(W, H) * 0.44, ox = W / 2, oy = H / 2, foco = 3.6;
-      // la galaxia inclinada (se ve en perspectiva) y girando sobre sí misma
-      const incl = 1.05 + Math.sin(t * 0.17) * 0.12, ci = Math.cos(incl), si = Math.sin(incl), gy = t * 0.05, cg = Math.cos(gy), sg = Math.sin(gy);
-      const vel = 0.18 * (1 + energia * 2.5), cabeza = (t * 2.4) % TAU;
-      const tinta = osc ? '226,220,238' : '26,20,38', oro = '255,201,0', lotes = new Map();
-      // un resplandor suave en el centro (el núcleo de la galaxia o del círculo)
-      if (forma !== 'logo') { const gr = g.createRadialGradient(ox, oy, 0, ox, oy, esc * (forma === 'circulo' ? 0.9 : 0.5)); gr.addColorStop(0, `rgba(${oro},${0.1 + energia * 0.1})`); gr.addColorStop(1, `rgba(${oro},0)`); g.fillStyle = gr; g.fillRect(0, 0, W, H); }
+      const esc = Math.min(W, H) * (variante === 'neuronas' && forma === 'base' ? 0.6 : 0.44), ox = W / 2, oy = H / 2, foco = 3.6;
+      const COL = osc ? ['232,229,240', '140,136,156', '255,201,0'] : ['58,55,68', '168,165,178', '232,184,0'];
+      const lotes = new Map(), punto = (x, y, r, c, a) => { const k = c + '|' + (Math.round(Math.min(1, a) * 20) / 20); let p = lotes.get(k); if (!p) { p = new Path2D(); lotes.set(k, p); } p.moveTo(x + r, y); p.arc(x, y, r, 0, TAU); };
+      // vista: la galaxia inclinada y girando; el cerebro girando despacio sobre su eje vertical
+      const gal = variante === 'galaxia', incl = gal ? 1.08 + Math.sin(t * 0.17) * 0.1 : 0.22 + Math.sin(t * 0.2) * 0.08;
+      const yaw = gal ? t * 0.04 : t * 0.22 + giroExtra, ci = Math.cos(incl), si = Math.sin(incl), cy = Math.cos(yaw), sy = Math.sin(yaw);
+      const vista = (X, Y, Z) => { const x1 = X * cy + Z * sy, z1 = -X * sy + Z * cy; return gal ? [x1, Y * ci - z1 * si, Y * si + z1 * ci] : [x1, Y, z1]; };
+      const cabeza = (t * 2.3) % TAU, vel = 0.16 * (1 + energia * 2.5);
       for (const p of P) {
         let x, y, z, vis = 1, brillo = 0;
         if (forma === 'logo') { x = p.lx; y = p.ly; z = 0; vis = p.enL ? 1 : 0; }
-        else if (forma === 'circulo') {
-          // órbita: el círculo gira y una estela amarilla lo recorre
-          const a = p.ra + t * 0.9; x = Math.cos(a) * p.rr; y = Math.sin(a) * p.rr; z = p.rh;
-          const atras = ((cabeza - a) % TAU + TAU) % TAU; brillo = Math.exp(-atras * 1.4);
+        else if (forma === 'circulo') { const a = p.ra + t * 0.85; x = Math.cos(a) * p.rr; y = Math.sin(a) * p.rr; z = p.rh; brillo = Math.exp(-(((cabeza - a) % TAU + TAU) % TAU) * 1.5); }
+        else if (gal) {
+          const a = p.a + t * (p.orb ? vel * 0.6 / (0.3 + p.r) : vel / (0.25 + p.r)), r = p.r * (1 - energia * 0.07 * Math.sin(p.r * 11 - t * 9));
+          [x, y, z] = vista(Math.cos(a) * r, p.h, Math.sin(a) * r);
         } else {
-          // galaxia: giro diferencial (el centro más rápido); al escribir, late hacia el centro
-          const a = p.a + t * vel / (0.25 + p.r), r = p.r * (1 - energia * 0.09 * Math.sin(p.r * 11 - t * 9));
-          const X = Math.cos(a) * r, Z = Math.sin(a) * r, Y = p.h;
-          const x1 = X * cg + Z * sg, z1 = -X * sg + Z * cg; x = x1; y = Y * ci - z1 * si; z = Y * si + z1 * ci;
-          brillo = energia * Math.max(0, Math.sin(p.r * 11 - t * 9)) * 0.8;
+          const lat = 1 + Math.sin(t * 1.2 + (p.n[1] * 3)) * 0.012 + energia * 0.03 * Math.sin(t * 8 + p.ph);
+          [x, y, z] = vista(p.n[0] * lat, p.n[1] * lat, p.n[2] * lat);
+          { const c2 = Math.cos(incl), s2 = Math.sin(incl), yy = y * c2 - z * s2, zz = y * s2 + z * c2; y = yy; z = zz; }
         }
-        const v = reduce ? 1 : 0.075; p.x += (x - p.x) * v; p.y += (y - p.y) * v; p.z += (z - p.z) * v; p.vis += (vis - p.vis) * v;
+        const v = reduce ? 1 : forma === 'base' && p.vis > 0.95 && Math.abs(x - p.x) < 0.2 ? 0.35 : 0.075; p.x += (x - p.x) * v; p.y += (y - p.y) * v; p.z += (z - p.z) * v; p.vis += (vis - p.vis) * v;
         if (p.vis < 0.04) continue;
-        const k = foco / (foco - p.z), sx = ox + p.x * esc * k, sy = oy - p.y * esc * k;
-        const tw = 0.75 + 0.25 * Math.sin(t * 2.3 + p.ph);
-        const am = p.am || brillo > 0.45 || (forma === 'logo' && p.ph < 5.3);
-        const prof = forma === 'logo' ? 1 : Math.max(0.25, Math.min(1, 0.62 + p.z * 0.6));
-        const r = (forma === 'logo' ? 1.75 : p.tam * 1.15) * (1 + brillo * 0.9) * esc / 220 * k;
-        const a = Math.min(1, (am ? 0.9 : 0.62) * prof * tw * p.vis + brillo * 0.3);
-        const llave = (am ? oro : tinta) + '|' + (Math.round(a * 20) / 20);
-        let pth = lotes.get(llave); if (!pth) { pth = new Path2D(); lotes.set(llave, pth); }
-        pth.moveTo(sx + r, sy); pth.arc(sx, sy, r, 0, TAU);
+        const k = foco / (foco - p.z), sx = ox + p.x * esc * k, sy2 = oy - p.y * esc * k;
+        const prof = forma === 'logo' ? 1 : Math.max(0.3, Math.min(1, 0.65 + p.z * 0.5));
+        const tono = forma === 'logo' ? (p.ph < 1.8 ? 2 : 0) : brillo > 0.5 ? 2 : p.tono;
+        const r = (forma === 'logo' ? 1.15 : p.tam) * (1 + brillo * 0.7) * esc / 240 * k;
+        const tw = 0.8 + 0.2 * Math.sin(t * 2.1 + p.ph);
+        punto(sx, sy2, r, COL[tono], (tono === 1 ? 0.6 : 0.88) * prof * tw * p.vis + brillo * 0.2);
+      }
+      // impulsos que viajan por las conexiones (más al escribir)
+      if (E && forma === 'base') {
+        const activos = Math.round(18 + energia * 52);
+        E.pulsos.slice(0, activos).forEach(q => {
+          q.f += dt * q.v * (1 + energia * 2); if (q.f >= 1) { q.f = 0; q.e = Math.floor(Math.random() * E.aristas.length); }
+          const [i, j] = E.aristas[q.e], a = E.nodos[i], b = E.nodos[j];
+          let [x, y, z] = vista(a[0] + (b[0] - a[0]) * q.f, a[1] + (b[1] - a[1]) * q.f, a[2] + (b[2] - a[2]) * q.f);
+          const c2 = Math.cos(incl), s2 = Math.sin(incl), yy = y * c2 - z * s2, zz = y * s2 + z * c2;
+          const k = foco / (foco - zz);
+          punto(ox + x * esc * k, oy - yy * esc * k, esc / 130 * k, q.am ? COL[2] : COL[0], 0.95);
+        });
       }
       lotes.forEach((pth, llave) => { const [c, a] = llave.split('|'); g.fillStyle = `rgba(${c},${a})`; g.fill(pth); });
     }
+    let ult = 0, giroExtra = 0;
     function ciclo() {
       raf = 0; const cvs = document.querySelectorAll('.ag-win canvas.ag-mente'); if (!cvs.length || !preparar()) return;
-      const t = reduce ? 0 : (performance.now() - t0) / 1000;
-      energia *= 0.97; forma = reduce ? (modo === 'piensa' ? 'circulo' : 'galaxia') : elegir(t);
-      cvs.forEach(cv => cuadro(cv, t));
+      const ahora = performance.now(), t = reduce ? 0 : (ahora - t0) / 1000, dt = Math.min(0.05, ult ? (ahora - ult) / 1000 : 0.016); ult = ahora;
+      energia *= 0.97; giroExtra += dt * energia * 0.9; forma = reduce ? (modo === 'piensa' ? 'circulo' : 'base') : elegir(t);
+      cvs.forEach(cv => cuadro(cv, t, dt));
       if (!reduce) raf = requestAnimationFrame(ciclo);
     }
     const andar = () => { if (!raf) raf = requestAnimationFrame(ciclo); };
     return {
+      variante: v => { if (v === 'galaxia' || v === 'neuronas') { variante = v; P = null; try { App.store.set('agente.forma', v); } catch (e) {} andar(); } },
       modo: m => { if (m !== modo) { modo = m; desde = (performance.now() - t0) / 1000; } andar(); },
-      // al escribir: la galaxia gira más rápido y late; si estaba en el logo, vuelve a la galaxia
       excitar: () => { energia = Math.min(1, energia + 0.35); if (modo === 'espera' && forma === 'logo') desde = (performance.now() - t0) / 1000; andar(); },
       andar, parar: () => { if (raf) cancelAnimationFrame(raf); raf = 0; },
     };
@@ -258,7 +290,7 @@
     if (!win) return;
     const b = win.querySelector('.ag-b');
     b.innerHTML = hist.length ? hist.map(x => x.rol === 'usuario' ? `<div class="ag-q">${esc(x.texto)}</div>` : `<div class="ag-r ${x.err ? 'err' : ''}">${formato(x.texto) || (x.prop ? '' : '<span class="ag-pen"><canvas class="ag-mente mini" aria-hidden="true"></canvas><span>Leyendo el portafolio…</span></span>')}</div>${propHTML(x, hist.indexOf(x))}`).join('')
-      : `<div class="ag-hola"><canvas class="ag-mente" aria-hidden="true"></canvas><b>Pregúntele al portafolio</b><p>Consulto el portafolio y propongo cambios en los casos de negocio, los cronogramas y el Portafolio. Nada cambia hasta que usted lo aplique.</p><div class="ag-sug">${SUG().map(s => `<button data-ag-sug>${esc(s)}</button>`).join('')}</div></div>`;
+      : `<div class="ag-hola"><canvas class="ag-mente" aria-hidden="true"></canvas><b>Pregúntele al portafolio</b><p>${App.S.agenteActivo ? 'Consulto el portafolio y propongo cambios en los casos de negocio, los cronogramas y el Portafolio. Nada cambia hasta que usted lo aplique.' : 'Estoy en desarrollo y pronto estaré listo. Podré consultar el portafolio y proponer cambios en los casos de negocio, los cronogramas y el Portafolio.'}</p><div class="ag-sug">${SUG().map(s => `<button data-ag-sug>${esc(s)}</button>`).join('')}</div></div>`;
     b.scrollTop = b.scrollHeight;
     Mente.andar();
     win.querySelector('[data-ag-nueva]').hidden = !hist.length;
@@ -285,7 +317,7 @@
     if (!App.esAdmin()) return; // el agente es solo para administradores
     if (win) { win.querySelector('textarea').focus(); return; }
     win = document.createElement('section'); win.className = 'ag-win'; win.setAttribute('role', 'dialog'); win.setAttribute('aria-label', 'Pregúntele al portafolio');
-    win.innerHTML = `<header><b>Pregúntele al portafolio</b><span class="sp"></span><button class="t-lnk" data-ag-nueva title="Empezar una conversación nueva">Nueva</button><button class="ag-x" data-ag-x aria-label="Cerrar">✕</button></header>
+    win.innerHTML = `<header><b>Pregúntele al portafolio</b>${App.S.agenteActivo ? '' : '<span class="ag-dev" title="El agente está en desarrollo: pronto estará listo">En desarrollo</span>'}<span class="sp"></span><button class="t-lnk" data-ag-nueva title="Empezar una conversación nueva">Nueva</button><button class="ag-x" data-ag-x aria-label="Cerrar">✕</button></header>
       <div class="ag-b" aria-live="polite"></div>
       <form class="ag-f"><textarea rows="1" maxlength="2000" placeholder="Escriba su pregunta…" aria-label="Pregunta"></textarea><button class="btn primary sm" type="submit" aria-label="Enviar">Enviar</button></form>
       <div class="ag-nota">Las cifras son aproximadas. Los cambios solo se hacen cuando usted los aplica.</div>`;
@@ -322,5 +354,5 @@
     document.getElementById('agBtn').onclick = () => (win ? cerrar() : abrir());
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', montar); else montar();
-  App.Agente = { abrir, cerrar, contexto, formato, aplicarCambios };
+  App.Agente = { abrir, cerrar, contexto, formato, aplicarCambios, forma: v => Mente.variante(v) };
 })();
