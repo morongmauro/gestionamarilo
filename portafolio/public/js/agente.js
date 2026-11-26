@@ -19,8 +19,7 @@
   const Mente = (() => {
     const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
     let modo = 'espera', raf = 0, energia = 0, desde = 0, forma = 'base', P = null, E = null;
-    let variante = (() => { try { return App.store.get('agente.forma', 'neuronas'); } catch (e) { return 'neuronas'; } })();
-    if (variante !== 'galaxia' && variante !== 'neuronas') variante = 'neuronas';
+    let variante = 'neuronas'; // elegida: la nube de neuronas (la galaxia queda solo como alternativa en el código)
     const t0 = performance.now(), TAU = Math.PI * 2;
     // El logo de Amarilo con trazo delgado: una escuadra arriba-izquierda y otra abajo-derecha
     const G = 0.075, enLogo = (x, y) => (x >= -0.6 && x <= -0.6 + G && y >= -0.2 && y <= 0.6) || (x >= -0.6 && x <= 0.42 && y >= 0.6 - G && y <= 0.6) || (x >= 0.6 - G && x <= 0.6 && y >= -0.6 && y <= 0.2) || (x >= -0.42 && x <= 0.6 && y >= -0.6 && y <= -0.6 + G);
@@ -124,7 +123,6 @@
     }
     const andar = () => { if (!raf) raf = requestAnimationFrame(ciclo); };
     return {
-      variante: v => { if (v === 'galaxia' || v === 'neuronas') { variante = v; P = null; try { App.store.set('agente.forma', v); } catch (e) {} andar(); } },
       modo: m => { if (m !== modo) { modo = m; desde = (performance.now() - t0) / 1000; } andar(); },
       excitar: () => { energia = Math.min(1, energia + 0.35); if (modo === 'espera' && forma === 'logo') desde = (performance.now() - t0) / 1000; andar(); },
       andar, parar: () => { if (raf) cancelAnimationFrame(raf); raf = 0; },
@@ -354,5 +352,5 @@
     document.getElementById('agBtn').onclick = () => (win ? cerrar() : abrir());
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', montar); else montar();
-  App.Agente = { abrir, cerrar, contexto, formato, aplicarCambios, forma: v => Mente.variante(v) };
+  App.Agente = { abrir, cerrar, contexto, formato, aplicarCambios };
 })();
