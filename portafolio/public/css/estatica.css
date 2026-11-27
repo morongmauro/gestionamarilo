@@ -1,0 +1,72 @@
+/* Vistas estáticas (PDF y enlaces de solo lectura) */
+.ve{font-family:Montserrat,system-ui,sans-serif;color:#160B29;font-size:12px;line-height:1.4;max-width:1400px;margin:0 auto}
+.ve-h{display:flex;align-items:center;gap:16px;padding:0 0 12px;margin-bottom:14px;border-bottom:2px solid #FFC900}
+.ve-h small{color:#6C6880;font-size:11px;font-weight:600}
+.ve-h h1{margin:2px 0;font-size:22px;font-weight:800}
+.ve-h p{margin:0;color:#47425A;font-size:12px}
+.ve-meta{margin-left:auto;text-align:right;color:#6C6880;font-size:10.5px;max-width:280px}
+.ve-sec{margin:0 0 18px}
+.ve-sec h2{font-size:15px;font-weight:800;margin:6px 0 8px}
+.ve-kpi{display:flex;gap:18px;flex-wrap:wrap;margin:0 0 10px;color:#47425A}
+.ve-kpi b{color:#160B29}.ve-kpi .r b,.ve-kpi .r{color:#B3261E}
+.ve-vacio,.ve-nota{color:#6C6880;font-size:11px;margin:6px 0}
+/* cronograma */
+.ve-crono{width:100%;border-collapse:collapse;table-layout:fixed}
+.ve-crono th,.ve-crono td{padding:4px 6px;border-bottom:1px solid #EEECF1;text-align:left;vertical-align:middle}
+.ve-crono th{font-size:10.5px;color:#6C6880;font-weight:700}
+.ve-crono{font-size:10.5px}
+.ve-crono th:nth-child(1){width:30px}.ve-crono th:nth-child(2){width:25%}.ve-crono th:nth-child(3){width:14%}
+.ve-crono th.f,.ve-crono td.f{width:68px}.ve-crono th.ve-av{width:48px}
+.ve-crono td{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:3px 6px}
+.ve-crono .n{text-align:right}.ve-crono .f{white-space:nowrap}
+.ve-crono .nm{font-weight:500}
+.ve-crono th.tl,.ve-crono td.tl{position:relative;width:38%;padding:0}
+.ve-crono td.tl{height:18px}
+.ve-crono th.tl em{position:absolute;top:6px;font-style:normal;font-size:9.5px;padding-left:3px;border-left:1px solid #DDD9E3}
+.ve-crono td.tl i{position:absolute;top:0;bottom:0;border-left:1px solid #F1EFF4}
+.ve-crono td.tl s{position:absolute;top:0;bottom:0;border-left:1.5px solid #FFC900}
+.ve-bar{position:absolute;top:4px;height:10px;border-radius:5px;background:#D9D5E3;overflow:hidden}
+.ve-bar u{display:block;height:100%;background:#5A4E78}
+.ve-bar.lista u{background:#1E8A5A}.ve-bar.tarde{background:#F3C9C6}.ve-bar.tarde u{background:#C23B3B}
+.ve-hito{position:absolute;top:4px;width:10px;height:10px;margin-left:-5px;transform:rotate(45deg);background:#5A4E78}
+.ve-hito.tarde{background:#C23B3B}
+.ve-et td{background:#F4F2F7;font-weight:800;font-size:11.5px}
+/* caso */
+.ve-hoja{margin:0 0 16px;break-inside:auto}
+.ve-hoja h3{font-size:13px;margin:8px 0 6px}
+.ve-libro{border-collapse:collapse;width:100%;font-size:10.5px}
+.ve-libro td{padding:3px 6px;border-bottom:1px solid #EEECF1;white-space:nowrap}
+.ve-libro td.n{text-align:right;font-variant-numeric:tabular-nums}
+.ve-libro .ve-titulo td{font-size:13px;font-weight:800;border:0;padding-top:8px}
+.ve-libro .ve-seccion td{background:#160B29;color:#fff;font-weight:700}
+.ve-libro .ve-encab td{background:#FFF1BF;font-weight:700}
+.ve-libro .ve-total td{background:#F1F0F3;font-weight:700}
+.ve-libro .ve-v td{height:6px;padding:0;border:0}
+.ve-texto{font-size:11.5px;line-height:1.55;color:#2D2740}
+.ve-graf{margin:4px 0 12px}
+.ve-graf svg text{font-size:11px;fill:#6C6880;font-family:Montserrat,sans-serif}
+.ve-graf figcaption{font-size:10.5px;color:#6C6880;display:flex;gap:6px;align-items:center}
+.ve-graf figcaption i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-left:10px}
+.ve-graf figcaption i.l{height:2px;width:14px;background:#160B29;border-radius:0}
+.ve-lista{width:100%;border-collapse:collapse;font-size:11px}
+.ve-lista th,.ve-lista td{text-align:left;padding:4px 6px;border-bottom:1px solid #EEECF1}
+.ve-lista th{color:#6C6880;font-size:10.5px}
+.ve-nov{list-style:none;padding:0;margin:0;font-size:11.5px}
+.ve-nov li{padding:4px 0;border-bottom:1px solid #F1EFF4}
+.ve-nov span{color:#6C6880;font-size:10.5px}
+
+/* Impresión desde la app: solo se imprime el documento preparado */
+#imp{display:none}
+@media print{
+  @page{size:A4 landscape;margin:12mm}
+  body.imprimiendo #app,body.imprimiendo #login,body.imprimiendo .ag-btn,body.imprimiendo .ag-win,body.imprimiendo #toast,body.imprimiendo #pop,body.imprimiendo .boot{display:none!important}
+  body.imprimiendo #imp{display:block!important}
+  body.imprimiendo{background:#fff!important}
+  .ve{max-width:none}
+  .ve-salto{break-before:page}
+  .ve-hoja,.ve-crono tr,.ve-libro tr{break-inside:avoid}
+  .ve *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* vistas copiadas de la pantalla (Portafolio y Tablero) */
+  #imp .imp-copia{zoom:.72}
+  #imp .imp-copia button,#imp .imp-copia select,#imp .imp-copia input,#imp .imp-copia .zm{display:none!important}
+}

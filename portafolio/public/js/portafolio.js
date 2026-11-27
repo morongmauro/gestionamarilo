@@ -218,7 +218,7 @@
       R.cat ? `<button class="pf-chip" data-quitar="cat">${esc(App.catLabel(R.cat))} ✕</button>` : '',
     ].join('');
     const actPf = R.modo === 'mapa' ? 'mapa' : R.modo === 'riesgos' ? 'riesgos' : R.modo === 'cargar' ? 'cargar' : 'resumen';
-    main.innerHTML = `${App.pfHead(actPf, `${App.zoomCtl()}${App.canEdit() ? '<a class="btn ghost sm" href="#/papelera" title="Lo eliminado en los últimos 30 días">Papelera</a>' : ''}<button class="btn ghost sm" data-pf="csv">Exportar a Excel</button>${App.canEdit() ? '<button class="btn primary sm" data-pf="nuevo">+ Nueva iniciativa</button>' : ''}`)}
+    main.innerHTML = `${App.pfHead(actPf, `${App.zoomCtl()}${App.canEdit() ? '<a class="btn ghost sm" href="#/papelera" title="Lo eliminado en los últimos 30 días">Papelera</a>' : ''}<button class="btn ghost sm" data-pf="pdf" title="La tabla tal como se ve, en PDF">PDF</button><button class="btn ghost sm" data-pf="csv">Exportar a Excel</button>${App.canEdit() ? '<button class="btn primary sm" data-pf="nuevo">+ Nueva iniciativa</button>' : ''}`)}
       <div class="kl pf-kl"><span><b>${rows.length}</b>iniciativas</span><span title="Iniciativas en Fase 1, Fase 2 y Fase 3">${[1, 2, 3].map(k => `<b>${rows.filter(r => window.Fases && Fases.clasificar(r.x.estado) === k).length}</b>F${k}`).join(', ')}</span><span><b class="${nAl ? 'r' : ''}">${nAl}</b>con alertas</span><span><b>${rows.filter(sinDatos).length}</b>sin datos</span><span><b>${esc(m(total))}</b>valor proyectado, ${rows.filter(r => r.valor > 0).length} de ${rows.length} con cifras</span></div>
       <div class="pf-bar ${R.masf ? 'abierta' : ''}"><label class="search"><span>⌕</span><input id="pfq" type="search" placeholder="Buscar por nombre, persona, fase, OKR o cualquier dato…" aria-label="Buscar en el portafolio" value="${esc(R.q)}"></label>${chips}<button class="pf-tg pf-masf ${[R.okr, R.cat, R.alertas, R.inact === true].filter(Boolean).length ? 'on' : ''}" data-pf="masf" aria-expanded="${!!R.masf}">Filtros${[R.okr, R.cat, R.alertas, R.inact === true].filter(Boolean).length ? ` (${[R.okr, R.cat, R.alertas, R.inact === true].filter(Boolean).length})` : ''} ▾</button>
         ${ec ? `<select class="pf-sel" data-pf-okr aria-label="OKR"><option value="">OKR: todos</option>${[...new Set(rows.flatMap(r => r.okrs))].sort((a, b) => a.localeCompare(b)).map(o => `<option value="${esc(o)}" ${R.okr === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}<option value="__sin" ${R.okr === '' ? 'selected' : ''}>Sin OKR asignado</option></select>
@@ -278,6 +278,7 @@
       if (b.dataset.pf === 'dir') { R.dir = R.dir === 1 ? -1 : 1; guardar(); return render(main); }
       if (b.dataset.pf === 'alertas') { R.alertas = !R.alertas; guardar(); return render(main); }
       if (b.dataset.pf === 'csv') return csv(vis);
+      if (b.dataset.pf === 'pdf') return App.Exportar.pdfVista('Portafolio', `${vis.length} iniciativas${R.q ? ', búsqueda «' + R.q + '»' : ''}`, [main.querySelector('.pf-kl'), main.querySelector('.pf-tbl') || main.querySelector('.pf-mapa') || main.querySelector('.pf-rank')], 'portafolio');
       if (b.dataset.pf === 'nuevo') App.guard(async () => { const c = App.dgvCol(), si = c && App.soloDgv() ? ((c.options || []).find(o => /^s[ií]$/i.test(o.name)) || { name: 'SI' }).name : null; const p = await App.create('projects', { props: si ? { [c.id]: si } : {} }); App.go('#/proyectos/' + p.id); });
     };
     main.onkeydown = e => { const inp = e.target.closest && e.target.closest('[data-pf-nueva]'); if (!inp || e.key !== 'Enter') return; const nombre = inp.value.trim(); if (!nombre) return; inp.disabled = true;
@@ -365,12 +366,11 @@
       App.openPop(g, `<div class="lbl">${l.length} iniciativas en el mismo punto</div><div class="tv-dl">${l.map(p => `<a class="tv-di" href="#/proyectos/${p.id}/valor/ice"><span class="t">${esc(App.projectName(p))}</span><i class="ico ico-flecha"></i></a>`).join('')}</div>`, { width: 300, nofocus: true }); };
   }
 
+  // Exportar a Excel (.xlsx) lo que se ve en la tabla (con sus filtros)
   function csv(vis) {
-    const cell = s => { s = String(s == null ? '' : s); if (/^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s)) s = "'" + s; return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
-    const head = ['Iniciativa', 'Fase', 'OKR', 'Tipo de valor', 'ICE', 'Avance %', 'Avance esperado %', 'Inicio', 'Fin', 'Valor a dos años', 'Valor proyectado total', 'Estado del caso', 'VPN', 'TIR %', 'Alertas'];
-    const lines = [head.map(cell).join(';'), ...vis.map(r => [App.projectName(r.p), r.x.estado, r.okrs.join(', '), r.cats.map(App.catLabel).join(', '), r.x.ice ?? '', r.pl.acts.length ? r.pl.avance : '', r.esp ?? '', r.pl.ini || '', r.pl.fin || '', Math.round(dosAnios(r)) || '', Math.round(r.valor) || '', r.x.caso ? r.x.caso.estado || 'Borrador' : '', r.f && r.f.vpn != null ? Math.round(r.f.vpn) : '', r.f && r.f.tir != null ? Math.round(r.f.tir * 1000) / 10 : '', r.al.length ? r.al.map(o => o.txt).join(', ') : sinDatos(r) ? 'Sin datos' : ''].map(cell).join(';'))];
-    const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `portafolio-${App.d.today()}.csv`; a.click(); URL.revokeObjectURL(a.href);
+    const C = [['Iniciativa', '', 44], ['Fase', '', 26], ['OKR', '', 30], ['Tipo de valor', '', 22], ['ICE', 'num', 8], ['Avance', 'pct', 10], ['Avance esperado', 'pct', 12], ['Inicio', 'fecha', 13], ['Fin', 'fecha', 13], ['Valor a dos años', 'cop', 18], ['Valor proyectado total', 'cop', 20], ['Estado del caso', '', 16], ['VPN', 'cop', 18], ['TIR', 'pct', 9], ['Alertas', '', 40]];
+    const filas = vis.map(r => [App.projectName(r.p), r.x.estado, r.okrs.join(', '), r.cats.map(App.catLabel).join(', '), r.x.ice ?? '', r.pl.acts.length ? r.pl.avance / 100 : '', r.esp != null ? r.esp / 100 : '', r.pl.ini || '', r.pl.fin || '', Math.round(dosAnios(r)) || '', Math.round(r.valor) || '', r.x.caso ? r.x.caso.estado || 'Borrador' : '', r.f && r.f.vpn != null ? Math.round(r.f.vpn) : '', r.f && r.f.tir != null ? r.f.tir : '', r.al.length ? r.al.map(o => o.txt).join(', ') : sinDatos(r) ? 'Sin datos' : '']);
+    App.Exportar.xlsx('portafolio-' + App.d.today(), [{ nombre: 'Portafolio', columnas: C.map(([t, tipo, ancho]) => ({ t, tipo, ancho })), filas }]);
   }
 
   // Para el Tablero: el mismo resumen por OKR y por tipo de valor; el clic lleva al Portafolio con ese filtro

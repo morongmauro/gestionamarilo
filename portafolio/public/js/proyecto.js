@@ -19,7 +19,7 @@
     const tab = TABS.some(t => t[0] === tab0) ? tab0 : 'cronograma';
     const p = App.byId('projects', id);
     if (!p) { main.innerHTML = `<div class="page-h"><a class="back" href="#/proyectos">← Portafolio</a></div><div class="card-box"><div class="empty-box"><b>Esta iniciativa no existe o fue eliminada</b></div></div>`; return; }
-    const ro = !App.canEdit(), tc = App.titleCol(), ec = App.estadoCol();
+    const ro = !App.canEdit(), roE = !App.puedeRegistrar(), tc = App.titleCol(), ec = App.estadoCol(); // roE: el invitado editor sí edita los datos
     const pl = App.planOf(id), caso = App.caseOf(id), f = caso ? Finanzas.calc(caso) : null;
     const ses = App.S.sessions.filter(s => (s.proyectos || []).includes(id)).sort((a, b) => (a.fecha + (a.hora_ini || '')).localeCompare(b.fecha + (b.hora_ini || '')));
     const prox = ses.find(s => s.fecha >= App.d.today() && s.estado !== 'Cancelada');
@@ -81,7 +81,7 @@
           <div><b>${App.iceOf(p) == null ? '—' : esc(App.num(App.iceOf(p), 1))}</b><span>prioridad (ICE)${ro ? '' : ', <button class="t-lnk" data-p="ice">ver y editar sus datos</button>'}</span></div>
         </div></div>`;
       const barra = `<div class="vl-bar"><div class="vl-res"><span>Creada <b>${esc(App.d.ago(p.created_at))}</b></span>${p.updated_by_name ? `<span>última edición <b>${esc(p.updated_by_name)}</b>, ${esc(App.d.ago(p.updated_at))}</span>` : ''}</div><span class="sp"></span>${ro ? '' : '<button class="btn primary sm" data-p="editar">Editar datos</button><button class="btn sm" data-p="menu">⋯ Más</button>'}</div>`;
-      box.innerHTML = barra + fi + `<details class="fi-campos"><summary>Todos los campos de la iniciativa</summary><div class="props ${ro ? '' : 'editable'}">${cols.map(fila).join('')}</div>${viejas.length ? `<details class="props-viejas"><summary>${viejas.length} campo${viejas.length === 1 ? '' : 's'} del método anterior (guardado${viejas.length === 1 ? '' : 's'}, ya no se usa${viejas.length === 1 ? '' : 'n'} para el ICE)</summary><div class="props">${viejas.map(fila).join('')}</div></details>` : ''}${vacias.length && !ro ? `<details class="props-viejas"><summary>${vacias.length} campo${vacias.length === 1 ? '' : 's'} que ninguna iniciativa tiene diligenciado${vacias.length === 1 ? '' : 's'}</summary><div class="props">${vacias.map(fila).join('')}</div></details>` : ''}
+      box.innerHTML = barra + fi + `<details class="fi-campos"><summary>Todos los campos de la iniciativa</summary><div class="props ${roE ? '' : 'editable'}">${cols.map(fila).join('')}</div>${viejas.length ? `<details class="props-viejas"><summary>${viejas.length} campo${viejas.length === 1 ? '' : 's'} del método anterior (guardado${viejas.length === 1 ? '' : 's'}, ya no se usa${viejas.length === 1 ? '' : 'n'} para el ICE)</summary><div class="props">${viejas.map(fila).join('')}</div></details>` : ''}${vacias.length && !ro ? `<details class="props-viejas"><summary>${vacias.length} campo${vacias.length === 1 ? '' : 's'} que ninguna iniciativa tiene diligenciado${vacias.length === 1 ? '' : 's'}</summary><div class="props">${vacias.map(fila).join('')}</div></details>` : ''}
         <div class="meta-line">Creado ${esc(App.d.ago(p.created_at))}${p.updated_by_name ? `, Última edición: ${esc(p.updated_by_name)}, ${esc(App.d.ago(p.updated_at))}` : ''}${ro ? '' : ', Las columnas se administran en Portafolio → Tabla completa'}</div></details>`;
     } else if (tab === 'cronograma') {
       // El cronograma con sus novedades al lado (en pantallas angostas, debajo)
@@ -114,8 +114,8 @@
       if (ne) return App.pickList(ne, { multi: false, placeholder: 'Buscar iniciativa…', empty: 'No hay iniciativas', selected: [id],
         items: ids.map(x => ({ id: x, label: nomb(x), color: App.projectColor(App.byId('projects', x)) })), onSave: x => { if (x && x !== id) App.go(ir(x)); } });
       const s = e.target.closest('[data-ses]'); if (s) return App.Agenda.openSession(s.dataset.ses);
-      const fr = e.target.closest('[data-h=frase]'); if (fr && !ro) return App.editText(fr, p.frase || '', { placeholder: 'En una frase: qué cambia con esta iniciativa', width: 420, onSave: v => App.guard(async () => { await App.patch('projects', id, { frase: String(v || '').slice(0, 500) }); App.render(); }) });
-      if (tab === 'info' && !ro) { const v = e.target.closest('.props .v'); if (v && !e.target.closest('a')) return App.Tabla.openEditor(v, id, v.dataset.col); }
+      const fr = e.target.closest('[data-h=frase]'); if (fr && !roE) return App.editText(fr, p.frase || '', { placeholder: 'En una frase: qué cambia con esta iniciativa', width: 420, onSave: v => App.guard(async () => { await App.patch('projects', id, { frase: String(v || '').slice(0, 500) }); App.render(); }) });
+      if (tab === 'info' && !roE) { const v = e.target.closest('.props .v'); if (v && !e.target.closest('a') && (!ro || (v.dataset.col !== (ec && ec.id) && v.dataset.col !== tc.id))) return App.Tabla.openEditor(v, id, v.dataset.col); }
       const b = e.target.closest('[data-p]'); if (!b || ro) return;
       const a = b.dataset.p;
       if (a === 'titulo') App.Tabla.openEditor(b, id, tc.id);
@@ -125,7 +125,9 @@
         return App.guard(async () => { await App.patch('projects', id, { props: { [ec.id]: nueva } }); App.toast('Cambió de fase'); App.render(); }); }
       if (a === 'editar') { const d = $('.fi-campos', main); if (d) { d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'start' }); } return; }
       if (a === 'agendar') App.Agenda.openNewSession(App.d.add(App.d.today(), 7), { proyectos: [id] });
-      if (a === 'menu') App.menu(b, [{ id: 'tabla', label: 'Ver en la tabla completa' }, { id: 'agenda', label: 'Agendar en comité' }, '-', { id: 'del', label: 'Eliminar iniciativa', danger: true }], m => {
+      if (a === 'menu') App.menu(b, [{ id: 'tabla', label: 'Ver en la tabla completa' }, { id: 'agenda', label: 'Agendar en comité' }, '-', { id: 'pdf', label: 'Ficha completa en PDF' }, { id: 'enlace', label: 'Compartir enlace de solo lectura' }, '-', { id: 'del', label: 'Eliminar iniciativa', danger: true }], m => {
+        if (m === 'pdf') return App.Exportar.pdf('ficha', id);
+        if (m === 'enlace') return App.Exportar.compartir(b, id, 'ficha');
         if (m === 'tabla') App.go('#/proyectos');
         if (m === 'agenda') App.Agenda.openNewSession(App.d.add(App.d.today(), 7), { proyectos: [id] });
         if (m === 'del') confirmDelete(id);

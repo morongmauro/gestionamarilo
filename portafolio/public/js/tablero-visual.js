@@ -194,7 +194,7 @@
     const ritmo = pc == null ? (nSin ? ['nr', 'ico-reloj', `Falta registrar en ${plural(nSin, 'iniciativa', 'iniciativas')}`] : null) : pc >= .9 ? ['ok', 'ico-ok', 'Al ritmo'] : pc >= .6 ? ['o', 'ico-reloj', 'Algo por debajo'] : ['r', 'ico-alerta', 'Por debajo del ritmo'];
     const ec = App.estadoCol(), dgv = App.dgvHay();
     main.className = 'tv';
-    main.innerHTML = `<div class="tv-h"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>${App.esInvitado() ? 'Tablero de sus iniciativas' : 'Tablero de valor'}</h1><span class="s">${App.esInvitado() ? `${App.S.projects.length} ${App.S.projects.length === 1 ? 'iniciativa compartida' : 'iniciativas compartidas'} con usted` : 'Oficina de Generación de Valor'}, datos al ${esc(App.d.fmt(d.hoy))}</span><span class="sp"></span>
+    main.innerHTML = `<div class="tv-h"><button class="burger" data-act="burger" aria-label="Menú">☰</button><h1>${App.esInvitado() ? 'Tablero de sus iniciativas' : 'Tablero de valor'}</h1><span class="s">${App.esInvitado() ? `${App.S.projects.length} ${App.S.projects.length === 1 ? 'iniciativa compartida' : 'iniciativas compartidas'} con usted` : 'Oficina de Generación de Valor'}, datos al ${esc(App.d.fmt(d.hoy))}</span><span class="sp"></span><button class="tv-chip" data-tvpdf title="El tablero tal como se ve, en PDF">PDF</button>
         ${F.fase ? `<button class="tv-chip" data-fx="${esc(F.fase)}" title="Quitar el filtro">Mostrando ${esc(faseNombre(isNaN(+F.fase) ? F.fase : +F.fase))} <b>✕</b></button>` : ''}</div>
       ${sub}
       
@@ -229,6 +229,7 @@
     main.onchange = e => { const k = e.target.dataset.tvf; if (!k) return; F[k] = k === 'anio' ? Number(e.target.value) : e.target.value; guardar(); App.render(); };
     main.onclick = e => {
       if (e.target.closest('.burger')) return App.toggleSide();
+      if (e.target.closest('[data-tvpdf]')) return App.Exportar.pdfVista(App.esInvitado() ? 'Tablero de sus iniciativas' : 'Tablero de valor', 'Oficina de Generación de Valor', [...main.children].filter(x => !x.classList.contains('tv-h')).map(x => x), 'tablero');
       if (e.target.closest('[data-dgv]')) { App.store.set('alcance.dgv', App.soloDgv() ? 'todas' : 'si'); return App.render(); }
       const fx = e.target.closest('[data-fx]'); if (fx && !e.target.closest('[data-dv]')) { F.fase = F.fase === fx.dataset.fx ? '' : fx.dataset.fx; guardar(); return App.render(); }
       const pe = e.target.closest('[data-periodo]'); if (pe) { const PV = App.periodoValor(), ys = Array.from({ length: 16 }, (_, i) => 2020 + i), op = s => ys.map(y => `<option ${y === s ? 'selected' : ''}>${y}</option>`).join('');

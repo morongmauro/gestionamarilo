@@ -831,6 +831,80 @@ route('POST', '/api/agente', 'admin', async (req, ctx) => {
   } };
 });
 
+// ---------- Excel (.xlsx) de lo que se ve en pantalla (Portafolio, cronograma, listados) ----------
+// El navegador manda las columnas y filas; aquí se arma el archivo con formatos (pesos, %, fechas) y el encabezado fijo.
+route('POST', '/api/xlsx', 'usuario', { inv: true }, async (req, ctx) => {
+  const ExcelJS = require('exceljs'), b = ctx.body || {};
+  const hojas = (Array.isArray(b.hojas) ? b.hojas : []).slice(0, 10);
+  if (!hojas.length) throw new HttpError(400, 'No hay datos para exportar');
+  const wb = new ExcelJS.Workbook(); wb.creator = 'Portafolio de Generación de Valor';
+  const FMT = { cop: '"$"#,##0;[Red]-"$"#,##0', pct: '0.0%', num: '#,##0.##', fecha: 'd mmm yyyy' };
+  for (const h of hojas) {
+    const cols = (Array.isArray(h.columnas) ? h.columnas : []).slice(0, 80);
+    const ws = wb.addWorksheet(String(h.nombre || 'Hoja').replace(/[\\/*?:[\]]/g, ' ').slice(0, 31), { views: [{ state: 'frozen', ySplit: 1 }] });
+    ws.columns = cols.map(c => ({ header: String(c.t || '').slice(0, 120), width: Math.max(8, Math.min(70, Number(c.ancho) || 16)) }));
+    ws.getRow(1).font = { bold: true }; ws.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFE07A' } };
+    for (const f of (Array.isArray(h.filas) ? h.filas : []).slice(0, 8000)) {
+      const row = ws.addRow(cols.map((c, k) => { let v = Array.isArray(f) ? f[k] : null; if (v == null || v === '') return null;
+        if (c.tipo === 'fecha' && /^\d{4}-\d{2}-\d{2}/.test(String(v))) return new Date(String(v).slice(0, 10) + 'T00:00:00Z');
+        if (['cop', 'pct', 'num'].includes(c.tipo) && v !== '' && isFinite(Number(v))) return Number(v);
+        v = String(v).slice(0, 5000); return /^[=+\-@]/.test(v) ? "'" + v : v; }));
+      cols.forEach((c, k) => { if (FMT[c.tipo]) row.getCell(k + 1).numFmt = FMT[c.tipo]; });
+    }
+    ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: Math.max(1, cols.length) } };
+  }
+  const nombre = String(b.nombre || 'exportacion').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w-]+/g, '-').slice(0, 80) || 'exportacion';
+  return { __raw: Buffer.from(await wb.xlsx.writeBuffer()), type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', file: nombre + '.xlsx' };
+});
+
+// ---------- Enlaces de solo lectura para terceros ----------
+// Un administrador crea un enlace a una vista (cronograma, caso o ficha) de una iniciativa. Quien lo tenga la ve
+// sin usuario, siempre al día, hasta que vence (30 días por defecto) o se revoca. Cuenta las visitas.
+const TIPOS_ENLACE = ['cronograma', 'caso', 'ficha'];
+route('POST', '/api/enlaces', 'admin', async (req, ctx) => {
+  const b = ctx.body || {}, tipo = TIPOS_ENLACE.includes(b.tipo) ? b.tipo : null; if (!tipo) throw new HttpError(400, 'Tipo de vista inválido');
+  const p = await store.get('projects', String(b.project_id || '')); if (!p) throw new HttpError(404, 'La iniciativa no existe');
+  const dias = [7, 30, 90, 0].includes(Number(b.dias)) ? Number(b.dias) : 30;
+  const o = b.opciones || {};
+  const doc = { id: newId(), token: crypto.randomBytes(24).toString('base64url'), tipo, project_id: p.id, nombre: await labelOf('projects', p),
+    opciones: { responsables: o.responsables !== false, cifras: o.cifras !== false }, vence: dias ? new Date(Date.now() + dias * 864e5).toISOString() : null,
+    creado_por: ctx.user.name, creado_por_id: ctx.user.id, created_at: now(), vistas: 0, ultima_vista: null };
+  await store.insert('enlaces', doc);
+  await log(ctx.user, 'compartió con enlace', 'projects', p.id, `${doc.nombre} (${tipo}${dias ? ', vence en ' + dias + ' días' : ', sin vencimiento'})`);
+  return { ...doc, link: `${origenDe(req)}/ver.html?t=${doc.token}` };
+});
+route('GET', '/api/enlaces', 'admin', async req => (await store.list('enlaces')).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+  .map(x => ({ ...x, link: `${origenDe(req)}/ver.html?t=${x.token}`, vencido: !!(x.vence && x.vence < now()) })));
+route('DELETE', '/api/enlaces/:id', 'admin', async (req, ctx) => {
+  const x = await store.get('enlaces', ctx.params.id); if (!x) throw new HttpError(404, 'Ese enlace ya no existe');
+  await store.remove('enlaces', x.id);
+  await log(ctx.user, 'revocó el enlace de', 'projects', x.project_id, `${x.nombre} (${x.tipo})`);
+  return { ok: true };
+});
+// Lo que ve quien abre el enlace (sin usuario): solo esa iniciativa y lo que el enlace permite
+route('GET', '/api/ver/:token', 'publico', async (req, ctx) => {
+  const t = String(ctx.params.token || '');
+  const x = /^[\w-]{20,64}$/.test(t) ? (await store.list('enlaces')).find(e => e.token === t) : null;
+  if (!x || (x.vence && x.vence < now())) throw new HttpError(404, 'Este enlace no existe, venció o fue revocado. Pida uno nuevo a quien se lo compartió.');
+  const p = await store.get('projects', x.project_id); if (!p) throw new HttpError(404, 'La iniciativa ya no está disponible');
+  const cols = await projectColumns(), tc = (await titleColumn()).id, ec = cols.find(c => c.type === 'select' && /estado|fase/i.test(c.name));
+  const o = x.opciones || {}, d = { tipo: x.tipo, opciones: o, vence: x.vence, hoy: hoyLocal(), proyecto: { nombre: (p.props || {})[tc] || 'Iniciativa', fase: ec ? (p.props || {})[ec.id] || '' : '', frase: p.frase || '' } };
+  if (x.tipo === 'cronograma' || x.tipo === 'ficha') {
+    d.secciones = (await store.list('sections')).filter(s => s.project_id === p.id).map(s => ({ id: s.id, name: s.name, position: s.position }));
+    d.actividades = (await store.list('activities')).filter(a => a.project_id === p.id).map(a => ({ id: a.id, section_id: a.section_id, name: a.name, inicio: a.inicio, fin: a.fin, avance: a.avance, hito: a.hito, position: a.position, ...(o.responsables !== false ? { responsable: a.responsable } : {}) }));
+  }
+  if (x.tipo === 'caso' || x.tipo === 'ficha') {
+    const c = (await store.list('cases')).find(k => k.project_id === p.id);
+    d.caso = !c ? null : o.cifras === false ? { estado: c.estado, consideraciones: c.consideraciones } : { estado: c.estado, tasa: c.tasa, anios: c.anios, anio_inicio: c.anio_inicio, moneda: c.moneda, flujos: c.flujos, libro: c.libro || null, consideraciones: c.consideraciones };
+  }
+  if (x.tipo === 'ficha') {
+    d.riesgos = (p.riesgos || []).map(r => ({ titulo: r.titulo, p: r.p, i: r.i, rp: r.rp, ri: r.ri, estado: r.estado, respuesta: r.respuesta }));
+    d.novedades = (await store.list('novedades')).filter(n => n.project_id === p.id).map(n => ({ tipo: n.tipo, texto: n.texto, fecha: n.fecha }));
+  }
+  try { await store.update('enlaces', x.id, e => ({ ...e, vistas: (e.vistas || 0) + 1, ultima_vista: now() })); } catch (e) { /* no frena la vista */ }
+  return d;
+});
+
 // ---------- CRUD genérico de colecciones ----------
 const COLL_RX = `:coll(${COLLS.join('|')})`;
 route('POST', `/api/${COLL_RX}`, 'editor', async (req, ctx) => {
@@ -855,7 +929,7 @@ route('POST', `/api/${COLL_RX}`, 'editor', async (req, ctx) => {
   return doc;
 });
 // Lo que un invitado que registra puede cambiar fuera del cronograma: riesgos de la iniciativa y lo captado del caso
-const INV_CAMPOS = { projects: ['riesgos'], cases: ['captado', 'recurrentes'], activities: ['avance', 'real_ini', 'real_fin', 'notas'] };
+const INV_CAMPOS = { projects: ['riesgos', 'props', 'frase', 'miembros', 'area', 'fecha_meta'], cases: ['captado', 'recurrentes', 'plan_captura', 'libro', 'flujos', 'consideraciones', 'anios', 'anio_inicio', 'tasa', 'moneda'], activities: ['avance', 'real_ini', 'real_fin', 'notas', 'name', 'inicio', 'fin', 'responsable'] };
 route('PATCH', `/api/${COLL_RX}/:id`, 'registro', { inv: true }, async (req, ctx) => {
   const coll = ctx.params.coll, id = ctx.params.id;
   let patch = cleanDoc(coll, ctx.body, true);
@@ -864,6 +938,8 @@ route('PATCH', `/api/${COLL_RX}/:id`, 'registro', { inv: true }, async (req, ctx
     const cur0 = await store.get(coll, id); if (!cur0) throw new HttpError(404, 'No encontrado');
     enAlcance(ctx.user, coll === 'projects' ? cur0.id : cur0.project_id);
     patch = Object.fromEntries(Object.entries(patch).filter(([k]) => INV_CAMPOS[coll].includes(k)));
+    // la fase y el nombre de la iniciativa los decide un administrador
+    if (patch.props) { const cs = await projectColumns(), fase = cs.find(c => c.type === 'select' && /estado|fase/i.test(c.name)), tit = cs.find(c => c.type === 'title'); patch.props = Object.fromEntries(Object.entries(patch.props).filter(([k]) => k !== (fase && fase.id) && k !== (tit && tit.id))); if (!Object.keys(patch.props).length) delete patch.props; }
     if (!Object.keys(patch).length) throw new HttpError(403, 'Su acceso no permite este cambio');
   }
   delete patch.project_id; // un registro no cambia de proyecto
@@ -1150,6 +1226,19 @@ async function prepare() {
       }
     }
     await store.setConfig('migr_crono_nueva_sas_v1', true);
+  }
+  // Migración (una sola vez): los roles quedan en Administrador, Invitado editor e Invitado visualizador.
+  // Quien era Editor pasa a Invitado editor y quien era Lector a Invitado visualizador, sin iniciativas: un administrador les asigna las suyas.
+  if (!(await store.getConfig('migr_roles_v2'))) {
+    let n = 0;
+    for (const u of await store.list('users')) {
+      if (u.role !== 'editor' && u.role !== 'lector') continue;
+      await store.update('users', u.id, d => ({ ...d, role: 'invitado', puede: d.role === 'editor' ? 'registrar' : 'ver', proyectos: [], rol_anterior: d.role, updated_at: now() }));
+      await store.insert('historial', { id: newId(), created_at: now(), user_id: 'sistema', user_name: 'Sistema', accion: 'cambió el rol de', coll: 'users', record_id: u.id, nombre: `${u.name}: de ${u.role === 'editor' ? 'Editor' : 'Lector'} a ${u.role === 'editor' ? 'Invitado editor' : 'Invitado visualizador'} (sin iniciativas asignadas)`, campos: [] });
+      n++;
+    }
+    if (n) console.log(`Roles: ${n} usuarios pasaron a invitado`);
+    await store.setConfig('migr_roles_v2', true);
   }
   // Migración (una sola vez): el caso de Nueva SAS pasa a libro, con las mismas hojas y fórmulas de su Excel
   // (lib/semillas/nueva-sas-libro.json, leído del Excel con lib/libro-excel.js: sus 293 fórmulas dan lo mismo que en Excel).

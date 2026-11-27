@@ -65,7 +65,8 @@
   const ESCALAS = [[1, 'Pesos'], [1e3, 'Miles'], [1e6, 'Millones']];
   let grid = null;
   function editor(el, pid) {
-    const c = App.caseOf(pid), ro = !App.canEdit();
+    // el invitado editor trabaja el libro y la captura; el estado del caso, el comité y borrar son del administrador
+    const c = App.caseOf(pid), ro = !App.puedeRegistrar(), soloAdmin = !App.canEdit();
     if (grid) { grid.destroy(); grid = null; }
     if (!c) {
       el.innerHTML = `<div class="card-box"><div class="empty-box"><b>Esta iniciativa aún no tiene caso de negocio</b>${ro ? 'Cuando el equipo lo cree, aparecerá aquí.' : 'Arma la justificación: problema, objetivo, beneficios, costos y la decisión que se le pide al comité. Puedes empezar desde cero o subir el Excel que ya tienes.'}${ro ? '' : '<div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn primary" data-c="crear">+ Crear caso de negocio</button><button class="btn" data-c="crear-excel">Crear desde un Excel</button></div>'}</div></div>`;
@@ -146,10 +147,10 @@
     const est = c.estado || 'Borrador';
     const prox = App.S.sessions.filter(x => x.fecha >= App.d.today() && x.estado !== 'Cancelada').sort((x, y) => (x.fecha + (x.hora_ini || '')).localeCompare(y.fecha + (y.hora_ini || '')))[0] || null;
     const enAgenda = !!(prox && (prox.proyectos || []).includes(pid));
-    const accion = ro ? '' : ['Borrador', 'Aplazado', 'Rechazado'].includes(est) ? '<button class="btn primary sm" data-c="comite" title="Pasa el caso a «En revisión» y lo agrega a la agenda del próximo comité">Enviar a comité</button>'
+    const accion = soloAdmin ? '' : ['Borrador', 'Aplazado', 'Rechazado'].includes(est) ? '<button class="btn primary sm" data-c="comite" title="Pasa el caso a «En revisión» y lo agrega a la agenda del próximo comité">Enviar a comité</button>'
       : est === 'En revisión' ? `<a class="btn sm" href="#/agenda">${enAgenda ? 'En agenda, ' + esc(App.d.fmtShort(prox.fecha)) : 'Ver el comité'}</a>` : '<button class="btn sm" data-tab-c="captado">Registrar captura</button>';
     el.innerHTML = `<div class="cs-bar">
-        <select class="estado-sel cs-est cl-${estadoColor(c.estado)}" data-f="estado" ${dis} title="Estado del caso">${ESTADOS.map(e => `<option ${e.name === est ? 'selected' : ''}>${e.name}</option>`).join('')}</select>
+        <select class="estado-sel cs-est cl-${estadoColor(c.estado)}" data-f="estado" ${soloAdmin ? 'disabled' : ''} title="Estado del caso${soloAdmin ? ': lo cambia un administrador' : ''}">${ESTADOS.map(e => `<option ${e.name === est ? 'selected' : ''}>${e.name}</option>`).join('')}</select>
         <div class="kl" id="cKpi"></div><span class="sp"></span>
         <span class="cs-herr no-print">
           <button class="cs-chip" data-c="param" title="Parámetros del caso: moneda ${esc(mon)}, tasa de descuento, primer año y horizonte">Tasa ${App.num(c.tasa, 2) || 0} %, ${n()} años</button>
@@ -303,9 +304,9 @@
       const b = e.target.closest('[data-c]'); if (!b) return;
       const a = b.dataset.c;
       if (a === 'print') return window.print();
-      if (a === 'mas') return App.menu(b, [{ id: 'excel', label: 'Descargar Excel' }, { id: 'pdf', label: 'Imprimir o guardar PDF' }].concat(ro ? [] : [{ id: 'importar', label: 'Reemplazar con un Excel' }, { id: 'plantilla', label: 'Plantilla vacía' }].concat(['-', { id: 'del', label: 'Eliminar el caso', danger: true }])), m => {
+      if (a === 'mas') return App.menu(b, [{ id: 'excel', label: 'Descargar Excel' }, { id: 'pdf', label: 'Descargar PDF' }].concat(App.esAdmin() ? [{ id: 'enlace', label: 'Compartir enlace de solo lectura' }] : []).concat(ro ? [] : [{ id: 'importar', label: 'Reemplazar con un Excel' }, { id: 'plantilla', label: 'Plantilla vacía' }]).concat(soloAdmin ? [] : ['-', { id: 'del', label: 'Eliminar el caso', danger: true }]), m => {
         const bajar = u => { const l = document.createElement('a'); l.href = u; l.download = ''; document.body.appendChild(l); l.click(); l.remove(); };
-        if (m === 'excel') bajar(`/api/cases/${c.id}/excel`); if (m === 'plantilla') bajar('/api/cases/plantilla/excel'); if (m === 'pdf') window.print();
+        if (m === 'excel') bajar(`/api/cases/${c.id}/excel`); if (m === 'plantilla') bajar('/api/cases/plantilla/excel'); if (m === 'pdf') { flush(); App.Exportar.pdf('caso', pid); } if (m === 'enlace') App.Exportar.compartir(b, pid, 'caso');
         if (m === 'importar') $('[data-c=archivo]', el).click();
         if (m === 'libro') { if (!confirm('Se arma el libro del caso con sus cifras actuales: una hoja de Supuestos y otra con el flujo año a año, con totales y flujo de caja en fórmulas. Las fórmulas con [nombres] de la tabla anterior pasan como valores. ¿Continuar?')) return;
           const lb = App.LibroUI.desdeFlujos(Object.assign({}, c, { flujos: fl })); flush(); App.guard(async () => { await App.patch('cases', c.id, { libro: lb, flujos: App.Libro.flujos(lb) }); App.toast('El caso quedó en formato de libro'); editor(el, pid); }); }

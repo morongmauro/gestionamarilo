@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Vista compartida · Portafolio de Generación de Valor</title>
+<link rel="icon" href="/marca/marca.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/estatica.css">
+<style>
+  body{margin:0;background:#F5F5F6;font-family:Montserrat,system-ui,sans-serif;color:#160B29}
+  .ver-barra{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;padding:10px 22px;background:#160B29;color:#fff;font-size:12.5px}
+  .ver-barra b{color:#FFC900}.ver-barra .sp{flex:1}
+  .ver-barra button{border:0;border-radius:999px;padding:7px 14px;background:#FFC900;color:#160B29;font:700 12.5px Montserrat,sans-serif;cursor:pointer}
+  .ver-hoja{background:#fff;max-width:1400px;margin:20px auto;padding:26px 30px;border-radius:16px;box-shadow:0 10px 30px rgba(22,11,41,.07);overflow-x:auto}
+  .ver-error{max-width:520px;margin:12vh auto;background:#fff;border-radius:16px;padding:28px;text-align:center}
+  @media (max-width:700px){.ver-hoja{margin:0;border-radius:0;padding:16px}.ve-crono td.tl,.ve-crono th.tl{display:none}}
+  @media print{.ver-barra{display:none}body{background:#fff}.ver-hoja{box-shadow:none;margin:0;padding:0;max-width:none}}
+</style>
+</head>
+<body>
+<div class="ver-barra"><span>Vista de <b>solo lectura</b> · Portafolio de Generación de Valor · Amarilo</span><span class="sp"></span><span id="verVence"></span><button type="button" id="verPdf">Descargar PDF</button></div>
+<main class="ver-hoja" id="ver"><p>Cargando…</p></main>
+<script src="/js/finanzas.js"></script>
+<script src="/js/libro.js"></script>
+<script src="/js/estatica.js"></script>
+<script src="/js/ver.js"></script>
+</body>
+</html>

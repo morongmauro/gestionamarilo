@@ -754,9 +754,11 @@
         if (p && ed) { it.push({ id: 'excel', label: 'Subir Excel' }); it.push({ id: 'gestion', label: 'Traer de la app de gestión' }); it.push({ id: 'plantilla', label: 'Plantilla de cronograma (Excel)' }); }
         if (p && ed) { if (M.lineaBase) { it.push({ id: 'lb-otra', label: 'Volver a fijar la línea base' }); it.push({ id: 'lb-quitar', label: 'Quitar la línea base' }); } else it.push({ id: 'lb', label: 'Fijar línea base' }); }
         if (p) { it.push({ id: 'meta', label: (p.fecha_meta ? 'Fecha meta: ' + App.d.fmtShort(p.fecha_meta) : 'Fecha meta') }); it.push({ id: 'inv', label: 'Involucrados' + ((p.miembros || []).length ? ', ' + p.miembros.length : '') }); }
+        if (p) { it.push('-'); it.push({ id: 'pdf', label: 'Descargar PDF' }); it.push({ id: 'xlsx', label: 'Exportar a Excel' }); if (App.esAdmin()) it.push({ id: 'enlace', label: 'Compartir enlace de solo lectura' }); }
         it.push('-'); it.push({ id: 'mesa', label: 'Mesa de trabajo (pantalla completa)' }); if (p) it.push({ id: 'ayuda', label: 'ⓘ Cómo se usa el cronograma' });
         return App.menu(b, it, m => {
           if (m === 'excel') subirExcel(b); if (m === 'plantilla') plantillaCrono(); if (m === 'gestion') traerDeGestion(b); if (m === 'lb') fijarLineaBase(false); if (m === 'lb-otra') fijarLineaBase(true); if (m === 'lb-quitar') quitarLineaBase();
+          if (m === 'pdf') return App.Exportar.pdf('cronograma', p.id); if (m === 'xlsx') return App.Exportar.cronogramaXlsx(p.id); if (m === 'enlace') return App.Exportar.compartir(b, p.id, 'cronograma');
           if (m === 'meta') fechaMeta(b); if (m === 'inv') involucrados(); if (m === 'mesa') toggleMesa();
           if (m === 'ayuda') App.openPop(b, '<div class="lbl">Cómo se usa</div><div style="padding:0 12px 12px;font-size:13px;line-height:1.55">Todo se edita aquí mismo y se guarda solo. Si mueves el fin de una actividad, lo que depende de ella se corre en cascada (días hábiles, sin fines de semana ni festivos de Colombia). Flechas: arrastra el punto del final de una barra hasta otra actividad para conectarlas; haz clic en una flecha para cambiarla o quitarla. Ctrl+Z deshace.</div>', { width: 360 });
         }, 270);
